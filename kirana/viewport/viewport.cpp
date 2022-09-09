@@ -1,8 +1,8 @@
 #include "viewport.hpp"
 
 #include <iostream>
-using std::cout;
 using std::cerr;
+using std::cout;
 using std::endl;
 
 Viewport::Viewport()

@@ -5,8 +5,8 @@
 
 class Viewport
 {
-private:
-public:
+  private:
+  public:
     Viewport();
     ~Viewport();
 };

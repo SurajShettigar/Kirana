@@ -1,18 +1,16 @@
 #include "app.hpp"
 
 #include <iostream>
-using std::cout;
 using std::cerr;
+using std::cout;
 using std::endl;
 
-
-Application::Application()
+kirana::Application::Application()
 {
     cout << "Hello Application!" << endl;
 }
 
-
-Application::~Application()
+kirana::Application::~Application()
 {
     cout << "Goodbye Application!" << endl;
 }

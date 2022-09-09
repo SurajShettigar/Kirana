@@ -1,0 +1,7 @@
+BasedOnStyle: Microsoft
+Standard: c++17
+AllowAllArgumentsOnNextLine: false
+AllowAllParametersOfDeclarationOnNextLine: false
+AllowAllConstructorInitializersOnNextLine: true
+MaxEmptyLinesToKeep: 2
+ColumnLimit: 80
