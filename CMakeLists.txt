@@ -7,7 +7,15 @@ project(Kirana VERSION 0.1.0)
 
 # Add external dependencies
 find_package(Vulkan REQUIRED)
-message("Found Vulkan: " ${Vulkan_FOUND})
+if(${Vulkan_FOUND})
+    message("Found Vulkan: " ${Vulkan_VERSION})
+endif()
+
+# find_package(Python 3.9 COMPONENTS Interpreter Development REQUIRED)
+if(${Python_FOUND})
+    message("Found Python: " ${Python_VERSION})
+endif()
+
 add_subdirectory(external)
 
 # Add project files

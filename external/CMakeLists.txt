@@ -1,11 +1,14 @@
-# Add GLFW Dependency
+# Add pybind11 dependency
+add_subdirectory(pybind11)
+
+# Add GLFW dependency
 set(GLFW_LIBRARY_TYPE STATIC CACHE STRING "" FORCE)
 set(GLFW_BUILD_DOCS OFF CACHE BOOL "" FORCE)
 set(GLFW_BUILD_TESTS OFF CACHE BOOL "" FORCE)
 set(GLFW_BUILD_EXAMPLES OFF CACHE BOOL "" FORCE)
 add_subdirectory(glfw)
 
-# Add ASSIMP Dependency
+# Add ASSIMP dependency
 set(ASSIMP_NO_EXPORT ON CACHE BOOL "" FORCE)
 set(ASSIMP_BUILD_ASSIMP_TOOLS OFF CACHE BOOL "" FORCE)
 set(ASSIMP_BUILD_TESTS OFF CACHE BOOL "" FORCE)

@@ -1,9 +1,17 @@
 add_subdirectory(window)
 add_subdirectory(viewport)
 
-file(GLOB_RECURSE KIRANA_SOURCE_FILES ${CMAKE_CURRENT_SOURCE_DIR}/*.cpp)
-
-add_executable(Kirana ${KIRANA_SOURCE_FILES})
+add_executable(Kirana main.cpp app.cpp)
 
 target_include_directories(Kirana PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
 target_link_libraries(Kirana PRIVATE window viewport)
+
+# Generate python bindings
+pybind11_add_module(kirana_app main.cpp app.cpp)
+target_include_directories(kirana_app PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
+target_include_directories(kirana_app PRIVATE ${pybind11_INCLUDE_DIR})
+target_link_libraries(kirana_app PRIVATE window viewport)
+set_target_properties(kirana_app PROPERTIES
+                                INTERPROCEDURAL_OPTIMIZATION ON
+                                CXX_VISIBILITY_PRESET ON
+                                VISIBILITY_INLINES_HIDDEN ON)

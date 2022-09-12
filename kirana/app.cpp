@@ -5,6 +5,10 @@ using std::cerr;
 using std::cout;
 using std::endl;
 
+
+#include <pybind11/pybind11.h>
+namespace py = pybind11;
+
 kirana::Application::Application()
 {
     cout << "Hello Application!" << endl;
@@ -52,4 +56,15 @@ void kirana::Application::run()
     }
 
     clean();
+}
+
+/**
+ * @brief Construct Python Binding for Application
+ * 
+ */
+PYBIND11_MODULE(kirana_app, m)
+{
+    py::class_<kirana::Application>(m, "Application")
+        .def(py::init())
+        .def("run", &kirana::Application::run);
 }
