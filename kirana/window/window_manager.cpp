@@ -1,16 +1,18 @@
+#include <vulkan/vulkan.hpp>
+#include <GLFW/glfw3.h>
+#include <algorithm>
+
 #include "window_manager.hpp"
 
-#include <GLFW/glfw3.h>
-
-#include <algorithm>
 using namespace std::placeholders;
 
-void kirana::window::WindowManager::onWindowClosed(const Window &window)
+void kirana::window::WindowManager::onWindowClosed(Window* window)
 {
-    m_windows.erase(
-        std::remove_if(m_windows.begin(), m_windows.end(),
-                       [&window](Window &w) { return window == w; }),
-        m_windows.end()); // Removes the window object from the list
+    m_windows.erase(std::remove_if(m_windows.begin(), m_windows.end(),
+                                   [&window](shared_ptr<Window> w) {
+                                       return *window == *w.get();
+                                   }),
+                    m_windows.end()); // Removes the window object from the list
 
     if (m_windows.size() == 0)
         m_onAllWindowsClosedCallback();
@@ -31,7 +33,7 @@ void kirana::window::WindowManager::init()
 void kirana::window::WindowManager::update() const
 {
     for (const auto &w : m_windows)
-        w.update();
+        w->update();
 
     glfwPollEvents();
 }
@@ -42,22 +44,20 @@ void kirana::window::WindowManager::clean()
     m_isInitialized = false;
 }
 
-kirana::window::Window &kirana::window::WindowManager::createWindow(string name,
-                                                                    int width,
-                                                                    int height)
+std::shared_ptr<kirana::window::Window> kirana::window::WindowManager::
+    createWindow(string name, int width, int height)
 {
-    m_windows.push_back(Window(name, width, height));
-    Window &window = m_windows.at(m_windows.size()-1);
-    window.setOnWindowCloseListener(
-        std::bind(&WindowManager::onWindowClosed, this, _1));
-    window.create();
+    shared_ptr<Window> window = std::make_shared<Window>(name, width, height);
+    window.get()->setOnWindowCloseListener(std::bind(&WindowManager::onWindowClosed, this, _1));
+    window->create();
+    m_windows.emplace_back(window);
     return window;
 }
 
-void kirana::window::WindowManager::closeWindow(const Window &window)
+void kirana::window::WindowManager::closeWindow(shared_ptr<Window> window)
 {
     if (m_isInitialized)
-        window.close();
+        window->close();
 }
 
 void kirana::window::WindowManager::closeAllWindows()
@@ -65,4 +65,12 @@ void kirana::window::WindowManager::closeAllWindows()
     if (m_isInitialized)
         for (const auto &w : m_windows)
             closeWindow(w);
+}
+
+std::vector<const char *> kirana::window::WindowManager::
+    getReqInstanceExtensionsForVulkan() const
+{
+    uint32_t count = 0;
+    const char **exts = glfwGetRequiredInstanceExtensions(&count);
+    return std::vector<const char *>(exts, exts + count);
 }

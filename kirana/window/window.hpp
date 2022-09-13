@@ -6,21 +6,34 @@
 
 #include <array>
 #include <functional>
+#include <iostream>
+#include <memory.h>
 #include <string>
 #include <vector>
+
+// Forward declaration of Vulkan API
+enum VkResult;
+struct VkInstance_T;
+typedef VkInstance_T *VkInstance;
+struct VkAllocationCallbacks;
+struct VkSurfaceKHR_T;
+typedef VkSurfaceKHR_T *VkSurfaceKHR;
 
 namespace kirana::window
 {
 using std::array;
 using std::function;
+using std::shared_ptr;
 using std::string;
 using std::vector;
 
 class Window
 {
+    friend class shared_ptr<Window>;
+
   private:
     GLFWwindow *m_glfwWindow = nullptr;
-    function<void(const Window &)> m_windowCloseCallback = nullptr;
+    function<void(Window*)> m_windowCloseCallback = nullptr;
     /**
      * @brief Called by GLFW when close flag of a window is set
      *
@@ -28,41 +41,17 @@ class Window
      */
     static void onWindowClosed(GLFWwindow *glfwWindow);
 
+    Window(const Window &window) = delete;
+    Window &operator=(const Window &window) = delete;
+
   public:
     string name = "Window";
     int width = 1280;
     int height = 720;
+
     Window(string name = "Window", int width = 1280, int height = 720)
-        : m_glfwWindow{nullptr}, m_windowCloseCallback{nullptr}, name{name},
-          width{width}, height{height} {};
+        : m_glfwWindow{nullptr}, name{name}, width{width}, height{height} {};
     ~Window() = default;
-
-    Window(const Window &window)
-    {
-        m_glfwWindow = window.m_glfwWindow;
-        if (m_glfwWindow)
-            glfwSetWindowUserPointer(
-                m_glfwWindow,
-                this); // Transfer the Window pointer to this Window object
-        m_windowCloseCallback = window.m_windowCloseCallback;
-        name = window.name;
-        width = window.width;
-        height = window.height;
-    }
-    Window &operator=(const Window &window)
-    {
-        m_glfwWindow = window.m_glfwWindow;
-        if (m_glfwWindow)
-            glfwSetWindowUserPointer(
-                m_glfwWindow,
-                this); // Transfer the Window pointer to this Window object
-        m_windowCloseCallback = window.m_windowCloseCallback;
-        name = window.name;
-        width = window.width;
-        height = window.height;
-
-        return *this;
-    }
 
     inline bool operator==(const Window &rhs) const
     {
@@ -75,12 +64,10 @@ class Window
      *
      * @param callback The function which will to be called.
      */
-    inline void setOnWindowCloseListener(
-        function<void(const Window &)> callback)
+    inline void setOnWindowCloseListener(function<void(Window *)> callback)
     {
         m_windowCloseCallback = callback;
     }
-
 
     /**
      * @brief Creates the actual window from given specification
@@ -105,6 +92,18 @@ class Window
      * @return array<int, 2> {width, height}
      */
     array<int, 2> getWindowResolution() const;
+
+    /**
+     * @brief Get the Vulkan Window Surface object for the current window.
+     *
+     * @param instance Vulkan instance.
+     * @param allocator Vulkan allocator object.
+     * @param surface Vulkan surface object to be initialized.
+     * @return VkResult Result of the operation.
+     */
+    VkResult getVulkanWindowSurface(VkInstance instance,
+                                    const VkAllocationCallbacks *allocator,
+                                    VkSurfaceKHR *surface) const;
 };
 } // namespace kirana::window
 

@@ -11,7 +11,9 @@ pybind11_add_module(kirana_app main.cpp app.cpp)
 target_include_directories(kirana_app PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
 target_include_directories(kirana_app PRIVATE ${pybind11_INCLUDE_DIR})
 target_link_libraries(kirana_app PRIVATE window viewport)
+target_compile_definitions(kirana_app PRIVATE COMPILE_BINDINGS)
 set_target_properties(kirana_app PROPERTIES
                                 INTERPROCEDURAL_OPTIMIZATION ON
                                 CXX_VISIBILITY_PRESET ON
                                 VISIBILITY_INLINES_HIDDEN ON)
+        

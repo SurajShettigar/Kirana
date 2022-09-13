@@ -1,16 +1,34 @@
+#include <iostream>
+
 #include "viewport.hpp"
 
-#include <iostream>
 using std::cerr;
 using std::cout;
 using std::endl;
 
-Viewport::Viewport()
+void kirana::viewport::Viewport::init(shared_ptr<Window> window)
 {
-    cout << "Hello Viewport!" << endl;
+    m_window = window;
+
+    m_renderer.init();
+
+    // VkSurfaceKHR surface;
+    // m_window->getVulkanWindowSurface(
+    //     static_cast<VkInstance>(m_renderer.instance), nullptr, &surface);
+    // m_renderer.surface = vk::SurfaceKHR(surface);
 }
 
-Viewport::~Viewport()
+void kirana::viewport::Viewport::update()
 {
-    cout << "Goodbye Viewport!" << endl;
+    m_renderer.update();
+}
+
+void kirana::viewport::Viewport::render()
+{
+    m_renderer.render();
+}
+
+void kirana::viewport::Viewport::clean()
+{
+    m_renderer.clean();
 }

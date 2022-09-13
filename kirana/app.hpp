@@ -2,11 +2,17 @@
 #define APP_HPP
 
 #include <window/window_manager.hpp>
+#include <viewport/viewport.hpp>
+
+#include <memory.h>
 
 namespace kirana
 {
 using window::Window;
 using window::WindowManager;
+using viewport::Viewport;
+
+using std::shared_ptr;
 
 class Application
 {
@@ -15,6 +21,8 @@ class Application
     bool m_isRunning = false;
 
     WindowManager m_windowManager;
+    shared_ptr<Window> m_viewportWindow;
+    Viewport m_viewport;
 
     Application(const Application &app) = delete;
     Application &operator=(const Application &app) = delete;

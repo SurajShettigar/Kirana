@@ -1,3 +1,5 @@
+#include <vulkan/vulkan.hpp>
+
 #include "window.hpp"
 
 void kirana::window::Window::onWindowClosed(GLFWwindow *glfwWindow)
@@ -6,7 +8,7 @@ void kirana::window::Window::onWindowClosed(GLFWwindow *glfwWindow)
         static_cast<Window *>(glfwGetWindowUserPointer(glfwWindow));
     if (currWin)
     {
-        currWin->m_windowCloseCallback(*currWin);
+        currWin->m_windowCloseCallback(currWin);
         glfwSetWindowUserPointer(glfwWindow, nullptr);
         glfwSetWindowCloseCallback(glfwWindow, nullptr);
         glfwDestroyWindow(glfwWindow);
@@ -41,4 +43,11 @@ std::array<int, 2> kirana::window::Window::getWindowResolution() const
     if (m_glfwWindow)
         glfwGetFramebufferSize(m_glfwWindow, &width, &height);
     return std::array<int, 2>{width, height};
+}
+
+VkResult kirana::window::Window::getVulkanWindowSurface(
+    VkInstance instance, const VkAllocationCallbacks *allocator,
+    VkSurfaceKHR *surface) const
+{
+    return glfwCreateWindowSurface(instance, m_glfwWindow, allocator, surface);
 }
