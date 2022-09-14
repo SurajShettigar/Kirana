@@ -8,9 +8,9 @@
 
 namespace kirana
 {
+using viewport::Viewport;
 using window::Window;
 using window::WindowManager;
-using viewport::Viewport;
 
 using std::shared_ptr;
 
@@ -19,10 +19,16 @@ class Application
 
   private:
     bool m_isRunning = false;
+    bool m_isViewportRunning = false;
 
+    uint32_t m_windowCloseListener;
+    uint32_t m_allWindowCloseListener;
     WindowManager m_windowManager;
+
     shared_ptr<Window> m_viewportWindow;
     Viewport m_viewport;
+
+    void onWindowClosed(Window *window);
 
     Application(const Application &app) = delete;
     Application &operator=(const Application &app) = delete;

@@ -29,11 +29,10 @@ using std::vector;
 
 class Window
 {
-    friend class shared_ptr<Window>;
-
+  friend class WindowManager;
   private:
     GLFWwindow *m_glfwWindow = nullptr;
-    function<void(Window*)> m_windowCloseCallback = nullptr;
+    function<void(Window *)> m_windowCloseCallback = nullptr;
     /**
      * @brief Called by GLFW when close flag of a window is set
      *
@@ -43,20 +42,6 @@ class Window
 
     Window(const Window &window) = delete;
     Window &operator=(const Window &window) = delete;
-
-  public:
-    string name = "Window";
-    int width = 1280;
-    int height = 720;
-
-    Window(string name = "Window", int width = 1280, int height = 720)
-        : m_glfwWindow{nullptr}, name{name}, width{width}, height{height} {};
-    ~Window() = default;
-
-    inline bool operator==(const Window &rhs) const
-    {
-        return m_glfwWindow == rhs.m_glfwWindow;
-    }
 
     /**
      * @brief Sets the callback function which is called when the window is
@@ -84,6 +69,20 @@ class Window
      *
      */
     void close() const;
+
+  public:
+    string name = "Window";
+    int width = 1280;
+    int height = 720;
+
+    Window(string name = "Window", int width = 1280, int height = 720)
+        : m_glfwWindow{nullptr}, name{name}, width{width}, height{height} {};
+    ~Window() = default;
+
+    inline bool operator==(const Window &rhs) const
+    {
+        return m_glfwWindow == rhs.m_glfwWindow;
+    }
 
     /**
      * @brief Get the pixel resolution of the framebuffer of the

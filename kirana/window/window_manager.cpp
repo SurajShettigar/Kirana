@@ -6,8 +6,10 @@
 
 using namespace std::placeholders;
 
-void kirana::window::WindowManager::onWindowClosed(Window* window)
+void kirana::window::WindowManager::onWindowClosed(Window *window)
 {
+    m_onWindowCloseEvent(window);
+
     m_windows.erase(std::remove_if(m_windows.begin(), m_windows.end(),
                                    [&window](shared_ptr<Window> w) {
                                        return *window == *w.get();
@@ -15,7 +17,7 @@ void kirana::window::WindowManager::onWindowClosed(Window* window)
                     m_windows.end()); // Removes the window object from the list
 
     if (m_windows.size() == 0)
-        m_onAllWindowsClosedCallback();
+        m_onAllWindowsClosedEvent();
 }
 
 void kirana::window::WindowManager::init()
@@ -48,7 +50,8 @@ std::shared_ptr<kirana::window::Window> kirana::window::WindowManager::
     createWindow(string name, int width, int height)
 {
     shared_ptr<Window> window = std::make_shared<Window>(name, width, height);
-    window.get()->setOnWindowCloseListener(std::bind(&WindowManager::onWindowClosed, this, _1));
+    window.get()->setOnWindowCloseListener(
+        std::bind(&WindowManager::onWindowClosed, this, _1));
     window->create();
     m_windows.emplace_back(window);
     return window;

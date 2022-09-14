@@ -3,9 +3,10 @@
 
 #include <functional>
 #include <memory.h>
-#include <optional>
 #include <string>
 #include <vector>
+
+#include <event.hpp>
 
 #include "window.hpp"
 
@@ -16,6 +17,8 @@ using std::shared_ptr;
 using std::string;
 using std::vector;
 
+using kirana::utils::Event;
+
 class WindowManager
 {
   private:
@@ -23,12 +26,13 @@ class WindowManager
 
     vector<shared_ptr<Window>> m_windows;
 
-    std::function<void(void)> m_onAllWindowsClosedCallback = nullptr;
+    Event<Window *> m_onWindowCloseEvent;
+    Event<> m_onAllWindowsClosedEvent;
 
     WindowManager(const WindowManager &window) = delete;
     WindowManager &operator=(const WindowManager &window) = delete;
 
-    void onWindowClosed(Window* window);
+    void onWindowClosed(Window *window);
 
   public:
     WindowManager() = default;
@@ -55,15 +59,50 @@ class WindowManager
     void clean();
 
     /**
-     * @brief Sets the callback function which is called when all windows are
+     * @brief Adds the callback function which is called when a window is
+     * closed.
+     *
+     * @param callback The function which will be called.
+     * @return uint32_t
+     */
+    inline uint32_t addOnWindowCloseListener(
+        const std::function<void(Window *)> &callback)
+    {
+        return m_onWindowCloseEvent.addListener(callback);
+    }
+    /**
+     * @brief Removes the callback function with given identifier from being
+     * called after the event.
+     * 
+     * @param callbackID 
+     */
+    inline void removeOnWindowCloseListener(uint32_t callbackID)
+    {
+        m_onWindowCloseEvent.removeListener(callbackID);
+    }
+
+    /**
+     * @brief Adds the callback function which is called when all windows are
      * closed. Useful to terminate the app.
      *
      * @param callback The function which will be called.
+     * @return uint32_t Unique identifier for the callback. Can be used later as
+     * an argument to remove the listener.
      */
-    inline void setOnAllWindowsClosedListener(
-        std::function<void(void)> callback)
+    inline uint32_t addOnAllWindowsClosedListener(
+        const std::function<void(void)> &callback)
     {
-        m_onAllWindowsClosedCallback = callback;
+        return m_onAllWindowsClosedEvent.addListener(callback);
+    }
+    /**
+     * @brief Removes the callback function with given identifier from being
+     * called after the event.
+     *
+     * @param callbackID Unique identifier of th callback function.
+     */
+    inline void removeOnAllWindowsClosedListener(uint32_t callbackID)
+    {
+        m_onAllWindowsClosedEvent.removeListener(callbackID);
     }
 
     /**
