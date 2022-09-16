@@ -1,14 +1,19 @@
 #ifndef VULKAN_RENDERER_HPP
 #define VULKAN_RENDERER_HPP
 
-#include "vulkan_utils.hpp"
+#include "instance.hpp"
+#include "device.hpp"
+
+#include <memory.h>
+
 namespace kirana::viewport::renderer
 {
+using std::unique_ptr;
 class VulkanRenderer
 {
   private:
-    vk::Instance m_instance;
-    vk::SurfaceKHR m_surface;
+    unique_ptr<Instance> m_instance;
+    unique_ptr<Device> m_device;
 
   public:
     VulkanRenderer() = default;
@@ -17,8 +22,8 @@ class VulkanRenderer
         clean();
     }
 
-    const vk::Instance &instance = m_instance;
-    vk::SurfaceKHR &surface = m_surface;
+    const vk::Instance &getInstance() const;
+    void setSurface(const vk::SurfaceKHR &surface);
 
     void init();
     void update();

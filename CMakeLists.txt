@@ -2,7 +2,8 @@ cmake_minimum_required(VERSION 3.0.0)
 
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED True)
-set(CMAKE_STATIC_LIBRARY_SUFFIX "")
+
+set(BUILD_SHARED_LIBS OFF CACHE BOOL "Build using shared libraries" FORCE)
 
 project(Kirana VERSION 0.1.0)
 
@@ -13,8 +14,15 @@ if(${Vulkan_FOUND})
 endif()
 
 # find_package(Python 3.9 COMPONENTS Interpreter Development REQUIRED)
-if(${Python_FOUND})
-    message("Found Python: " ${Python_VERSION})
+# if(${Python_FOUND})
+#     message("Found Python: " ${Python_VERSION})
+# endif()
+
+set(Boost_USE_STATIC_LIBS ON)
+set(Boost_USE_STATIC_RUNTIME OFF)
+find_package(Boost 1.76.0 EXACT COMPONENTS log REQUIRED)
+if(${Boost_FOUND})
+    message("Found Boost: " ${Boost_VERSION})
 endif()
 
 add_subdirectory(external)
