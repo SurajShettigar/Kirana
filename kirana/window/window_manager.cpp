@@ -69,11 +69,3 @@ void kirana::window::WindowManager::closeAllWindows()
         for (const auto &w : m_windows)
             closeWindow(w);
 }
-
-std::vector<const char *> kirana::window::WindowManager::
-    getReqInstanceExtensionsForVulkan() const
-{
-    uint32_t count = 0;
-    const char **exts = glfwGetRequiredInstanceExtensions(&count);
-    return std::vector<const char *>(exts, exts + count);
-}

@@ -3,7 +3,7 @@
 
 #include "vulkan_utils.hpp"
 
-namespace kirana::viewport::renderer
+namespace kirana::viewport::vulkan
 {
 class Device
 {
@@ -18,7 +18,7 @@ class Device
     Device() = default;
     ~Device() = default;
 };
-} // namespace kirana::viewport::renderer
+} // namespace kirana::viewport::vulkan
 
 
 #endif

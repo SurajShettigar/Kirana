@@ -51,3 +51,11 @@ VkResult kirana::window::Window::getVulkanWindowSurface(
 {
     return glfwCreateWindowSurface(instance, m_glfwWindow, allocator, surface);
 }
+
+std::vector<const char *> kirana::window::Window::
+    getReqInstanceExtensionsForVulkan() const
+{
+    uint32_t count = 0;
+    const char **exts = glfwGetRequiredInstanceExtensions(&count);
+    return std::vector<const char *>(exts, exts + count);
+}

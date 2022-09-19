@@ -128,8 +128,6 @@ class WindowManager
      *
      */
     void closeAllWindows();
-
-    std::vector<const char *> getReqInstanceExtensionsForVulkan() const;
 };
 } // namespace kirana::window
 

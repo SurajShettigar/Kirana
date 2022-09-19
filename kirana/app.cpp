@@ -1,9 +1,11 @@
 #include <functional>
 
 #include "app.hpp"
-#include "constants.h"
+#include <constants.h>
 
 using namespace std::placeholders;
+
+namespace constants = kirana::utils::constants;
 
 
 #ifdef COMPILE_BINDINGS
@@ -15,7 +17,8 @@ void kirana::Application::onWindowClosed(Window *window)
 {
     if (window == m_viewportWindow.get())
     {
-        m_logger.log(kirana::LOG_CHANNEL_APPLICATION, utils::LogSeverity::debug,
+        m_logger.log(constants::LOG_CHANNEL_APPLICATION,
+                     utils::LogSeverity::debug,
                      "Viewport Window Closed. Cleaning viewport...");
         m_viewport.clean();
         m_isViewportRunning = false;
@@ -24,14 +27,14 @@ void kirana::Application::onWindowClosed(Window *window)
 
 kirana::Application::Application() : m_logger{kirana::utils::Logger::get()}
 {
-    m_logger.setMinSeverity(utils::LogSeverity::debug);
-    m_logger.log(kirana::LOG_CHANNEL_APPLICATION, utils::LogSeverity::trace,
+    m_logger.setMinSeverity(utils::LogSeverity::trace);
+    m_logger.log(constants::LOG_CHANNEL_APPLICATION, utils::LogSeverity::trace,
                  "Application Created");
 }
 
 kirana::Application::~Application()
 {
-    m_logger.log(kirana::LOG_CHANNEL_APPLICATION, utils::LogSeverity::trace,
+    m_logger.log(constants::LOG_CHANNEL_APPLICATION, utils::LogSeverity::trace,
                  "Application Destroyed");
 }
 
@@ -49,7 +52,7 @@ void kirana::Application::init()
     m_isRunning = true;
     m_isViewportRunning = true;
 
-    m_logger.log(kirana::LOG_CHANNEL_APPLICATION, utils::LogSeverity::debug,
+    m_logger.log(constants::LOG_CHANNEL_APPLICATION, utils::LogSeverity::debug,
                  "Application Initialized");
 }
 
@@ -68,15 +71,19 @@ void kirana::Application::render()
 
 void kirana::Application::clean()
 {
-    m_viewport.clean();
+    if (m_isViewportRunning)
+    {
+        m_viewport.clean();
+        m_isViewportRunning = false;
+    }
 
     m_windowManager.removeOnWindowCloseListener(m_windowCloseListener);
     m_windowManager.removeOnAllWindowsClosedListener(m_allWindowCloseListener);
     m_windowManager.clean();
-    m_isViewportRunning = false;
+
     m_isRunning = false;
 
-    m_logger.log(kirana::LOG_CHANNEL_APPLICATION, utils::LogSeverity::debug,
+    m_logger.log(constants::LOG_CHANNEL_APPLICATION, utils::LogSeverity::debug,
                  "Application Cleaned");
 }
 

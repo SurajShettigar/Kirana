@@ -29,7 +29,8 @@ using std::vector;
 
 class Window
 {
-  friend class WindowManager;
+    friend class WindowManager;
+
   private:
     GLFWwindow *m_glfwWindow = nullptr;
     function<void(Window *)> m_windowCloseCallback = nullptr;
@@ -103,6 +104,15 @@ class Window
     VkResult getVulkanWindowSurface(VkInstance instance,
                                     const VkAllocationCallbacks *allocator,
                                     VkSurfaceKHR *surface) const;
+
+    /** Gets a vector of required extensions when creating an instance of
+     * Vulkan.
+     *
+     * @return std::vector<const char *> A vector containing the names of the
+     * required extensions.
+     */
+    [[nodiscard]] std::vector<const char *> getReqInstanceExtensionsForVulkan()
+        const;
 };
 } // namespace kirana::window
 

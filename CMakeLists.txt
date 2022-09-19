@@ -9,9 +9,9 @@ project(Kirana VERSION 0.1.0)
 
 # Add external dependencies
 find_package(Vulkan REQUIRED)
-if(${Vulkan_FOUND})
+if (${Vulkan_FOUND})
     message("Found Vulkan: " ${Vulkan_VERSION})
-endif()
+endif ()
 
 # find_package(Python 3.9 COMPONENTS Interpreter Development REQUIRED)
 # if(${Python_FOUND})
@@ -21,12 +21,14 @@ endif()
 set(Boost_USE_STATIC_LIBS ON)
 set(Boost_USE_STATIC_RUNTIME OFF)
 find_package(Boost 1.76.0 EXACT COMPONENTS log REQUIRED)
-if(${Boost_FOUND})
+if (${Boost_FOUND})
     message("Found Boost: " ${Boost_VERSION})
-endif()
+endif ()
 
 add_subdirectory(external)
 
+
+add_compile_definitions($<$<CONFIG:Debug>:DEBUG>)
 # Add project files
 add_subdirectory(kirana)
 
