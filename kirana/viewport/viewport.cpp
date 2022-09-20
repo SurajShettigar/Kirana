@@ -9,8 +9,8 @@ using std::endl;
 void kirana::viewport::Viewport::init(const shared_ptr<Window> &window)
 {
     m_window = window;
-    m_renderer.init(m_window->getReqInstanceExtensionsForVulkan());
-    m_renderer.initSurface(m_window);
+    m_renderer.init(m_window->getReqInstanceExtensionsForVulkan(),
+                    m_window.get());
 }
 
 void kirana::viewport::Viewport::update()

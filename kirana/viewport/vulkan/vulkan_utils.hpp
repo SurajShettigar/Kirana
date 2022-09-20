@@ -2,8 +2,11 @@
 #define VULKAN_UTILS_HPP
 
 #include <iostream>
+#include <array>
 #include <vector>
 #include <memory>
+#include <limits>
+#include <set>
 
 #include <vulkan/vulkan.hpp>
 
@@ -21,6 +24,46 @@ static const std::vector<const char *> DEVICE_EXTENSIONS{
     VK_KHR_SWAPCHAIN_EXTENSION_NAME};
 static const std::vector<const char *> VALIDATION_LAYERS{
     "VK_LAYER_KHRONOS_validation"};
+
+struct QueueFamilyIndices
+{
+    uint32_t graphics = std::numeric_limits<uint32_t>::max();
+    uint32_t presentation = std::numeric_limits<uint32_t>::max();
+
+    inline bool isGraphicsSupported() const
+    {
+        return graphics != std::numeric_limits<uint32_t>::max();
+    }
+
+    inline bool isPresentationSupported() const
+    {
+        return presentation != std::numeric_limits<uint32_t>::max();
+    }
+
+    inline bool isGraphicsAndPresentSame() const
+    {
+        return graphics == presentation;
+    }
+
+    // Set is used so that each value is unique. Graphics and presentation
+    // queue family can refer to the same thing, so this step is necessary
+    inline std::set<uint32_t> getIndices() const
+    {
+        return std::set<uint32_t>({ graphics, presentation });
+    }
+};
+
+struct SwapchainSupportInfo
+{
+    vk::SurfaceCapabilitiesKHR capabilities;
+    std::vector<vk::SurfaceFormatKHR> surfaceFormats;
+    std::vector<vk::PresentModeKHR> presentModes;
+
+    inline bool isSupported() const
+    {
+        return !surfaceFormats.empty() && !presentModes.empty();
+    }
+};
 
 /**
  * @brief Use it in catch(...) blocks of try-catch methods surrounding Vulkan
@@ -67,28 +110,23 @@ static VKAPI_ATTR VkBool32 VKAPI_CALL debugCallback(
     switch (messageSeverity)
     {
     case VK_DEBUG_UTILS_MESSAGE_SEVERITY_VERBOSE_BIT_EXT:
-        std::cout << pCallbackData->pMessage << std::endl;
         Logger::get().log(constants::LOG_CHANNEL_VULKAN, LogSeverity::trace,
                           pCallbackData->pMessage);
         break;
     case VK_DEBUG_UTILS_MESSAGE_SEVERITY_INFO_BIT_EXT:
-        std::cout << pCallbackData->pMessage << std::endl;
         Logger::get().log(constants::LOG_CHANNEL_VULKAN, LogSeverity::info,
                           pCallbackData->pMessage);
         break;
     case VK_DEBUG_UTILS_MESSAGE_SEVERITY_WARNING_BIT_EXT:
-        std::cout << pCallbackData->pMessage << std::endl;
         Logger::get().log(constants::LOG_CHANNEL_VULKAN, LogSeverity::warning,
                           pCallbackData->pMessage);
         break;
     case VK_DEBUG_UTILS_MESSAGE_SEVERITY_ERROR_BIT_EXT:
-        std::cout << pCallbackData->pMessage << std::endl;
         Logger::get().log(constants::LOG_CHANNEL_VULKAN, LogSeverity::error,
                           pCallbackData->pMessage);
         break;
     default:
-        std::cout << pCallbackData->pMessage << std::endl;
-        Logger::get().log(constants::LOG_CHANNEL_VULKAN, LogSeverity::debug,
+        Logger::get().log(constants::LOG_CHANNEL_VULKAN, LogSeverity::info,
                           pCallbackData->pMessage);
         break;
     }

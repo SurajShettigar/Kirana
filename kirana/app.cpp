@@ -19,7 +19,7 @@ void kirana::Application::onWindowClosed(Window *window)
     {
         m_logger.log(constants::LOG_CHANNEL_APPLICATION,
                      utils::LogSeverity::debug,
-                     "Viewport Window Closed. Cleaning viewport...");
+                     "Viewport Window closed. Cleaning viewport...");
         m_viewport.clean();
         m_isViewportRunning = false;
     }
@@ -27,15 +27,15 @@ void kirana::Application::onWindowClosed(Window *window)
 
 kirana::Application::Application() : m_logger{kirana::utils::Logger::get()}
 {
-    m_logger.setMinSeverity(utils::LogSeverity::trace);
+    m_logger.setMinSeverity(utils::LogSeverity::debug);
     m_logger.log(constants::LOG_CHANNEL_APPLICATION, utils::LogSeverity::trace,
-                 "Application Created");
+                 "Application created");
 }
 
 kirana::Application::~Application()
 {
     m_logger.log(constants::LOG_CHANNEL_APPLICATION, utils::LogSeverity::trace,
-                 "Application Destroyed");
+                 "Application destroyed");
 }
 
 void kirana::Application::init()
@@ -53,7 +53,7 @@ void kirana::Application::init()
     m_isViewportRunning = true;
 
     m_logger.log(constants::LOG_CHANNEL_APPLICATION, utils::LogSeverity::debug,
-                 "Application Initialized");
+                 "Application initialized");
 }
 
 void kirana::Application::update()
@@ -84,7 +84,7 @@ void kirana::Application::clean()
     m_isRunning = false;
 
     m_logger.log(constants::LOG_CHANNEL_APPLICATION, utils::LogSeverity::debug,
-                 "Application Cleaned");
+                 "Application cleaned");
 }
 
 void kirana::Application::run()

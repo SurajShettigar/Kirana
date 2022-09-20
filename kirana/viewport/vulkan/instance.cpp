@@ -29,6 +29,7 @@ kirana::viewport::vulkan::Instance::Instance(
     {
         Logger::get().log(constants::LOG_CHANNEL_VULKAN, LogSeverity::error,
                           "Vulkan does not have the required extensions");
+        m_isInitialized = false;
         return;
     }
 
@@ -39,6 +40,7 @@ kirana::viewport::vulkan::Instance::Instance(
             Logger::get().log(
                 constants::LOG_CHANNEL_VULKAN, LogSeverity::error,
                 "Vulkan does not have the required validation layers");
+            m_isInitialized = false;
             return;
         }
     }
@@ -55,6 +57,7 @@ kirana::viewport::vulkan::Instance::Instance(
     try
     {
         m_current = vk::createInstance(createInfo);
+        m_isInitialized = true;
         Logger::get().log(constants::LOG_CHANNEL_VULKAN, LogSeverity::debug,
                           "Vulkan Instance created");
 
@@ -71,6 +74,7 @@ kirana::viewport::vulkan::Instance::Instance(
                     constants::LOG_CHANNEL_VULKAN, LogSeverity::error,
                     "Failed to create Debug Messenger. Unable to Find "
                     "\"vkCreateDebugUtilsMessengerEXT\" function");
+                m_isInitialized = false;
                 return;
             }
             else
@@ -91,6 +95,7 @@ kirana::viewport::vulkan::Instance::Instance(
 
                 m_debugMessenger = m_current.createDebugUtilsMessengerEXT(
                     debugMessengerCreateInfo, nullptr);
+                m_isInitialized = true;
                 Logger::get().log(constants::LOG_CHANNEL_VULKAN,
                                   LogSeverity::debug,
                                   "Vulkan Debugger initialized");
@@ -100,6 +105,7 @@ kirana::viewport::vulkan::Instance::Instance(
     catch (...)
     {
         handleVulkanException();
+        m_isInitialized = false;
         return;
     }
 }

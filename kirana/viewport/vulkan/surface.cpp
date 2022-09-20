@@ -2,14 +2,16 @@
 
 #include "instance.hpp"
 
-kirana::viewport::vulkan::Surface::Surface(const Instance *const instance,
-                                           vk::SurfaceKHR &surface)
-    : m_instance{instance}
+kirana::viewport::vulkan::Surface::Surface(
+    const Instance *const instance, vk::SurfaceKHR &&surface,
+    const std::array<int, 2> windowResolution)
+    : m_isInitialized{false}, m_instance{instance}, m_windowResolution{
+                                                        windowResolution}
 {
-    Logger::get().log(constants::LOG_CHANNEL_VULKAN, LogSeverity::debug,
-                      "Creating Surface...");
-
     m_current = surface;
+    Logger::get().log(constants::LOG_CHANNEL_VULKAN, LogSeverity::debug,
+                      "Surface created");
+    m_isInitialized = true;
 }
 
 kirana::viewport::vulkan::Surface::~Surface()
@@ -18,6 +20,6 @@ kirana::viewport::vulkan::Surface::~Surface()
     {
         m_instance->current.destroySurfaceKHR(m_current);
         Logger::get().log(constants::LOG_CHANNEL_VULKAN, LogSeverity::debug,
-                          "Surface Destroyed");
+                          "Surface destroyed");
     }
 }

@@ -8,10 +8,12 @@ namespace kirana::viewport::vulkan
 class Instance
 {
   private:
+    bool m_isInitialized = false;
     vk::Instance m_current;
     vk::DebugUtilsMessengerEXT m_debugMessenger;
 
   public:
+    const bool &isInitialized = m_isInitialized;
     const vk::Instance &current = m_current;
     const vk::DebugUtilsMessengerEXT &debugMessenger = m_debugMessenger;
 
