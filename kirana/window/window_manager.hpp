@@ -1,11 +1,9 @@
 #ifndef WINDOW_MANAGER_HPP
 #define WINDOW_MANAGER_HPP
 
-#include <functional>
-#include <memory.h>
+#include <memory>
 #include <string>
 #include <vector>
-
 #include <event.hpp>
 
 #include "window.hpp"
@@ -29,33 +27,18 @@ class WindowManager
     Event<Window *> m_onWindowCloseEvent;
     Event<> m_onAllWindowsClosedEvent;
 
+    void onWindowClosed(Window *window);
+  public:
+    WindowManager() = default;
+    ~WindowManager() = default;
     WindowManager(const WindowManager &window) = delete;
     WindowManager &operator=(const WindowManager &window) = delete;
 
-    void onWindowClosed(Window *window);
-
-  public:
-    WindowManager() = default;
-    ~WindowManager()
-    {
-        clean();
-    }
-
-    /**
-     * @brief Initializes the manager and GLFW API
-     *
-     */
+    /// Initializes the manager and GLFW API
     void init();
-    /**
-     * @brief Updates the windows and checks for input events. Called every
-     * frame.
-     *
-     */
+    /// Updates the windows and checks for input events. Called every frame.
     void update() const;
-    /**
-     * @brief Cleans up the manager and terminates GLFW
-     *
-     */
+    /// Cleans up the manager and terminates GLFW.
     void clean();
 
     /**
@@ -73,8 +56,8 @@ class WindowManager
     /**
      * @brief Removes the callback function with given identifier from being
      * called after the event.
-     * 
-     * @param callbackID 
+     *
+     * @param callbackID
      */
     inline void removeOnWindowCloseListener(uint32_t callbackID)
     {
@@ -114,15 +97,14 @@ class WindowManager
      * @return std::shared_ptr<kirana::window::Window>  Shared pointer to the
      * window object.
      */
-    std::shared_ptr<kirana::window::Window> createWindow(string name = "Window",
-                                                         int width = 1280,
-                                                         int height = 720);
+    std::shared_ptr<kirana::window::Window> createWindow(
+        const string &name = "Window", int width = 1280, int height = 720);
     /**
      * @brief Close the given window.
      *
      * @param window Window to be closed.
      */
-    void closeWindow(shared_ptr<Window> window);
+    void closeWindow(const shared_ptr<Window> &window) const;
     /**
      * @brief Closes all the windows.
      *

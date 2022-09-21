@@ -29,6 +29,11 @@ template <typename... Args> class Event
         m_callbacks.erase(callbackID);
     }
 
+    void removeAllListeners()
+    {
+        m_callbacks.clear();
+    }
+
     void operator()(Args... args) const
     {
         for (const auto &[id, callback] : m_callbacks)

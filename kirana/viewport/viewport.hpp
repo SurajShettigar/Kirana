@@ -1,31 +1,39 @@
 #ifndef VIEWPORT_HPP
 #define VIEWPORT_HPP
 
-#include <vulkan/vulkan_renderer.hpp>
-#include <window.hpp>
+#include <memory>
 
-#include <memory.h>
+namespace kirana::window
+{
+class Window;
+} // namespace kirana::window
 
 namespace kirana::viewport
 {
-using vulkan::VulkanRenderer;
-using window::Window;
-
+namespace vulkan
+{
+class VulkanRenderer;
+}
 using std::shared_ptr;
+using window::Window;
+using vulkan::VulkanRenderer;
 
 class Viewport
 {
   private:
-    shared_ptr<Window> m_window;
+    shared_ptr<window::Window> m_window;
     VulkanRenderer &m_renderer;
-
   public:
-    Viewport() : m_renderer{VulkanRenderer::get()} {};
+    Viewport();
     ~Viewport() = default;
 
+    /// Initializes the viewport by binding the window to the renderer (Vulkan).
     void init(const shared_ptr<Window> &window);
+    /// Calls the update function of the renderer.
     void update();
+    /// Calls the render function of the renderer.
     void render();
+    /// Calls the cleanup function of the renderer.
     void clean();
 };
 

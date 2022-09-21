@@ -22,11 +22,21 @@ class Device
     const Instance *const m_instance;
     const Surface *const m_surface;
 
-    QueueFamilyIndices getQueueFamilyIndices(const vk::PhysicalDevice &gpu,
-                                             const vk::SurfaceKHR &surface);
-    SwapchainSupportInfo getSwapchainSupportInfo(const vk::PhysicalDevice &gpu,
-                                                 const vk::SurfaceKHR &surface);
+    static QueueFamilyIndices getQueueFamilyIndices(
+        const vk::PhysicalDevice &gpu, const vk::SurfaceKHR &surface);
+    static SwapchainSupportInfo getSwapchainSupportInfo(
+        const vk::PhysicalDevice &gpu, const vk::SurfaceKHR &surface);
+    /**
+     * Selects a GPU based on its capabilities. GPU with the most features is
+     * selected.
+     * @return true if GPU with at least graphics and presentation capabilities
+     * is found.
+     */
     bool selectIdealGPU();
+    /**
+     * Creates a logical device based on the selected GPU.
+     * @return true if logical device is successfully created.
+     */
     bool createLogicalDevice();
 
   public:

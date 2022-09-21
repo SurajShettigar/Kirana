@@ -3,6 +3,8 @@
 #include "instance.hpp"
 #include "surface.hpp"
 
+#include <map>
+
 kirana::viewport::vulkan::QueueFamilyIndices kirana::viewport::vulkan::Device::
     getQueueFamilyIndices(const vk::PhysicalDevice &gpu,
                           const vk::SurfaceKHR &surface)

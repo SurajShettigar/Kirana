@@ -1,10 +1,7 @@
 #ifndef VULKAN_UTILS_HPP
 #define VULKAN_UTILS_HPP
 
-#include <iostream>
-#include <array>
 #include <vector>
-#include <memory>
 #include <limits>
 #include <set>
 
@@ -20,11 +17,16 @@ namespace constants = kirana::utils::constants;
 using kirana::utils::Logger;
 using kirana::utils::LogSeverity;
 
+/// Vector of necessary device extensions when selecting device.
 static const std::vector<const char *> DEVICE_EXTENSIONS{
     VK_KHR_SWAPCHAIN_EXTENSION_NAME};
+/// Vector of necessary validation layers for debugging.
 static const std::vector<const char *> VALIDATION_LAYERS{
     "VK_LAYER_KHRONOS_validation"};
 
+/**
+ * Index of queue families of the selected device.
+ */
 struct QueueFamilyIndices
 {
     uint32_t graphics = std::numeric_limits<uint32_t>::max();
@@ -45,14 +47,19 @@ struct QueueFamilyIndices
         return graphics == presentation;
     }
 
-    // Set is used so that each value is unique. Graphics and presentation
-    // queue family can refer to the same thing, so this step is necessary
     inline std::set<uint32_t> getIndices() const
     {
-        return std::set<uint32_t>({ graphics, presentation });
+        return std::set<uint32_t>(
+            {graphics,
+             presentation}); // Set is used so that each value is unique.
+                             // Graphics and presentation queue family can be
+                             // same, so this step is necessary.
     }
 };
 
+/**
+ * Swapchain properties and capabilities of the selected device.
+ */
 struct SwapchainSupportInfo
 {
     vk::SurfaceCapabilitiesKHR capabilities;
@@ -140,7 +147,7 @@ static VKAPI_ATTR VkBool32 VKAPI_CALL debugCallback(
  * @param availExtensions vector of Vulkan Extension Properties.
  * @param reqExtensions vector of required extensions.
  * @return true if all required extensions are present.
- * @return false if some or none of the requrired extensions are present.
+ * @return false if some or none of the required extensions are present.
  */
 static bool hasRequiredExtensions(
     const std::vector<vk::ExtensionProperties> &availExtensions,

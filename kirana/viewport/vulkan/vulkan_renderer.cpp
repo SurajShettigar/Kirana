@@ -6,6 +6,7 @@
 #include "surface.hpp"
 #include "device.hpp"
 #include "swapchain.hpp"
+#include "renderpass.hpp"
 
 void kirana::viewport::vulkan::VulkanRenderer::init(
     const std::vector<const char *> &reqInstanceExtensions,
@@ -29,6 +30,11 @@ void kirana::viewport::vulkan::VulkanRenderer::init(
             if (m_device->isInitialized)
             {
                 m_swapchain = new Swapchain(m_device, m_surface);
+
+                if (m_swapchain->isInitialized)
+                {
+                    m_renderpass = new RenderPass(m_device, m_swapchain);
+                }
             }
         }
     }
@@ -37,11 +43,18 @@ void kirana::viewport::vulkan::VulkanRenderer::init(
 void kirana::viewport::vulkan::VulkanRenderer::update()
 {
 }
+
 void kirana::viewport::vulkan::VulkanRenderer::render()
 {
 }
+
 void kirana::viewport::vulkan::VulkanRenderer::clean()
 {
+    if (m_renderpass)
+    {
+        delete m_renderpass;
+        m_renderpass = nullptr;
+    }
     if (m_swapchain)
     {
         delete m_swapchain;

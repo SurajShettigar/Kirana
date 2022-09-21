@@ -5,11 +5,11 @@
 #include <GLFW/glfw3.h>
 
 #include <array>
-#include <functional>
-#include <iostream>
-#include <memory.h>
+#include <memory>
 #include <string>
+#include <utility>
 #include <vector>
+#include <event.hpp>
 
 // Forward declaration of Vulkan API
 enum VkResult;
@@ -33,7 +33,7 @@ class Window
 
   private:
     GLFWwindow *m_glfwWindow = nullptr;
-    function<void(Window *)> m_windowCloseCallback = nullptr;
+    utils::Event<Window *> m_onWindowCloseEvent;
     /**
      * @brief Called by GLFW when close flag of a window is set
      *
@@ -41,34 +41,39 @@ class Window
      */
     static void onWindowClosed(GLFWwindow *glfwWindow);
 
-    Window(const Window &window) = delete;
-    Window &operator=(const Window &window) = delete;
-
     /**
-     * @brief Sets the callback function which is called when the window is
+     * @brief Adds the callback function which is called when a window is
      * closed.
      *
-     * @param callback The function which will to be called.
+     * @param callback The function which will be called.
+     * @return uint32_t
      */
-    inline void setOnWindowCloseListener(function<void(Window *)> callback)
+    inline uint32_t addOnWindowCloseListener(
+        const std::function<void(Window *)> &callback)
     {
-        m_windowCloseCallback = callback;
+        return m_onWindowCloseEvent.addListener(callback);
+    }
+    /**
+     * @brief Removes the callback function with given identifier from being
+     * called after the event.
+     *
+     * @param callbackID
+     */
+    inline void removeOnWindowCloseListener(uint32_t callbackID)
+    {
+        m_onWindowCloseEvent.removeListener(callbackID);
+    }
+    /// Removes all the callback functions for the window close event.
+    inline void removeAllOnWindowCloseListener()
+    {
+        m_onWindowCloseEvent.removeAllListeners();
     }
 
-    /**
-     * @brief Creates the actual window from given specification
-     *
-     */
+    /// Creates the actual window from given specification.
     void create();
-    /**
-     * @brief Updates the window and checks for events. Called every frame.
-     *
-     */
+    /// Updates the window and checks for events. Called every frame.
     void update() const;
-    /**
-     * @brief Closes the window.
-     *
-     */
+    /// Closes the window.
     void close() const;
 
   public:
@@ -76,9 +81,12 @@ class Window
     int width = 1280;
     int height = 720;
 
-    Window(string name = "Window", int width = 1280, int height = 720)
-        : m_glfwWindow{nullptr}, name{name}, width{width}, height{height} {};
+    explicit Window(string name = "Window", int width = 1280, int height = 720)
+        : m_glfwWindow{nullptr}, name{std::move(name)}, width{width},
+          height{height} {};
     ~Window() = default;
+    Window(const Window &window) = delete;
+    Window &operator=(const Window &window) = delete;
 
     inline bool operator==(const Window &rhs) const
     {
@@ -91,7 +99,7 @@ class Window
      *
      * @return array<int, 2> {width, height}
      */
-    array<int, 2> getWindowResolution() const;
+    [[nodiscard]] array<int, 2> getWindowResolution() const;
 
     /**
      * @brief Get the Vulkan Window Surface object for the current window.
@@ -111,8 +119,8 @@ class Window
      * @return std::vector<const char *> A vector containing the names of the
      * required extensions.
      */
-    [[nodiscard]] std::vector<const char *> getReqInstanceExtensionsForVulkan()
-        const;
+    [[nodiscard]] static std::vector<const char *>
+    getReqInstanceExtensionsForVulkan();
 };
 } // namespace kirana::window
 

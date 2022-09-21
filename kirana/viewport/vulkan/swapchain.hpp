@@ -28,8 +28,11 @@ class Swapchain
     const Device *const m_device;
     const Surface *const m_surface;
 
+    /// Initializes swapchain data like surface format, present mode etc.
     void initializeSwapchainData();
+    /// Creates swapchain object.
     bool createSwapchain();
+
   public:
     Swapchain(const Device *device, const Surface *surface);
     ~Swapchain();
@@ -37,6 +40,10 @@ class Swapchain
     Swapchain &operator=(const Swapchain &swapchain) = delete;
 
     const bool &isInitialized = m_isInitialized;
+    const vk::SwapchainKHR &current = m_current;
+    const vk::Format &imageFormat = m_surfaceFormat.format;
+    const vk::Extent2D &imageExtent = m_extent;
+    const std::vector<vk::ImageView> &imageViews = m_imageViews;
 };
 } // namespace kirana::viewport::vulkan
 

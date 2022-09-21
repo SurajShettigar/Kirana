@@ -8,10 +8,11 @@ void kirana::window::Window::onWindowClosed(GLFWwindow *glfwWindow)
         static_cast<Window *>(glfwGetWindowUserPointer(glfwWindow));
     if (currWin)
     {
-        currWin->m_windowCloseCallback(currWin);
+        currWin->m_onWindowCloseEvent(currWin);
         glfwSetWindowUserPointer(glfwWindow, nullptr);
         glfwSetWindowCloseCallback(glfwWindow, nullptr);
         glfwDestroyWindow(glfwWindow);
+        currWin->removeAllOnWindowCloseListener();
     }
 }
 
@@ -53,7 +54,7 @@ VkResult kirana::window::Window::getVulkanWindowSurface(
 }
 
 std::vector<const char *> kirana::window::Window::
-    getReqInstanceExtensionsForVulkan() const
+    getReqInstanceExtensionsForVulkan()
 {
     uint32_t count = 0;
     const char **exts = glfwGetRequiredInstanceExtensions(&count);

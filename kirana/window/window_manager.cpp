@@ -11,12 +11,12 @@ void kirana::window::WindowManager::onWindowClosed(Window *window)
     m_onWindowCloseEvent(window);
 
     m_windows.erase(std::remove_if(m_windows.begin(), m_windows.end(),
-                                   [&window](shared_ptr<Window> w) {
-                                       return *window == *w.get();
+                                   [&window](const shared_ptr<Window> &w) {
+                                       return *window == *w;
                                    }),
                     m_windows.end()); // Removes the window object from the list
 
-    if (m_windows.size() == 0)
+    if (m_windows.empty())
         m_onAllWindowsClosedEvent();
 }
 
@@ -47,17 +47,18 @@ void kirana::window::WindowManager::clean()
 }
 
 std::shared_ptr<kirana::window::Window> kirana::window::WindowManager::
-    createWindow(string name, int width, int height)
+    createWindow(const string &name, int width, int height)
 {
     shared_ptr<Window> window = std::make_shared<Window>(name, width, height);
-    window.get()->setOnWindowCloseListener(
+    window->addOnWindowCloseListener(
         std::bind(&WindowManager::onWindowClosed, this, _1));
     window->create();
     m_windows.emplace_back(window);
     return window;
 }
 
-void kirana::window::WindowManager::closeWindow(shared_ptr<Window> window)
+void kirana::window::WindowManager::closeWindow(
+    const shared_ptr<Window> &window) const
 {
     if (m_isInitialized)
         window->close();

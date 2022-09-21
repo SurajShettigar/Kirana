@@ -14,6 +14,7 @@ class Instance;
 class Surface;
 class Device;
 class Swapchain;
+class RenderPass;
 
 class VulkanRenderer
 {
@@ -22,6 +23,7 @@ class VulkanRenderer
     Surface *m_surface;
     Device *m_device;
     Swapchain *m_swapchain;
+    RenderPass *m_renderpass;
 
     VulkanRenderer() = default;
     ~VulkanRenderer() = default;
@@ -35,10 +37,14 @@ class VulkanRenderer
         return renderer;
     }
 
+    /// Initializes vulkan.
     void init(const std::vector<const char *> &reqInstanceExtensions,
               const window::Window *window);
+    /// Updates the transforms.
     void update();
+    /// Executes vulkan draw calls.
     void render();
+    /// Deletes vulkan objects.
     void clean();
 };
 } // namespace kirana::viewport::vulkan
