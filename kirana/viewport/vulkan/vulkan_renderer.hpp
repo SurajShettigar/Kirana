@@ -15,6 +15,7 @@ class Surface;
 class Device;
 class Swapchain;
 class RenderPass;
+class Drawer;
 
 class VulkanRenderer
 {
@@ -24,6 +25,7 @@ class VulkanRenderer
     Device *m_device;
     Swapchain *m_swapchain;
     RenderPass *m_renderpass;
+    Drawer *m_drawer;
 
     VulkanRenderer() = default;
     ~VulkanRenderer() = default;

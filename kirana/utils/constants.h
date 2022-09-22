@@ -19,6 +19,7 @@ static const bool VULKAN_USE_VALIDATION_LAYERS = true;
 #else
 static const bool VULKAN_USE_VALIDATION_LAYERS = false;
 #endif
+static const uint64_t VULKAN_FRAME_SYNC_TIMEOUT = 1000000000; // 1 second
 
 } // namespace kirana::utils::constants
 

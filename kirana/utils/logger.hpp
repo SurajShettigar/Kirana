@@ -9,7 +9,7 @@ namespace kirana::utils
 {
 typedef boost::log::trivial::severity_level LogSeverity;
 typedef boost::log::attributes::mutable_constant<const char *> LogAttribute;
-typedef boost::log::sources::severity_channel_logger<LogSeverity, const char *>
+typedef boost::log::sources::severity_channel_logger_mt<LogSeverity, const char *>
     SCLogger;
 
 class Logger

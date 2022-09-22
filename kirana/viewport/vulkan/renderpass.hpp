@@ -25,6 +25,7 @@ class RenderPass
 
     const bool &isInitialized = m_isInitialized;
     const vk::RenderPass &current = m_current;
+    const std::vector<vk::Framebuffer> &framebuffers = m_framebuffers;
 };
 } // namespace kirana::viewport::vulkan
 

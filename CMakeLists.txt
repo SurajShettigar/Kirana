@@ -4,6 +4,10 @@ set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED True)
 
 set(BUILD_SHARED_LIBS OFF CACHE BOOL "Build using shared libraries" FORCE)
+add_compile_definitions($<$<CONFIG:Debug>:DEBUG>)
+#if(${BUILD_SHARED_LIBS} STREQUAL ON)
+#    set(CMAKE_WINDOWS_EXPORT_ALL_SYMBOLS ON)
+#endif()
 
 project(Kirana VERSION 0.1.0)
 
@@ -18,7 +22,14 @@ endif ()
 #     message("Found Python: " ${Python_VERSION})
 # endif()
 
-set(Boost_USE_STATIC_LIBS ON)
+if (${BUILD_SHARED_LIBS} STREQUAL ON)
+    set(Boost_USE_STATIC_LIBS OFF)
+    set(Boost_USE_DEBUG_LIBS OFF)
+    set(Boost_USE_RELEASE_LIBS ON)
+else ()
+    set(Boost_USE_STATIC_LIBS ON)
+endif ()
+set(Boost_USE_MULTITHREADED ON)
 set(Boost_USE_STATIC_RUNTIME OFF)
 find_package(Boost 1.76.0 EXACT COMPONENTS log REQUIRED)
 if (${Boost_FOUND})
@@ -28,7 +39,6 @@ endif ()
 add_subdirectory(external)
 
 
-add_compile_definitions($<$<CONFIG:Debug>:DEBUG>)
 # Add project files
 add_subdirectory(kirana)
 

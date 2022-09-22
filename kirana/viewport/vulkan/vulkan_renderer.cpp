@@ -7,6 +7,7 @@
 #include "device.hpp"
 #include "swapchain.hpp"
 #include "renderpass.hpp"
+#include "drawer.hpp"
 
 void kirana::viewport::vulkan::VulkanRenderer::init(
     const std::vector<const char *> &reqInstanceExtensions,
@@ -23,21 +24,15 @@ void kirana::viewport::vulkan::VulkanRenderer::init(
             m_surface = new Surface(m_instance, vk::SurfaceKHR(surface),
                                     window->getWindowResolution());
         }
-
-        if (m_surface->isInitialized)
-        {
-            m_device = new Device(m_instance, m_surface);
-            if (m_device->isInitialized)
-            {
-                m_swapchain = new Swapchain(m_device, m_surface);
-
-                if (m_swapchain->isInitialized)
-                {
-                    m_renderpass = new RenderPass(m_device, m_swapchain);
-                }
-            }
-        }
     }
+    if (m_surface->isInitialized)
+        m_device = new Device(m_instance, m_surface);
+    if (m_device->isInitialized)
+        m_swapchain = new Swapchain(m_device, m_surface);
+    if (m_swapchain->isInitialized)
+        m_renderpass = new RenderPass(m_device, m_swapchain);
+    if (m_renderpass->isInitialized)
+        m_drawer = new Drawer(m_device, m_swapchain, m_renderpass);
 }
 
 void kirana::viewport::vulkan::VulkanRenderer::update()
@@ -46,10 +41,16 @@ void kirana::viewport::vulkan::VulkanRenderer::update()
 
 void kirana::viewport::vulkan::VulkanRenderer::render()
 {
+    m_drawer->draw();
 }
 
 void kirana::viewport::vulkan::VulkanRenderer::clean()
 {
+    if (m_drawer)
+    {
+        delete m_drawer;
+        m_drawer = nullptr;
+    }
     if (m_renderpass)
     {
         delete m_renderpass;

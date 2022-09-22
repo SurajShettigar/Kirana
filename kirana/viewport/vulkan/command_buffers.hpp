@@ -7,6 +7,8 @@ namespace kirana::viewport::vulkan
 {
 class Device;
 class CommandPool;
+class RenderPass;
+
 class CommandBuffers
 {
   private:
@@ -26,6 +28,15 @@ class CommandBuffers
 
     const bool &isInitialized = m_isInitialized;
     const std::vector<vk::CommandBuffer> &current = m_current;
+
+    void reset(uint32_t index = 0) const;
+    void begin(uint32_t index = 0) const;
+    void beginRenderPass(const vk::RenderPass &renderPass,
+                         const vk::Framebuffer &framebuffer,
+                         vk::Extent2D imageExtent, vk::ClearValue clearColor,
+                         uint32_t index = 0) const;
+    void endRenderPass(uint32_t index = 0) const;
+    void end(uint32_t index = 0) const;
 };
 } // namespace kirana::viewport::vulkan
 

@@ -4,6 +4,7 @@
 #include <vector>
 #include <limits>
 #include <set>
+#include <string>
 
 #include <vulkan/vulkan.hpp>
 
@@ -23,6 +24,18 @@ static const std::vector<const char *> DEVICE_EXTENSIONS{
 /// Vector of necessary validation layers for debugging.
 static const std::vector<const char *> VALIDATION_LAYERS{
     "VK_LAYER_KHRONOS_validation"};
+
+
+#define VK_HANDLE_RESULT(f, err)                                               \
+    {                                                                          \
+        vk::Result result = f;                                                 \
+        if (result != vk::Result::eSuccess)                                    \
+        {                                                                      \
+            Logger::get().log(constants::LOG_CHANNEL_VULKAN,                   \
+                              LogSeverity::error, err);                        \
+            abort();                                                           \
+        }                                                                      \
+    }
 
 /**
  * Index of queue families of the selected device.
