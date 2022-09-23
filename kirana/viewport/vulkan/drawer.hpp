@@ -28,13 +28,16 @@ class Drawer
     const RenderPass *const m_renderPass;
 
   public:
-    explicit Drawer(const Device *device, const Swapchain *swapchain, const RenderPass *renderPass);
+    explicit Drawer(const Device *device, const Swapchain *swapchain,
+                    const RenderPass *renderPass);
     ~Drawer();
     Drawer(const Drawer &drawer) = delete;
     Drawer &operator=(const Drawer &drawer) = delete;
 
     const bool &isInitialized = m_isInitialized;
 
+    /// The Vulkan draw calls and synchronization between them are executed
+    /// here.
     void draw();
 };
 } // namespace kirana::viewport::vulkan

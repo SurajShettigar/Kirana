@@ -24,18 +24,6 @@ kirana::viewport::vulkan::CommandBuffers::CommandBuffers(
     }
 }
 
-//kirana::viewport::vulkan::CommandBuffers::~CommandBuffers()
-//{
-//    if (m_device)
-//    {
-//        if (m_current.size() > 0)
-//            m_device->current.freeCommandBuffers(m_commandPool->current,
-//                                                 m_current);
-//        Logger::get().log(constants::LOG_CHANNEL_VULKAN, LogSeverity::debug,
-//                          "Command Buffers freed");
-//    }
-//}
-
 void kirana::viewport::vulkan::CommandBuffers::reset(uint32_t index) const
 {
     m_current[index].reset();

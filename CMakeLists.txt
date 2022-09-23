@@ -12,7 +12,7 @@ add_compile_definitions($<$<CONFIG:Debug>:DEBUG>)
 project(Kirana VERSION 0.1.0)
 
 # Add external dependencies
-find_package(Vulkan REQUIRED)
+find_package(Vulkan COMPONENTS glslangValidator REQUIRED)
 if (${Vulkan_FOUND})
     message("Found Vulkan: " ${Vulkan_VERSION})
 endif ()
@@ -38,9 +38,14 @@ endif ()
 
 add_subdirectory(external)
 
+# Add shaders
+set(SHADER_INSTALL_DIR ${CMAKE_BINARY_DIR}/shaders)
+add_compile_definitions(SHADER_DIR=\"${SHADER_INSTALL_DIR}\")
+add_subdirectory(shaders)
 
 # Add project files
 add_subdirectory(kirana)
+add_dependencies(Kirana Shaders)
 
 include(CTest)
 enable_testing()

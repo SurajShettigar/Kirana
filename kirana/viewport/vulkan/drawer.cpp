@@ -5,6 +5,7 @@
 #include "device.hpp"
 #include "swapchain.hpp"
 #include "renderpass.hpp"
+#include "shader.hpp"
 
 // #include <math.h>
 

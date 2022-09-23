@@ -20,6 +20,11 @@ static const bool VULKAN_USE_VALIDATION_LAYERS = true;
 static const bool VULKAN_USE_VALIDATION_LAYERS = false;
 #endif
 static const uint64_t VULKAN_FRAME_SYNC_TIMEOUT = 1000000000; // 1 second
+static const char *VULKAN_SHADER_VERTEX_EXTENSION = ".vert.spv";
+static const char *VULKAN_SHADER_FRAGMENT_EXTENSION = ".frag.spv";
+//static const char *VULKAN_SHADER_FRAGMENT_EXTENSION = ".frag.spv";
+static const char *VULKAN_SHADER_DIR = SHADER_DIR;
+static const char *VULKAN_SHADER_TRIANGLE_NAME = "triangle";
 
 } // namespace kirana::utils::constants
 

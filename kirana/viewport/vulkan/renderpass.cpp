@@ -11,7 +11,7 @@ kirana::viewport::vulkan::RenderPass::RenderPass(
 
     // Description of the image render pass will be writing into.
     vk::AttachmentDescription colorAttachmentDesc(
-        vk::AttachmentDescriptionFlags(), swapchain->imageFormat,
+        vk::AttachmentDescriptionFlags(), m_swapchain->imageFormat,
         vk::SampleCountFlagBits::e1, vk::AttachmentLoadOp::eClear,
         vk::AttachmentStoreOp::eStore, vk::AttachmentLoadOp::eDontCare,
         vk::AttachmentStoreOp::eDontCare, vk::ImageLayout::eUndefined,
@@ -42,10 +42,10 @@ kirana::viewport::vulkan::RenderPass::RenderPass(
 
         vk::FramebufferCreateInfo frameBufferInfo(
             vk::FramebufferCreateFlags(), m_current, {},
-            swapchain->imageExtent.width, swapchain->imageExtent.height, 1);
+            m_swapchain->imageExtent.width, m_swapchain->imageExtent.height, 1);
 
         m_framebuffers.clear();
-        for (const auto &i : swapchain->imageViews)
+        for (const auto &i : m_swapchain->imageViews)
         {
             frameBufferInfo.setAttachments(i);
             m_framebuffers.emplace_back(
@@ -71,7 +71,7 @@ kirana::viewport::vulkan::RenderPass::~RenderPass()
             Logger::get().log(constants::LOG_CHANNEL_VULKAN, LogSeverity::debug,
                               "Renderpass destroyed");
         }
-        if (m_framebuffers.size() > 0)
+        if (!m_framebuffers.empty())
         {
             for (const auto &f : m_framebuffers)
                 m_device->current.destroyFramebuffer(f);
