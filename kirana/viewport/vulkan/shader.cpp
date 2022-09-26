@@ -2,7 +2,16 @@
 
 #include <fstream>
 #include <string>
+#include <sys/stat.h>
 #include "device.hpp"
+
+bool fileExists(const char *path)
+{
+    struct stat buffer
+    {
+    };
+    return stat(path, &buffer) == 0;
+}
 
 bool kirana::viewport::vulkan::Shader::readShaderFile(
     const char *path, std::vector<uint32_t> *buffer)
@@ -23,17 +32,19 @@ bool kirana::viewport::vulkan::Shader::readShaderFile(
     return true;
 }
 
-kirana::viewport::vulkan::Shader::Shader(const Device *const device, const char *name)
-    : m_isInitialized{false}, m_name{name}, m_device{device}
+kirana::viewport::vulkan::Shader::Shader(const Device *const device,
+                                         const char *name)
+    : m_isInitialized{false}, m_name{name}, m_compute{nullptr},
+      m_vertex{nullptr}, m_fragment{nullptr}, m_device{device}
 {
-    std::string vShaderPath =
-        std::string(constants::VULKAN_SHADER_DIR) + "/" + name + ".vert.spv";
-    std::string fShaderPath =
-        std::string(constants::VULKAN_SHADER_DIR) + "/" + name + ".frag.spv";
+    std::string vShaderPath = std::string(constants::VULKAN_SHADER_DIR) + "/" +
+                              name + constants::VULKAN_SHADER_VERTEX_EXTENSION;
+    std::string fShaderPath = std::string(constants::VULKAN_SHADER_DIR) + "/" +
+                              name +
+                              constants::VULKAN_SHADER_FRAGMENT_EXTENSION;
 
     std::vector<uint32_t> vShaderData;
     std::vector<uint32_t> fShaderData;
-
     if (!readShaderFile(vShaderPath.c_str(), &vShaderData))
     {
         Logger::get().log(
@@ -59,6 +70,28 @@ kirana::viewport::vulkan::Shader::Shader(const Device *const device, const char 
         m_fragment =
             m_device->current.createShaderModule(vk::ShaderModuleCreateInfo(
                 {}, fShaderData.size() * sizeof(uint32_t), fShaderData.data()));
+
+        // Compute Shader Initialization
+        std::vector<uint32_t> cShaderData;
+        std::string cShaderPath = std::string(constants::VULKAN_SHADER_DIR) +
+                                  "/" + name +
+                                  constants::VULKAN_SHADER_COMPUTE_EXTENSION;
+        if (fileExists(cShaderPath.c_str()))
+        {
+            if (!readShaderFile(cShaderPath.c_str(), &cShaderData))
+            {
+                Logger::get().log(
+                    constants::LOG_CHANNEL_VULKAN, LogSeverity::error,
+                    ("Failed to read compute shader for shader: " +
+                     std::string(name))
+                        .c_str());
+                return;
+            }
+            m_compute =
+                m_device->current.createShaderModule(vk::ShaderModuleCreateInfo(
+                    {}, cShaderData.size() * sizeof(uint32_t),
+                    cShaderData.data()));
+        }
 
         m_isInitialized = true;
         Logger::get().log(constants::LOG_CHANNEL_VULKAN, LogSeverity::debug,

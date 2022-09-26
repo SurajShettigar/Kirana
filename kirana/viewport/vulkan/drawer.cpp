@@ -6,6 +6,8 @@
 #include "swapchain.hpp"
 #include "renderpass.hpp"
 #include "shader.hpp"
+#include "pipeline_layout.hpp"
+#include "pipeline.hpp"
 
 // #include <math.h>
 
@@ -35,6 +37,13 @@ kirana::viewport::vulkan::Drawer::Drawer(const Device *const device,
     {
         handleVulkanException();
     }
+
+    m_shader = new Shader(m_device, constants::VULKAN_SHADER_TRIANGLE_NAME);
+    std::vector<Shader *> shaders{m_shader};
+    m_trianglePipelineLayout = new PipelineLayout(m_device);
+    m_trianglePipeline =
+        new Pipeline(m_device, m_renderPass, shaders, m_trianglePipelineLayout,
+                     m_swapchain->getWindowResolution());
 }
 
 kirana::viewport::vulkan::Drawer::~Drawer()
@@ -42,16 +51,28 @@ kirana::viewport::vulkan::Drawer::~Drawer()
     if (m_device)
     {
         if (m_renderFence)
+            VK_HANDLE_RESULT(
+                m_device->current.waitForFences(
+                    m_renderFence, true, constants::VULKAN_FRAME_SYNC_TIMEOUT),
+                "Failed to wait for render fence");
+
+        if (m_trianglePipeline)
         {
-            if (m_device->current.waitForFences(
-                    m_renderFence, true,
-                    constants::VULKAN_FRAME_SYNC_TIMEOUT) !=
-                vk::Result::eSuccess)
-                Logger::get().log(constants::LOG_CHANNEL_VULKAN,
-                                  LogSeverity::error,
-                                  "Failed to wait for Render Fence");
-            m_device->current.destroyFence(m_renderFence);
+            delete m_trianglePipeline;
+            m_trianglePipeline = nullptr;
         }
+        if (m_trianglePipelineLayout)
+        {
+            delete m_trianglePipelineLayout;
+            m_trianglePipelineLayout = nullptr;
+        }
+        if (m_shader)
+        {
+            delete m_shader;
+            m_shader = nullptr;
+        }
+        if (m_renderFence)
+            m_device->current.destroyFence(m_renderFence);
         if (m_renderSemaphore)
             m_device->current.destroySemaphore(m_renderSemaphore);
         if (m_presentSemaphore)
@@ -84,10 +105,12 @@ void kirana::viewport::vulkan::Drawer::draw()
         constants::VULKAN_FRAME_SYNC_TIMEOUT, m_presentSemaphore, nullptr);
 
     vk::ClearValue clearValue;
-    std::array<float, 4> color = {
-        {abs(sin(static_cast<float>(m_currentFrameNumber) / 120.f)),
-         abs(sin(static_cast<float>(m_currentFrameNumber) / 240.f)),
-         abs(sin(static_cast<float>(m_currentFrameNumber) / 360.f)), 1.0f}};
+    //        std::array<float, 4> color = {
+    //            {abs(sin(static_cast<float>(m_currentFrameNumber) / 120.f)),
+    //             abs(sin(static_cast<float>(m_currentFrameNumber) / 240.f)),
+    //             abs(sin(static_cast<float>(m_currentFrameNumber) /
+    //             360.f)), 1.0f}};
+    std::array<float, 4> color = {{0.0f, 0.0f, 0.0f, 1.0f}};
     clearValue.setColor(vk::ClearColorValue(color));
 
     m_mainCommandBuffers->reset();
@@ -95,6 +118,8 @@ void kirana::viewport::vulkan::Drawer::draw()
     m_mainCommandBuffers->beginRenderPass(m_renderPass->current,
                                           m_renderPass->framebuffers[imgIndex],
                                           m_swapchain->imageExtent, clearValue);
+    m_mainCommandBuffers->bindPipeline(m_trianglePipeline->current);
+    m_mainCommandBuffers->draw(3, 1, 0, 0);
     m_mainCommandBuffers->endRenderPass();
     m_mainCommandBuffers->end();
 

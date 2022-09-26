@@ -45,6 +45,22 @@ void kirana::viewport::vulkan::CommandBuffers::beginRenderPass(
         vk::SubpassContents::eInline);
 }
 
+void kirana::viewport::vulkan::CommandBuffers::bindPipeline(
+    const vk::Pipeline &pipeline, uint32_t index) const
+{
+    m_current[index].bindPipeline(vk::PipelineBindPoint::eGraphics, pipeline);
+}
+
+void kirana::viewport::vulkan::CommandBuffers::draw(uint32_t vertexCount,
+                                                    uint32_t instanceCount,
+                                                    uint32_t firstVertex,
+                                                    uint32_t firstInstance,
+                                                    uint32_t index) const
+{
+    m_current[index].draw(vertexCount, instanceCount, firstVertex,
+                          firstInstance);
+}
+
 void kirana::viewport::vulkan::CommandBuffers::endRenderPass(
     uint32_t index) const
 {

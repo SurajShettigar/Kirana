@@ -145,9 +145,16 @@ kirana::viewport::vulkan::Swapchain::~Swapchain()
 }
 
 uint32_t kirana::viewport::vulkan::Swapchain::acquireNextImage(
-    uint64_t timeout, const vk::Semaphore &semaphore, const vk::Fence &fence) const
+    uint64_t timeout, const vk::Semaphore &semaphore,
+    const vk::Fence &fence) const
 {
     return m_device->current
         .acquireNextImageKHR(m_current, timeout, semaphore, fence)
         .value;
+}
+
+const std::array<int, 2>
+    &kirana::viewport::vulkan::Swapchain::getWindowResolution() const
+{
+    return m_surface->windowResolution;
 }

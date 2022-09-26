@@ -35,6 +35,10 @@ class CommandBuffers
                          const vk::Framebuffer &framebuffer,
                          vk::Extent2D imageExtent, vk::ClearValue clearColor,
                          uint32_t index = 0) const;
+    void bindPipeline(const vk::Pipeline &pipeline, uint32_t index = 0) const;
+    void draw(uint32_t vertexCount, uint32_t instanceCount,
+              uint32_t firstVertex, uint32_t firstInstance,
+              uint32_t index = 0) const;
     void endRenderPass(uint32_t index = 0) const;
     void end(uint32_t index = 0) const;
 };

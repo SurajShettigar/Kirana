@@ -10,6 +10,9 @@ class CommandBuffers;
 class Device;
 class Swapchain;
 class RenderPass;
+class PipelineLayout;
+class Pipeline;
+class Shader;
 
 class Drawer
 {
@@ -22,6 +25,10 @@ class Drawer
 
     CommandPool *m_commandPool;
     CommandBuffers *m_mainCommandBuffers;
+
+    Shader *m_shader;
+    PipelineLayout *m_trianglePipelineLayout;
+    Pipeline *m_trianglePipeline;
 
     const Device *const m_device;
     const Swapchain *const m_swapchain;

@@ -7,6 +7,9 @@ namespace kirana::viewport::vulkan
 {
 class Device;
 class RenderPass;
+class Shader;
+class PipelineLayout;
+
 class Pipeline
 {
   private:
@@ -15,8 +18,13 @@ class Pipeline
 
     const Device *const m_device;
     const RenderPass *const m_renderPass;
+    const std::vector<Shader *> &m_shaders;
+    const PipelineLayout *const m_pipelineLayout;
   public:
-    explicit Pipeline(const Device *device, const RenderPass *renderPass);
+    explicit Pipeline(const Device *device, const RenderPass *renderPass,
+                      const std::vector<Shader *> &shaders,
+                      const PipelineLayout *pipelineLayout,
+                      const std::array<int, 2> &windowResolution);
     ~Pipeline();
     Pipeline(const Pipeline &pipeline) = delete;
     Pipeline &operator=(const Pipeline &pipeline) = delete;

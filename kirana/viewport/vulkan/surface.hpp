@@ -18,7 +18,7 @@ class Surface
 
   public:
     explicit Surface(const Instance *instance, vk::SurfaceKHR &&surface,
-                     const std::array<int, 2> windowResolution);
+                     const std::array<int, 2> &windowResolution);
     ~Surface();
     Surface(const Surface &device) = delete;
     Surface &operator=(const Surface &device) = delete;
