@@ -21,3 +21,10 @@ set(ASSIMP_BUILD_OBJ_IMPORTER ON CACHE BOOL "" FORCE)
 set(ASSIMP_BUILD_BLEND_IMPORTER ON CACHE BOOL "" FORCE)
 set(ASSIMP_BUILD_GLTF_IMPORTER ON CACHE BOOL "" FORCE)
 add_subdirectory(assimp)
+
+# Add Vulkan Memory Allocator dependency
+add_library(vma-hpp INTERFACE)
+target_include_directories(vma-hpp INTERFACE vma-hpp)
+
+# Add GLM
+add_subdirectory(glm)

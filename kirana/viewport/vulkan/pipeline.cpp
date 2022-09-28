@@ -38,17 +38,22 @@ kirana::viewport::vulkan::Pipeline::Pipeline(
             shaderStages.push_back(fragment);
         }
     }
+
     vk::PipelineVertexInputStateCreateInfo vertexInput({}, {}, {});
+
     vk::PipelineInputAssemblyStateCreateInfo inputAssembly(
         {}, vk::PrimitiveTopology::eTriangleList, false);
+
     vk::Viewport vp(0.0f, 0.0f, static_cast<float>(windowResolution[0]),
                     static_cast<float>(windowResolution[1]), 0.0f, 1.0f);
     vk::Rect2D scissor({0, 0}, {static_cast<uint32_t>(windowResolution[0]),
                                 static_cast<uint32_t>(windowResolution[1])});
     vk::PipelineViewportStateCreateInfo viewport({}, vp, scissor);
+
     vk::PipelineRasterizationStateCreateInfo rasterizer(
         {}, false, false, vk::PolygonMode::eFill, vk::CullModeFlagBits::eNone,
         vk::FrontFace::eClockwise, false, 0.0f, 0.0f, 0.0f, 1.0f);
+
     vk::PipelineMultisampleStateCreateInfo msaa(
         {}, vk::SampleCountFlagBits::e1, false, 1.0f, nullptr, false, false);
 
@@ -56,7 +61,6 @@ kirana::viewport::vulkan::Pipeline::Pipeline(
     attachment.setColorWriteMask(
         vk::ColorComponentFlagBits::eR | vk::ColorComponentFlagBits::eG |
         vk::ColorComponentFlagBits::eB | vk::ColorComponentFlagBits::eA);
-
     vk::PipelineColorBlendStateCreateInfo colorBlend(
         {}, false, vk::LogicOp::eCopy, attachment);
 

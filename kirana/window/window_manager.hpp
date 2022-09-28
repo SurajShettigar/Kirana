@@ -26,13 +26,21 @@ class WindowManager
 
     Event<Window *> m_onWindowCloseEvent;
     Event<> m_onAllWindowsClosedEvent;
+    Event<input::KeyboardInput> m_onKeyboardInput;
 
     void onWindowClosed(Window *window);
+    void onKeyboardInput(Window *window, input::KeyboardInput input);
+
   public:
     WindowManager() = default;
     ~WindowManager() = default;
     WindowManager(const WindowManager &window) = delete;
     WindowManager &operator=(const WindowManager &window) = delete;
+
+    inline bool isAnyWindowOpen()
+    {
+        return !m_windows.empty();
+    }
 
     /// Initializes the manager and GLFW API
     void init();
@@ -86,6 +94,27 @@ class WindowManager
     inline void removeOnAllWindowsClosedListener(uint32_t callbackID)
     {
         m_onAllWindowsClosedEvent.removeListener(callbackID);
+    }
+
+    /** Adds a callback function for keyboard input.
+     *
+     * @param callback The function to be called on input.
+     * uint32_t Unique identifier for the callback function. Use this id
+     * later to remove the callback function from being called.
+     */
+    inline uint32_t addOnKeyboardInputEventListener(
+        const std::function<void(input::KeyboardInput)> &callback)
+    {
+        return m_onKeyboardInput.addListener(callback);
+    }
+    /** Removes the callback function for keyboard input with given identifier
+     * from being called after the event.
+     *
+     * @param callbackID
+     */
+    inline void removeOnKeyboardInputEventListener(uint32_t callbackID)
+    {
+        m_onKeyboardInput.removeListener(callbackID);
     }
 
     /**

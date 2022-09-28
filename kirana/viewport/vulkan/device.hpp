@@ -46,6 +46,7 @@ class Device
     Device &operator=(const Device &device) = delete;
 
     const bool &isInitialized = m_isInitialized;
+    const vk::PhysicalDevice &gpu = m_gpu;
     const vk::Device &current = m_current;
     const QueueFamilyIndices &queueFamilyIndices = m_queueFamilyIndices;
     const SwapchainSupportInfo &swapchainSupportInfo = m_swapchainSupportInfo;

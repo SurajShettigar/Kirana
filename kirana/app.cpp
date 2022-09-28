@@ -6,6 +6,7 @@
 using namespace std::placeholders;
 
 namespace constants = kirana::utils::constants;
+namespace input = kirana::window::input;
 
 
 #ifdef COMPILE_BINDINGS
@@ -22,6 +23,16 @@ void kirana::Application::onWindowClosed(Window *window)
                      "Viewport Window closed. Cleaning viewport...");
         m_viewport.clean();
         m_isViewportRunning = false;
+    }
+}
+
+void kirana::Application::onKeyboardInput(input::KeyboardInput input)
+{
+    if (input.action == input::KeyAction::DOWN &&
+        input.key == input::Key::ESCAPE)
+    {
+        if (m_windowManager.isAnyWindowOpen())
+            m_windowManager.closeAllWindows();
     }
 }
 
@@ -45,6 +56,8 @@ void kirana::Application::init()
         std::bind(&Application::onWindowClosed, this, _1));
     m_allWindowCloseListener = m_windowManager.addOnAllWindowsClosedListener(
         [=]() { m_isRunning = false; });
+    m_keyboardInputListener = m_windowManager.addOnKeyboardInputEventListener(
+        std::bind(&Application::onKeyboardInput, this, _1));
 
     m_viewportWindow = m_windowManager.createWindow();
     m_viewport.init(m_viewportWindow);

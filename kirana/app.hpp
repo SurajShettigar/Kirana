@@ -34,16 +34,22 @@ class Application
     uint32_t m_windowCloseListener = std::numeric_limits<unsigned int>::max();
     uint32_t m_allWindowCloseListener =
         std::numeric_limits<unsigned int>::max();
+    uint32_t m_keyboardInputListener = std::numeric_limits<unsigned int>::max();
     WindowManager m_windowManager;
 
     shared_ptr<Window> m_viewportWindow;
     Viewport m_viewport;
 
     /**
-     * Used as a callback function for window close evevnt.
+     * Used as a callback function for window close event.
      * @param window Pointer to the window object which was closed.
      */
     void onWindowClosed(Window *window);
+    /**
+     * Used as a callback function for keyboard input event.
+     * @param input Struct containing key and the action performed.
+     */
+     void onKeyboardInput(window::input::KeyboardInput input);
 
     /// Initializes all objects of the program.
     void init();

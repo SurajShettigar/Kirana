@@ -3,6 +3,7 @@
 
 #include <vector>
 
+
 namespace kirana::window
 {
 class Window;
@@ -13,6 +14,7 @@ namespace kirana::viewport::vulkan
 class Instance;
 class Surface;
 class Device;
+class Allocator;
 class Swapchain;
 class RenderPass;
 class Drawer;
@@ -20,6 +22,7 @@ class Drawer;
 class VulkanRenderer
 {
   private:
+    Allocator *m_allocator;
     Instance *m_instance;
     Surface *m_surface;
     Device *m_device;

@@ -107,6 +107,8 @@ kirana::viewport::vulkan::Shader::~Shader()
 {
     if (m_device)
     {
+        if (m_compute)
+            m_device->current.destroyShaderModule(m_compute);
         if (m_fragment)
             m_device->current.destroyShaderModule(m_fragment);
         if (m_vertex)

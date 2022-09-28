@@ -9,7 +9,6 @@ using namespace std::placeholders;
 void kirana::window::WindowManager::onWindowClosed(Window *window)
 {
     m_onWindowCloseEvent(window);
-
     m_windows.erase(std::remove_if(m_windows.begin(), m_windows.end(),
                                    [&window](const shared_ptr<Window> &w) {
                                        return *window == *w;
@@ -18,6 +17,12 @@ void kirana::window::WindowManager::onWindowClosed(Window *window)
 
     if (m_windows.empty())
         m_onAllWindowsClosedEvent();
+}
+
+void kirana::window::WindowManager::onKeyboardInput(Window *window,
+                                                    input::KeyboardInput input)
+{
+    m_onKeyboardInput(input);
 }
 
 void kirana::window::WindowManager::init()
@@ -34,10 +39,10 @@ void kirana::window::WindowManager::init()
 
 void kirana::window::WindowManager::update() const
 {
+    if (!m_windows.empty())
+        glfwWaitEvents();
     for (const auto &w : m_windows)
         w->update();
-
-    glfwPollEvents();
 }
 
 void kirana::window::WindowManager::clean()
@@ -52,6 +57,8 @@ std::shared_ptr<kirana::window::Window> kirana::window::WindowManager::
     shared_ptr<Window> window = std::make_shared<Window>(name, width, height);
     window->addOnWindowCloseListener(
         std::bind(&WindowManager::onWindowClosed, this, _1));
+    window->addOnKeyboardInputEventListener(
+        std::bind(&WindowManager::onKeyboardInput, this, _1, _2));
     window->create();
     m_windows.emplace_back(window);
     return window;

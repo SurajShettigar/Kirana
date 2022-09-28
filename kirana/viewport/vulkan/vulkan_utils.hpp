@@ -11,6 +11,11 @@
 #include <constants.h>
 #include <logger.hpp>
 
+namespace vma
+{
+class Allocation;
+}
+
 
 namespace kirana::viewport::vulkan
 {
@@ -83,6 +88,16 @@ struct SwapchainSupportInfo
     {
         return !surfaceFormats.empty() && !presentModes.empty();
     }
+};
+
+
+/**
+ * Holds buffer objects allocated in memory by VMA.
+ */
+struct AllocatedBuffer
+{
+    vk::Buffer buffer;
+    std::unique_ptr<vma::Allocation> allocation;
 };
 
 /**

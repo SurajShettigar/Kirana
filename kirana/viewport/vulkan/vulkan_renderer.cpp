@@ -5,6 +5,7 @@
 #include "instance.hpp"
 #include "surface.hpp"
 #include "device.hpp"
+#include "allocator.hpp"
 #include "swapchain.hpp"
 #include "renderpass.hpp"
 #include "drawer.hpp"
@@ -13,6 +14,7 @@ void kirana::viewport::vulkan::VulkanRenderer::init(
     const std::vector<const char *> &reqInstanceExtensions,
     const window::Window *const window)
 {
+
     m_instance = new Instance(reqInstanceExtensions);
     if (m_instance->isInitialized)
     {
@@ -28,7 +30,10 @@ void kirana::viewport::vulkan::VulkanRenderer::init(
     if (m_surface->isInitialized)
         m_device = new Device(m_instance, m_surface);
     if (m_device->isInitialized)
+    {
+        m_allocator = new Allocator(m_instance, m_device);
         m_swapchain = new Swapchain(m_device, m_surface);
+    }
     if (m_swapchain->isInitialized)
         m_renderpass = new RenderPass(m_device, m_swapchain);
     if (m_renderpass->isInitialized)
@@ -60,6 +65,11 @@ void kirana::viewport::vulkan::VulkanRenderer::clean()
     {
         delete m_swapchain;
         m_swapchain = nullptr;
+    }
+    if (m_allocator)
+    {
+        delete m_allocator;
+        m_allocator = nullptr;
     }
     if (m_device)
     {

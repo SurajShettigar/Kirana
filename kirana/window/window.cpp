@@ -11,8 +11,22 @@ void kirana::window::Window::onWindowClosed(GLFWwindow *glfwWindow)
         currWin->m_onWindowCloseEvent(currWin);
         glfwSetWindowUserPointer(glfwWindow, nullptr);
         glfwSetWindowCloseCallback(glfwWindow, nullptr);
+        glfwSetKeyCallback(glfwWindow, nullptr);
         glfwDestroyWindow(glfwWindow);
         currWin->removeAllOnWindowCloseListener();
+    }
+}
+
+void kirana::window::Window::onKeyboardInput(GLFWwindow *window, int key,
+                                             int scancode, int action, int mods)
+{
+    Window *currWin = static_cast<Window *>(glfwGetWindowUserPointer(window));
+    if (currWin)
+    {
+        currWin->m_onKeyboardInput(
+            currWin,
+            input::KeyboardInput{static_cast<input::Key>(key),
+                                 static_cast<input::KeyAction>(action)});
     }
 }
 
@@ -23,13 +37,18 @@ void kirana::window::Window::create()
     {
         glfwSetWindowUserPointer(m_glfwWindow, this);
         glfwSetWindowCloseCallback(m_glfwWindow, Window::onWindowClosed);
+        glfwSetKeyCallback(m_glfwWindow, Window::onKeyboardInput);
     }
 }
 
 void kirana::window::Window::update() const
 {
-    if (glfwWindowShouldClose(m_glfwWindow))
+    if (!glfwWindowShouldClose(m_glfwWindow))
+    {
         return;
+    }
+    else
+        Window::onWindowClosed(m_glfwWindow);
 }
 
 void kirana::window::Window::close() const
