@@ -57,3 +57,9 @@ void kirana::utils::Logger::log(const char *channel, LogSeverity severity,
     m_channel.set(channel);
     BOOST_LOG_CHANNEL_SEV(m_current, channel, severity) << message;
 }
+
+void kirana::utils::Logger::log(const char *channel, LogSeverity severity,
+                                const std::string &message)
+{
+    log(channel, severity, message.c_str());
+}

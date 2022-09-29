@@ -15,11 +15,11 @@ kirana::viewport::Viewport::Viewport()
 {
 }
 
-void kirana::viewport::Viewport::init(const shared_ptr<Window> &window)
+void kirana::viewport::Viewport::init(const shared_ptr<Window> &window, const scene::Scene &scene)
 {
     m_window = window;
     m_renderer.init(m_window->getReqInstanceExtensionsForVulkan(),
-                    m_window.get());
+                    m_window.get(), scene);
 }
 
 void kirana::viewport::Viewport::update()
@@ -36,3 +36,8 @@ void kirana::viewport::Viewport::clean()
 {
     m_renderer.clean();
 }
+
+/*void kirana::viewport::Viewport::loadScene(const scene::Scene &scene)
+{
+    m_renderer.loadScene(scene);
+}*/

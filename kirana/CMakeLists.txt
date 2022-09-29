@@ -6,7 +6,7 @@ add_subdirectory(scene)
 add_executable(Kirana main.cpp app.cpp)
 
 target_include_directories(Kirana PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
-target_link_libraries(Kirana PRIVATE utils window viewport)
+target_link_libraries(Kirana PRIVATE utils window scene viewport)
 
 # Generate python bindings
 pybind11_add_module(Kirana_lib main.cpp app.cpp)

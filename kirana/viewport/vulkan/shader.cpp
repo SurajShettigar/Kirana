@@ -1,17 +1,10 @@
 #include "shader.hpp"
+#include "device.hpp"
+#include "vulkan_utils.hpp"
 
 #include <fstream>
 #include <string>
-#include <sys/stat.h>
-#include "device.hpp"
-
-bool fileExists(const char *path)
-{
-    struct stat buffer
-    {
-    };
-    return stat(path, &buffer) == 0;
-}
+#include <file_system.hpp>
 
 bool kirana::viewport::vulkan::Shader::readShaderFile(
     const char *path, std::vector<uint32_t> *buffer)
@@ -37,11 +30,15 @@ kirana::viewport::vulkan::Shader::Shader(const Device *const device,
     : m_isInitialized{false}, m_name{name}, m_compute{nullptr},
       m_vertex{nullptr}, m_fragment{nullptr}, m_device{device}
 {
-    std::string vShaderPath = std::string(constants::VULKAN_SHADER_DIR) + "/" +
-                              name + constants::VULKAN_SHADER_VERTEX_EXTENSION;
-    std::string fShaderPath = std::string(constants::VULKAN_SHADER_DIR) + "/" +
-                              name +
-                              constants::VULKAN_SHADER_FRAGMENT_EXTENSION;
+    std::string vShaderPath = utils::filesystem::combinePath(
+        constants::VULKAN_SHADER_DIR_PATH, {name},
+        constants::VULKAN_SHADER_VERTEX_EXTENSION);
+    std::string fShaderPath = utils::filesystem::combinePath(
+        constants::VULKAN_SHADER_DIR_PATH, {name},
+        constants::VULKAN_SHADER_FRAGMENT_EXTENSION);
+
+    Logger::get().log(constants::LOG_CHANNEL_VULKAN, LogSeverity::error,
+                      "Shader Path: " + std::string(vShaderPath));
 
     std::vector<uint32_t> vShaderData;
     std::vector<uint32_t> fShaderData;
@@ -73,10 +70,10 @@ kirana::viewport::vulkan::Shader::Shader(const Device *const device,
 
         // Compute Shader Initialization
         std::vector<uint32_t> cShaderData;
-        std::string cShaderPath = std::string(constants::VULKAN_SHADER_DIR) +
-                                  "/" + name +
-                                  constants::VULKAN_SHADER_COMPUTE_EXTENSION;
-        if (fileExists(cShaderPath.c_str()))
+        std::string cShaderPath = utils::filesystem::combinePath(
+            constants::VULKAN_SHADER_DIR_PATH, {name},
+            constants::VULKAN_SHADER_COMPUTE_EXTENSION);
+        if (utils::filesystem::fileExists(cShaderPath.c_str()))
         {
             if (!readShaderFile(cShaderPath.c_str(), &cShaderData))
             {

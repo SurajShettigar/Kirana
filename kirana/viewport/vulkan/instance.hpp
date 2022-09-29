@@ -1,7 +1,7 @@
 #ifndef INSTANCE_HPP
 #define INSTANCE_HPP
 
-#include "vulkan_utils.hpp"
+#include <vulkan/vulkan.hpp>
 
 namespace kirana::viewport::vulkan
 {

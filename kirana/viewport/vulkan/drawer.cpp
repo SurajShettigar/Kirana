@@ -8,14 +8,38 @@
 #include "shader.hpp"
 #include "pipeline_layout.hpp"
 #include "pipeline.hpp"
+#include "scene_data.hpp"
+#include "vulkan_utils.hpp"
+#include <glm/gtx/transform.hpp>
+#include "vulkan_types.hpp"
 
 // #include <math.h>
 
+
+glm::mat4 getTransform(float frameNum)
+{
+    // make a model view matrix for rendering the object
+    // camera position
+    glm::vec3 camPos = {0.f, 0.f, -2.f};
+
+    glm::mat4 view = glm::translate(glm::mat4(1.f), camPos);
+    // camera projection
+    glm::mat4 projection =
+        glm::perspective(glm::radians(70.f), 1700.f / 900.f, 0.1f, 200.0f);
+    projection[1][1] *= -1;
+    // model rotation
+    glm::mat4 model = glm::rotate(
+        glm::mat4{1.0f}, glm::radians(frameNum * 0.4f), glm::vec3(0, 1, 0));
+
+    return projection * view * model;
+}
+
 kirana::viewport::vulkan::Drawer::Drawer(const Device *const device,
                                          const Swapchain *const swapchain,
-                                         const RenderPass *const renderPass)
+                                         const RenderPass *const renderPass,
+                                         const SceneData *const scene)
     : m_isInitialized{false}, m_currentFrameNumber{0}, m_device{device},
-      m_swapchain{swapchain}, m_renderPass{renderPass}
+      m_swapchain{swapchain}, m_renderPass{renderPass}, m_scene{scene}
 {
     m_commandPool =
         new CommandPool(m_device, m_device->queueFamilyIndices.graphics);
@@ -39,11 +63,14 @@ kirana::viewport::vulkan::Drawer::Drawer(const Device *const device,
     }
 
     m_shader = new Shader(m_device, constants::VULKAN_SHADER_TRIANGLE_NAME);
-    std::vector<Shader *> shaders{m_shader};
-    m_trianglePipelineLayout = new PipelineLayout(m_device);
-    m_trianglePipeline =
-        new Pipeline(m_device, m_renderPass, shaders, m_trianglePipelineLayout,
-                     m_swapchain->getWindowResolution());
+    if (m_shader->isInitialized)
+    {
+        std::vector<Shader *> shaders{m_shader};
+        m_trianglePipelineLayout = new PipelineLayout(m_device);
+        m_trianglePipeline = new Pipeline(
+            m_device, m_renderPass, shaders, m_trianglePipelineLayout,
+            m_scene->vertexDesc, m_swapchain->getWindowResolution());
+    }
 }
 
 kirana::viewport::vulkan::Drawer::~Drawer()
@@ -105,12 +132,7 @@ void kirana::viewport::vulkan::Drawer::draw()
         constants::VULKAN_FRAME_SYNC_TIMEOUT, m_presentSemaphore, nullptr);
 
     vk::ClearValue clearValue;
-    //        std::array<float, 4> color = {
-    //            {abs(sin(static_cast<float>(m_currentFrameNumber) / 120.f)),
-    //             abs(sin(static_cast<float>(m_currentFrameNumber) / 240.f)),
-    //             abs(sin(static_cast<float>(m_currentFrameNumber) /
-    //             360.f)), 1.0f}};
-    std::array<float, 4> color = {{0.0f, 0.0f, 0.0f, 1.0f}};
+    std::array<float, 4> color = {{0.0f, 0.0f, 1.0f, 1.0f}};
     clearValue.setColor(vk::ClearColorValue(color));
 
     m_mainCommandBuffers->reset();
@@ -119,7 +141,26 @@ void kirana::viewport::vulkan::Drawer::draw()
                                           m_renderPass->framebuffers[imgIndex],
                                           m_swapchain->imageExtent, clearValue);
     m_mainCommandBuffers->bindPipeline(m_trianglePipeline->current);
-    m_mainCommandBuffers->draw(3, 1, 0, 0);
+
+
+    MeshPushConstants meshConstants;
+    meshConstants.renderMatrix =
+        getTransform(static_cast<float>(m_currentFrameNumber));
+    m_mainCommandBuffers->pushConstants(m_trianglePipelineLayout->current,
+                                        vk::ShaderStageFlagBits::eVertex, 0,
+                                        meshConstants);
+    if (m_scene)
+    {
+        // TODO: Bind Vertex Buffers together and draw them at once.
+        for (size_t i = 0; i < m_scene->meshes.size(); i++)
+        {
+            m_mainCommandBuffers->bindVertexBuffer(
+                *(m_scene->meshes[i].vertexBuffer.buffer), 0);
+            m_mainCommandBuffers->draw(
+                static_cast<uint32_t>(m_scene->meshes[i].vertexCount), 1, 0, 0);
+        }
+    }
+
     m_mainCommandBuffers->endRenderPass();
     m_mainCommandBuffers->end();
 
@@ -136,3 +177,13 @@ void kirana::viewport::vulkan::Drawer::draw()
 
     m_currentFrameNumber++;
 }
+
+/*void kirana::viewport::vulkan::Drawer::loadScene(SceneData *scene)
+{
+    VK_HANDLE_RESULT(
+        m_device->current.waitForFences(m_renderFence, true,
+                                        constants::VULKAN_FRAME_SYNC_TIMEOUT),
+        "Failed to wait for render fence");
+    m_scene = scene;
+    m_trianglePipeline->rebuild(m_scene->vertexDesc);
+}*/

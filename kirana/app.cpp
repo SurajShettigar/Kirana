@@ -1,7 +1,7 @@
-#include <functional>
-
 #include "app.hpp"
 #include <constants.h>
+#include <file_system.hpp>
+#include <scene_importer.hpp>
 
 using namespace std::placeholders;
 
@@ -49,6 +49,29 @@ kirana::Application::~Application()
                  "Application destroyed");
 }
 
+bool kirana::Application::loadDefaultScene()
+{
+    std::string filePath = utils::filesystem::combinePath(
+        constants::DATA_DIR_PATH, {constants::DEFAULT_MODEL_NAME});
+
+    if (scene::SceneImporter::get().loadSceneFromFile(
+            filePath.c_str(), scene::DEFAULT_SCENE_IMPORT_SETTINGS,
+            &m_currentScene))
+    {
+        m_logger.log(
+            constants::LOG_CHANNEL_APPLICATION, utils::LogSeverity::debug,
+            "Loaded default scene: " + m_currentScene.rootObject->name);
+        return true;
+    }
+    else
+    {
+        m_logger.log(
+            constants::LOG_CHANNEL_APPLICATION, utils::LogSeverity::error,
+            "Failed to load default scene");
+        return false;
+    }
+}
+
 void kirana::Application::init()
 {
     m_windowManager.init();
@@ -60,11 +83,13 @@ void kirana::Application::init()
         std::bind(&Application::onKeyboardInput, this, _1));
 
     m_viewportWindow = m_windowManager.createWindow();
-    m_viewport.init(m_viewportWindow);
+    if (loadDefaultScene())
+    {
+        m_viewport.init(m_viewportWindow, m_currentScene);
+        m_isViewportRunning = true;
+    }
 
     m_isRunning = true;
-    m_isViewportRunning = true;
-
     m_logger.log(constants::LOG_CHANNEL_APPLICATION, utils::LogSeverity::debug,
                  "Application initialized");
 }

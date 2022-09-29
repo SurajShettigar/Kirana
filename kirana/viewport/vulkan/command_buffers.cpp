@@ -2,7 +2,8 @@
 
 #include "device.hpp"
 #include "command_pool.hpp"
-#include "renderpass.hpp"
+#include "vulkan_utils.hpp"
+
 
 kirana::viewport::vulkan::CommandBuffers::CommandBuffers(
     const Device *const device, const CommandPool *const commandPool,
@@ -49,6 +50,30 @@ void kirana::viewport::vulkan::CommandBuffers::bindPipeline(
     const vk::Pipeline &pipeline, uint32_t index) const
 {
     m_current[index].bindPipeline(vk::PipelineBindPoint::eGraphics, pipeline);
+}
+
+
+void kirana::viewport::vulkan::CommandBuffers::bindVertexBuffer(
+    const vk::Buffer &buffer, const vk::DeviceSize &offset,
+    uint32_t index) const
+{
+    m_current[index].bindVertexBuffers(0, buffer, offset);
+}
+
+void kirana::viewport::vulkan::CommandBuffers::bindVertexBuffers(
+    const std::vector<vk::Buffer> &buffers,
+    const std::vector<vk::DeviceSize> &offsets, uint32_t index) const
+{
+    m_current[index].bindVertexBuffers(0, buffers, offsets);
+}
+
+// TODO: Temporary solution to push constants.
+void kirana::viewport::vulkan::CommandBuffers::pushConstants(
+    vk::PipelineLayout layout, vk::ShaderStageFlags stageFlags, uint32_t offset,
+    const MeshPushConstants &meshConstants, uint32_t index) const
+{
+    m_current[index].pushConstants<MeshPushConstants>(layout, stageFlags,
+                                                      offset, meshConstants);
 }
 
 void kirana::viewport::vulkan::CommandBuffers::draw(uint32_t vertexCount,

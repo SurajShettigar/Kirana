@@ -1,7 +1,7 @@
 #ifndef DRAWER_HPP
 #define DRAWER_HPP
 
-#include "vulkan_utils.hpp"
+#include <vulkan/vulkan.hpp>
 
 namespace kirana::viewport::vulkan
 {
@@ -13,6 +13,7 @@ class RenderPass;
 class PipelineLayout;
 class Pipeline;
 class Shader;
+class SceneData;
 
 class Drawer
 {
@@ -34,9 +35,10 @@ class Drawer
     const Swapchain *const m_swapchain;
     const RenderPass *const m_renderPass;
 
+    const SceneData *const m_scene;
   public:
     explicit Drawer(const Device *device, const Swapchain *swapchain,
-                    const RenderPass *renderPass);
+                    const RenderPass *renderPass, const SceneData *scene);
     ~Drawer();
     Drawer(const Drawer &drawer) = delete;
     Drawer &operator=(const Drawer &drawer) = delete;
@@ -46,6 +48,8 @@ class Drawer
     /// The Vulkan draw calls and synchronization between them are executed
     /// here.
     void draw();
+
+    //    void loadScene(SceneData *scene);
 };
 } // namespace kirana::viewport::vulkan
 

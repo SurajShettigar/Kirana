@@ -1,6 +1,7 @@
 #include "command_pool.hpp"
-
 #include "device.hpp"
+
+#include "vulkan_utils.hpp"
 
 kirana::viewport::vulkan::CommandPool::CommandPool(
     const Device *const device, uint32_t queueFamilyIndex,

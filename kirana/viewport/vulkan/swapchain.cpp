@@ -1,7 +1,7 @@
 #include "swapchain.hpp"
-
 #include "device.hpp"
 #include "surface.hpp"
+#include "vulkan_utils.hpp"
 
 #include <algorithm>
 

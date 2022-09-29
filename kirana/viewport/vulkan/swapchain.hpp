@@ -1,7 +1,7 @@
 #ifndef SWAPCHAIN_HPP
 #define SWAPCHAIN_HPP
 
-#include "vulkan_utils.hpp"
+#include "vulkan_types.hpp"
 
 namespace kirana::viewport::vulkan
 {

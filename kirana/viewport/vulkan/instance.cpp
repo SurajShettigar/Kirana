@@ -1,4 +1,5 @@
 #include "instance.hpp"
+#include "vulkan_utils.hpp"
 
 #if VULKAN_HPP_DISPATCH_LOADER_DYNAMIC == 1
 VULKAN_HPP_DEFAULT_DISPATCH_LOADER_DYNAMIC_STORAGE

@@ -1,7 +1,8 @@
 #include "device.hpp"
-
 #include "instance.hpp"
 #include "surface.hpp"
+
+#include "vulkan_utils.hpp"
 
 #include <map>
 

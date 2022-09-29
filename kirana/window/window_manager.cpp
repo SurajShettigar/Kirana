@@ -40,7 +40,7 @@ void kirana::window::WindowManager::init()
 void kirana::window::WindowManager::update() const
 {
     if (!m_windows.empty())
-        glfwWaitEvents();
+        glfwPollEvents();
     for (const auto &w : m_windows)
         w->update();
 }

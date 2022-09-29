@@ -3,13 +3,20 @@
 
 #include <window/window_manager.hpp>
 #include <viewport/viewport.hpp>
+#include <scene/scene.hpp>
 
 #include <utils/logger.hpp>
 #include <limits>
 #include <memory>
 
+
 namespace kirana
 {
+namespace scene
+{
+class Scene;
+}
+
 using viewport::Viewport;
 using window::Window;
 using window::WindowManager;
@@ -17,11 +24,11 @@ using window::WindowManager;
 using std::shared_ptr;
 
 /**
-     * As the name suggests, this class is the entry point of the entire
-     * program. It defines the application loop in the order of initialization,
-     * updating, rendering and cleaning of objects. It handles logger
-     * initialization, window creation and its events, viewport creation and UI
-     * related functionality.
+ * As the name suggests, this class is the entry point of the entire
+ * program. It defines the application loop in the order of initialization,
+ * updating, rendering and cleaning of objects. It handles logger
+ * initialization, window creation and its events, viewport creation and UI
+ * related functionality.
  */
 class Application
 {
@@ -40,6 +47,8 @@ class Application
     shared_ptr<Window> m_viewportWindow;
     Viewport m_viewport;
 
+    scene::Scene m_currentScene;
+
     /**
      * Used as a callback function for window close event.
      * @param window Pointer to the window object which was closed.
@@ -49,7 +58,13 @@ class Application
      * Used as a callback function for keyboard input event.
      * @param input Struct containing key and the action performed.
      */
-     void onKeyboardInput(window::input::KeyboardInput input);
+    void onKeyboardInput(window::input::KeyboardInput input);
+
+    /**
+     * Loads the default scene into m_currentScene object.
+     * @return true if successfully loaded.
+     */
+    bool loadDefaultScene();
 
     /// Initializes all objects of the program.
     void init();

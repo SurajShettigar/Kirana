@@ -1,6 +1,6 @@
 #include "surface.hpp"
-
 #include "instance.hpp"
+#include "vulkan_utils.hpp"
 
 kirana::viewport::vulkan::Surface::Surface(
     const Instance *const instance, vk::SurfaceKHR &&surface,

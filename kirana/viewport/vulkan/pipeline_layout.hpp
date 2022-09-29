@@ -1,7 +1,7 @@
 #ifndef PIPELINE_LAYOUT_HPP
 #define PIPELINE_LAYOUT_HPP
 
-#include "vulkan_utils.hpp"
+#include <vulkan/vulkan.hpp>
 
 namespace kirana::viewport::vulkan
 {

@@ -1,14 +1,20 @@
 #include "pipeline_layout.hpp"
-
 #include "device.hpp"
+#include "vulkan_utils.hpp"
+#include "vulkan_types.hpp"
 
-kirana::viewport::vulkan::PipelineLayout::PipelineLayout(const Device *const device)
+kirana::viewport::vulkan::PipelineLayout::PipelineLayout(
+    const Device *const device)
     : m_isInitialized{false}, m_device{device}
 {
     try
     {
+        // TODO: Temporary solution for push constants.
+        vk::PushConstantRange meshPushConstants(
+            vk::ShaderStageFlagBits::eVertex, 0, sizeof(MeshPushConstants));
+
         m_current = m_device->current.createPipelineLayout(
-            vk::PipelineLayoutCreateInfo());
+            vk::PipelineLayoutCreateInfo({}, {}, meshPushConstants));
         Logger::get().log(constants::LOG_CHANNEL_VULKAN, LogSeverity::debug,
                           "Pipeline layout created");
         m_isInitialized = true;

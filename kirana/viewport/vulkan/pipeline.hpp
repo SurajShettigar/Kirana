@@ -1,7 +1,7 @@
 #ifndef PIPELINE_HPP
 #define PIPELINE_HPP
 
-#include "vulkan_utils.hpp"
+#include <vulkan/vulkan.hpp>
 
 namespace kirana::viewport::vulkan
 {
@@ -9,6 +9,7 @@ class Device;
 class RenderPass;
 class Shader;
 class PipelineLayout;
+struct VertexInputDescription;
 
 class Pipeline
 {
@@ -20,10 +21,17 @@ class Pipeline
     const RenderPass *const m_renderPass;
     const std::vector<Shader *> &m_shaders;
     const PipelineLayout *const m_pipelineLayout;
+    const std::array<int, 2> &m_windowResolution;
+
+    bool build(
+        const std::vector<vk::VertexInputBindingDescription> &vertexBindings,
+        const std::vector<vk::VertexInputAttributeDescription> &vertexAttributes);
+
   public:
     explicit Pipeline(const Device *device, const RenderPass *renderPass,
                       const std::vector<Shader *> &shaders,
                       const PipelineLayout *pipelineLayout,
+                      const VertexInputDescription &vertexInputDesc,
                       const std::array<int, 2> &windowResolution);
     ~Pipeline();
     Pipeline(const Pipeline &pipeline) = delete;
@@ -31,6 +39,8 @@ class Pipeline
 
     const bool &isInitialized = m_isInitialized;
     const vk::Pipeline &current = m_current;
+
+//    bool rebuild(const VertexInputDescription &vertexInputDesc);
 };
 } // namespace kirana::viewport::vulkan
 #endif

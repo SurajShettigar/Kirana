@@ -38,6 +38,10 @@ endif ()
 
 add_subdirectory(external)
 
+# Copy data directory
+file(COPY data DESTINATION  ${CMAKE_BINARY_DIR})
+add_compile_definitions(DATA_DIR=\"${CMAKE_BINARY_DIR}/data\")
+
 # Add shaders
 set(SHADER_INSTALL_DIR ${CMAKE_BINARY_DIR}/shaders)
 add_compile_definitions(SHADER_DIR=\"${SHADER_INSTALL_DIR}\")

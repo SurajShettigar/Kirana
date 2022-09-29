@@ -1,8 +1,12 @@
-#ifndef VULKAN_RENDERER_HPP
-#define VULKAN_RENDERER_HPP
+#ifndef KIRANA_VULKAN_RENDERER_HPP
+#define KIRANA_VULKAN_RENDERER_HPP
 
 #include <vector>
 
+namespace kirana::scene
+{
+class Scene;
+}
 
 namespace kirana::window
 {
@@ -18,6 +22,7 @@ class Allocator;
 class Swapchain;
 class RenderPass;
 class Drawer;
+class SceneData;
 
 class VulkanRenderer
 {
@@ -29,6 +34,8 @@ class VulkanRenderer
     Swapchain *m_swapchain;
     RenderPass *m_renderpass;
     Drawer *m_drawer;
+
+    SceneData *m_currentScene;
 
     VulkanRenderer() = default;
     ~VulkanRenderer() = default;
@@ -44,13 +51,19 @@ class VulkanRenderer
 
     /// Initializes vulkan.
     void init(const std::vector<const char *> &reqInstanceExtensions,
-              const window::Window *window);
+              const window::Window *window, const scene::Scene &scene);
     /// Updates the transforms.
     void update();
     /// Executes vulkan draw calls.
     void render();
     /// Deletes vulkan objects.
     void clean();
+
+    /**
+     * Convert Scene object into vulkan SceneData object.
+     * @param scene The Scene object to be converted.
+     */
+//    void loadScene(const scene::Scene &scene);
 };
 } // namespace kirana::viewport::vulkan
 

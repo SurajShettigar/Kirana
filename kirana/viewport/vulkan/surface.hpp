@@ -1,7 +1,7 @@
 #ifndef KIRANA_SURFACE_HPP
 #define KIRANA_SURFACE_HPP
 
-#include "vulkan_utils.hpp"
+#include <vulkan/vulkan.hpp>
 
 namespace kirana::viewport::vulkan
 {
@@ -26,7 +26,6 @@ class Surface
     const bool &isInitialized = m_isInitialized;
     const vk::SurfaceKHR &current = m_current;
     const std::array<int, 2>& windowResolution = m_windowResolution;
-
 };
 
 } // namespace kirana::viewport::vulkan

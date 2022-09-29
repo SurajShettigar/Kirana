@@ -1,6 +1,7 @@
 #ifndef LOGGER_HPP
 #define LOGGER_HPP
 
+#include <string>
 #include <boost/log/trivial.hpp>
 #include <boost/log/sources/severity_channel_logger.hpp>
 #include <boost/log/attributes.hpp>
@@ -40,6 +41,10 @@ class Logger
     void log(const char *channel = "DEFAULT",
              LogSeverity severity = LogSeverity::debug,
              const char *message = "");
+
+    void log(const char *channel = "DEFAULT",
+             LogSeverity severity = LogSeverity::debug,
+             const std::string &message = "");
 };
 } // namespace kirana::utils
 #endif

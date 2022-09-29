@@ -1,7 +1,7 @@
 #include "renderpass.hpp"
-
 #include "device.hpp"
 #include "swapchain.hpp"
+#include "vulkan_utils.hpp"
 
 kirana::viewport::vulkan::RenderPass::RenderPass(
     const Device *const device, const Swapchain *const swapchain)

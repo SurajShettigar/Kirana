@@ -1,7 +1,7 @@
 #ifndef SHADER_HPP
 #define SHADER_HPP
 
-#include "vulkan_utils.hpp"
+#include <vulkan/vulkan.hpp>
 
 namespace kirana::viewport::vulkan
 {
@@ -10,7 +10,7 @@ class Shader
 {
   private:
     bool m_isInitialized = false;
-    const char *m_name = constants::VULKAN_SHADER_TRIANGLE_NAME;
+    const char *m_name = "triangle";
     vk::ShaderModule m_compute = nullptr;
     vk::ShaderModule m_vertex = nullptr;
     vk::ShaderModule m_fragment = nullptr;

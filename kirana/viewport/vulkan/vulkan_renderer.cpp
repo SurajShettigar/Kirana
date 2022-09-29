@@ -10,9 +10,11 @@
 #include "renderpass.hpp"
 #include "drawer.hpp"
 
+#include "scene_data.hpp"
+
 void kirana::viewport::vulkan::VulkanRenderer::init(
     const std::vector<const char *> &reqInstanceExtensions,
-    const window::Window *const window)
+    const window::Window *const window, const scene::Scene &scene)
 {
 
     m_instance = new Instance(reqInstanceExtensions);
@@ -37,7 +39,10 @@ void kirana::viewport::vulkan::VulkanRenderer::init(
     if (m_swapchain->isInitialized)
         m_renderpass = new RenderPass(m_device, m_swapchain);
     if (m_renderpass->isInitialized)
-        m_drawer = new Drawer(m_device, m_swapchain, m_renderpass);
+        m_currentScene = new SceneData(m_allocator, scene);
+    if (m_currentScene->isInitialized)
+        m_drawer =
+            new Drawer(m_device, m_swapchain, m_renderpass, m_currentScene);
 }
 
 void kirana::viewport::vulkan::VulkanRenderer::update()
@@ -55,6 +60,11 @@ void kirana::viewport::vulkan::VulkanRenderer::clean()
     {
         delete m_drawer;
         m_drawer = nullptr;
+    }
+    if (m_currentScene)
+    {
+        delete m_currentScene;
+        m_currentScene = nullptr;
     }
     if (m_renderpass)
     {
@@ -87,3 +97,12 @@ void kirana::viewport::vulkan::VulkanRenderer::clean()
         m_instance = nullptr;
     }
 }
+
+/*
+void kirana::viewport::vulkan::VulkanRenderer::loadScene(
+    const scene::Scene &scene)
+{
+    m_currentScene = new SceneData(m_allocator, scene);
+    if (m_currentScene->isInitialized)
+        m_drawer->loadScene(m_currentScene);
+}*/

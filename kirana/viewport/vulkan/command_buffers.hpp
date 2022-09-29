@@ -1,7 +1,8 @@
 #ifndef COMMAND_BUFFER_HPP
 #define COMMAND_BUFFER_HPP
 
-#include "vulkan_utils.hpp"
+#include <vector>
+#include "vulkan_types.hpp"
 
 namespace kirana::viewport::vulkan
 {
@@ -36,6 +37,17 @@ class CommandBuffers
                          vk::Extent2D imageExtent, vk::ClearValue clearColor,
                          uint32_t index = 0) const;
     void bindPipeline(const vk::Pipeline &pipeline, uint32_t index = 0) const;
+    void bindVertexBuffer(const vk::Buffer &buffer,
+                          const vk::DeviceSize &offset,
+                          uint32_t index = 0) const;
+    void bindVertexBuffers(const std::vector<vk::Buffer> &buffers,
+                           const std::vector<vk::DeviceSize> &offsets,
+                           uint32_t index = 0) const;
+    // TODO: Temporary solution to push constants.
+    void pushConstants(vk::PipelineLayout layout,
+                       vk::ShaderStageFlags stageFlags, uint32_t offset,
+                       const MeshPushConstants &meshConstants,
+                       uint32_t index = 0) const;
     void draw(uint32_t vertexCount, uint32_t instanceCount,
               uint32_t firstVertex, uint32_t firstInstance,
               uint32_t index = 0) const;
