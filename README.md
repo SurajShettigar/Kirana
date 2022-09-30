@@ -24,3 +24,6 @@ The repository uses submodules, so clone the repository using:
 git clone --recurse-submodules https://github.com/SurajShettigar/Kirana.git
 ```
 
+Extract `data.zip` file into the current directory of the project. 
+It contains the default resources needed for the app.
+

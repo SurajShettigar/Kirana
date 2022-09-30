@@ -1,11 +1,14 @@
 #include "renderpass.hpp"
 #include "device.hpp"
 #include "swapchain.hpp"
+#include "depth_buffer.hpp"
 #include "vulkan_utils.hpp"
 
 kirana::viewport::vulkan::RenderPass::RenderPass(
-    const Device *const device, const Swapchain *const swapchain)
-    : m_isInitialized{false}, m_device{device}, m_swapchain{swapchain}
+    const Device *const device, const Swapchain *const swapchain,
+    const DepthBuffer *const depthBuffer)
+    : m_isInitialized{false}, m_device{device}, m_swapchain{swapchain},
+      m_depthBuffer{depthBuffer}
 {
     std::vector<vk::AttachmentDescription> attachments;
 
@@ -17,22 +20,50 @@ kirana::viewport::vulkan::RenderPass::RenderPass(
         vk::AttachmentStoreOp::eDontCare, vk::ImageLayout::eUndefined,
         vk::ImageLayout::ePresentSrcKHR);
 
-    // TODO: Create Depth attachment
+    // Description of the depth buffer image for z-testing.
+    vk::AttachmentDescription depthAttachmentDesc(
+        vk::AttachmentDescriptionFlags(), m_depthBuffer->format,
+        vk::SampleCountFlagBits::e1, vk::AttachmentLoadOp::eClear,
+        vk::AttachmentStoreOp::eStore, vk::AttachmentLoadOp::eClear,
+        vk::AttachmentStoreOp::eDontCare, vk::ImageLayout::eUndefined,
+        vk::ImageLayout::eDepthStencilAttachmentOptimal);
 
     attachments.push_back(colorAttachmentDesc);
+    attachments.push_back(depthAttachmentDesc);
 
     // Create attachment references for sub-passes.
     vk::AttachmentReference colorAttachmentRef(
         0, vk::ImageLayout::eColorAttachmentOptimal);
+    vk::AttachmentReference depthAttachmentRef(
+        1, vk::ImageLayout::eDepthStencilAttachmentOptimal);
 
     // Create subpass.
-    vk::SubpassDescription subpassDesc(vk::SubpassDescriptionFlags(),
-                                       vk::PipelineBindPoint::eGraphics, {},
-                                       colorAttachmentRef);
+    vk::SubpassDescription subpassDesc(
+        vk::SubpassDescriptionFlags(), vk::PipelineBindPoint::eGraphics, {},
+        colorAttachmentRef, {}, &depthAttachmentRef);
+
+    // Create subpass dependencies.
+    vk::SubpassDependency colorDependency(
+        VK_SUBPASS_EXTERNAL, 0,
+        vk::PipelineStageFlagBits::eColorAttachmentOutput,
+        vk::PipelineStageFlagBits::eColorAttachmentOutput,
+        vk::AccessFlagBits::eNone, vk::AccessFlagBits::eColorAttachmentWrite);
+
+    vk::SubpassDependency depthDependency(
+        VK_SUBPASS_EXTERNAL, 0,
+        vk::PipelineStageFlagBits::eEarlyFragmentTests |
+            vk::PipelineStageFlagBits::eLateFragmentTests,
+        vk::PipelineStageFlagBits::eEarlyFragmentTests |
+            vk::PipelineStageFlagBits::eLateFragmentTests,
+        vk::AccessFlagBits::eNone,
+        vk::AccessFlagBits::eDepthStencilAttachmentWrite);
+
+    std::vector<vk::SubpassDependency> subpassDependencies;
 
     // Create Renderpass.
     vk::RenderPassCreateInfo createInfo(vk::RenderPassCreateFlags(),
-                                        attachments, subpassDesc);
+                                        attachments, subpassDesc,
+                                        subpassDependencies);
 
     try
     {
@@ -45,9 +76,12 @@ kirana::viewport::vulkan::RenderPass::RenderPass(
             m_swapchain->imageExtent.width, m_swapchain->imageExtent.height, 1);
 
         m_framebuffers.clear();
+
         for (const auto &i : m_swapchain->imageViews)
         {
-            frameBufferInfo.setAttachments(i);
+            std::vector<vk::ImageView> framebufferAttachments{
+                i, m_depthBuffer->imageView};
+            frameBufferInfo.setAttachments(framebufferAttachments);
             m_framebuffers.emplace_back(
                 device->current.createFramebuffer(frameBufferInfo));
         }

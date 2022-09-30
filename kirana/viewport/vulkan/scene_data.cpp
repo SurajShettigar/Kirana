@@ -39,7 +39,7 @@ kirana::viewport::vulkan::SceneData::SceneData(const Allocator *const allocator,
         MeshData meshData;
         meshData.vertexCount = m->vertices.size();
         verticesSize = m->vertices.size() * sizeof(scene::Vertex);
-        if (m_allocator->allocate(
+        if (m_allocator->allocateBuffer(
                 verticesSize, vk::BufferUsageFlagBits::eVertexBuffer,
                 vma::MemoryUsage::eCpuToGpu, &meshData.vertexBuffer))
         {

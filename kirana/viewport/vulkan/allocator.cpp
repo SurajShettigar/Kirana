@@ -42,7 +42,7 @@ kirana::viewport::vulkan::Allocator::~Allocator()
                       "Allocator destroyed");
 }
 
-bool kirana::viewport::vulkan::Allocator::allocate(
+bool kirana::viewport::vulkan::Allocator::allocateBuffer(
     vk::DeviceSize size, vk::BufferUsageFlags usageFlags,
     vma::MemoryUsage memoryUsage, AllocatedBuffer *buffer) const
 {
@@ -54,6 +54,26 @@ bool kirana::viewport::vulkan::Allocator::allocate(
             m_current->createBuffer(createInfo, allocCreateInfo);
         buffer->buffer = std::make_unique<vk::Buffer>(data.first);
         buffer->allocation = std::make_unique<vma::Allocation>(data.second);
+        return true;
+    }
+    catch (...)
+    {
+        handleVulkanException();
+    }
+    return false;
+}
+
+bool kirana::viewport::vulkan::Allocator::allocateImage(
+    const vk::ImageCreateInfo &imageCreateInfo, vma::MemoryUsage memoryUsage,
+    vk::MemoryPropertyFlags requiredFlags, AllocateImage *image) const
+{
+    vma::AllocationCreateInfo allocCreateInfo({}, memoryUsage, requiredFlags);
+    try
+    {
+        std::pair<vk::Image, vma::Allocation> data =
+            m_current->createImage(imageCreateInfo, allocCreateInfo);
+        image->image = std::make_unique<vk::Image>(data.first);
+        image->allocation = std::make_unique<vma::Allocation>(data.second);
         return true;
     }
     catch (...)
@@ -92,4 +112,10 @@ void kirana::viewport::vulkan::Allocator::free(
     const AllocatedBuffer &buffer) const
 {
     m_current->destroyBuffer(*buffer.buffer, *buffer.allocation);
+}
+
+void kirana::viewport::vulkan::Allocator::free(
+    const AllocateImage &image) const
+{
+    m_current->destroyImage(*image.image, *image.allocation);
 }

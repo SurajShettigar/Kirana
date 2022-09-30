@@ -38,11 +38,12 @@ void kirana::viewport::vulkan::CommandBuffers::begin(uint32_t index) const
 
 void kirana::viewport::vulkan::CommandBuffers::beginRenderPass(
     const vk::RenderPass &renderPass, const vk::Framebuffer &framebuffer,
-    vk::Extent2D imageExtent, vk::ClearValue clearColor, uint32_t index) const
+    vk::Extent2D imageExtent, const std::vector<vk::ClearValue> &clearValues,
+    uint32_t index) const
 {
     m_current[index].beginRenderPass(
         vk::RenderPassBeginInfo(renderPass, framebuffer,
-                                vk::Rect2D({0, 0}, imageExtent), clearColor),
+                                vk::Rect2D({0, 0}, imageExtent), clearValues),
         vk::SubpassContents::eInline);
 }
 

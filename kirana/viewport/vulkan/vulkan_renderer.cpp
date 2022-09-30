@@ -7,6 +7,7 @@
 #include "device.hpp"
 #include "allocator.hpp"
 #include "swapchain.hpp"
+#include "depth_buffer.hpp"
 #include "renderpass.hpp"
 #include "drawer.hpp"
 
@@ -37,7 +38,10 @@ void kirana::viewport::vulkan::VulkanRenderer::init(
         m_swapchain = new Swapchain(m_device, m_surface);
     }
     if (m_swapchain->isInitialized)
-        m_renderpass = new RenderPass(m_device, m_swapchain);
+        m_depthBuffer = new DepthBuffer(m_device, m_allocator,
+                                        window->getWindowResolution());
+    if (m_depthBuffer->isInitialized)
+        m_renderpass = new RenderPass(m_device, m_swapchain, m_depthBuffer);
     if (m_renderpass->isInitialized)
         m_currentScene = new SceneData(m_allocator, scene);
     if (m_currentScene->isInitialized)
@@ -70,6 +74,11 @@ void kirana::viewport::vulkan::VulkanRenderer::clean()
     {
         delete m_renderpass;
         m_renderpass = nullptr;
+    }
+    if (m_depthBuffer)
+    {
+        delete m_depthBuffer;
+        m_depthBuffer = nullptr;
     }
     if (m_swapchain)
     {

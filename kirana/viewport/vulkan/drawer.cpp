@@ -28,6 +28,12 @@ glm::mat4 getTransform(float frameNum)
         glm::perspective(glm::radians(70.f), 1700.f / 900.f, 0.1f, 200.0f);
     projection[1][1] *= -1;
     // model rotation
+    //    glm::mat4 model =
+    //        glm::rotate(glm::mat4{1.0f}, glm::radians(180.0f), glm::vec3(0, 0,
+    //        1));
+    //    model =
+    //        glm::rotate(model, glm::radians(frameNum * 0.4f), glm::vec3(0, 1,
+    //        0));
     glm::mat4 model = glm::rotate(
         glm::mat4{1.0f}, glm::radians(frameNum * 0.4f), glm::vec3(0, 1, 0));
 
@@ -131,15 +137,19 @@ void kirana::viewport::vulkan::Drawer::draw()
     uint32_t imgIndex = m_swapchain->acquireNextImage(
         constants::VULKAN_FRAME_SYNC_TIMEOUT, m_presentSemaphore, nullptr);
 
-    vk::ClearValue clearValue;
-    std::array<float, 4> color = {{0.0f, 0.0f, 1.0f, 1.0f}};
-    clearValue.setColor(vk::ClearColorValue(color));
+    vk::ClearValue clearColor;
+    std::array<float, 4> color = {{0.0f, 0.0f, 0.0f, 1.0f}};
+    clearColor.setColor(vk::ClearColorValue(color));
+
+    vk::ClearValue clearDepth;
+    clearDepth.setDepthStencil(vk::ClearDepthStencilValue(1.0f));
 
     m_mainCommandBuffers->reset();
     m_mainCommandBuffers->begin();
-    m_mainCommandBuffers->beginRenderPass(m_renderPass->current,
-                                          m_renderPass->framebuffers[imgIndex],
-                                          m_swapchain->imageExtent, clearValue);
+    m_mainCommandBuffers->beginRenderPass(
+        m_renderPass->current, m_renderPass->framebuffers[imgIndex],
+        m_swapchain->imageExtent,
+        std::vector<vk::ClearValue>{clearColor, clearDepth});
     m_mainCommandBuffers->bindPipeline(m_trianglePipeline->current);
 
 

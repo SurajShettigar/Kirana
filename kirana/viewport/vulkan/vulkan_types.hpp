@@ -74,6 +74,15 @@ struct AllocatedBuffer
 };
 
 /**
+ * Holds an image allocated in memory by VMA.
+ */
+struct AllocateImage
+{
+    std::unique_ptr<vk::Image> image;
+    std::unique_ptr<vma::Allocation> allocation;
+};
+
+/**
  * Holds list of bindings and attributes of vertices to define vertices to the
  * vulkan pipeline.
  */
@@ -84,7 +93,8 @@ struct VertexInputDescription
 };
 
 // TODO: Remove it once descriptor set is implemented.
-struct MeshPushConstants {
+struct MeshPushConstants
+{
     glm::vec4 data;
     glm::mat4 renderMatrix;
 };

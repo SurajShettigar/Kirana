@@ -30,6 +30,10 @@ uint32_t kirana::scene::SceneImporter::getPostProcessMask(
         mask |= aiProcess_GenSmoothNormals;
     if (importSettings.improveCacheLocality)
         mask |= aiProcess_ImproveCacheLocality;
+    if(importSettings.preTransformVertices)
+        mask |= aiProcess_PreTransformVertices;
+    if(importSettings.optimizeMesh)
+        mask |= aiProcess_OptimizeMeshes;
 
     return mask;
 }

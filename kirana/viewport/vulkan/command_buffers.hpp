@@ -34,7 +34,8 @@ class CommandBuffers
     void begin(uint32_t index = 0) const;
     void beginRenderPass(const vk::RenderPass &renderPass,
                          const vk::Framebuffer &framebuffer,
-                         vk::Extent2D imageExtent, vk::ClearValue clearColor,
+                         vk::Extent2D imageExtent,
+                         const std::vector<vk::ClearValue> &clearValues,
                          uint32_t index = 0) const;
     void bindPipeline(const vk::Pipeline &pipeline, uint32_t index = 0) const;
     void bindVertexBuffer(const vk::Buffer &buffer,

@@ -21,6 +21,8 @@ struct SceneImportSettings
     bool generateNormals = false;
     bool generateSmoothNormals = false;
     bool improveCacheLocality = true;
+    bool optimizeMesh = false;
+    bool preTransformVertices = false;
 };
 
 static const SceneImportSettings DEFAULT_SCENE_IMPORT_SETTINGS{};

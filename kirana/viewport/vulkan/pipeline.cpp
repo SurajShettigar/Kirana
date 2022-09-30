@@ -81,6 +81,10 @@ bool kirana::viewport::vulkan::Pipeline::build(
     vk::PipelineMultisampleStateCreateInfo msaa(
         {}, vk::SampleCountFlagBits::e1, false, 1.0f, nullptr, false, false);
 
+    vk::PipelineDepthStencilStateCreateInfo depthStencil(
+        {}, true, true, vk::CompareOp::eLessOrEqual, false, false, {}, {}, 0.0f,
+        1.0f);
+
     vk::PipelineColorBlendAttachmentState attachment(false);
     attachment.setColorWriteMask(
         vk::ColorComponentFlagBits::eR | vk::ColorComponentFlagBits::eG |
@@ -90,8 +94,8 @@ bool kirana::viewport::vulkan::Pipeline::build(
 
     vk::GraphicsPipelineCreateInfo graphicsPipelineCreateInfo(
         vk::PipelineCreateFlags(), shaderStages, &vertexInput, &inputAssembly,
-        nullptr, &viewport, &rasterizer, &msaa, nullptr, &colorBlend, nullptr,
-        m_pipelineLayout->current, m_renderPass->current, 0);
+        nullptr, &viewport, &rasterizer, &msaa, &depthStencil, &colorBlend,
+        nullptr, m_pipelineLayout->current, m_renderPass->current, 0);
 
     try
     {

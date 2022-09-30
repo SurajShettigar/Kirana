@@ -20,6 +20,7 @@ class Surface;
 class Device;
 class Allocator;
 class Swapchain;
+class DepthBuffer;
 class RenderPass;
 class Drawer;
 class SceneData;
@@ -32,6 +33,7 @@ class VulkanRenderer
     Surface *m_surface;
     Device *m_device;
     Swapchain *m_swapchain;
+    DepthBuffer *m_depthBuffer;
     RenderPass *m_renderpass;
     Drawer *m_drawer;
 
