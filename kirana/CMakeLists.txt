@@ -1,4 +1,5 @@
 add_subdirectory(utils)
+add_subdirectory(math)
 add_subdirectory(window)
 add_subdirectory(viewport)
 add_subdirectory(scene)
