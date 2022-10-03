@@ -11,7 +11,7 @@ class Vector4;
 class Vector3
 {
   private:
-    float v[3]{0, 0, 0};
+    float m_current[3]{0, 0, 0};
 
   public:
     // static values
@@ -24,36 +24,38 @@ class Vector3
     static const Vector3 FORWARD;
     static const Vector3 BACK;
 
-    float &x = v[0];
-    float &y = v[1];
-    float &z = v[2];
+    float &x = m_current[0];
+    float &y = m_current[1];
+    float &z = m_current[2];
 
     Vector3() = default;
     ~Vector3() = default;
-    explicit Vector3(float x = 0.0f, float y = 0.0f, float z = 0.0f);
+    explicit Vector3(float x, float y, float z);
     explicit Vector3(const Vector4 &vec4);
 
-    Vector3(const Vector3 &w);
-    Vector3 &operator=(const Vector3 &w);
+    Vector3(const Vector3 &vec3);
+    Vector3 &operator=(const Vector3 &vec3);
 
     /// Cast to Vector4
     explicit operator Vector4();
 
-    inline float operator[](int i) const
+    inline float operator[](size_t i) const
     {
-        return v[i];
+        return m_current[i];
     }
-    inline float &operator[](int i)
+    inline float &operator[](size_t i)
     {
-        return v[i];
+        return m_current[i];
     }
 
     // Current Vector operations
     Vector3 operator-() const;
-    Vector3 &operator+=(const Vector3 &w);
-    Vector3 &operator-=(const Vector3 &w);
-    Vector3 &operator*=(float a);
-    Vector3 &operator/=(float a);
+    Vector3 &operator+=(const Vector3 &rhs);
+    Vector3 &operator-=(const Vector3 &rhs);
+    Vector3 &operator*=(float rhs);
+    Vector3 &operator/=(float rhs);
+    bool operator==(const Vector3 &rhs) const;
+    bool operator!=(const Vector3 &rhs) const;
 
     // Vector Specific operations
     [[nodiscard]] float length() const;
@@ -68,18 +70,14 @@ class Vector3
     static void coordinateFrame(const Vector3 &w, Vector3 *u, Vector3 *v);
 
     // Arithmetic operations
-    friend Vector3 operator+(const Vector3 &v, const Vector3 &w);
-    friend Vector3 operator-(const Vector3 &v, const Vector3 &w);
-    friend Vector3 operator*(const Vector3 &v, float a);
-    friend Vector3 operator*(float a, const Vector3 &v);
-    friend Vector3 operator/(const Vector3 &v, float a);
+    friend Vector3 operator+(const Vector3 &lhs, const Vector3 &rhs);
+    friend Vector3 operator-(const Vector3 &lhs, const Vector3 &rhs);
+    friend Vector3 operator*(const Vector3 &lhs, float rhs);
+    friend Vector3 operator*(float lhs, const Vector3 &rhs);
+    friend Vector3 operator/(const Vector3 &lhs, float rhs);
 
     // Other operations
-    friend std::ostream &operator<<(std::ostream &out, const Vector3 &v);
-
-    // Comparison operations
-    friend bool operator==(const Vector3 &v, const Vector3 &w);
-    friend bool operator!=(const Vector3 &v, const Vector3 &w);
+    friend std::ostream &operator<<(std::ostream &out, const Vector3 &vec3);
 };
 
 } // namespace kirana::math

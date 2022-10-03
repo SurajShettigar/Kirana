@@ -6,74 +6,88 @@
 
 using kirana::math::Vector4;
 
-Vector4::Vector4(float x, float y, float z, float w) : v{x, y, z, w}
+Vector4::Vector4(float x, float y, float z, float w) : m_current{x, y, z, w}
 {
 }
-Vector4::Vector4(const Vector3 &vec3, float w) : v{vec3.x, vec3.y, vec3.z, w}
+Vector4::Vector4(const Vector3 &vec3, float w)
+    : m_current{vec3.x, vec3.y, vec3.z, w}
 {
 }
 
 Vector4::Vector4(const Vector4 &w)
 {
-    v[0] = w[0];
-    v[1] = w[1];
-    v[2] = w[2];
-    v[3] = w[3];
+    m_current[0] = w[0];
+    m_current[1] = w[1];
+    m_current[2] = w[2];
+    m_current[3] = w[3];
 }
 
-Vector4 &Vector4::operator=(const Vector4 &w)
+Vector4 &Vector4::operator=(const Vector4 &vec4)
 {
-    if (&w != this)
+    if (&vec4 != this)
     {
-        v[0] = w[0];
-        v[1] = w[1];
-        v[2] = w[2];
-        v[3] = w[3];
+        m_current[0] = vec4[0];
+        m_current[1] = vec4[1];
+        m_current[2] = vec4[2];
+        m_current[3] = vec4[3];
     }
     return *this;
 }
 
 Vector4::operator Vector3()
 {
-    return Vector3(v[0], v[1], v[2]);
+    return Vector3(m_current[0], m_current[1], m_current[2]);
 }
 
 Vector4 Vector4::operator-() const
 {
-    return Vector4(-v[0], -v[1], -v[2], -v[3]);
+    return Vector4(-m_current[0], -m_current[1], -m_current[2], -m_current[3]);
 }
 
-Vector4 &Vector4::operator+=(const Vector4 &w)
+Vector4 &Vector4::operator+=(const Vector4 &rhs)
 {
-    v[0] += w[0];
-    v[1] += w[1];
-    v[2] += w[2];
-    v[3] += w[3];
+    m_current[0] += rhs[0];
+    m_current[1] += rhs[1];
+    m_current[2] += rhs[2];
+    m_current[3] += rhs[3];
 
     return *this;
 }
-Vector4 &Vector4::operator-=(const Vector4 &w)
+Vector4 &Vector4::operator-=(const Vector4 &rhs)
 {
-    v[0] -= w[0];
-    v[1] -= w[1];
-    v[2] -= w[2];
-    v[3] -= w[3];
+    m_current[0] -= rhs[0];
+    m_current[1] -= rhs[1];
+    m_current[2] -= rhs[2];
+    m_current[3] -= rhs[3];
     return *this;
 }
 
-Vector4 &Vector4::operator*=(const float a)
+Vector4 &Vector4::operator*=(const float rhs)
 {
-    v[0] *= a;
-    v[1] *= a;
-    v[2] *= a;
-    v[3] *= a;
+    m_current[0] *= rhs;
+    m_current[1] *= rhs;
+    m_current[2] *= rhs;
+    m_current[3] *= rhs;
     return *this;
 }
 
-Vector4 &Vector4::operator/=(const float a)
+Vector4 &Vector4::operator/=(const float rhs)
 {
-    return *this *= 1 / a;
+    return *this *= 1 / rhs;
 }
+
+bool Vector4::operator==(const Vector4 &rhs) const
+{
+    return std::fabsf((*this).length() - rhs.length()) <=
+           std::numeric_limits<float>::epsilon();
+}
+
+bool Vector4::operator!=(const Vector4 &rhs) const
+{
+    return std::fabsf((*this).length() - rhs.length()) >
+           std::numeric_limits<float>::epsilon();
+}
+
 
 float Vector4::length() const
 {
@@ -82,7 +96,8 @@ float Vector4::length() const
 
 float Vector4::lengthSquared() const
 {
-    return (v[0] * v[0]) + (v[1] * v[1]) + (v[2] * v[2]) + (v[3] * v[3]);
+    return (m_current[0] * m_current[0]) + (m_current[1] * m_current[1]) +
+           (m_current[2] * m_current[2]) + (m_current[3] * m_current[3]);
 }
 
 Vector4 Vector4::normalize() const
@@ -90,9 +105,9 @@ Vector4 Vector4::normalize() const
     return (*this / length());
 }
 
-Vector4 Vector4::normalize(const Vector4 &v)
+Vector4 Vector4::normalize(const Vector4 &vec4)
 {
-    return v / v.length();
+    return vec4 / vec4.length();
 }
 
 Vector4 Vector4::lerp(const Vector4 &v, const Vector4 &w, float t)
@@ -101,45 +116,35 @@ Vector4 Vector4::lerp(const Vector4 &v, const Vector4 &w, float t)
 }
 
 
-Vector4 kirana::math::operator+(const Vector4 &v, const Vector4 &w)
+Vector4 kirana::math::operator+(const Vector4 &lhs, const Vector4 &rhs)
 {
-    return Vector4(v[0] + w[0], v[1] + w[1], v[2] + w[2], v[3] + w[3]);
+    return Vector4(lhs[0] + rhs[0], lhs[1] + rhs[1], lhs[2] + rhs[2],
+                   lhs[3] + rhs[3]);
 }
 
-Vector4 kirana::math::operator-(const Vector4 &v, const Vector4 &w)
+Vector4 kirana::math::operator-(const Vector4 &lhs, const Vector4 &rhs)
 {
-    return Vector4(v[0] - w[0], v[1] - w[1], v[2] - w[2], v[3] - w[3]);
+    return Vector4(lhs[0] - rhs[0], lhs[1] - rhs[1], lhs[2] - rhs[2],
+                   lhs[3] - rhs[3]);
 }
 
-Vector4 kirana::math::operator*(float a, const Vector4 &v)
+Vector4 kirana::math::operator*(float lhs, const Vector4 &rhs)
 {
-    return Vector4(v[0] * a, v[1] * a, v[2] * a, v[3] * a);
+    return Vector4(rhs[0] * lhs, rhs[1] * lhs, rhs[2] * lhs, rhs[3] * lhs);
 }
 
-Vector4 kirana::math::operator*(const Vector4 &v, float a)
+Vector4 kirana::math::operator*(const Vector4 &lhs, float rhs)
 {
-    return a * v;
+    return rhs * lhs;
 }
 
-Vector4 kirana::math::operator/(const Vector4 &v, float a)
+Vector4 kirana::math::operator/(const Vector4 &lhs, float rhs)
 {
-    return (1 / a) * v;
+    return (1 / rhs) * lhs;
 }
 
-std::ostream &kirana::math::operator<<(std::ostream &out, const Vector3 &v)
+std::ostream &kirana::math::operator<<(std::ostream &out, const Vector4 &vec4)
 {
-    return out << '{' << v[0] << ", " << v[1] << ", " << v[2] << ", " << v[3]
-               << '}';
-}
-
-bool kirana::math::operator==(const Vector4 &v, const Vector4 &w)
-{
-    return std::fabsf(v.length() - w.length()) <=
-           std::numeric_limits<float>::epsilon();
-}
-
-bool kirana::math::operator!=(const Vector4 &v, const Vector4 &w)
-{
-    return std::fabsf(v.length() - w.length()) >
-           std::numeric_limits<float>::epsilon();
+    return out << '{' << vec4[0] << ", " << vec4[1] << ", " << vec4[2] << ", "
+               << vec4[3] << '}';
 }

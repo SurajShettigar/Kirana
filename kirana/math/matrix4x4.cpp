@@ -10,14 +10,14 @@ const Matrix4x4 Matrix4x4::IDENTITY = Matrix4x4();
 
 Matrix4x4::Matrix4x4(float matrix[4][4])
 {
-    std::copy(&matrix[0][0], &matrix[0][0] + 16, &m[0][0]);
+    std::copy(&matrix[0][0], &matrix[0][0] + 16, &m_current[0][0]);
 }
 
 Matrix4x4::Matrix4x4(float m00, float m01, float m02, float m03, float m10,
                      float m11, float m12, float m13, float m20, float m21,
                      float m22, float m23, float m30, float m31, float m32,
                      float m33)
-    : m{
+    : m_current{
           {m00, m01, m02, m03},
           {m10, m11, m12, m13},
           {m20, m21, m22, m23},
@@ -27,7 +27,7 @@ Matrix4x4::Matrix4x4(float m00, float m01, float m02, float m03, float m10,
 }
 
 Matrix4x4::Matrix4x4(Vector4 c0, Vector4 c1, Vector4 c2, Vector4 c3)
-    : m{
+    : m_current{
           {c0.x, c1.x, c2.x, c3.x},
           {c0.y, c1.y, c2.y, c3.y},
           {c0.z, c1.z, c2.z, c3.z},
@@ -39,19 +39,22 @@ Matrix4x4::Matrix4x4(Vector4 c0, Vector4 c1, Vector4 c2, Vector4 c3)
 Matrix4x4::Matrix4x4(const Matrix4x4 &mat)
 {
     if (&mat != this)
-        std::copy(&mat.m[0][0], &mat.m[0][0] + 16, &m[0][0]);
+        std::copy(&mat.m_current[0][0], &mat.m_current[0][0] + 16,
+                  &m_current[0][0]);
 }
 
 Matrix4x4 &Matrix4x4::operator=(const Matrix4x4 &mat)
 {
     if (&mat != this)
-        std::copy(&mat.m[0][0], &mat.m[0][0] + 16, &m[0][0]);
+        std::copy(&mat.m_current[0][0], &mat.m_current[0][0] + 16,
+                  &m_current[0][0]);
 }
 
 
-Vector4 Matrix4x4::operator[](int i) const
+Vector4 Matrix4x4::operator[](size_t i) const
 {
-    return Vector4(m[0][i], m[1][i], m[2][i], m[3][i]);
+    return Vector4(m_current[0][i], m_current[1][i], m_current[2][i],
+                   m_current[3][i]);
 }
 
 
@@ -59,7 +62,7 @@ bool Matrix4x4::operator==(const Matrix4x4 &mat) const
 {
     for (size_t i = 0; i < 4; i++)
         for (size_t j = 0; j < 4; j++)
-            if (!approximatelyEqual(m[i][j], mat[i][j]))
+            if (!approximatelyEqual(m_current[i][j], mat[i][j]))
                 return false;
     return true;
 }
@@ -68,20 +71,39 @@ bool Matrix4x4::operator!=(const Matrix4x4 &mat) const
 {
     for (size_t i = 0; i < 4; i++)
         for (size_t j = 0; j < 4; j++)
-            if (!approximatelyEqual(m[i][j], mat[i][j]))
+            if (!approximatelyEqual(m_current[i][j], mat[i][j]))
                 return true;
     return false;
 }
 
-Matrix4x4 kirana::math::operator*(const Matrix4x4 &mat1, const Matrix4x4 &mat2)
+Matrix4x4 &Matrix4x4::operator*=(const Matrix4x4 &rhs)
 {
-    Matrix4x4 mul;
     for (size_t i = 0; i < 4; i++)
         for (size_t j = 0; j < 4; j++)
-            mul.m[i][j] = mul.m[i][0] * mul.m[0][j] +
-                          mul.m[i][1] * mul.m[1][j] +
-                          mul.m[i][2] * mul.m[2][j] + mul.m[i][3] * mul.m[3][j];
+            m_current[i][j] = m_current[i][0] * rhs.m_current[0][j] +
+                              m_current[i][1] * rhs.m_current[1][j] +
+                              m_current[i][2] * rhs.m_current[2][j] +
+                              m_current[i][3] * rhs.m_current[3][j];
+    return *this;
+}
+
+Matrix4x4 kirana::math::operator*(const Matrix4x4 &mat1, const Matrix4x4 &mat2)
+{
+    Matrix4x4 mul = mat1;
+    mul *= mat2;
     return mul;
+}
+
+Vector4 kirana::math::operator*(const Matrix4x4 &mat, const Vector4 &vec4)
+{
+    return Vector4(mat.m00 * vec4.x + mat.m01 * vec4.y + mat.m02 * vec4.z +
+                       mat.m03 * vec4.w,
+                   mat.m10 * vec4.x + mat.m11 * vec4.y + mat.m12 * vec4.z +
+                       mat.m13 * vec4.w,
+                   mat.m20 * vec4.x + mat.m21 * vec4.y + mat.m22 * vec4.z +
+                       mat.m23 * vec4.w,
+                   mat.m30 * vec4.x + mat.m31 * vec4.y + mat.m32 * vec4.z +
+                       mat.m33 * vec4.w);
 }
 
 Matrix4x4 Matrix4x4::transpose(const Matrix4x4 &mat)
@@ -104,7 +126,7 @@ Matrix4x4 Matrix4x4::inverse(const Matrix4x4 &mat)
     int indxc[4], indxr[4];
     int ipiv[4] = {0, 0, 0, 0};
     float minv[4][4];
-    std::copy(&mat.m[0][0], &mat.m[0][0] + 16, &minv[0][0]);
+    std::copy(&mat.m_current[0][0], &mat.m_current[0][0] + 16, &minv[0][0]);
     for (int i = 0; i < 4; i++)
     {
         int irow = 0, icol = 0;

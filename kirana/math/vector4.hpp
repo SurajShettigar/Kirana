@@ -11,63 +11,60 @@ class Vector3;
 class Vector4
 {
   private:
-    float v[4]{0, 0, 0, 0};
+    float m_current[4]{0, 0, 0, 0};
 
   public:
-    float &x = v[0];
-    float &y = v[1];
-    float &z = v[2];
-    float &w = v[3];
+    float &x = m_current[0];
+    float &y = m_current[1];
+    float &z = m_current[2];
+    float &w = m_current[3];
 
     Vector4() = default;
     ~Vector4() = default;
-    explicit Vector4(float x = 0.0f, float y = 0.0f, float z = 0.0f,
-                     float w = 0.0f);
+    explicit Vector4(float x, float y, float z, float w);
     explicit Vector4(const Vector3 &vec3, float w = 0.0f);
 
-    Vector4(const Vector4 &w);
-    Vector4 &operator=(const Vector4 &w);
+    Vector4(const Vector4 &vec4);
+    Vector4 &operator=(const Vector4 &vec4);
 
     /// Cast to Vector3
     explicit operator Vector3();
 
-    inline float operator[](int i) const
+    inline float operator[](size_t i) const
     {
-        return v[i];
+        return m_current[i];
     }
-    inline float &operator[](int i)
+    inline float &operator[](size_t i)
     {
-        return v[i];
+        return m_current[i];
     }
 
     // Current Vector operations
     Vector4 operator-() const;
-    Vector4 &operator+=(const Vector4 &w);
-    Vector4 &operator-=(const Vector4 &w);
-    Vector4 &operator*=(float a);
-    Vector4 &operator/=(float a);
+    Vector4 &operator+=(const Vector4 &rhs);
+    Vector4 &operator-=(const Vector4 &rhs);
+    Vector4 &operator*=(float rhs);
+    Vector4 &operator/=(float rhs);
+    bool operator==(const Vector4 &rhs) const;
+    bool operator!=(const Vector4 &rhs) const;
 
     // Vector Specific operations
     [[nodiscard]] float length() const;
     [[nodiscard]] float lengthSquared() const;
     [[nodiscard]] Vector4 normalize() const;
 
-    static Vector4 normalize(const Vector4 &v);
+    static Vector4 normalize(const Vector4 &vec4);
     static Vector4 lerp(const Vector4 &v, const Vector4 &w, float t);
 
     // Arithmetic operations
-    friend Vector4 operator+(const Vector4 &v, const Vector4 &w);
-    friend Vector4 operator-(const Vector4 &v, const Vector4 &w);
-    friend Vector4 operator*(const Vector4 &v, float a);
-    friend Vector4 operator*(float a, const Vector4 &v);
-    friend Vector4 operator/(const Vector4 &v, float a);
+    friend Vector4 operator+(const Vector4 &lhs, const Vector4 &rhs);
+    friend Vector4 operator-(const Vector4 &lhs, const Vector4 &rhs);
+    friend Vector4 operator*(const Vector4 &lhs, float rhs);
+    friend Vector4 operator*(float lhs, const Vector4 &rhs);
+    friend Vector4 operator/(const Vector4 &lhs, float rhs);
 
     // Other operations
-    friend std::ostream &operator<<(std::ostream &out, const Vector4 &v);
-
-    // Comparison operations
-    friend bool operator==(const Vector4 &v, const Vector4 &w);
-    friend bool operator!=(const Vector4 &v, const Vector4 &w);
+    friend std::ostream &operator<<(std::ostream &out, const Vector4 &vec4);
 };
 
 } // namespace kirana::math
