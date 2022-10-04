@@ -28,7 +28,7 @@ class Vector4
     Vector4 &operator=(const Vector4 &vec4);
 
     /// Cast to Vector3
-    explicit operator Vector3();
+    explicit operator Vector3() const;
 
     inline float operator[](size_t i) const
     {

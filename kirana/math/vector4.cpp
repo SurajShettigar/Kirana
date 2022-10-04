@@ -4,11 +4,13 @@
 #include <cmath>
 #include <limits>
 
+using kirana::math::Vector3;
 using kirana::math::Vector4;
 
 Vector4::Vector4(float x, float y, float z, float w) : m_current{x, y, z, w}
 {
 }
+
 Vector4::Vector4(const Vector3 &vec3, float w)
     : m_current{vec3.x, vec3.y, vec3.z, w}
 {
@@ -34,7 +36,7 @@ Vector4 &Vector4::operator=(const Vector4 &vec4)
     return *this;
 }
 
-Vector4::operator Vector3()
+Vector4::operator Vector3() const
 {
     return Vector3(m_current[0], m_current[1], m_current[2]);
 }

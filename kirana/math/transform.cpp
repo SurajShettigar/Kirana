@@ -112,9 +112,49 @@ void kirana::math::Transform::rotate(const Vector3 &rotation)
         cosX * cosY, 0.0f, 0.0f, 0.0f, 0.0f, 1.0f);
 }
 
-void kirana::math::Transform::rotateAround(float angle, const Vector3 &axis)
+void kirana::math::Transform::rotateAround(float angle, const Vector3 &a)
 {
-    // TODO: Implement Rotate Around an axis transform function.
+    // Goldman, Ronald, “Matrices and Transformations,” in Andrew S. Glassner,
+    // ed., Graphics Gems, Academic Press, pp. 472–475, 1990. Cited on p. 75
+    // @link {https://dl.acm.org/doi/10.5555/90767.90908}
+
+    float c = std::cos(math::radians(angle));
+    float omc = 1.0f - c;
+    float s = std::sin(math::radians(angle));
+
+    m_current *=
+        Matrix4x4(c + omc * a.x * a.x, omc * a.x * a.y - a.z * s,
+                  omc * a.x * a.z + a.y * s, 0.0f, omc * a.x * a.y + a.z * s,
+                  c + omc * a.y * a.y, omc * a.y * a.z - a.x * s, 0.0f,
+                  omc * a.x * a.z - a.y * s, omc * a.y * a.z + a.x * s,
+                  c + omc * a.z * a.z, 0.0f, 0.0f, 0.0f, 0.0f, 1.0f);
+
+    m_inverse *=
+        Matrix4x4(c + omc * a.x * a.x, omc * a.x * a.y + a.z * s,
+                  omc * a.x * a.z - a.y * s, 0.0f, omc * a.x * a.y - a.z * s,
+                  c + omc * a.y * a.y, omc * a.y * a.z + a.x * s, 0.0f,
+                  omc * a.x * a.z + a.y * s, omc * a.y * a.z - a.x * s,
+                  c + omc * a.z * a.z, 0.0f, 0.0f, 0.0f, 0.0f, 1.0f);
+}
+
+void kirana::math::Transform::lookAt(const Vector3 &lookAtPos,
+                                     const Vector3 &up)
+{
+    Vector3 z = -(lookAtPos - static_cast<Vector3>(m_current[3])).normalize();
+    Vector3 x = Vector3::cross(up.normalize(), z);
+    Vector3 y = Vector3::cross(z, x);
+
+    // The above calculated basis vectors are camera's basis in world space
+    // (Camera's transform matrix). In order to get view matrix, we just invert
+    // the matrix one would obtain from the above basis vectors. Look at
+    // https://www.3dgep.com/understanding-the-view-matrix/ for a detailed
+    // explanation.
+
+    // m_current is now a view-matrix.
+    m_current *= Matrix4x4(x.x, x.y, x.z, 0.0f, y.x, y.y, y.z, 0.0f, z.x, z.y,
+                           z.z, 0.0f, 0.0f, 0.0f, 0.0f, 1.0f);
+    m_inverse *= Matrix4x4(x.x, y.x, z.x, 0.0f, x.y, y.y, z.y, 0.0f, x.z, y.z,
+                           z.z, 0.0f, 0.0f, 0.0f, 0.0f, 1.0f);
 }
 
 void kirana::math::Transform::scale(const Vector3 &scale)

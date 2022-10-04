@@ -48,6 +48,7 @@ Matrix4x4 &Matrix4x4::operator=(const Matrix4x4 &mat)
     if (&mat != this)
         std::copy(&mat.m_current[0][0], &mat.m_current[0][0] + 16,
                   &m_current[0][0]);
+    return *this;
 }
 
 
@@ -121,7 +122,7 @@ Matrix4x4 Matrix4x4::multiply(const Matrix4x4 &mat1, const Matrix4x4 &mat2)
 
 Matrix4x4 Matrix4x4::inverse(const Matrix4x4 &mat)
 {
-    /// Gauss Jordan Elimination method of finding inverse.
+    // Gauss Jordan Elimination method of finding inverse.
 
     int indxc[4], indxr[4];
     int ipiv[4] = {0, 0, 0, 0};

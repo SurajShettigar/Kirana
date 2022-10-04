@@ -28,7 +28,8 @@ class Transform
     void rotateY(float angle);
     void rotateZ(float angle);
     void rotate(const Vector3& rotation);
-    void rotateAround(float angle, const Vector3& axis);
+    void rotateAround(float angle, const Vector3 &axis);
+    void lookAt(const Vector3& lookAtPos, const Vector3& up);
     void scale(const Vector3& scale);
 
     static Transform inverse(const Transform& transform);

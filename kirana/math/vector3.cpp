@@ -5,6 +5,7 @@
 #include <limits>
 
 using kirana::math::Vector3;
+using kirana::math::Vector4;
 
 const Vector3 Vector3::ZERO{0.0f, 0.0f, 0.0f};
 const Vector3 Vector3::ONE{1.0f, 1.0f, 1.0};
@@ -42,7 +43,7 @@ Vector3 &Vector3::operator=(const Vector3 &vec3)
     return *this;
 }
 
-Vector3::operator Vector4()
+Vector3::operator Vector4() const
 {
     return Vector4(m_current[0], m_current[1], m_current[2], 0.0f);
 }
