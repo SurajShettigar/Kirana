@@ -23,6 +23,8 @@ class Transform
     bool operator==(const Transform &rhs) const;
     bool operator!=(const Transform &rhs) const;
 
+    Transform &operator*=(const Transform &rhs);
+
     void translate(const Vector3& translation);
     void rotateX(float angle);
     void rotateY(float angle);
@@ -34,7 +36,12 @@ class Transform
 
     static Transform inverse(const Transform& transform);
     static Transform transpose(const Transform& transform);
+    static Transform getOrthographicTransform(float left, float right, float bottom, float top, float near, float far);
+    static Transform getOrthographicTransform(float size, float aspectRatio, float near, float far);
+    static Transform getPerspectiveTransform(float fov, float aspectRatio, float near, float far);
 
+    friend Transform operator*(const Transform &lhs, const Transform &rhs);
+    friend Vector4 operator*(const Transform &lhs, const Vector4 &rhs);
 };
 } // namespace kirana::math
 #endif

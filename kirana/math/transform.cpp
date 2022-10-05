@@ -48,6 +48,15 @@ bool kirana::math::Transform::operator!=(const Transform &rhs) const
            (*this).m_inverse != rhs.m_inverse;
 }
 
+
+kirana::math::Transform &kirana::math::Transform::operator*=(
+    const Transform &rhs)
+{
+    this->m_current *= rhs.m_current;
+    this->m_inverse *= rhs.m_inverse;
+    return *this;
+}
+
 void kirana::math::Transform::translate(
     const kirana::math::Vector3 &translation)
 {
@@ -177,4 +186,68 @@ kirana::math::Transform kirana::math::Transform::transpose(
 {
     return Transform(Matrix4x4::transpose(transform.m_current),
                      Matrix4x4::transpose(transform.m_inverse));
+}
+
+kirana::math::Transform kirana::math::Transform::getOrthographicTransform(
+    float left, float right, float bottom, float top, float near, float far)
+{
+    Transform transform;
+    transform.m_current = Matrix4x4(
+        2.0f / (right - left), 0.0f, 0.0f, -((right + left) / (right - left)),
+        0.0f, 2.0f / (top - bottom), 0.0f, -((top + bottom) / (top - bottom)),
+        0.0f, 0.0f, 2.0f / (near - far), -((near + far) / (near - far)), 0.0f,
+        0.0f, 0.0f, 1.0f);
+
+    transform.m_inverse = Matrix4x4(
+        0.5f * (right - left), 0.0f, 0.0f, 0.5f * (right + left), 0.0f,
+        0.5f * (top - bottom), 0.0f, 0.5f * (top + bottom), 0.0f, 0.0f,
+        0.5f * (near - far), 0.5f * (near + far), 0.0f, 0.0f, 0.0f, 1.0f);
+    return transform;
+}
+
+kirana::math::Transform kirana::math::Transform::getOrthographicTransform(
+    float size, float aspectRatio, float near, float far)
+{
+    return getOrthographicTransform(-size / 2.0f, size / 2.0f,
+                                    (-size / 2.0f) / aspectRatio,
+                                    (size / 2.0f) / aspectRatio, near, far);
+}
+
+kirana::math::Transform kirana::math::Transform::getPerspectiveTransform(
+    float fov, float aspectRatio, float near, float far)
+{
+    float top = near * std::tan(math::radians(fov * 0.5f));
+    float bottom = -top;
+    float right = top * aspectRatio;
+    float left = -right;
+
+    Transform transform;
+    transform.m_current =
+        Matrix4x4(2.0f * near / (right - left), 0.0f,
+                  (left + right) / (left - right), 0.0f, 0.0f,
+                  2.0f * near / (top - bottom), (bottom + top) / (bottom - top),
+                  0.0f, 0.0f, 0.0f, (far + near) / (near - far),
+                  2.0f * far * near / (far - near), 0.0f, 0.0f, 1.0f, 0.0f);
+
+    transform.m_inverse = Matrix4x4(
+        0.5f * far * (right - left), 0.0f, 0.0f, 0.5f * far * (left + right),
+        0.0f, 0.5f * far * (top - bottom), 0.0f, 0.5f * far * (bottom + top),
+        0.0f, 0.0f, 0.0f, far * near, 0.0f, 0.0f, 0.5f * (far - near),
+        0.5f * (-far - near) + far + near);
+    return transform;
+}
+
+kirana::math::Transform kirana::math::operator*(const Transform &lhs,
+                                                const Transform &rhs)
+{
+    Transform transform;
+    transform.m_current = lhs.m_current * rhs.m_current;
+    transform.m_inverse = lhs.m_inverse * rhs.m_inverse;
+    return transform;
+}
+
+kirana::math::Vector4 kirana::math::operator*(const Transform &lhs,
+                                              const Vector4 &rhs)
+{
+    return lhs.m_current * rhs;
 }
