@@ -1,6 +1,7 @@
 #include "vector3.hpp"
 #include "vector4.hpp"
 
+#include <iostream>
 #include <cmath>
 #include <limits>
 
@@ -21,7 +22,7 @@ Vector3::Vector3(float x, float y, float z) : m_current{x, y, z}
 }
 
 
-Vector3::Vector3(const Vector4 &vec4) : m_current{vec4.x, vec4.y, vec4.z}
+Vector3::Vector3(const Vector4 &vec4) : m_current{vec4[0], vec4[1], vec4[2]}
 {
 }
 
@@ -153,17 +154,17 @@ void Vector3::coordinateFrame(const Vector3 &w, Vector3 *u, Vector3 *v)
     /// (JCGT), vol. 6, no. 1, 1-8, 2017
     /// @link {http://jcgt.org/published/0006/01/01/}
 
-    float sign = std::copysignf(1.0f, w.z);
-    const float a = -1.0f / (sign + w.z);
-    const float b = w.x * w.y * a;
+    float sign = std::copysignf(1.0f, w[2]);
+    const float a = -1.0f / (sign + w[2]);
+    const float b = w[0] * w[1] * a;
 
-    u->x = 1.0f + sign * w.x * w.x * a;
-    u->y = sign * b;
-    u->z = -sign * w.x;
+    u->m_current[0] = 1.0f + sign * w[0] * w[0] * a;
+    u->m_current[1] = sign * b;
+    u->m_current[2] = -sign * w[0];
 
-    v->x = b;
-    v->y = sign + w.y * w.y * a;
-    v->z = -w.y;
+    v->m_current[0] = b;
+    v->m_current[1] = sign + w[1] * w[1] * a;
+    v->m_current[2] = -w[1];
 }
 
 Vector3 kirana::math::operator+(const Vector3 &lhs, const Vector3 &rhs)

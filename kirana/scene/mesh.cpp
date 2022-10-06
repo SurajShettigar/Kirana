@@ -10,23 +10,23 @@ kirana::scene::Mesh::Mesh(const aiMesh *mesh) : m_name{mesh->mName.C_Str()}
     {
         if (mesh->HasPositions())
         {
-            m_vertices[i].position.x = mesh->mVertices[i].x;
-            m_vertices[i].position.y = mesh->mVertices[i].y;
-            m_vertices[i].position.z = mesh->mVertices[i].z;
+            m_vertices[i].position[0] = mesh->mVertices[i].x;
+            m_vertices[i].position[1] = mesh->mVertices[i].y;
+            m_vertices[i].position[2] = mesh->mVertices[i].z;
         }
 
         if (mesh->HasNormals())
         {
-            m_vertices[i].normal.x = mesh->mNormals[i].x;
-            m_vertices[i].normal.y = mesh->mNormals[i].y;
-            m_vertices[i].normal.z = mesh->mNormals[i].z;
+            m_vertices[i].normal[0] = mesh->mNormals[i].x;
+            m_vertices[i].normal[1] = mesh->mNormals[i].y;
+            m_vertices[i].normal[2] = mesh->mNormals[i].z;
         }
 
         if (mesh->HasVertexColors(i))
         {
-            m_vertices[i].color.r = mesh->mColors[i]->r;
-            m_vertices[i].color.g = mesh->mColors[i]->g;
-            m_vertices[i].color.b = mesh->mColors[i]->b;
+            m_vertices[i].color[0] = mesh->mColors[i]->r;
+            m_vertices[i].color[1] = mesh->mColors[i]->g;
+            m_vertices[i].color[2] = mesh->mColors[i]->b;
         }
     }
 }

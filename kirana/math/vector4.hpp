@@ -14,10 +14,6 @@ class Vector4
     float m_current[4]{0, 0, 0, 0};
 
   public:
-    float &x = m_current[0];
-    float &y = m_current[1];
-    float &z = m_current[2];
-    float &w = m_current[3];
 
     Vector4() = default;
     ~Vector4() = default;
@@ -52,6 +48,21 @@ class Vector4
     [[nodiscard]] float length() const;
     [[nodiscard]] float lengthSquared() const;
     [[nodiscard]] Vector4 normalize() const;
+
+    [[nodiscard]] inline size_t size() const
+    {
+        return sizeof(m_current);
+    }
+
+    [[nodiscard]] inline size_t count() const
+    {
+        return sizeof(m_current) / sizeof(float);
+    }
+
+    [[nodiscard]] inline const float *data() const
+    {
+        return &m_current[0];
+    }
 
     static Vector4 normalize(const Vector4 &vec4);
     static Vector4 lerp(const Vector4 &v, const Vector4 &w, float t);

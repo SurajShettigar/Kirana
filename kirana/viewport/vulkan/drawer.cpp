@@ -10,34 +10,15 @@
 #include "pipeline.hpp"
 #include "scene_data.hpp"
 #include "vulkan_utils.hpp"
-#include <glm/gtx/transform.hpp>
 #include "vulkan_types.hpp"
+#include <vector3.hpp>
 
-// #include <math.h>
-
-
-glm::mat4 getTransform(float frameNum)
+kirana::math::Matrix4x4 getTransform(
+    const kirana::camera::PerspectiveCamera &cam,
+    kirana::math::Transform &model, float frameNum)
 {
-    // make a model view matrix for rendering the object
-    // camera position
-    glm::vec3 camPos = {0.f, 0.f, -2.f};
-
-    glm::mat4 view = glm::translate(glm::mat4(1.f), camPos);
-    // camera projection
-    glm::mat4 projection =
-        glm::perspective(glm::radians(70.f), 1700.f / 900.f, 0.1f, 200.0f);
-    projection[1][1] *= -1;
-    // model rotation
-    //    glm::mat4 model =
-    //        glm::rotate(glm::mat4{1.0f}, glm::radians(180.0f), glm::vec3(0, 0,
-    //        1));
-    //    model =
-    //        glm::rotate(model, glm::radians(frameNum * 0.4f), glm::vec3(0, 1,
-    //        0));
-    glm::mat4 model = glm::rotate(
-        glm::mat4{1.0f}, glm::radians(frameNum * 0.4f), glm::vec3(0, 1, 0));
-
-    return projection * view * model;
+    return kirana::math::Matrix4x4::transpose(
+        (cam.projection.matrix * cam.transform.matrix * model.matrix));
 }
 
 kirana::viewport::vulkan::Drawer::Drawer(const Device *const device,
@@ -45,8 +26,12 @@ kirana::viewport::vulkan::Drawer::Drawer(const Device *const device,
                                          const RenderPass *const renderPass,
                                          const SceneData *const scene)
     : m_isInitialized{false}, m_currentFrameNumber{0}, m_device{device},
-      m_swapchain{swapchain}, m_renderPass{renderPass}, m_scene{scene}
+      m_swapchain{swapchain}, m_renderPass{renderPass}, m_scene{scene},
+      m_camera{
+          camera::PerspectiveCamera({1280, 720}, 50.0f, 0.1f, 200.0f, true)},
+      m_model{math::Transform(math::Matrix4x4::IDENTITY)}
 {
+    m_camera.transform.translate(kirana::math::Vector3(0.f, 0.f, 3.0f));
     m_commandPool =
         new CommandPool(m_device, m_device->queueFamilyIndices.graphics);
     m_mainCommandBuffers = new CommandBuffers(m_device, m_commandPool);
@@ -154,8 +139,9 @@ void kirana::viewport::vulkan::Drawer::draw()
 
 
     MeshPushConstants meshConstants;
-    meshConstants.renderMatrix =
-        getTransform(static_cast<float>(m_currentFrameNumber));
+    meshConstants.renderMatrix = getTransform(
+        m_camera, m_model, static_cast<float>(m_currentFrameNumber));
+    m_camera;
     m_mainCommandBuffers->pushConstants(m_trianglePipelineLayout->current,
                                         vk::ShaderStageFlagBits::eVertex, 0,
                                         meshConstants);

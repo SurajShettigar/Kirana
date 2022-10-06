@@ -12,12 +12,11 @@ class OrthographicCamera : public Camera
 {
   protected:
     float m_size = 1.0f;
-
-    Transform m_projection;
+    bool m_flipY = false;
   public:
     OrthographicCamera(std::array<uint32_t, 2> windowResolution,
                       float size = 1.0f, float nearPlane = 0.1f,
-                      float farPlane = 1000.0f);
+                      float farPlane = 1000.0f, bool flipY = false);
     ~OrthographicCamera() = default;
 
     const float &size = m_size;

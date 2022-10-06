@@ -24,10 +24,6 @@ class Vector3
     static const Vector3 FORWARD;
     static const Vector3 BACK;
 
-    float &x = m_current[0];
-    float &y = m_current[1];
-    float &z = m_current[2];
-
     Vector3() = default;
     ~Vector3() = default;
     explicit Vector3(float x, float y, float z);
@@ -61,6 +57,21 @@ class Vector3
     [[nodiscard]] float length() const;
     [[nodiscard]] float lengthSquared() const;
     [[nodiscard]] Vector3 normalize() const;
+
+    [[nodiscard]] inline size_t size() const
+    {
+        return sizeof(m_current);
+    }
+
+    [[nodiscard]] inline size_t count() const
+    {
+        return sizeof(m_current) / sizeof(float);
+    }
+
+    [[nodiscard]] inline const float *data() const
+    {
+        return &m_current[0];
+    }
 
     static float dot(const Vector3 &v, const Vector3 &w);
     static Vector3 cross(const Vector3 &v, const Vector3 &w);

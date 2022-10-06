@@ -24,7 +24,7 @@ class Camera
            float nearPlane = 0.1f, float farPlane = 1000.0f);
     ~Camera() = default;
 
-    const Transform &transform = m_transform;
+    Transform &transform = m_transform;
     const Transform &projection = m_projection;
 
     const std::array<uint32_t, 2> &windowResolution = m_windowResolution;

@@ -2,6 +2,7 @@
 #include "vector4.hpp"
 #include "math_utils.hpp"
 #include <algorithm>
+#include "vector3.hpp"
 
 using kirana::math::Matrix4x4;
 using kirana::math::Vector4;
@@ -28,10 +29,10 @@ Matrix4x4::Matrix4x4(float m00, float m01, float m02, float m03, float m10,
 
 Matrix4x4::Matrix4x4(Vector4 c0, Vector4 c1, Vector4 c2, Vector4 c3)
     : m_current{
-          {c0.x, c1.x, c2.x, c3.x},
-          {c0.y, c1.y, c2.y, c3.y},
-          {c0.z, c1.z, c2.z, c3.z},
-          {c0.w, c1.w, c2.w, c3.w},
+          {c0[0], c1[0], c2[0], c3[0]},
+          {c0[1], c1[1], c2[1], c3[1]},
+          {c0[2], c1[2], c2[2], c3[2]},
+          {c0[3], c1[3], c2[3], c3[3]},
       }
 {
 }
@@ -97,14 +98,28 @@ Matrix4x4 kirana::math::operator*(const Matrix4x4 &mat1, const Matrix4x4 &mat2)
 
 Vector4 kirana::math::operator*(const Matrix4x4 &mat, const Vector4 &vec4)
 {
-    return Vector4(mat.m00 * vec4.x + mat.m01 * vec4.y + mat.m02 * vec4.z +
-                       mat.m03 * vec4.w,
-                   mat.m10 * vec4.x + mat.m11 * vec4.y + mat.m12 * vec4.z +
-                       mat.m13 * vec4.w,
-                   mat.m20 * vec4.x + mat.m21 * vec4.y + mat.m22 * vec4.z +
-                       mat.m23 * vec4.w,
-                   mat.m30 * vec4.x + mat.m31 * vec4.y + mat.m32 * vec4.z +
-                       mat.m33 * vec4.w);
+    return Vector4(
+        mat.m_current[0][0] * vec4[0] + mat.m_current[0][1] * vec4[1] +
+            mat.m_current[0][2] * vec4[2] + mat.m_current[0][3] * vec4[3],
+        mat.m_current[1][0] * vec4[0] + mat.m_current[1][1] * vec4[1] +
+            mat.m_current[1][2] * vec4[2] + mat.m_current[1][3] * vec4[3],
+        mat.m_current[2][0] * vec4[0] + mat.m_current[2][1] * vec4[1] +
+            mat.m_current[2][2] * vec4[2] + mat.m_current[2][3] * vec4[3],
+        mat.m_current[3][0] * vec4[0] + mat.m_current[3][1] * vec4[1] +
+            mat.m_current[3][2] * vec4[2] + mat.m_current[3][3] * vec4[3]);
+}
+
+std::ostream &kirana::math::operator<<(std::ostream &out, const Matrix4x4 &mat)
+{
+    return out << "\n[" << mat.m_current[0][0] << ", " << mat.m_current[0][1]
+               << ", " << mat.m_current[0][2] << ", " << mat.m_current[0][3]
+               << ", \n"
+               << mat.m_current[1][0] << ", " << mat.m_current[1][1] << ", "
+               << mat.m_current[1][2] << ", " << mat.m_current[1][3] << ", \n"
+               << mat.m_current[2][0] << ", " << mat.m_current[2][1] << ", "
+               << mat.m_current[2][2] << ", " << mat.m_current[2][3] << ", \n"
+               << mat.m_current[3][0] << ", " << mat.m_current[3][1] << ", "
+               << mat.m_current[3][2] << ", " << mat.m_current[3][3] << "]";
 }
 
 Matrix4x4 Matrix4x4::transpose(const Matrix4x4 &mat)

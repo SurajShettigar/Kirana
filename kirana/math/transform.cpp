@@ -60,12 +60,13 @@ kirana::math::Transform &kirana::math::Transform::operator*=(
 void kirana::math::Transform::translate(
     const kirana::math::Vector3 &translation)
 {
-    m_current *= Matrix4x4(1.0f, 0.0f, 0.0f, translation.x, 0.0f, 1.0f, 0.0f,
-                           translation.y, 0.0f, 0.0f, 1.0f, translation.z, 0.0f,
-                           0.0f, 0.0f, 1.0f);
-    m_inverse *= Matrix4x4(1.0f, 0.0f, 0.0f, -translation.x, 0.0f, 1.0f, 0.0f,
-                           -translation.y, 0.0f, 0.0f, 1.0f, -translation.z,
+    m_current *= Matrix4x4(1.0f, 0.0f, 0.0f, translation[0], 0.0f, 1.0f, 0.0f,
+                           translation[1], 0.0f, 0.0f, 1.0f, translation[2],
                            0.0f, 0.0f, 0.0f, 1.0f);
+    m_inverse = Matrix4x4(1.0f, 0.0f, 0.0f, -translation[0], 0.0f, 1.0f, 0.0f,
+                          -translation[1], 0.0f, 0.0f, 1.0f, -translation[2],
+                          0.0f, 0.0f, 0.0f, 1.0f) *
+                m_inverse;
 }
 
 void kirana::math::Transform::rotateX(float angle)
@@ -74,8 +75,9 @@ void kirana::math::Transform::rotateX(float angle)
     float sin = std::sin(math::radians(angle));
     m_current *= Matrix4x4(1.0f, 0.0f, 0.0f, 0.0f, 0.0f, cos, -sin, 0.0f, 0.0f,
                            sin, cos, 0.0f, 0.0f, 0.0f, 0.0f, 1.0f);
-    m_inverse *= Matrix4x4(1.0f, 0.0f, 0.0f, 0.0f, 0.0f, cos, sin, 0.0f, 0.0f,
-                           -sin, cos, 0.0f, 0.0f, 0.0f, 0.0f, 1.0f);
+    m_inverse = Matrix4x4(1.0f, 0.0f, 0.0f, 0.0f, 0.0f, cos, sin, 0.0f, 0.0f,
+                          -sin, cos, 0.0f, 0.0f, 0.0f, 0.0f, 1.0f) *
+                m_inverse;
 }
 
 void kirana::math::Transform::rotateY(float angle)
@@ -84,8 +86,9 @@ void kirana::math::Transform::rotateY(float angle)
     float sin = std::sin(math::radians(angle));
     m_current *= Matrix4x4(cos, 0.0f, sin, 0.0f, 0.0f, 1.0f, 0.0f, 0.0f, -sin,
                            0.0f, cos, 0.0f, 0.0f, 0.0f, 0.0f, 1.0f);
-    m_current *= Matrix4x4(cos, 0.0f, -sin, 0.0f, 0.0f, 1.0f, 0.0f, 0.0f, sin,
-                           0.0f, cos, 0.0f, 0.0f, 0.0f, 0.0f, 1.0f);
+    m_inverse = Matrix4x4(cos, 0.0f, -sin, 0.0f, 0.0f, 1.0f, 0.0f, 0.0f, sin,
+                          0.0f, cos, 0.0f, 0.0f, 0.0f, 0.0f, 1.0f) *
+                m_inverse;
 }
 
 void kirana::math::Transform::rotateZ(float angle)
@@ -94,18 +97,19 @@ void kirana::math::Transform::rotateZ(float angle)
     float sin = std::sin(math::radians(angle));
     m_current *= Matrix4x4(cos, -sin, 0.0f, 0.0f, sin, cos, 0.0f, 0.0f, 0.0f,
                            0.0f, 1.0f, 0.0f, 0.0f, 0.0f, 0.0f, 1.0f);
-    m_inverse *= Matrix4x4(cos, sin, 0.0f, 0.0f, -sin, cos, 0.0f, 0.0f, 0.0f,
-                           0.0f, 1.0f, 0.0f, 0.0f, 0.0f, 0.0f, 1.0f);
+    m_inverse = Matrix4x4(cos, sin, 0.0f, 0.0f, -sin, cos, 0.0f, 0.0f, 0.0f,
+                          0.0f, 1.0f, 0.0f, 0.0f, 0.0f, 0.0f, 1.0f) *
+                m_inverse;
 }
 
 void kirana::math::Transform::rotate(const Vector3 &rotation)
 {
-    float cosX = std::cos(math::radians(rotation.x));
-    float sinX = std::sin(math::radians(rotation.x));
-    float cosY = std::cos(math::radians(rotation.y));
-    float sinY = std::sin(math::radians(rotation.y));
-    float cosZ = std::cos(math::radians(rotation.z));
-    float sinZ = std::sin(math::radians(rotation.z));
+    float cosX = std::cos(math::radians(rotation[0]));
+    float sinX = std::sin(math::radians(rotation[0]));
+    float cosY = std::cos(math::radians(rotation[1]));
+    float sinY = std::sin(math::radians(rotation[1]));
+    float cosZ = std::cos(math::radians(rotation[2]));
+    float sinZ = std::sin(math::radians(rotation[2]));
 
     // Combined XYZ rotation (euler angles). Same as rotateX() * rotateY() *
     // rotateZ()
@@ -114,11 +118,13 @@ void kirana::math::Transform::rotate(const Vector3 &rotation)
         cosX * sinY * cosZ + sinX * sinZ, 0.0f, cosY * sinZ,
         sinX * sinY * sinZ + cosX * cosZ, cosX * sinY * sinZ - sinX * cosZ,
         0.0f, -sinY, sinX * cosY, cosX * cosY, 0.0f, 0.0f, 0.0f, 0.0f, 1.0f);
-    m_inverse *= Matrix4x4(
-        cosY * cosZ, cosY * sinZ, -sinY, 0.0f, sinX * sinY * cosZ - cosX * sinZ,
-        sinX * sinY * sinZ + cosX * cosZ, sinX * cosY, 0.0f,
-        cosX * sinY * cosZ + sinX * sinZ, cosX * sinY * sinZ - sinX * cosZ,
-        cosX * cosY, 0.0f, 0.0f, 0.0f, 0.0f, 1.0f);
+    m_inverse = Matrix4x4(cosY * cosZ, cosY * sinZ, -sinY, 0.0f,
+                          sinX * sinY * cosZ - cosX * sinZ,
+                          sinX * sinY * sinZ + cosX * cosZ, sinX * cosY, 0.0f,
+                          cosX * sinY * cosZ + sinX * sinZ,
+                          cosX * sinY * sinZ - sinX * cosZ, cosX * cosY, 0.0f,
+                          0.0f, 0.0f, 0.0f, 1.0f) *
+                m_inverse;
 }
 
 void kirana::math::Transform::rotateAround(float angle, const Vector3 &a)
@@ -130,20 +136,21 @@ void kirana::math::Transform::rotateAround(float angle, const Vector3 &a)
     float c = std::cos(math::radians(angle));
     float omc = 1.0f - c;
     float s = std::sin(math::radians(angle));
+    m_current *= Matrix4x4(
+        c + omc * a[0] * a[0], omc * a[0] * a[1] - a[2] * s,
+        omc * a[0] * a[2] + a[1] * s, 0.0f, omc * a[0] * a[1] + a[2] * s,
+        c + omc * a[1] * a[1], omc * a[1] * a[2] - a[0] * s, 0.0f,
+        omc * a[0] * a[2] - a[1] * s, omc * a[1] * a[2] + a[0] * s,
+        c + omc * a[2] * a[2], 0.0f, 0.0f, 0.0f, 0.0f, 1.0f);
 
-    m_current *=
-        Matrix4x4(c + omc * a.x * a.x, omc * a.x * a.y - a.z * s,
-                  omc * a.x * a.z + a.y * s, 0.0f, omc * a.x * a.y + a.z * s,
-                  c + omc * a.y * a.y, omc * a.y * a.z - a.x * s, 0.0f,
-                  omc * a.x * a.z - a.y * s, omc * a.y * a.z + a.x * s,
-                  c + omc * a.z * a.z, 0.0f, 0.0f, 0.0f, 0.0f, 1.0f);
-
-    m_inverse *=
-        Matrix4x4(c + omc * a.x * a.x, omc * a.x * a.y + a.z * s,
-                  omc * a.x * a.z - a.y * s, 0.0f, omc * a.x * a.y - a.z * s,
-                  c + omc * a.y * a.y, omc * a.y * a.z + a.x * s, 0.0f,
-                  omc * a.x * a.z + a.y * s, omc * a.y * a.z - a.x * s,
-                  c + omc * a.z * a.z, 0.0f, 0.0f, 0.0f, 0.0f, 1.0f);
+    m_inverse =
+        Matrix4x4(c + omc * a[0] * a[0], omc * a[0] * a[1] + a[2] * s,
+                  omc * a[0] * a[2] - a[1] * s, 0.0f,
+                  omc * a[0] * a[1] - a[2] * s, c + omc * a[1] * a[1],
+                  omc * a[1] * a[2] + a[0] * s, 0.0f,
+                  omc * a[0] * a[2] + a[1] * s, omc * a[1] * a[2] - a[0] * s,
+                  c + omc * a[2] * a[2], 0.0f, 0.0f, 0.0f, 0.0f, 1.0f) *
+        m_inverse;
 }
 
 void kirana::math::Transform::lookAt(const Vector3 &lookAtPos,
@@ -160,19 +167,22 @@ void kirana::math::Transform::lookAt(const Vector3 &lookAtPos,
     // explanation.
 
     // m_current is now a view-matrix.
-    m_current *= Matrix4x4(x.x, x.y, x.z, 0.0f, y.x, y.y, y.z, 0.0f, z.x, z.y,
-                           z.z, 0.0f, 0.0f, 0.0f, 0.0f, 1.0f);
-    m_inverse *= Matrix4x4(x.x, y.x, z.x, 0.0f, x.y, y.y, z.y, 0.0f, x.z, y.z,
-                           z.z, 0.0f, 0.0f, 0.0f, 0.0f, 1.0f);
+    m_current *= Matrix4x4(x[0], x[1], x[2], 0.0f, y[0], y[1], y[2], 0.0f, z[0],
+                           z[1], z[2], 0.0f, 0.0f, 0.0f, 0.0f, 1.0f);
+    m_inverse = Matrix4x4(x[0], y[0], z[0], 0.0f, x[1], y[1], z[1], 0.0f, x[2],
+                          y[2], z[2], 0.0f, 0.0f, 0.0f, 0.0f, 1.0f) *
+                m_inverse;
 }
 
 void kirana::math::Transform::scale(const Vector3 &scale)
 {
-    m_current *= Matrix4x4(scale.x, 0.0f, 0.0f, 0.0f, 0.0f, scale.y, 0.0f, 0.0f,
-                           0.0f, 0.0f, scale.z, 0.0f, 0.0f, 0.0f, 0.0f, 1.0f);
-    m_inverse *= Matrix4x4(1.0f / scale.x, 0.0f, 0.0f, 0.0f, 0.0f,
-                           1.0f / scale.y, 0.0f, 0.0f, 0.0f, 0.0f,
-                           1.0f / scale.z, 0.0f, 0.0f, 0.0f, 0.0f, 1.0f);
+    m_current *=
+        Matrix4x4(scale[0], 0.0f, 0.0f, 0.0f, 0.0f, scale[1], 0.0f, 0.0f, 0.0f,
+                  0.0f, scale[2], 0.0f, 0.0f, 0.0f, 0.0f, 1.0f);
+    m_inverse = Matrix4x4(1.0f / scale[0], 0.0f, 0.0f, 0.0f, 0.0f,
+                          1.0f / scale[1], 0.0f, 0.0f, 0.0f, 0.0f,
+                          1.0f / scale[2], 0.0f, 0.0f, 0.0f, 0.0f, 1.0f) *
+                m_inverse;
 }
 
 kirana::math::Transform kirana::math::Transform::inverse(
@@ -189,32 +199,34 @@ kirana::math::Transform kirana::math::Transform::transpose(
 }
 
 kirana::math::Transform kirana::math::Transform::getOrthographicTransform(
-    float left, float right, float bottom, float top, float near, float far)
+    float left, float right, float bottom, float top, float near, float far,
+    bool flipY)
 {
     Transform transform;
     transform.m_current = Matrix4x4(
         2.0f / (right - left), 0.0f, 0.0f, -((right + left) / (right - left)),
-        0.0f, 2.0f / (top - bottom), 0.0f, -((top + bottom) / (top - bottom)),
-        0.0f, 0.0f, 2.0f / (near - far), -((near + far) / (near - far)), 0.0f,
-        0.0f, 0.0f, 1.0f);
+        0.0f, (flipY ? -1.0f : 0.0f) * 2.0f / (top - bottom), 0.0f,
+        -((top + bottom) / (top - bottom)), 0.0f, 0.0f, 2.0f / (near - far),
+        -((near + far) / (near - far)), 0.0f, 0.0f, 0.0f, 1.0f);
 
-    transform.m_inverse = Matrix4x4(
-        0.5f * (right - left), 0.0f, 0.0f, 0.5f * (right + left), 0.0f,
-        0.5f * (top - bottom), 0.0f, 0.5f * (top + bottom), 0.0f, 0.0f,
-        0.5f * (near - far), 0.5f * (near + far), 0.0f, 0.0f, 0.0f, 1.0f);
+    transform.m_inverse =
+        Matrix4x4(0.5f * (right - left), 0.0f, 0.0f, 0.5f * (right + left),
+                  0.0f, (flipY ? -1.0f : 0.0f) * 0.5f * (top - bottom), 0.0f,
+                  0.5f * (top + bottom), 0.0f, 0.0f, 0.5f * (near - far),
+                  0.5f * (near + far), 0.0f, 0.0f, 0.0f, 1.0f);
     return transform;
 }
 
 kirana::math::Transform kirana::math::Transform::getOrthographicTransform(
-    float size, float aspectRatio, float near, float far)
+    float size, float aspectRatio, float near, float far, bool flipY)
 {
     return getOrthographicTransform(-size / 2.0f, size / 2.0f,
                                     (-size / 2.0f) / aspectRatio,
-                                    (size / 2.0f) / aspectRatio, near, far);
+                                    (size / 2.0f) / aspectRatio, near, far, flipY);
 }
 
 kirana::math::Transform kirana::math::Transform::getPerspectiveTransform(
-    float fov, float aspectRatio, float near, float far)
+    float fov, float aspectRatio, float near, float far, bool flipY)
 {
     float top = near * std::tan(math::radians(fov * 0.5f));
     float bottom = -top;
@@ -222,16 +234,16 @@ kirana::math::Transform kirana::math::Transform::getPerspectiveTransform(
     float left = -right;
 
     Transform transform;
-    transform.m_current =
-        Matrix4x4(2.0f * near / (right - left), 0.0f,
-                  (left + right) / (left - right), 0.0f, 0.0f,
-                  2.0f * near / (top - bottom), (bottom + top) / (bottom - top),
-                  0.0f, 0.0f, 0.0f, (far + near) / (near - far),
-                  2.0f * far * near / (far - near), 0.0f, 0.0f, 1.0f, 0.0f);
+    transform.m_current = Matrix4x4(
+        2.0f * near / (right - left), 0.0f, (left + right) / (left - right),
+        0.0f, 0.0f, (flipY ? -1.0f : 1.0f) * 2.0f * near / (top - bottom),
+        (bottom + top) / (bottom - top), 0.0f, 0.0f, 0.0f,
+        (far + near) / (near - far), 2.0f * far * near / (far - near), 0.0f,
+        0.0f, 1.0f, 0.0f);
 
     transform.m_inverse = Matrix4x4(
         0.5f * far * (right - left), 0.0f, 0.0f, 0.5f * far * (left + right),
-        0.0f, 0.5f * far * (top - bottom), 0.0f, 0.5f * far * (bottom + top),
+        0.0f, (flipY ? -1.0f : 1.0f) * 0.5f * far * (top - bottom), 0.0f, 0.5f * far * (bottom + top),
         0.0f, 0.0f, 0.0f, far * near, 0.0f, 0.0f, 0.5f * (far - near),
         0.5f * (-far - near) + far + near);
     return transform;

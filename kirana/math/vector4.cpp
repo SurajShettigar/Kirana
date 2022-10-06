@@ -3,6 +3,7 @@
 
 #include <cmath>
 #include <limits>
+#include <iostream>
 
 using kirana::math::Vector3;
 using kirana::math::Vector4;
@@ -12,7 +13,7 @@ Vector4::Vector4(float x, float y, float z, float w) : m_current{x, y, z, w}
 }
 
 Vector4::Vector4(const Vector3 &vec3, float w)
-    : m_current{vec3.x, vec3.y, vec3.z, w}
+    : m_current{vec3[0], vec3[1], vec3[2], w}
 {
 }
 
