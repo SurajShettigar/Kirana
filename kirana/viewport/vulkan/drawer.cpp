@@ -14,11 +14,13 @@
 #include <vector3.hpp>
 
 kirana::math::Matrix4x4 getTransform(
-    const kirana::camera::PerspectiveCamera &cam,
+    const kirana::camera::Camera &cam,
     kirana::math::Transform &model, float frameNum)
 {
-    return kirana::math::Matrix4x4::transpose(
-        (cam.projection.matrix * cam.transform.matrix * model.matrix));
+    model.rotateY(10.0f);
+    kirana::math::Matrix4x4 mat = kirana::math::Matrix4x4::transpose(
+        cam.projection.getMatrix() * cam.transform.getMatrix() * model.getMatrix());
+    return mat;
 }
 
 kirana::viewport::vulkan::Drawer::Drawer(const Device *const device,
@@ -27,11 +29,15 @@ kirana::viewport::vulkan::Drawer::Drawer(const Device *const device,
                                          const SceneData *const scene)
     : m_isInitialized{false}, m_currentFrameNumber{0}, m_device{device},
       m_swapchain{swapchain}, m_renderPass{renderPass}, m_scene{scene},
-      m_camera{
-          camera::PerspectiveCamera({1280, 720}, 50.0f, 0.1f, 200.0f, true)},
+      /*m_camera{camera::OrthographicCamera({1280, 720}, 5.0f, 0.1f, 200.0f,
+         true, true)}*/
+      m_camera{camera::PerspectiveCamera({1280, 720}, 70.0f, 0.1f, 200.0f, true,
+                                         true)},
       m_model{math::Transform(math::Matrix4x4::IDENTITY)}
 {
-    m_camera.transform.translate(kirana::math::Vector3(0.f, 0.f, 3.0f));
+    m_camera.transform.translate(kirana::math::Vector3(0.5f, 1.0f, 3.0f));
+    m_camera.transform.lookAt(kirana::math::Vector3::ZERO,
+                              kirana::math::Vector3::UP);
     m_commandPool =
         new CommandPool(m_device, m_device->queueFamilyIndices.graphics);
     m_mainCommandBuffers = new CommandBuffers(m_device, m_commandPool);
@@ -141,7 +147,9 @@ void kirana::viewport::vulkan::Drawer::draw()
     MeshPushConstants meshConstants;
     meshConstants.renderMatrix = getTransform(
         m_camera, m_model, static_cast<float>(m_currentFrameNumber));
-    m_camera;
+
+    //            meshConstants.renderMatrix =
+    //            getTransform(static_cast<float>(m_currentFrameNumber));
     m_mainCommandBuffers->pushConstants(m_trianglePipelineLayout->current,
                                         vk::ShaderStageFlagBits::eVertex, 0,
                                         meshConstants);

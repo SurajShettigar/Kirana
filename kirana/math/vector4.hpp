@@ -26,7 +26,7 @@ class Vector4
     /// Cast to Vector3
     explicit operator Vector3() const;
 
-    inline float operator[](size_t i) const
+    inline const float &operator[](size_t i) const
     {
         return m_current[i];
     }

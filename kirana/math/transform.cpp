@@ -57,6 +57,19 @@ kirana::math::Transform &kirana::math::Transform::operator*=(
     return *this;
 }
 
+const kirana::math::Matrix4x4 &kirana::math::Transform::getMatrix(
+    bool inverse) const
+{
+    return inverse ? m_inverse : m_current;
+}
+
+kirana::math::Matrix4x4 kirana::math::Transform::getMatrixTransposed(
+    bool inverse) const
+{
+    return inverse ? Matrix4x4::transpose(m_inverse)
+                   : Matrix4x4::transpose(m_current);
+}
+
 void kirana::math::Transform::translate(
     const kirana::math::Vector3 &translation)
 {
@@ -156,7 +169,10 @@ void kirana::math::Transform::rotateAround(float angle, const Vector3 &a)
 void kirana::math::Transform::lookAt(const Vector3 &lookAtPos,
                                      const Vector3 &up)
 {
-    Vector3 z = -(lookAtPos - static_cast<Vector3>(m_current[3])).normalize();
+    Vector3 pos(m_current[0][3] / m_current[3][3],
+                m_current[1][3] / m_current[3][3],
+                m_current[2][3] / m_current[3][3]);
+    Vector3 z = -((lookAtPos - pos).normalize());
     Vector3 x = Vector3::cross(up.normalize(), z);
     Vector3 y = Vector3::cross(z, x);
 
@@ -167,11 +183,12 @@ void kirana::math::Transform::lookAt(const Vector3 &lookAtPos,
     // explanation.
 
     // m_current is now a view-matrix.
-    m_current *= Matrix4x4(x[0], x[1], x[2], 0.0f, y[0], y[1], y[2], 0.0f, z[0],
-                           z[1], z[2], 0.0f, 0.0f, 0.0f, 0.0f, 1.0f);
-    m_inverse = Matrix4x4(x[0], y[0], z[0], 0.0f, x[1], y[1], z[1], 0.0f, x[2],
-                          y[2], z[2], 0.0f, 0.0f, 0.0f, 0.0f, 1.0f) *
-                m_inverse;
+    m_current = Matrix4x4(x[0], x[1], x[2], Vector3::dot(x, pos), y[0], y[1],
+                          y[2], Vector3::dot(y, pos), z[0], z[1], z[2],
+                          -Vector3::dot(z, pos), 0.0f, 0.0f, 0.0f, 1.0f);
+    m_inverse = Matrix4x4(x[0], y[0], z[0], -Vector3::dot(x, pos), x[1], y[1],
+                          z[1], -Vector3::dot(y, pos), x[2], y[2], z[2],
+                          Vector3::dot(z, pos), 0.0f, 0.0f, 0.0f, 1.0f);
 }
 
 void kirana::math::Transform::scale(const Vector3 &scale)
@@ -200,52 +217,64 @@ kirana::math::Transform kirana::math::Transform::transpose(
 
 kirana::math::Transform kirana::math::Transform::getOrthographicTransform(
     float left, float right, float bottom, float top, float near, float far,
-    bool flipY)
+    bool graphicsAPI, bool flipY)
 {
+    float nf = graphicsAPI ? (far - near) : (near - far);
+
     Transform transform;
     transform.m_current = Matrix4x4(
-        2.0f / (right - left), 0.0f, 0.0f, -((right + left) / (right - left)),
+        2.0f / (right - left), 0.0f, 0.0f, -(right + left) / (right - left),
         0.0f, (flipY ? -1.0f : 0.0f) * 2.0f / (top - bottom), 0.0f,
-        -((top + bottom) / (top - bottom)), 0.0f, 0.0f, 2.0f / (near - far),
-        -((near + far) / (near - far)), 0.0f, 0.0f, 0.0f, 1.0f);
+        -(top + bottom) / (top - bottom), 0.0f, 0.0f,
+        (graphicsAPI ? -1.0f : 1.0f) * 2.0f / nf, -(near + far) / nf, 0.0f,
+        0.0f, 0.0f, 1.0f);
 
     transform.m_inverse =
         Matrix4x4(0.5f * (right - left), 0.0f, 0.0f, 0.5f * (right + left),
                   0.0f, (flipY ? -1.0f : 0.0f) * 0.5f * (top - bottom), 0.0f,
-                  0.5f * (top + bottom), 0.0f, 0.0f, 0.5f * (near - far),
-                  0.5f * (near + far), 0.0f, 0.0f, 0.0f, 1.0f);
+                  0.5f * (top + bottom), 0.0f, 0.0f,
+                  (graphicsAPI ? -1.0f : 1.0f) * 0.5f * nf,
+                  (graphicsAPI ? -1.0f : 1.0f) * 0.5f * (near + far), 0.0f,
+                  0.0f, 0.0f, 1.0f);
     return transform;
 }
 
 kirana::math::Transform kirana::math::Transform::getOrthographicTransform(
-    float size, float aspectRatio, float near, float far, bool flipY)
+    float size, float aspectRatio, float near, float far, bool graphicsAPI,
+    bool flipY)
 {
-    return getOrthographicTransform(-size / 2.0f, size / 2.0f,
-                                    (-size / 2.0f) / aspectRatio,
-                                    (size / 2.0f) / aspectRatio, near, far, flipY);
+    return getOrthographicTransform(
+        -size / 2.0f, size / 2.0f, (-size / 2.0f) / aspectRatio,
+        (size / 2.0f) / aspectRatio, near, far, graphicsAPI, flipY);
 }
 
 kirana::math::Transform kirana::math::Transform::getPerspectiveTransform(
-    float fov, float aspectRatio, float near, float far, bool flipY)
+    float fov, float aspectRatio, float near, float far, bool graphicsAPI,
+    bool flipY)
 {
-    float top = near * std::tan(math::radians(fov * 0.5f));
+    float top = std::abs(near) * std::tan(math::radians(fov * 0.5f));
     float bottom = -top;
     float right = top * aspectRatio;
     float left = -right;
 
+    float lr = graphicsAPI ? right - left : left - right;
+    float bt = graphicsAPI ? top - bottom : bottom - top;
+    float nf = graphicsAPI ? far - near : near - far;
+
     Transform transform;
     transform.m_current = Matrix4x4(
-        2.0f * near / (right - left), 0.0f, (left + right) / (left - right),
-        0.0f, 0.0f, (flipY ? -1.0f : 1.0f) * 2.0f * near / (top - bottom),
-        (bottom + top) / (bottom - top), 0.0f, 0.0f, 0.0f,
-        (far + near) / (near - far), 2.0f * far * near / (far - near), 0.0f,
-        0.0f, 1.0f, 0.0f);
+        2.0f * near / (right - left), 0.0f, (left + right) / lr, 0.0f, 0.0f,
+        (flipY ? -1.0f : 1.0f) * 2.0f * near / (top - bottom),
+        (bottom + top) / bt, 0.0f, 0.0f, 0.0f,
+        (graphicsAPI ? -1.0f : 1.0f) * (far + near) / nf,
+        (graphicsAPI ? -1.0f : 1.0f) * 2.0f * far * near / (far - near), 0.0f,
+        0.0f, (graphicsAPI ? -1.0f : 1.0f), 0.0f);
 
     transform.m_inverse = Matrix4x4(
         0.5f * far * (right - left), 0.0f, 0.0f, 0.5f * far * (left + right),
-        0.0f, (flipY ? -1.0f : 1.0f) * 0.5f * far * (top - bottom), 0.0f, 0.5f * far * (bottom + top),
-        0.0f, 0.0f, 0.0f, far * near, 0.0f, 0.0f, 0.5f * (far - near),
-        0.5f * (-far - near) + far + near);
+        0.0f, (flipY ? -1.0f : 1.0f) * 0.5f * far * (top - bottom), 0.0f,
+        0.5f * far * (bottom + top), 0.0f, 0.0f, 0.0f, far * near, 0.0f, 0.0f,
+        0.5f * (far - near), 0.5f * (-far - near) + far + near);
     return transform;
 }
 

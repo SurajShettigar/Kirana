@@ -1,5 +1,4 @@
 #include "matrix4x4.hpp"
-#include "vector4.hpp"
 #include "math_utils.hpp"
 #include <algorithm>
 #include "vector3.hpp"
@@ -19,20 +18,26 @@ Matrix4x4::Matrix4x4(float m00, float m01, float m02, float m03, float m10,
                      float m22, float m23, float m30, float m31, float m32,
                      float m33)
     : m_current{
-          {m00, m01, m02, m03},
-          {m10, m11, m12, m13},
-          {m20, m21, m22, m23},
-          {m30, m31, m32, m33},
+          Vector4{m00, m01, m02, m03},
+          Vector4{m10, m11, m12, m13},
+          Vector4{m20, m21, m22, m23},
+          Vector4{m30, m31, m32, m33},
       }
 {
 }
 
-Matrix4x4::Matrix4x4(Vector4 c0, Vector4 c1, Vector4 c2, Vector4 c3)
+
+Matrix4x4::Matrix4x4(Vector4 rows[4])
+    : m_current{rows[0], rows[1], rows[2], rows[3]}
+{
+}
+
+Matrix4x4::Matrix4x4(Vector4 row0, Vector4 row1, Vector4 row2, Vector4 row3)
     : m_current{
-          {c0[0], c1[0], c2[0], c3[0]},
-          {c0[1], c1[1], c2[1], c3[1]},
-          {c0[2], c1[2], c2[2], c3[2]},
-          {c0[3], c1[3], c2[3], c3[3]},
+          row0,
+          row1,
+          row2,
+          row3,
       }
 {
 }
@@ -40,23 +45,34 @@ Matrix4x4::Matrix4x4(Vector4 c0, Vector4 c1, Vector4 c2, Vector4 c3)
 Matrix4x4::Matrix4x4(const Matrix4x4 &mat)
 {
     if (&mat != this)
-        std::copy(&mat.m_current[0][0], &mat.m_current[0][0] + 16,
-                  &m_current[0][0]);
+    {
+        m_current[0] = mat[0];
+        m_current[1] = mat[1];
+        m_current[2] = mat[2];
+        m_current[3] = mat[3];
+    }
 }
 
 Matrix4x4 &Matrix4x4::operator=(const Matrix4x4 &mat)
 {
     if (&mat != this)
-        std::copy(&mat.m_current[0][0], &mat.m_current[0][0] + 16,
-                  &m_current[0][0]);
+    {
+        m_current[0] = mat[0];
+        m_current[1] = mat[1];
+        m_current[2] = mat[2];
+        m_current[3] = mat[3];
+    }
     return *this;
 }
 
-
-Vector4 Matrix4x4::operator[](size_t i) const
+const Vector4 &Matrix4x4::operator[](size_t i) const
 {
-    return Vector4(m_current[0][i], m_current[1][i], m_current[2][i],
-                   m_current[3][i]);
+    return m_current[i];
+}
+
+Vector4 &Matrix4x4::operator[](size_t i)
+{
+    return m_current[i];
 }
 
 
@@ -80,46 +96,103 @@ bool Matrix4x4::operator!=(const Matrix4x4 &mat) const
 
 Matrix4x4 &Matrix4x4::operator*=(const Matrix4x4 &rhs)
 {
-    for (size_t i = 0; i < 4; i++)
-        for (size_t j = 0; j < 4; j++)
-            m_current[i][j] = m_current[i][0] * rhs.m_current[0][j] +
-                              m_current[i][1] * rhs.m_current[1][j] +
-                              m_current[i][2] * rhs.m_current[2][j] +
-                              m_current[i][3] * rhs.m_current[3][j];
+    Vector4 temp[4]{m_current[0], m_current[1], m_current[2], m_current[3]};
+    m_current[0][0] = temp[0][0] * rhs[0][0] + temp[0][1] * rhs[1][0] +
+                      temp[0][2] * rhs[2][0] + temp[0][3] * rhs[3][0];
+    m_current[0][1] = temp[0][0] * rhs[0][1] + temp[0][1] * rhs[1][1] +
+                      temp[0][2] * rhs[2][1] + temp[0][3] * rhs[3][1];
+    m_current[0][2] = temp[0][0] * rhs[0][2] + temp[0][1] * rhs[1][2] +
+                      temp[0][2] * rhs[2][2] + temp[0][3] * rhs[3][2];
+    m_current[0][3] = temp[0][0] * rhs[0][3] + temp[0][1] * rhs[1][3] +
+                      temp[0][2] * rhs[2][3] + temp[0][3] * rhs[3][3];
+
+    m_current[1][0] = temp[1][0] * rhs[0][0] + temp[1][1] * rhs[1][0] +
+                      temp[1][2] * rhs[2][0] + temp[1][3] * rhs[3][0];
+    m_current[1][1] = temp[1][0] * rhs[0][1] + temp[1][1] * rhs[1][1] +
+                      temp[1][2] * rhs[2][1] + temp[1][3] * rhs[3][1];
+    m_current[1][2] = temp[1][0] * rhs[0][2] + temp[1][1] * rhs[1][2] +
+                      temp[1][2] * rhs[2][2] + temp[1][3] * rhs[3][2];
+    m_current[1][3] = temp[1][0] * rhs[0][3] + temp[1][1] * rhs[1][3] +
+                      temp[1][2] * rhs[2][3] + temp[1][3] * rhs[3][3];
+
+    m_current[2][0] = temp[2][0] * rhs[0][0] + temp[2][1] * rhs[1][0] +
+                      temp[2][2] * rhs[2][0] + temp[2][3] * rhs[3][0];
+    m_current[2][1] = temp[2][0] * rhs[0][1] + temp[2][1] * rhs[1][1] +
+                      temp[2][2] * rhs[2][1] + temp[2][3] * rhs[3][1];
+    m_current[2][2] = temp[2][0] * rhs[0][2] + temp[2][1] * rhs[1][2] +
+                      temp[2][2] * rhs[2][2] + temp[2][3] * rhs[3][2];
+    m_current[2][3] = temp[2][0] * rhs[0][3] + temp[2][1] * rhs[1][3] +
+                      temp[2][2] * rhs[2][3] + temp[2][3] * rhs[3][3];
+
+    m_current[3][0] = temp[3][0] * rhs[0][0] + temp[3][1] * rhs[1][0] +
+                      temp[3][2] * rhs[2][0] + temp[3][3] * rhs[3][0];
+    m_current[3][1] = temp[3][0] * rhs[0][1] + temp[3][1] * rhs[1][1] +
+                      temp[3][2] * rhs[2][1] + temp[3][3] * rhs[3][1];
+    m_current[3][2] = temp[3][0] * rhs[0][2] + temp[3][1] * rhs[1][2] +
+                      temp[3][2] * rhs[2][2] + temp[3][3] * rhs[3][2];
+    m_current[3][3] = temp[3][0] * rhs[0][3] + temp[3][1] * rhs[1][3] +
+                      temp[3][2] * rhs[2][3] + temp[3][3] * rhs[3][3];
     return *this;
 }
 
 Matrix4x4 kirana::math::operator*(const Matrix4x4 &mat1, const Matrix4x4 &mat2)
 {
-    Matrix4x4 mul = mat1;
-    mul *= mat2;
-    return mul;
+    return Matrix4x4(mat1[0][0] * mat2[0][0] + mat1[0][1] * mat2[1][0] +
+                         mat1[0][2] * mat2[2][0] + mat1[0][3] * mat2[3][0],
+                     mat1[0][0] * mat2[0][1] + mat1[0][1] * mat2[1][1] +
+                         mat1[0][2] * mat2[2][1] + mat1[0][3] * mat2[3][1],
+                     mat1[0][0] * mat2[0][2] + mat1[0][1] * mat2[1][2] +
+                         mat1[0][2] * mat2[2][2] + mat1[0][3] * mat2[3][2],
+                     mat1[0][0] * mat2[0][3] + mat1[0][1] * mat2[1][3] +
+                         mat1[0][2] * mat2[2][3] + mat1[0][3] * mat2[3][3],
+                     mat1[1][0] * mat2[0][0] + mat1[1][1] * mat2[1][0] +
+                         mat1[1][2] * mat2[2][0] + mat1[1][3] * mat2[3][0],
+                     mat1[1][0] * mat2[0][1] + mat1[1][1] * mat2[1][1] +
+                         mat1[1][2] * mat2[2][1] + mat1[1][3] * mat2[3][1],
+                     mat1[1][0] * mat2[0][2] + mat1[1][1] * mat2[1][2] +
+                         mat1[1][2] * mat2[2][2] + mat1[1][3] * mat2[3][2],
+                     mat1[1][0] * mat2[0][3] + mat1[1][1] * mat2[1][3] +
+                         mat1[1][2] * mat2[2][3] + mat1[1][3] * mat2[3][3],
+                     mat1[2][0] * mat2[0][0] + mat1[2][1] * mat2[1][0] +
+                         mat1[2][2] * mat2[2][0] + mat1[2][3] * mat2[3][0],
+                     mat1[2][0] * mat2[0][1] + mat1[2][1] * mat2[1][1] +
+                         mat1[2][2] * mat2[2][1] + mat1[2][3] * mat2[3][1],
+                     mat1[2][0] * mat2[0][2] + mat1[2][1] * mat2[1][2] +
+                         mat1[2][2] * mat2[2][2] + mat1[2][3] * mat2[3][2],
+                     mat1[2][0] * mat2[0][3] + mat1[2][1] * mat2[1][3] +
+                         mat1[2][2] * mat2[2][3] + mat1[2][3] * mat2[3][3],
+                     mat1[3][0] * mat2[0][0] + mat1[3][1] * mat2[1][0] +
+                         mat1[3][2] * mat2[2][0] + mat1[3][3] * mat2[3][0],
+                     mat1[3][0] * mat2[0][1] + mat1[3][1] * mat2[1][1] +
+                         mat1[3][2] * mat2[2][1] + mat1[3][3] * mat2[3][1],
+                     mat1[3][0] * mat2[0][2] + mat1[3][1] * mat2[1][2] +
+                         mat1[3][2] * mat2[2][2] + mat1[3][3] * mat2[3][2],
+                     mat1[3][0] * mat2[0][3] + mat1[3][1] * mat2[1][3] +
+                         mat1[3][2] * mat2[2][3] + mat1[3][3] * mat2[3][3]);
 }
 
 Vector4 kirana::math::operator*(const Matrix4x4 &mat, const Vector4 &vec4)
 {
-    return Vector4(
-        mat.m_current[0][0] * vec4[0] + mat.m_current[0][1] * vec4[1] +
-            mat.m_current[0][2] * vec4[2] + mat.m_current[0][3] * vec4[3],
-        mat.m_current[1][0] * vec4[0] + mat.m_current[1][1] * vec4[1] +
-            mat.m_current[1][2] * vec4[2] + mat.m_current[1][3] * vec4[3],
-        mat.m_current[2][0] * vec4[0] + mat.m_current[2][1] * vec4[1] +
-            mat.m_current[2][2] * vec4[2] + mat.m_current[2][3] * vec4[3],
-        mat.m_current[3][0] * vec4[0] + mat.m_current[3][1] * vec4[1] +
-            mat.m_current[3][2] * vec4[2] + mat.m_current[3][3] * vec4[3]);
+    return Vector4(mat[0][0] * vec4[0] + mat[0][1] * vec4[1] +
+                       mat[0][2] * vec4[2] + mat[0][3] * vec4[3],
+                   mat[1][0] * vec4[0] + mat[1][1] * vec4[1] +
+                       mat[1][2] * vec4[2] + mat[1][3] * vec4[3],
+                   mat[2][0] * vec4[0] + mat[2][1] * vec4[1] +
+                       mat[2][2] * vec4[2] + mat[2][3] * vec4[3],
+                   mat[3][0] * vec4[0] + mat[3][1] * vec4[1] +
+                       mat[3][2] * vec4[2] + mat[3][3] * vec4[3]);
 }
 
 std::ostream &kirana::math::operator<<(std::ostream &out, const Matrix4x4 &mat)
 {
-    return out << "\n[" << mat.m_current[0][0] << ", " << mat.m_current[0][1]
-               << ", " << mat.m_current[0][2] << ", " << mat.m_current[0][3]
-               << ", \n"
-               << mat.m_current[1][0] << ", " << mat.m_current[1][1] << ", "
-               << mat.m_current[1][2] << ", " << mat.m_current[1][3] << ", \n"
-               << mat.m_current[2][0] << ", " << mat.m_current[2][1] << ", "
-               << mat.m_current[2][2] << ", " << mat.m_current[2][3] << ", \n"
-               << mat.m_current[3][0] << ", " << mat.m_current[3][1] << ", "
-               << mat.m_current[3][2] << ", " << mat.m_current[3][3] << "]";
+    return out << "\n[" << mat[0][0] << ", " << mat[0][1] << ", " << mat[0][2]
+               << ", " << mat[0][3] << ", \n"
+               << mat[1][0] << ", " << mat[1][1] << ", " << mat[1][2] << ", "
+               << mat[1][3] << ", \n"
+               << mat[2][0] << ", " << mat[2][1] << ", " << mat[2][2] << ", "
+               << mat[2][3] << ", \n"
+               << mat[3][0] << ", " << mat[3][1] << ", " << mat[3][2] << ", "
+               << mat[3][3] << "]";
 }
 
 Matrix4x4 Matrix4x4::transpose(const Matrix4x4 &mat)
@@ -141,8 +214,11 @@ Matrix4x4 Matrix4x4::inverse(const Matrix4x4 &mat)
 
     int indxc[4], indxr[4];
     int ipiv[4] = {0, 0, 0, 0};
-    float minv[4][4];
-    std::copy(&mat.m_current[0][0], &mat.m_current[0][0] + 16, &minv[0][0]);
+    Vector4 minv[4];
+    minv[0] = mat[0];
+    minv[1] = mat[1];
+    minv[2] = mat[2];
+    minv[3] = mat[3];
     for (int i = 0; i < 4; i++)
     {
         int irow = 0, icol = 0;

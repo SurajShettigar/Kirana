@@ -3,6 +3,7 @@
 
 #include <vulkan/vulkan.hpp>
 #include <perspective_camera.hpp>
+#include <orthographic_camera.hpp>
 
 namespace kirana::viewport::vulkan
 {
@@ -39,6 +40,7 @@ class Drawer
     const SceneData *const m_scene;
 
     camera::PerspectiveCamera m_camera;
+//    camera::OrthographicCamera m_camera;
     math::Transform m_model;
   public:
     explicit Drawer(const Device *device, const Swapchain *swapchain,
