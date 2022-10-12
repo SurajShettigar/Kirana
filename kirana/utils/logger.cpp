@@ -35,7 +35,7 @@ kirana::utils::Logger::Logger()
         expression::stream
         << " ["
         << expression::format_date_time<boost::posix_time::ptime>(
-               "TimeStamp", "%Y-%m-%d %H:%M:%S:%f")
+               "TimeStamp", "%Y-%m_current-%d %H:%M:%S:%f")
         << "]"
         << " [" << boost::log::trivial::severity << "]"
         << " [" << expression::attr<const char *>("Channel") << "]"

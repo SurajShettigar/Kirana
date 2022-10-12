@@ -1,16 +1,15 @@
 #ifndef SCENE_UTILS_HPP
 #define SCENE_UTILS_HPP
 
-#include <glm/vec3.hpp>
-#include <glm/common.hpp>
+#include <vector3.hpp>
 
 namespace kirana::scene
 {
 struct Vertex
 {
-    glm::vec3 position;
-    glm::vec3 normal;
-    glm::vec3 color;
+    math::Vector3 position;
+    math::Vector3 normal;
+    math::Vector3 color;
 };
 
 struct SceneImportSettings

@@ -6,7 +6,8 @@
 #include <set>
 #include <limits>
 #include <memory>
-#include <glm/glm.hpp>
+#include <vector4.hpp>
+#include <matrix4x4.hpp>
 
 namespace vma
 {
@@ -95,8 +96,7 @@ struct VertexInputDescription
 // TODO: Remove it once descriptor set is implemented.
 struct MeshPushConstants
 {
-    glm::vec4 data;
-    glm::mat4 renderMatrix;
+    math::Matrix4x4 renderMatrix;
 };
 
 /**
