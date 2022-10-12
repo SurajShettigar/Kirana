@@ -6,8 +6,7 @@
 #include <set>
 #include <limits>
 #include <memory>
-#include <vector4.hpp>
-#include <matrix4x4.hpp>
+#include <transform.hpp>
 
 namespace vma
 {
@@ -107,6 +106,7 @@ struct MeshData
     AllocatedBuffer vertexBuffer;
     vk::DeviceSize vertexOffset = 0;
     size_t vertexCount;
+    std::vector<math::Transform *> instanceTransforms;
 };
 
 } // namespace kirana::viewport::vulkan

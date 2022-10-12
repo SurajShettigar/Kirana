@@ -75,7 +75,7 @@ bool kirana::viewport::vulkan::Pipeline::build(
     vk::PipelineViewportStateCreateInfo viewport({}, vp, scissor);
 
     vk::PipelineRasterizationStateCreateInfo rasterizer(
-        {}, false, false, vk::PolygonMode::eFill, vk::CullModeFlagBits::eNone,
+        {}, false, false, vk::PolygonMode::eFill, vk::CullModeFlagBits::eBack,
         vk::FrontFace::eCounterClockwise, false, 0.0f, 0.0f, 0.0f, 1.0f);
 
     vk::PipelineMultisampleStateCreateInfo msaa(

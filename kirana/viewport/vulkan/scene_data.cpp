@@ -31,28 +31,42 @@ kirana::viewport::vulkan::SceneData::SceneData(const Allocator *const allocator,
     setVertexDescription();
 
     // Create vertex buffers and map it to memory for each mesh of the scene.
+    m_isInitialized = true;
     m_meshes.clear();
-    size_t verticesSize;
-    for (const auto &m : scene.meshes)
+    for (const auto &m : scene.getMeshes())
     {
         // TODO: Calculate offset based on previous index MeshData.
         MeshData meshData;
-        meshData.vertexCount = m->vertices.size();
-        verticesSize = m->vertices.size() * sizeof(scene::Vertex);
+        const std::vector<scene::Vertex> &vertices = m->getVertices();
+        meshData.vertexCount = vertices.size();
+        meshData.instanceTransforms =
+            std::move(scene.getTransformsForMesh(m.get()));
+
+        size_t verticesSize = vertices.size() * sizeof(scene::Vertex);
         if (m_allocator->allocateBuffer(
                 verticesSize, vk::BufferUsageFlagBits::eVertexBuffer,
                 vma::MemoryUsage::eCpuToGpu, &meshData.vertexBuffer))
         {
             m_meshes.emplace_back(std::move(meshData));
-            if (m_allocator->mapToMemory(m_meshes.back().vertexBuffer,
-                                         verticesSize, m->vertices.data()))
+            if (!m_allocator->mapToMemory(m_meshes.back().vertexBuffer,
+                                          verticesSize, vertices.data()))
             {
-                m_isInitialized = true;
-                Logger::get().log(constants::LOG_CHANNEL_VULKAN,
-                                  LogSeverity::debug,
-                                  "Generated scene data for viewport");
+                m_isInitialized = false;
             }
         }
+        else
+            m_isInitialized = false;
+    }
+    if (m_isInitialized)
+    {
+        Logger::get().log(constants::LOG_CHANNEL_VULKAN, LogSeverity::debug,
+                          "Generated scene data for viewport");
+    }
+    else
+    {
+        Logger::get().log(
+            constants::LOG_CHANNEL_VULKAN, LogSeverity::error,
+            "Failed to allocate buffer to some of the scene objects");
     }
 }
 

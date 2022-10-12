@@ -22,12 +22,15 @@ class Scene
     std::string m_name = "Scene";
     std::vector<std::shared_ptr<Mesh>> m_meshes;
     std::shared_ptr<Object> m_rootObject = nullptr;
-    std::vector<std::shared_ptr<Object>> m_childObjects;
+    std::vector<std::shared_ptr<Object>>
+        m_objects; // Also contains m_rootObject.
 
-    std::shared_ptr<Object> &findObject(const aiNode *node);
+    camera::PerspectiveCamera m_camera = DEFAULT_CAMERA;
+
+    const Object *findObject(const aiNode *node) const;
     void getMeshesFromNode(const aiNode *node,
                            std::vector<std::shared_ptr<Mesh>> *nodeMeshes);
-    void initializeChildObjects(const std::shared_ptr<Object> &parent,
+    void initializeChildObjects(std::shared_ptr<Object> parent,
                                 uint32_t childCount, aiNode **children);
     void initFromAiScene(const aiScene *scene);
 
@@ -37,9 +40,31 @@ class Scene
 
     Scene(const Scene &scene) = delete;
 
-    const std::string &name = m_name;
-    const std::shared_ptr<Object> &rootObject = m_rootObject;
-    const std::vector<std::shared_ptr<Mesh>> &meshes = m_meshes;
+    [[nodiscard]] inline const std::string &getName() const
+    {
+        return m_name;
+    }
+    [[nodiscard]] inline const std::shared_ptr<Object> &getRoot() const
+    {
+        return m_rootObject;
+    }
+    [[nodiscard]] inline const std::vector<std::shared_ptr<Object>>
+        &getObjects() const
+    {
+        return m_objects;
+    }
+    [[nodiscard]] inline const std::vector<std::shared_ptr<Mesh>> &getMeshes()
+        const
+    {
+        return m_meshes;
+    }
+
+    [[nodiscard]] inline const camera::PerspectiveCamera &getCamera() const
+    {
+        return m_camera;
+    }
+
+    std::vector<math::Transform *> getTransformsForMesh(const Mesh *mesh) const;
 };
 } // namespace kirana::scene
 #endif

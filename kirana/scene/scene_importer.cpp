@@ -30,21 +30,21 @@ uint32_t kirana::scene::SceneImporter::getPostProcessMask(
         mask |= aiProcess_GenSmoothNormals;
     if (importSettings.improveCacheLocality)
         mask |= aiProcess_ImproveCacheLocality;
-    if(importSettings.preTransformVertices)
+    if (importSettings.preTransformVertices)
         mask |= aiProcess_PreTransformVertices;
-    if(importSettings.optimizeMesh)
+    if (importSettings.optimizeMesh)
         mask |= aiProcess_OptimizeMeshes;
 
     return mask;
 }
 
 bool kirana::scene::SceneImporter::loadSceneFromFile(
-    const char *path, const SceneImportSettings &importSettings, Scene  *scene)
+    const char *path, const SceneImportSettings &importSettings, Scene *scene)
 {
     Assimp::Importer importer;
 
-    const aiScene *aiScene =
-        importer.ReadFile(path, getPostProcessMask(importSettings));
+    const aiScene *aiScene = importer.ReadFile(
+        path, getPostProcessMask(importSettings));
 
     if (aiScene == nullptr)
     {

@@ -13,13 +13,14 @@
 #include "vulkan_types.hpp"
 #include <vector3.hpp>
 
-kirana::math::Matrix4x4 getTransform(
-    const kirana::camera::Camera &cam,
-    kirana::math::Transform &model, float frameNum)
+kirana::math::Matrix4x4 getTransform(const kirana::camera::Camera &cam,
+                                     kirana::math::Transform *model,
+                                     float frameNum)
 {
-    model.rotateY(10.0f);
+//    model->rotateY(1.0f);
     kirana::math::Matrix4x4 mat = kirana::math::Matrix4x4::transpose(
-        cam.projection.getMatrix() * cam.transform.getMatrix() * model.getMatrix());
+        cam.projection.getMatrix() * cam.transform.getMatrix() *
+        model->getMatrix());
     return mat;
 }
 
@@ -31,11 +32,10 @@ kirana::viewport::vulkan::Drawer::Drawer(const Device *const device,
       m_swapchain{swapchain}, m_renderPass{renderPass}, m_scene{scene},
       /*m_camera{camera::OrthographicCamera({1280, 720}, 5.0f, 0.1f, 200.0f,
          true, true)}*/
-      m_camera{camera::PerspectiveCamera({1280, 720}, 70.0f, 0.1f, 200.0f, true,
-                                         true)},
-      m_model{math::Transform(math::Matrix4x4::IDENTITY)}
+      m_camera{camera::PerspectiveCamera({1280, 720}, 50.0f, 0.1f, 200.0f, true,
+                                         true)}
 {
-    m_camera.transform.translate(kirana::math::Vector3(0.5f, 1.0f, 3.0f));
+    m_camera.transform.translate(kirana::math::Vector3(0.0f, 1.5f, 3.0f));
     m_camera.transform.lookAt(kirana::math::Vector3::ZERO,
                               kirana::math::Vector3::UP);
     m_commandPool =
@@ -144,20 +144,20 @@ void kirana::viewport::vulkan::Drawer::draw()
     m_mainCommandBuffers->bindPipeline(m_trianglePipeline->current);
 
 
-    MeshPushConstants meshConstants;
-    meshConstants.renderMatrix = getTransform(
-        m_camera, m_model, static_cast<float>(m_currentFrameNumber));
-
-    //            meshConstants.renderMatrix =
-    //            getTransform(static_cast<float>(m_currentFrameNumber));
-    m_mainCommandBuffers->pushConstants(m_trianglePipelineLayout->current,
-                                        vk::ShaderStageFlagBits::eVertex, 0,
-                                        meshConstants);
     if (m_scene)
     {
         // TODO: Bind Vertex Buffers together and draw them at once.
         for (size_t i = 0; i < m_scene->meshes.size(); i++)
         {
+            MeshPushConstants meshConstants;
+            meshConstants.renderMatrix =
+                getTransform(m_camera, m_scene->meshes[i].instanceTransforms[0],
+                             static_cast<float>(m_currentFrameNumber));
+
+            m_mainCommandBuffers->pushConstants(
+                m_trianglePipelineLayout->current,
+                vk::ShaderStageFlagBits::eVertex, 0, meshConstants);
+
             m_mainCommandBuffers->bindVertexBuffer(
                 *(m_scene->meshes[i].vertexBuffer.buffer), 0);
             m_mainCommandBuffers->draw(

@@ -41,7 +41,7 @@ class Drawer
 
     camera::PerspectiveCamera m_camera;
 //    camera::OrthographicCamera m_camera;
-    math::Transform m_model;
+//    math::Transform m_model;
   public:
     explicit Drawer(const Device *device, const Swapchain *swapchain,
                     const RenderPass *renderPass, const SceneData *scene);

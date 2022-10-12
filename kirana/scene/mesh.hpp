@@ -19,8 +19,14 @@ class Mesh
     Mesh(const aiMesh *mesh);
     ~Mesh() = default;
 
-    const std::string &name = m_name;
-    const std::vector<Vertex> &vertices = m_vertices;
+    [[nodiscard]] inline const std::string &getName() const
+    {
+        return m_name;
+    }
+    [[nodiscard]] inline const std::vector<Vertex> &getVertices() const
+    {
+        return m_vertices;
+    }
 };
 } // namespace kirana::scene
 #endif

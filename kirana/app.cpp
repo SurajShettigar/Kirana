@@ -60,14 +60,13 @@ bool kirana::Application::loadDefaultScene()
     {
         m_logger.log(
             constants::LOG_CHANNEL_APPLICATION, utils::LogSeverity::debug,
-            "Loaded default scene: " + m_currentScene.rootObject->name);
+            "Loaded default scene: " + m_currentScene.getRoot()->getName());
         return true;
     }
     else
     {
-        m_logger.log(
-            constants::LOG_CHANNEL_APPLICATION, utils::LogSeverity::error,
-            "Failed to load default scene");
+        m_logger.log(constants::LOG_CHANNEL_APPLICATION,
+                     utils::LogSeverity::error, "Failed to load default scene");
         return false;
     }
 }

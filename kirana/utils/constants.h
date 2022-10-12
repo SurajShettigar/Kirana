@@ -28,7 +28,7 @@ static const char *VULKAN_SHADER_DIR_PATH = SHADER_DIR;
 static const char *VULKAN_SHADER_TRIANGLE_NAME = "triangle";
 
 static const char *DATA_DIR_PATH = DATA_DIR;
-static const char *DEFAULT_MODEL_NAME = "Suzanne.obj";
+static const char *DEFAULT_MODEL_NAME = "Suzanne_transformed.fbx";
 
 } // namespace kirana::utils::constants
 
