@@ -4,18 +4,14 @@
 #include "vector4.hpp"
 #include "math_utils.hpp"
 
-kirana::math::Transform::Transform() : m_inverse{Matrix4x4::inverse(m_current)}
-{
-}
-
-kirana::math::Transform::Transform(const Matrix4x4 &mat)
-    : m_current{mat}, m_inverse{Matrix4x4::inverse(mat)}
-{
-}
-
-kirana::math::Transform::Transform(const Matrix4x4 &mat,
-                                   const Matrix4x4 &matInverse)
-    : m_current{mat}, m_inverse{matInverse}
+kirana::math::Transform::Transform(Matrix4x4 mat, Matrix4x4 matInverse,
+                                   Transform *parent)
+    : m_parent{parent}, m_isDirty{false}, m_current{m_parent != nullptr
+                                                        ? m_parent->m_current *
+                                                              mat
+                                                        : mat},
+      m_inverse{m_parent != nullptr ? matInverse * m_parent->m_inverse
+                                    : matInverse}
 {
 }
 
@@ -23,6 +19,8 @@ kirana::math::Transform::Transform(const Transform &transform)
 {
     m_current = transform.m_current;
     m_inverse = transform.m_inverse;
+    m_parent = transform.m_parent;
+    m_isDirty = transform.m_isDirty;
 }
 
 kirana::math::Transform &kirana::math::Transform::operator=(
@@ -32,6 +30,8 @@ kirana::math::Transform &kirana::math::Transform::operator=(
     {
         m_current = transform.m_current;
         m_inverse = transform.m_inverse;
+        m_parent = transform.m_parent;
+        m_isDirty = transform.m_isDirty;
     }
     return *this;
 }
@@ -60,12 +60,22 @@ kirana::math::Transform &kirana::math::Transform::operator*=(
 const kirana::math::Matrix4x4 &kirana::math::Transform::getMatrix(
     bool inverse) const
 {
+    if (m_parent != nullptr && m_parent->m_isDirty)
+    {
+        m_current = m_parent->m_current * m_current;
+        m_inverse = m_inverse * m_parent->m_inverse;
+    }
     return inverse ? m_inverse : m_current;
 }
 
 kirana::math::Matrix4x4 kirana::math::Transform::getMatrixTransposed(
     bool inverse) const
 {
+    if (m_parent != nullptr && m_parent->m_isDirty)
+    {
+        m_current = m_parent->m_current * m_current;
+        m_inverse = m_inverse * m_parent->m_inverse;
+    }
     return inverse ? Matrix4x4::transpose(m_inverse)
                    : Matrix4x4::transpose(m_current);
 }
@@ -80,6 +90,7 @@ void kirana::math::Transform::translate(
                           -translation[1], 0.0f, 0.0f, 1.0f, -translation[2],
                           0.0f, 0.0f, 0.0f, 1.0f) *
                 m_inverse;
+    m_isDirty = true;
 }
 
 void kirana::math::Transform::rotateX(float angle)
@@ -91,6 +102,7 @@ void kirana::math::Transform::rotateX(float angle)
     m_inverse = Matrix4x4(1.0f, 0.0f, 0.0f, 0.0f, 0.0f, cos, sin, 0.0f, 0.0f,
                           -sin, cos, 0.0f, 0.0f, 0.0f, 0.0f, 1.0f) *
                 m_inverse;
+    m_isDirty = true;
 }
 
 void kirana::math::Transform::rotateY(float angle)
@@ -102,6 +114,7 @@ void kirana::math::Transform::rotateY(float angle)
     m_inverse = Matrix4x4(cos, 0.0f, -sin, 0.0f, 0.0f, 1.0f, 0.0f, 0.0f, sin,
                           0.0f, cos, 0.0f, 0.0f, 0.0f, 0.0f, 1.0f) *
                 m_inverse;
+    m_isDirty = true;
 }
 
 void kirana::math::Transform::rotateZ(float angle)
@@ -113,6 +126,7 @@ void kirana::math::Transform::rotateZ(float angle)
     m_inverse = Matrix4x4(cos, sin, 0.0f, 0.0f, -sin, cos, 0.0f, 0.0f, 0.0f,
                           0.0f, 1.0f, 0.0f, 0.0f, 0.0f, 0.0f, 1.0f) *
                 m_inverse;
+    m_isDirty = true;
 }
 
 void kirana::math::Transform::rotate(const Vector3 &rotation)
@@ -138,6 +152,7 @@ void kirana::math::Transform::rotate(const Vector3 &rotation)
                           cosX * sinY * sinZ - sinX * cosZ, cosX * cosY, 0.0f,
                           0.0f, 0.0f, 0.0f, 1.0f) *
                 m_inverse;
+    m_isDirty = true;
 }
 
 void kirana::math::Transform::rotateAround(float angle, const Vector3 &a)
@@ -164,6 +179,7 @@ void kirana::math::Transform::rotateAround(float angle, const Vector3 &a)
                   omc * a[0] * a[2] + a[1] * s, omc * a[1] * a[2] - a[0] * s,
                   c + omc * a[2] * a[2], 0.0f, 0.0f, 0.0f, 0.0f, 1.0f) *
         m_inverse;
+    m_isDirty = true;
 }
 
 void kirana::math::Transform::lookAt(const Vector3 &lookAtPos,
@@ -189,6 +205,7 @@ void kirana::math::Transform::lookAt(const Vector3 &lookAtPos,
     m_inverse = Matrix4x4(x[0], y[0], z[0], -Vector3::dot(x, pos), x[1], y[1],
                           z[1], -Vector3::dot(y, pos), x[2], y[2], z[2],
                           Vector3::dot(z, pos), 0.0f, 0.0f, 0.0f, 1.0f);
+    m_isDirty = true;
 }
 
 void kirana::math::Transform::scale(const Vector3 &scale)
@@ -200,6 +217,7 @@ void kirana::math::Transform::scale(const Vector3 &scale)
                           1.0f / scale[1], 0.0f, 0.0f, 0.0f, 0.0f,
                           1.0f / scale[2], 0.0f, 0.0f, 0.0f, 0.0f, 1.0f) *
                 m_inverse;
+    m_isDirty = true;
 }
 
 kirana::math::Transform kirana::math::Transform::inverse(
