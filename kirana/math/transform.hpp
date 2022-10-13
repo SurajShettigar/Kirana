@@ -2,6 +2,7 @@
 #define TRANSFORM_HPP
 
 #include "matrix4x4.hpp"
+#include <string>
 
 namespace kirana::math
 {
@@ -15,8 +16,11 @@ class Transform
     mutable Matrix4x4 m_inverse;
 
   public:
-    explicit Transform(Matrix4x4 mat = Matrix4x4::IDENTITY,
-                       Matrix4x4 matInverse = Matrix4x4::IDENTITY,
+    std::string name;
+    explicit Transform(Transform *parent = nullptr);
+    explicit Transform(const Matrix4x4 &mat,
+                       Transform *parent = nullptr);
+    explicit Transform(const Matrix4x4 &mat, const Matrix4x4 &matInverse,
                        Transform *parent = nullptr);
     ~Transform() = default;
 
@@ -44,7 +48,7 @@ class Transform
     {
         m_isDirty = value;
     }
-    [[nodiscard]] const Matrix4x4 &getMatrix(bool inverse = false) const;
+    [[nodiscard]] Matrix4x4 getMatrix(bool inverse = false) const;
     [[nodiscard]] Matrix4x4 getMatrixTransposed(bool inverse = false) const;
 
     void translate(const Vector3 &translation);
