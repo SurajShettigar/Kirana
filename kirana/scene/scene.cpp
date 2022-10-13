@@ -41,8 +41,8 @@ void kirana::scene::Scene::initializeChildObjects(
     {
         std::vector<std::shared_ptr<Mesh>> meshes;
         getMeshesFromNode(children[i], &meshes);
-        m_objects.emplace_back(
-            std::make_shared<Object>(children[i], std::move(meshes), parent));
+        m_objects.emplace_back(std::make_shared<Object>(
+            children[i], std::move(meshes), parent->m_transform));
 
         if (children[i]->mNumChildren > 0)
             initializeChildObjects(m_objects.back(), children[i]->mNumChildren,
@@ -72,8 +72,8 @@ void kirana::scene::Scene::initFromAiScene(const aiScene *scene)
     // to the root object.
     std::vector<std::shared_ptr<Mesh>> nodeMeshes;
     getMeshesFromNode(scene->mRootNode, &nodeMeshes);
-    m_rootObject =
-        std::make_shared<Object>(scene->mRootNode, std::move(nodeMeshes), nullptr);
+    m_rootObject = std::make_shared<Object>(scene->mRootNode,
+                                            std::move(nodeMeshes), nullptr);
 
     Logger::get().log(constants::LOG_CHANNEL_SCENE, LogSeverity::debug,
                       "Root Object: " +
@@ -97,7 +97,7 @@ std::vector<kirana::math::Transform *> kirana::scene::Scene::
     for (const auto &o : m_objects)
     {
         if (o->hasMesh(mesh))
-            transforms.push_back(o->globalTransform);
+            transforms.push_back(o->transform);
     }
     return transforms;
 }

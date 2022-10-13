@@ -18,13 +18,18 @@ Matrix4x4 kirana::scene::Object::getMatrixFromNode(const aiNode *node) const
 
 kirana::scene::Object::Object(const aiNode *node,
                               const std::vector<std::shared_ptr<Mesh>> &meshes,
-                              std::shared_ptr<Object> parent)
-    : m_name{node->mName.C_Str()}, m_meshes{meshes}, m_parent{parent},
-      m_localTransform{Transform(getMatrixFromNode(node))},
-      m_globalTransform{m_parent != nullptr
-                            ? m_parent->m_globalTransform * m_localTransform
-                            : m_localTransform}
+                              math::Transform *parent)
+    : m_name{node->mName.C_Str()}, m_meshes{meshes},
+      m_transform{
+          new Transform(getMatrixFromNode(node), parent)}
 {
+    m_transform->name = m_name;
+}
+
+kirana::scene::Object::~Object()
+{
+    delete m_transform;
+    m_transform = nullptr;
 }
 
 bool kirana::scene::Object::hasMesh(const Mesh *const mesh) const

@@ -15,9 +15,10 @@
 
 kirana::math::Matrix4x4 getTransform(const kirana::camera::Camera &cam,
                                      kirana::math::Transform *model,
-                                     float frameNum)
+                                     float frameNum, bool rotate = false)
 {
-//    model->rotateY(1.0f);
+    if (rotate)
+        model->rotateY(1.0f);
     kirana::math::Matrix4x4 mat = kirana::math::Matrix4x4::transpose(
         cam.projection.getMatrix() * cam.transform.getMatrix() *
         model->getMatrix());
@@ -152,7 +153,7 @@ void kirana::viewport::vulkan::Drawer::draw()
             MeshPushConstants meshConstants;
             meshConstants.renderMatrix =
                 getTransform(m_camera, m_scene->meshes[i].instanceTransforms[0],
-                             static_cast<float>(m_currentFrameNumber));
+                             static_cast<float>(m_currentFrameNumber), i == 0);
 
             m_mainCommandBuffers->pushConstants(
                 m_trianglePipelineLayout->current,
