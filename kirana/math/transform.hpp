@@ -9,13 +9,15 @@ class Vector3;
 class Transform
 {
   private:
-    Matrix4x4 m_current;
-    Matrix4x4 m_inverse;
+    Transform *m_parent = nullptr;
+    bool m_isDirty = false;
+    mutable Matrix4x4 m_current;
+    mutable Matrix4x4 m_inverse;
 
   public:
-    Transform();
-    explicit Transform(const Matrix4x4 &mat);
-    explicit Transform(const Matrix4x4 &mat, const Matrix4x4 &matInverse);
+    explicit Transform(Matrix4x4 mat = Matrix4x4::IDENTITY,
+                       Matrix4x4 matInverse = Matrix4x4::IDENTITY,
+                       Transform *parent = nullptr);
     ~Transform() = default;
 
     Transform(const Transform &transform);
@@ -26,8 +28,24 @@ class Transform
 
     Transform &operator*=(const Transform &rhs);
 
-    const Matrix4x4 &getMatrix(bool inverse = false) const;
-    Matrix4x4 getMatrixTransposed(bool inverse = false) const;
+    [[nodiscard]] inline Transform *getParent() const
+    {
+        return m_parent;
+    }
+    inline void setParent(Transform *transform)
+    {
+        m_parent = transform;
+    }
+    [[nodiscard]] inline bool isDirty() const
+    {
+        return m_isDirty;
+    }
+    inline void setDirty(bool value)
+    {
+        m_isDirty = value;
+    }
+    [[nodiscard]] const Matrix4x4 &getMatrix(bool inverse = false) const;
+    [[nodiscard]] Matrix4x4 getMatrixTransposed(bool inverse = false) const;
 
     void translate(const Vector3 &translation);
     void rotateX(float angle);
