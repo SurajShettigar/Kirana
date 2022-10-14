@@ -4,7 +4,7 @@
 #include <transform.hpp>
 #include <array>
 
-namespace kirana::camera
+namespace kirana::scene
 {
 using math::Matrix4x4;
 using math::Transform;
@@ -19,10 +19,14 @@ class Camera
 
     Transform m_transform;
     Transform m_projection;
+
   public:
-    Camera(std::array<uint32_t, 2> windowResolution,
-           float nearPlane = 0.1f, float farPlane = 1000.0f);
+    Camera(std::array<uint32_t, 2> windowResolution, float nearPlane = 0.1f,
+           float farPlane = 1000.0f);
     ~Camera() = default;
+
+    Camera(const Camera &camera);
+    Camera &operator=(const Camera &camera);
 
     Transform &transform = m_transform;
     const Transform &projection = m_projection;
@@ -32,6 +36,6 @@ class Camera
     const float &farPlane = m_farPlane;
     const float &aspectRatio = m_aspectRatio;
 };
-} // namespace kirana::camera
+} // namespace kirana::scene
 
 #endif

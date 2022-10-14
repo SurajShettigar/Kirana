@@ -37,7 +37,7 @@ class VulkanRenderer
     RenderPass *m_renderpass;
     Drawer *m_drawer;
 
-    SceneData *m_currentScene;
+    SceneData *m_currentScene = nullptr;
 
     VulkanRenderer() = default;
     ~VulkanRenderer() = default;

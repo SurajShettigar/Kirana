@@ -3,7 +3,7 @@
 
 #include "camera.hpp"
 
-namespace kirana::camera
+namespace kirana::scene
 {
 using math::Matrix4x4;
 using math::Transform;
@@ -22,8 +22,11 @@ class PerspectiveCamera : public Camera
                       bool flipY = false);
     ~PerspectiveCamera() = default;
 
+    PerspectiveCamera(const PerspectiveCamera &camera);
+    PerspectiveCamera &operator=(const PerspectiveCamera &camera);
+
     const float &fieldOfView = m_fov;
 };
-} // namespace kirana::camera
+} // namespace kirana::scene
 
 #endif

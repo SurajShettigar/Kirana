@@ -2,7 +2,6 @@ add_subdirectory(utils)
 add_subdirectory(math)
 add_subdirectory(window)
 add_subdirectory(viewport)
-add_subdirectory(camera)
 add_subdirectory(scene)
 
 add_executable(Kirana main.cpp app.cpp)

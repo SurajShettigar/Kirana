@@ -25,7 +25,7 @@ void kirana::viewport::vulkan::SceneData::setVertexDescription()
 
 kirana::viewport::vulkan::SceneData::SceneData(const Allocator *const allocator,
                                                const scene::Scene &scene)
-    : m_isInitialized{false}, m_allocator{allocator}
+    : m_isInitialized{false}, m_allocator{allocator}, m_scene{scene}
 {
     // Set the vulkan description of vertex buffers.
     setVertexDescription();
@@ -79,4 +79,11 @@ kirana::viewport::vulkan::SceneData::~SceneData()
         Logger::get().log(constants::LOG_CHANNEL_VULKAN, LogSeverity::debug,
                           "Destroyed scene data");
     }
+}
+
+kirana::math::Matrix4x4 kirana::viewport::vulkan::SceneData::getClipSpaceMatrix(
+    size_t meshIndex, size_t instanceIndex) const
+{
+    return math::Matrix4x4::transpose(m_scene.getClipSpaceMatrix(
+        m_meshes[meshIndex].instanceTransforms[instanceIndex]));
 }

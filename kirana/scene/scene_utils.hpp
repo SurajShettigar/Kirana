@@ -28,9 +28,6 @@ struct SceneImportSettings
 static const SceneImportSettings DEFAULT_SCENE_IMPORT_SETTINGS{
     false, false, false, false, false, true, true, false};
 
-static const camera::PerspectiveCamera DEFAULT_CAMERA{{1280, 720}, 60.0f, 0.1f,
-                                                      1000.0f,     true,  true};
-
 } // namespace kirana::scene
 
 #endif

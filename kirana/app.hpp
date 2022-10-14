@@ -3,7 +3,6 @@
 
 #include <window/window_manager.hpp>
 #include <viewport/viewport.hpp>
-#include <scene/scene.hpp>
 
 #include <utils/logger.hpp>
 #include <limits>
@@ -14,7 +13,7 @@ namespace kirana
 {
 namespace scene
 {
-class Scene;
+class SceneManager;
 }
 
 using viewport::Viewport;
@@ -44,10 +43,10 @@ class Application
     uint32_t m_keyboardInputListener = std::numeric_limits<unsigned int>::max();
     WindowManager m_windowManager;
 
+    scene::SceneManager &m_sceneManager;
+
     shared_ptr<Window> m_viewportWindow;
     Viewport m_viewport;
-
-    scene::Scene m_currentScene;
 
     /**
      * Used as a callback function for window close event.

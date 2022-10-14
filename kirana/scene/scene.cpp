@@ -87,6 +87,8 @@ void kirana::scene::Scene::initFromAiScene(const aiScene *scene)
 
     Logger::get().log(constants::LOG_CHANNEL_SCENE, LogSeverity::debug,
                       "Object count: " + std::to_string(m_objects.size()));
+
+    m_isInitialized = true;
 }
 
 
@@ -100,4 +102,11 @@ std::vector<kirana::math::Transform *> kirana::scene::Scene::
             transforms.push_back(o->transform);
     }
     return transforms;
+}
+
+kirana::math::Matrix4x4 kirana::scene::Scene::getClipSpaceMatrix(
+    math::Transform *model) const
+{
+    return m_camera.projection.getMatrix() * m_camera.transform.getMatrix() *
+           model->getMatrix();
 }

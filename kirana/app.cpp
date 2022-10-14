@@ -1,7 +1,7 @@
 #include "app.hpp"
 #include <constants.h>
 #include <file_system.hpp>
-#include <scene_importer.hpp>
+#include <scene_manager.hpp>
 
 using namespace std::placeholders;
 
@@ -36,7 +36,9 @@ void kirana::Application::onKeyboardInput(input::KeyboardInput input)
     }
 }
 
-kirana::Application::Application() : m_logger{kirana::utils::Logger::get()}
+kirana::Application::Application()
+    : m_logger{kirana::utils::Logger::get()},
+      m_sceneManager{kirana::scene::SceneManager::get()}
 {
     m_logger.setMinSeverity(utils::LogSeverity::debug);
     m_logger.log(constants::LOG_CHANNEL_APPLICATION, utils::LogSeverity::trace,
@@ -47,28 +49,6 @@ kirana::Application::~Application()
 {
     m_logger.log(constants::LOG_CHANNEL_APPLICATION, utils::LogSeverity::trace,
                  "Application destroyed");
-}
-
-bool kirana::Application::loadDefaultScene()
-{
-    std::string filePath = utils::filesystem::combinePath(
-        constants::DATA_DIR_PATH, {constants::DEFAULT_MODEL_NAME});
-
-    if (scene::SceneImporter::get().loadSceneFromFile(
-            filePath.c_str(), scene::DEFAULT_SCENE_IMPORT_SETTINGS,
-            &m_currentScene))
-    {
-        m_logger.log(
-            constants::LOG_CHANNEL_APPLICATION, utils::LogSeverity::debug,
-            "Loaded default scene: " + m_currentScene.getRoot()->getName());
-        return true;
-    }
-    else
-    {
-        m_logger.log(constants::LOG_CHANNEL_APPLICATION,
-                     utils::LogSeverity::error, "Failed to load default scene");
-        return false;
-    }
 }
 
 void kirana::Application::init()
@@ -82,11 +62,23 @@ void kirana::Application::init()
         std::bind(&Application::onKeyboardInput, this, _1));
 
     m_viewportWindow = m_windowManager.createWindow();
-    if (loadDefaultScene())
+
+    const scene::Scene &scene = m_sceneManager.loadScene();
+    if (scene.isInitialized())
     {
-        m_viewport.init(m_viewportWindow, m_currentScene);
-        m_isViewportRunning = true;
+        m_logger.log(constants::LOG_CHANNEL_APPLICATION,
+                     utils::LogSeverity::debug,
+                     "Loaded default scene: " + scene.getRoot()->getName());
     }
+    else
+    {
+        m_logger.log(constants::LOG_CHANNEL_APPLICATION,
+                     utils::LogSeverity::error, "Failed to load default scene");
+    }
+    m_sceneManager.init();
+
+    m_viewport.init(m_viewportWindow, scene);
+    m_isViewportRunning = true;
 
     m_isRunning = true;
     m_logger.log(constants::LOG_CHANNEL_APPLICATION, utils::LogSeverity::debug,
@@ -96,6 +88,7 @@ void kirana::Application::init()
 void kirana::Application::update()
 {
     m_windowManager.update();
+    m_sceneManager.update();
     if (m_isViewportRunning)
         m_viewport.update();
 }
@@ -116,7 +109,10 @@ void kirana::Application::clean()
 
     m_windowManager.removeOnWindowCloseListener(m_windowCloseListener);
     m_windowManager.removeOnAllWindowsClosedListener(m_allWindowCloseListener);
+    m_windowManager.removeOnKeyboardInputEventListener(m_keyboardInputListener);
     m_windowManager.clean();
+
+    m_sceneManager.clean();
 
     m_isRunning = false;
 

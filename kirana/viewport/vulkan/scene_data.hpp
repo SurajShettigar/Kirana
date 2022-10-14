@@ -21,6 +21,8 @@ class SceneData
 
     const Allocator *const m_allocator;
 
+    const scene::Scene &m_scene;
+
     void setVertexDescription();
 
   public:
@@ -32,6 +34,8 @@ class SceneData
     const bool &isInitialized = m_isInitialized;
     const VertexInputDescription &vertexDesc = m_vertexDesc;
     const std::vector<MeshData> &meshes = m_meshes;
+
+    math::Matrix4x4 getClipSpaceMatrix(size_t meshIndex, size_t instanceIndex) const;
 };
 } // namespace kirana::viewport::vulkan
 #endif

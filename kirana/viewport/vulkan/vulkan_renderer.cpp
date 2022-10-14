@@ -9,9 +9,10 @@
 #include "swapchain.hpp"
 #include "depth_buffer.hpp"
 #include "renderpass.hpp"
+#include "scene_data.hpp"
 #include "drawer.hpp"
 
-#include "scene_data.hpp"
+#include <scene.hpp>
 
 void kirana::viewport::vulkan::VulkanRenderer::init(
     const std::vector<const char *> &reqInstanceExtensions,
@@ -43,10 +44,12 @@ void kirana::viewport::vulkan::VulkanRenderer::init(
     if (m_depthBuffer->isInitialized)
         m_renderpass = new RenderPass(m_device, m_swapchain, m_depthBuffer);
     if (m_renderpass->isInitialized)
-        m_currentScene = new SceneData(m_allocator, scene);
-    if (m_currentScene->isInitialized)
+    {
+        if(scene.isInitialized())
+            m_currentScene = new SceneData(m_allocator, scene);
         m_drawer =
             new Drawer(m_device, m_swapchain, m_renderpass, m_currentScene);
+    }
 }
 
 void kirana::viewport::vulkan::VulkanRenderer::update()
