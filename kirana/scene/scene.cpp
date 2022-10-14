@@ -59,11 +59,22 @@ void kirana::scene::Scene::initFromAiScene(const aiScene *scene)
     Logger::get().log(constants::LOG_CHANNEL_SCENE, LogSeverity::debug,
                       "Loading Scene: " + std::string(scene->mName.C_Str()));
 
+    // Create Material objects for all the materials in the scene.
+    m_materials.clear();
+    m_materials.resize(scene->mNumMaterials);
+    for (size_t i = 0; i < scene->mNumMaterials; i++)
+    {
+        m_materials[i] = std::move(std::make_shared<Material>(
+            scene->mMaterials[i]->GetName().C_Str()));
+    }
+
     // Create Mesh objects for all the meshes in the scene.
     m_meshes.clear();
     m_meshes.resize(scene->mNumMeshes);
     for (size_t i = 0; i < scene->mNumMeshes; i++)
-        m_meshes[i] = std::move(std::make_shared<Mesh>(scene->mMeshes[i]));
+        m_meshes[i] = std::move(std::make_shared<Mesh>(
+            scene->mMeshes[i],
+            m_materials[scene->mMeshes[i]->mMaterialIndex]));
 
     Logger::get().log(constants::LOG_CHANNEL_SCENE, LogSeverity::debug,
                       "Scene Mesh count: " + std::to_string(scene->mNumMeshes));
@@ -109,4 +120,9 @@ kirana::math::Matrix4x4 kirana::scene::Scene::getClipSpaceMatrix(
 {
     return m_camera.projection.getMatrix() * m_camera.transform.getMatrix() *
            model->getMatrix();
+}
+
+void kirana::scene::Scene::updateCameraResolution(std::array<uint32_t, 2> resolution) const
+{
+    m_camera.setResolution(resolution);
 }

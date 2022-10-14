@@ -26,6 +26,8 @@ class PerspectiveCamera : public Camera
     PerspectiveCamera &operator=(const PerspectiveCamera &camera);
 
     const float &fieldOfView = m_fov;
+
+    void setResolution(std::array<uint32_t, 2> resolution)const override;
 };
 } // namespace kirana::scene
 

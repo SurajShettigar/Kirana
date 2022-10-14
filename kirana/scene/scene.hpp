@@ -6,6 +6,7 @@
 #include <string>
 #include "object.hpp"
 #include "mesh.hpp"
+#include "material.hpp"
 #include "scene_utils.hpp"
 
 struct aiScene;
@@ -25,8 +26,9 @@ class Scene
     std::shared_ptr<Object> m_rootObject = nullptr;
     std::vector<std::shared_ptr<Object>>
         m_objects; // Also contains m_rootObject.
+    std::vector<std::shared_ptr<Material>> m_materials;
 
-    PerspectiveCamera m_camera {{1280, 720}, 60.0f, 0.1f, 1000.0f, true, true};
+    PerspectiveCamera m_camera{{1280, 720}, 60.0f, 0.1f, 1000.0f, true, true};
 
     const Object *findObject(const aiNode *node) const;
     void getMeshesFromNode(const aiNode *node,
@@ -74,6 +76,8 @@ class Scene
         const Mesh *mesh) const;
     [[nodiscard]] math::Matrix4x4 getClipSpaceMatrix(
         math::Transform *model) const;
+
+    void updateCameraResolution(std::array<uint32_t, 2> resolution) const;
 };
 } // namespace kirana::scene
 #endif

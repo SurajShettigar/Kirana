@@ -25,6 +25,11 @@ struct SceneImportSettings
     bool preTransformVertices = false;
 };
 
+struct CommonMaterialProperties
+{
+
+};
+
 static const SceneImportSettings DEFAULT_SCENE_IMPORT_SETTINGS{
     false, false, false, false, false, true, true, false};
 

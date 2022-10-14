@@ -31,7 +31,8 @@ void kirana::scene::SceneManager::init()
 
 void kirana::scene::SceneManager::update()
 {
-    m_currentScene.getRoot()->transform->rotateY(1.0f);
+    if(m_currentScene.isInitialized())
+        m_currentScene.getRoot()->transform->rotateY(1.0f);
 }
 
 void kirana::scene::SceneManager::clean()

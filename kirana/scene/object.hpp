@@ -25,7 +25,7 @@ class Object
     math::Matrix4x4 getMatrixFromNode(const aiNode *node) const;
 
   public:
-    Object(const aiNode *node, const std::vector<std::shared_ptr<Mesh>> &meshes,
+    Object(const aiNode *node, std::vector<std::shared_ptr<Mesh>> meshes,
            math::Transform *parent = nullptr);
     ~Object();
 

@@ -12,13 +12,13 @@ using math::Transform;
 class Camera
 {
   protected:
-    std::array<uint32_t, 2> m_windowResolution;
+    mutable std::array<uint32_t, 2> m_windowResolution;
     float m_nearPlane = 0.1f;
     float m_farPlane = 1000.0f;
-    float m_aspectRatio;
+    mutable float m_aspectRatio;
 
     Transform m_transform;
-    Transform m_projection;
+    mutable Transform m_projection;
 
   public:
     Camera(std::array<uint32_t, 2> windowResolution, float nearPlane = 0.1f,
@@ -35,6 +35,8 @@ class Camera
     const float &nearPlane = m_nearPlane;
     const float &farPlane = m_farPlane;
     const float &aspectRatio = m_aspectRatio;
+
+    virtual void setResolution(std::array<uint32_t, 2> resolution) const;
 };
 } // namespace kirana::scene
 

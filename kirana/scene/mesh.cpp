@@ -1,15 +1,18 @@
 #include "mesh.hpp"
 #include "scene_utils.hpp"
+#include "material.hpp"
 
 #include <assimp/scene.h>
 #include <constants.h>
 #include <logger.hpp>
+#include <utility>
 
 typedef kirana::utils::Logger Logger;
 typedef kirana::utils::LogSeverity LogSeverity;
 namespace constants = kirana::utils::constants;
 
-kirana::scene::Mesh::Mesh(const aiMesh *mesh) : m_name{mesh->mName.C_Str()}
+kirana::scene::Mesh::Mesh(const aiMesh *mesh, std::shared_ptr<Material> material)
+    : m_name{mesh->mName.C_Str()}, m_material {std::move(material)}
 {
     if ((mesh->mPrimitiveTypes & aiPrimitiveType::aiPrimitiveType_TRIANGLE) ==
         aiPrimitiveType::aiPrimitiveType_TRIANGLE)

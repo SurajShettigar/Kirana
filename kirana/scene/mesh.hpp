@@ -3,20 +3,23 @@
 
 #include <vector>
 #include <string>
+#include <memory>
 
 struct aiMesh;
 
 namespace kirana::scene
 {
 struct Vertex;
+class Material;
 class Mesh
 {
   private:
     std::string m_name;
     std::vector<Vertex> m_vertices;
+    std::shared_ptr<Material> m_material;
 
   public:
-    Mesh(const aiMesh *mesh);
+    Mesh(const aiMesh *mesh, std::shared_ptr<Material> material);
     ~Mesh() = default;
 
     [[nodiscard]] inline const std::string &getName() const

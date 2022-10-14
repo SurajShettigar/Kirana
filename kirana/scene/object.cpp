@@ -4,6 +4,7 @@
 
 #include <assimp/scene.h>
 #include <algorithm>
+#include <utility>
 
 using kirana::math::Matrix4x4;
 using kirana::math::Transform;
@@ -17,9 +18,9 @@ Matrix4x4 kirana::scene::Object::getMatrixFromNode(const aiNode *node) const
 }
 
 kirana::scene::Object::Object(const aiNode *node,
-                              const std::vector<std::shared_ptr<Mesh>> &meshes,
+                              std::vector<std::shared_ptr<Mesh>> meshes,
                               math::Transform *parent)
-    : m_name{node->mName.C_Str()}, m_meshes{meshes},
+    : m_name{node->mName.C_Str()}, m_meshes{std::move(meshes)},
       m_transform{
           new Transform(getMatrixFromNode(node), parent)}
 {
