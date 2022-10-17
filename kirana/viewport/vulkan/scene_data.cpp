@@ -3,7 +3,11 @@
 #include "vulkan_utils.hpp"
 #include "vulkan_types.hpp"
 #include "allocator.hpp"
+#include "shader.hpp"
+#include "pipeline_layout.hpp"
+#include "pipeline.hpp"
 
+#include <algorithm>
 #include <scene.hpp>
 
 void kirana::viewport::vulkan::SceneData::setVertexDescription()
@@ -23,24 +27,75 @@ void kirana::viewport::vulkan::SceneData::setVertexDescription()
     m_vertexDesc.attributes.push_back(colorAttrib);
 }
 
-kirana::viewport::vulkan::SceneData::SceneData(const Allocator *const allocator,
-                                               const scene::Scene &scene)
-    : m_isInitialized{false}, m_allocator{allocator}, m_scene{scene}
+
+const kirana::viewport::vulkan::Shader *kirana::viewport::vulkan::SceneData::
+    createShader(const std::string &shaderName)
+{
+    auto it = std::find_if(m_shaders.begin(), m_shaders.end(),
+                           [&shaderName](const std::unique_ptr<Shader> &s) {
+                               return s->name == shaderName;
+                           });
+
+    if (it != m_shaders.end())
+        return (*it).get();
+    else
+    {
+        m_shaders.emplace_back(std::make_unique<Shader>(m_device, shaderName));
+        return m_shaders.back().get();
+    }
+}
+
+void kirana::viewport::vulkan::SceneData::createMaterials()
+{
+    m_materials.clear();
+    m_shaders.clear();
+    for (const auto &m : m_scene.getMaterials())
+    {
+        const Shader *shader = createShader(m->getShader());
+
+        MaterialData matData;
+        matData.name = m->getName();
+        matData.shaderName = m->getShader();
+        matData.layout = std::make_unique<PipelineLayout>(m_device);
+        matData.pipeline = std::make_unique<Pipeline>(
+            m_device, m_renderPass, shader, matData.layout.get(), m_vertexDesc,
+            m_windowResolution);
+
+        m_materials.emplace_back(std::move(matData));
+    }
+}
+
+kirana::viewport::vulkan::SceneData::SceneData(
+    const Device *device, const RenderPass *renderPass,
+    const Allocator *allocator, const std::array<int, 2> windowResolution,
+    const scene::Scene &scene)
+    : m_isInitialized{false}, m_device{device}, m_renderPass{renderPass},
+      m_allocator{allocator}, m_windowResolution{windowResolution}, m_scene{
+                                                                        scene}
 {
     // Set the vulkan description of vertex buffers.
     setVertexDescription();
+    // Create shaders, pipeline layouts and pipelines for all the materials in
+    // the scene.
+    createMaterials();
 
     // Create vertex buffers and map it to memory for each mesh of the scene.
     m_isInitialized = true;
     m_meshes.clear();
-    for (const auto &m : scene.getMeshes())
+    for (const auto &m : m_scene.getMeshes())
     {
         // TODO: Calculate offset based on previous index MeshData.
         MeshData meshData;
         const std::vector<scene::Vertex> &vertices = m->getVertices();
         meshData.vertexCount = vertices.size();
         meshData.instanceTransforms =
-            std::move(scene.getTransformsForMesh(m.get()));
+            std::move(m_scene.getTransformsForMesh(m.get()));
+
+        meshData.material =
+            &(*std::find_if(m_materials.begin(), m_materials.end(),
+                            [&m](const MaterialData &mat) {
+                                return mat.name == m->getMaterial()->getName();
+                            }));
 
         size_t verticesSize = vertices.size() * sizeof(scene::Vertex);
         if (m_allocator->allocateBuffer(
@@ -77,7 +132,7 @@ kirana::viewport::vulkan::SceneData::~SceneData()
         for (const auto &m : m_meshes)
             m_allocator->free(m.vertexBuffer);
         Logger::get().log(constants::LOG_CHANNEL_VULKAN, LogSeverity::debug,
-                          "Destroyed scene data");
+                          "Scene data destroyed");
     }
 }
 

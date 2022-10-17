@@ -45,8 +45,10 @@ void kirana::viewport::vulkan::VulkanRenderer::init(
         m_renderpass = new RenderPass(m_device, m_swapchain, m_depthBuffer);
     if (m_renderpass->isInitialized)
     {
-        if(scene.isInitialized())
-            m_currentScene = new SceneData(m_allocator, scene);
+        if (scene.isInitialized())
+            m_currentScene =
+                new SceneData(m_device, m_renderpass, m_allocator,
+                              window->getWindowResolution(), scene);
         m_drawer =
             new Drawer(m_device, m_swapchain, m_renderpass, m_currentScene);
     }

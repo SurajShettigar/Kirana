@@ -26,19 +26,19 @@ bool kirana::viewport::vulkan::Shader::readShaderFile(
 }
 
 kirana::viewport::vulkan::Shader::Shader(const Device *const device,
-                                         const char *name)
-    : m_isInitialized{false}, m_name{name}, m_compute{nullptr},
-      m_vertex{nullptr}, m_fragment{nullptr}, m_device{device}
+                                         const std::string &name)
+    : m_isInitialized{false},
+      m_name{name.empty() ? utils::constants::VULKAN_SHADER_DEFAULT_NAME
+                          : name},
+      m_compute{nullptr}, m_vertex{nullptr}, m_fragment{nullptr}, m_device{
+                                                                      device}
 {
     std::string vShaderPath = utils::filesystem::combinePath(
-        constants::VULKAN_SHADER_DIR_PATH, {name},
+        constants::VULKAN_SHADER_DIR_PATH, {name.c_str()},
         constants::VULKAN_SHADER_VERTEX_EXTENSION);
     std::string fShaderPath = utils::filesystem::combinePath(
-        constants::VULKAN_SHADER_DIR_PATH, {name},
+        constants::VULKAN_SHADER_DIR_PATH, {name.c_str()},
         constants::VULKAN_SHADER_FRAGMENT_EXTENSION);
-
-    Logger::get().log(constants::LOG_CHANNEL_VULKAN, LogSeverity::error,
-                      "Shader Path: " + std::string(vShaderPath));
 
     std::vector<uint32_t> vShaderData;
     std::vector<uint32_t> fShaderData;
@@ -71,7 +71,7 @@ kirana::viewport::vulkan::Shader::Shader(const Device *const device,
         // Compute Shader Initialization
         std::vector<uint32_t> cShaderData;
         std::string cShaderPath = utils::filesystem::combinePath(
-            constants::VULKAN_SHADER_DIR_PATH, {name},
+            constants::VULKAN_SHADER_DIR_PATH, {name.c_str()},
             constants::VULKAN_SHADER_COMPUTE_EXTENSION);
         if (utils::filesystem::fileExists(cShaderPath.c_str()))
         {

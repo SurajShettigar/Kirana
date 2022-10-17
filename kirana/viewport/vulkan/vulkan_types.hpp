@@ -15,6 +15,12 @@ class Allocation;
 
 namespace kirana::viewport::vulkan
 {
+
+class CommandPool;
+class CommandBuffers;
+class Pipeline;
+class PipelineLayout;
+
 /**
  * Index of queue families of the selected device.
  */
@@ -99,6 +105,18 @@ struct MeshPushConstants
 };
 
 /**
+ * Holds the mesh material data such as shader, pipeline layout and pipeline
+ * for each mesh.
+ */
+struct MaterialData
+{
+    std::string name;
+    std::string shaderName;
+    std::unique_ptr<PipelineLayout> layout;
+    std::unique_ptr<Pipeline> pipeline;
+};
+
+/**
  * Holds the mesh data used by vulkan bindVertexBuffers and draw commands.
  */
 struct MeshData
@@ -107,7 +125,20 @@ struct MeshData
     vk::DeviceSize vertexOffset = 0;
     size_t vertexCount;
     std::vector<math::Transform *> instanceTransforms;
+    MaterialData *material;
 };
+
+/**
+ * Holds the command pool, command buffers and sync structures per frame.
+ */
+ struct FrameData
+ {
+     vk::Fence renderFence;
+     vk::Semaphore renderSemaphore;
+     vk::Semaphore presentSemaphore;
+     const CommandPool *commandPool = nullptr;
+     const CommandBuffers *commandBuffers = nullptr;
+ };
 
 } // namespace kirana::viewport::vulkan
 

@@ -52,6 +52,11 @@ class Scene
     {
         return m_name;
     }
+    [[nodiscard]] inline const std::vector<std::shared_ptr<Mesh>> &getMeshes()
+        const
+    {
+        return m_meshes;
+    }
     [[nodiscard]] inline const std::shared_ptr<Object> &getRoot() const
     {
         return m_rootObject;
@@ -61,10 +66,10 @@ class Scene
     {
         return m_objects;
     }
-    [[nodiscard]] inline const std::vector<std::shared_ptr<Mesh>> &getMeshes()
-        const
+    [[nodiscard]] inline const std::vector<std::shared_ptr<Material>>
+        &getMaterials() const
     {
-        return m_meshes;
+        return m_materials;
     }
 
     [[nodiscard]] inline const PerspectiveCamera &getCamera() const

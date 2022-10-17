@@ -5,6 +5,7 @@
 #include "vulkan_utils.hpp"
 
 #include <map>
+#include <string>
 
 kirana::viewport::vulkan::QueueFamilyIndices kirana::viewport::vulkan::Device::
     getQueueFamilyIndices(const vk::PhysicalDevice &gpu,
@@ -48,8 +49,8 @@ bool kirana::viewport::vulkan::Device::selectIdealGPU()
     // Go through all the devices and rate them based on their properties
     // or features. The devices are stored in a multimap in ascending order
     // of their score.
-    std::multimap<uint32_t, vk::PhysicalDevice> deviceScores;
-    uint32_t score = 0;
+    std::multimap<uint64_t, vk::PhysicalDevice> deviceScores;
+    uint64_t score = 0;
     for (const vk::PhysicalDevice &d : devices)
     {
         if (!d.getFeatures().geometryShader)
@@ -58,11 +59,20 @@ bool kirana::viewport::vulkan::Device::selectIdealGPU()
             deviceScores.insert(std::make_pair(score, d));
             continue;
         }
-
         if (d.getProperties().deviceType ==
             vk::PhysicalDeviceType::eDiscreteGpu)
+        {
             score += 1000;
-        score += d.getProperties().limits.maxImageDimension2D;
+            deviceScores.insert(std::make_pair(score, d));
+            break;
+        }
+        score += static_cast<uint64_t>(d.getProperties().limits.maxImageDimension2D);
+        for(const auto &h: d.getMemoryProperties().memoryHeaps)
+        {
+            if(h.flags & vk::MemoryHeapFlagBits::eDeviceLocal)
+                score += static_cast<uint64_t>(h.size);
+        }
+        std::string name = d.getProperties().deviceName.data();
         deviceScores.insert(std::make_pair(score, d));
     }
 
@@ -105,6 +115,9 @@ bool kirana::viewport::vulkan::Device::selectIdealGPU()
         return false;
     }
 
+    Logger::get().log(constants::LOG_CHANNEL_VULKAN, LogSeverity::error,
+                      "Selected GPU: " +
+                          std::string(m_gpu.getProperties().deviceName.data()));
     return true;
 }
 

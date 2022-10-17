@@ -8,13 +8,12 @@
 
 kirana::viewport::vulkan::Pipeline::Pipeline(
     const Device *const device, const RenderPass *const renderPass,
-    const std::vector<Shader *> &shaders,
-    const PipelineLayout *const pipelineLayout,
+    const Shader *const shader, const PipelineLayout *const pipelineLayout,
     const VertexInputDescription &vertexInputDesc,
-    const std::array<int, 2> &windowResolution)
-    : m_isInitialized{false}, m_device{device},
-      m_renderPass{renderPass}, m_shaders{shaders},
-      m_pipelineLayout{pipelineLayout}, m_windowResolution{windowResolution}
+    const std::array<int, 2> windowResolution)
+    : m_isInitialized{false}, m_device{device}, m_renderPass{renderPass},
+      m_shader{shader}, m_pipelineLayout{pipelineLayout}, m_windowResolution{
+                                                              windowResolution}
 {
     build(vertexInputDesc.bindings, vertexInputDesc.attributes);
 }
@@ -37,29 +36,26 @@ bool kirana::viewport::vulkan::Pipeline::build(
     const std::vector<vk::VertexInputAttributeDescription> &vertexAttributes)
 {
     std::vector<vk::PipelineShaderStageCreateInfo> shaderStages;
-    for (const auto &s : m_shaders)
+    if (m_shader->compute)
     {
-        if (s->compute)
-        {
-            vk::PipelineShaderStageCreateInfo compute(
-                {}, vk::ShaderStageFlagBits::eCompute, s->compute,
-                constants::VULKAN_SHADER_MAIN_FUNC_NAME);
-            shaderStages.push_back(compute);
-        }
-        if (s->vertex)
-        {
-            vk::PipelineShaderStageCreateInfo vertex(
-                {}, vk::ShaderStageFlagBits::eVertex, s->vertex,
-                constants::VULKAN_SHADER_MAIN_FUNC_NAME);
-            shaderStages.push_back(vertex);
-        }
-        if (s->fragment)
-        {
-            vk::PipelineShaderStageCreateInfo fragment(
-                {}, vk::ShaderStageFlagBits::eFragment, s->fragment,
-                constants::VULKAN_SHADER_MAIN_FUNC_NAME);
-            shaderStages.push_back(fragment);
-        }
+        vk::PipelineShaderStageCreateInfo compute(
+            {}, vk::ShaderStageFlagBits::eCompute, m_shader->compute,
+            constants::VULKAN_SHADER_MAIN_FUNC_NAME);
+        shaderStages.push_back(compute);
+    }
+    if (m_shader->vertex)
+    {
+        vk::PipelineShaderStageCreateInfo vertex(
+            {}, vk::ShaderStageFlagBits::eVertex, m_shader->vertex,
+            constants::VULKAN_SHADER_MAIN_FUNC_NAME);
+        shaderStages.push_back(vertex);
+    }
+    if (m_shader->fragment)
+    {
+        vk::PipelineShaderStageCreateInfo fragment(
+            {}, vk::ShaderStageFlagBits::eFragment, m_shader->fragment,
+            constants::VULKAN_SHADER_MAIN_FUNC_NAME);
+        shaderStages.push_back(fragment);
     }
 
     vk::PipelineVertexInputStateCreateInfo vertexInput({}, vertexBindings,

@@ -20,12 +20,12 @@ static const bool VULKAN_USE_VALIDATION_LAYERS = true;
 static const bool VULKAN_USE_VALIDATION_LAYERS = false;
 #endif
 static const uint64_t VULKAN_FRAME_SYNC_TIMEOUT = 1000000000; // 1 second
+static const uint16_t VULKAN_FRAME_OVERLAP_COUNT = 2;
 static const char *VULKAN_SHADER_VERTEX_EXTENSION = ".vert.spv";
 static const char *VULKAN_SHADER_FRAGMENT_EXTENSION = ".frag.spv";
 static const char *VULKAN_SHADER_COMPUTE_EXTENSION = ".comp.spv";
 static const char *VULKAN_SHADER_MAIN_FUNC_NAME = "main";
 static const char *VULKAN_SHADER_DIR_PATH = SHADER_DIR;
-static const char *VULKAN_SHADER_TRIANGLE_NAME = "triangle";
 static const char *VULKAN_SHADER_DEFAULT_NAME = "MatCap";
 static const char *VULKAN_SHADER_WIREFRAME_NAME = "Wireframe";
 

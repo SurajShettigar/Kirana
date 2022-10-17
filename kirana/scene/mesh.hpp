@@ -30,6 +30,10 @@ class Mesh
     {
         return m_vertices;
     }
+    [[nodiscard]] inline const std::shared_ptr<Material> &getMaterial() const
+    {
+        return m_material;
+    }
 };
 } // namespace kirana::scene
 #endif
