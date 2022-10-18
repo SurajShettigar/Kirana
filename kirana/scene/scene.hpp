@@ -79,8 +79,6 @@ class Scene
 
     [[nodiscard]] std::vector<math::Transform *> getTransformsForMesh(
         const Mesh *mesh) const;
-    [[nodiscard]] math::Matrix4x4 getClipSpaceMatrix(
-        math::Transform *model) const;
 
     void updateCameraResolution(std::array<uint32_t, 2> resolution) const;
 };

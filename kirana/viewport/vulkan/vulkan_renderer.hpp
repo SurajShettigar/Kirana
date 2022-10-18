@@ -22,6 +22,8 @@ class Allocator;
 class Swapchain;
 class DepthBuffer;
 class RenderPass;
+class DescriptorSetLayout;
+class DescriptorPool;
 class Drawer;
 class SceneData;
 
@@ -35,6 +37,8 @@ class VulkanRenderer
     Swapchain *m_swapchain;
     DepthBuffer *m_depthBuffer;
     RenderPass *m_renderpass;
+    DescriptorPool *m_descriptorPool;
+    DescriptorSetLayout *m_globalDescSetLayout;
     Drawer *m_drawer;
 
     SceneData *m_currentScene = nullptr;

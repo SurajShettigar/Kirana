@@ -15,7 +15,7 @@ class Allocation;
 
 namespace kirana::viewport::vulkan
 {
-
+class DescriptorSet;
 class CommandPool;
 class CommandBuffers;
 class Pipeline;
@@ -105,6 +105,15 @@ struct MeshPushConstants
 };
 
 /**
+ * Holds the Camera view and projection matrix.
+ */
+struct CameraData
+{
+    math::Matrix4x4 viewMatrix;
+    math::Matrix4x4 projectionMatrix;
+};
+
+/**
  * Holds the mesh material data such as shader, pipeline layout and pipeline
  * for each mesh.
  */
@@ -133,6 +142,8 @@ struct MeshData
  */
  struct FrameData
  {
+     AllocatedBuffer cameraBuffer;
+     const DescriptorSet *globalDescriptorSet = nullptr;
      vk::Fence renderFence;
      vk::Semaphore renderSemaphore;
      vk::Semaphore presentSemaphore;

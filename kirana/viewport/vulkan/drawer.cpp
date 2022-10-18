@@ -3,9 +3,13 @@
 #include "command_pool.hpp"
 #include "command_buffers.hpp"
 #include "device.hpp"
+#include <vk_mem_alloc.hpp>
+#include "allocator.hpp"
+#include "descriptor_pool.hpp"
+#include "descriptor_set_layout.hpp"
+#include "descriptor_set.hpp"
 #include "swapchain.hpp"
 #include "renderpass.hpp"
-#include "shader.hpp"
 #include "pipeline_layout.hpp"
 #include "pipeline.hpp"
 #include "scene_data.hpp"
@@ -20,11 +24,14 @@ const kirana::viewport::vulkan::FrameData &kirana::viewport::vulkan::Drawer::
                     utils::constants::VULKAN_FRAME_OVERLAP_COUNT];
 }
 
-kirana::viewport::vulkan::Drawer::Drawer(const Device *const device,
-                                         const Swapchain *const swapchain,
-                                         const RenderPass *const renderPass,
-                                         const SceneData *const scene)
+kirana::viewport::vulkan::Drawer::Drawer(
+    const Device *const device, const Allocator *const allocator,
+    const DescriptorPool *const descriptorPool,
+    const DescriptorSetLayout *globalDescriptorSetLayout,
+    const Swapchain *const swapchain, const RenderPass *const renderPass,
+    const SceneData *const scene)
     : m_isInitialized{false}, m_currentFrameNumber{0}, m_device{device},
+      m_allocator{allocator}, m_descriptorPool{descriptorPool},
       m_swapchain{swapchain}, m_renderPass{renderPass}, m_scene{scene}
 {
     m_frames.resize(utils::constants::VULKAN_FRAME_OVERLAP_COUNT);
@@ -32,6 +39,20 @@ kirana::viewport::vulkan::Drawer::Drawer(const Device *const device,
     {
         try
         {
+            bool bufferAllocated = m_allocator->allocateBuffer(
+                sizeof(CameraData), vk::BufferUsageFlagBits::eUniformBuffer,
+                vma::MemoryUsage::eCpuToGpu, &m_frames[i].cameraBuffer);
+
+            bool setAllocated = m_descriptorPool->allocateDescriptorSet(
+                m_frames[i].globalDescriptorSet, globalDescriptorSetLayout);
+
+            if (bufferAllocated && setAllocated)
+            {
+                m_frames[i].globalDescriptorSet->writeUniformBuffer(
+                    m_frames[i].cameraBuffer.buffer.get(), 0,
+                    sizeof(CameraData), 0);
+            }
+
             m_frames[i].renderFence = m_device->current.createFence(
                 vk::FenceCreateInfo(vk::FenceCreateFlagBits::eSignaled));
             m_frames[i].renderSemaphore =
@@ -44,9 +65,8 @@ kirana::viewport::vulkan::Drawer::Drawer(const Device *const device,
 
             m_frames[i].commandPool = new CommandPool(
                 m_device, m_device->queueFamilyIndices.graphics);
-            m_frames[i].commandBuffers =
-                new CommandBuffers(m_device, m_frames[i].commandPool);
-
+            m_frames[i].commandPool->allocateCommandBuffers(
+                m_frames[i].commandBuffers);
             m_isInitialized = true;
         }
         catch (...)
@@ -70,6 +90,9 @@ kirana::viewport::vulkan::Drawer::~Drawer()
                                          constants::VULKAN_FRAME_SYNC_TIMEOUT),
                                      "Failed to wait for render fence");
 
+                m_allocator->free(f.cameraBuffer);
+                if (f.globalDescriptorSet)
+                    delete f.globalDescriptorSet;
                 if (f.renderFence)
                     m_device->current.destroyFence(f.renderFence);
                 if (f.renderSemaphore)
@@ -122,6 +145,9 @@ void kirana::viewport::vulkan::Drawer::draw()
 
     if (m_scene)
     {
+        m_allocator->mapToMemory(frame.cameraBuffer, sizeof(CameraData),
+                                 &m_scene->getCameraData());
+
         MeshPushConstants meshConstants;
         const MaterialData *lastMatData = nullptr;
         // TODO: Bind Vertex Buffers together and draw them at once.
@@ -131,9 +157,13 @@ void kirana::viewport::vulkan::Drawer::draw()
             {
                 frame.commandBuffers->bindPipeline(
                     m_scene->meshes[i].material->pipeline->current);
+                frame.commandBuffers->bindDescriptorSets(
+                    m_scene->meshes[i].material->layout->current,
+                    {frame.globalDescriptorSet->current});
                 lastMatData = m_scene->meshes[i].material;
             }
-            meshConstants.renderMatrix = m_scene->getClipSpaceMatrix(i, 0);
+            meshConstants.renderMatrix =
+                m_scene->meshes[i].instanceTransforms[0]->getMatrix();
 
             frame.commandBuffers->pushConstants(
                 m_scene->meshes[i].material->layout->current,

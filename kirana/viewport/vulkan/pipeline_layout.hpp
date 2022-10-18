@@ -6,6 +6,7 @@
 namespace kirana::viewport::vulkan
 {
 class Device;
+class DescriptorSetLayout;
 
 class PipelineLayout
 {
@@ -14,9 +15,11 @@ class PipelineLayout
     vk::PipelineLayout m_current;
 
     const Device *const m_device;
+    const DescriptorSetLayout *const m_globalDescSetLayout;
 
   public:
-    explicit PipelineLayout(const Device *device);
+    explicit PipelineLayout(const Device *device,
+                            const DescriptorSetLayout *globalDescSetLayout);
     ~PipelineLayout();
     PipelineLayout(const PipelineLayout &pipelineLayout) = delete;
     PipelineLayout &operator=(const PipelineLayout &pipelineLayout) = delete;

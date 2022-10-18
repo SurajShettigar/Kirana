@@ -73,8 +73,7 @@ void kirana::scene::Scene::initFromAiScene(const aiScene *scene)
     m_meshes.resize(scene->mNumMeshes);
     for (size_t i = 0; i < scene->mNumMeshes; i++)
         m_meshes[i] = std::move(std::make_shared<Mesh>(
-            scene->mMeshes[i],
-            m_materials[scene->mMeshes[i]->mMaterialIndex]));
+            scene->mMeshes[i], m_materials[scene->mMeshes[i]->mMaterialIndex]));
 
     Logger::get().log(constants::LOG_CHANNEL_SCENE, LogSeverity::debug,
                       "Scene Mesh count: " + std::to_string(scene->mNumMeshes));
@@ -115,14 +114,8 @@ std::vector<kirana::math::Transform *> kirana::scene::Scene::
     return transforms;
 }
 
-kirana::math::Matrix4x4 kirana::scene::Scene::getClipSpaceMatrix(
-    math::Transform *model) const
-{
-    return m_camera.projection.getMatrix() * m_camera.transform.getMatrix() *
-           model->getMatrix();
-}
-
-void kirana::scene::Scene::updateCameraResolution(std::array<uint32_t, 2> resolution) const
+void kirana::scene::Scene::updateCameraResolution(
+    std::array<uint32_t, 2> resolution) const
 {
     m_camera.setResolution(resolution);
 }

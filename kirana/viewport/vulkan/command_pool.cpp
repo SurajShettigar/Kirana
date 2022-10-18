@@ -1,5 +1,6 @@
 #include "command_pool.hpp"
 #include "device.hpp"
+#include "command_buffers.hpp"
 
 #include "vulkan_utils.hpp"
 
@@ -32,4 +33,25 @@ kirana::viewport::vulkan::CommandPool::~CommandPool()
         Logger::get().log(constants::LOG_CHANNEL_VULKAN, LogSeverity::debug,
                           "Command Pool destroyed");
     }
+}
+
+bool kirana::viewport::vulkan::CommandPool::allocateCommandBuffers(
+    const CommandBuffers *&commandBuffers, size_t count,
+    vk::CommandBufferLevel level) const
+{
+    vk::CommandBufferAllocateInfo allocateInfo(m_current, level,
+                                               static_cast<uint32_t>(count));
+    try
+    {
+        commandBuffers = new CommandBuffers(
+            m_device->current.allocateCommandBuffers(allocateInfo));
+        Logger::get().log(constants::LOG_CHANNEL_VULKAN, LogSeverity::trace,
+                          "Command Buffers allocated");
+    }
+    catch (...)
+    {
+        handleVulkanException();
+        return false;
+    }
+    return true;
 }

@@ -1,11 +1,13 @@
 #include "pipeline_layout.hpp"
 #include "device.hpp"
+#include "descriptor_set_layout.hpp"
 #include "vulkan_utils.hpp"
 #include "vulkan_types.hpp"
 
 kirana::viewport::vulkan::PipelineLayout::PipelineLayout(
-    const Device *const device)
-    : m_isInitialized{false}, m_device{device}
+    const Device *const device, const DescriptorSetLayout *globalDescSetLayout)
+    : m_isInitialized{false}, m_device{device}, m_globalDescSetLayout{
+                                                    globalDescSetLayout}
 {
     try
     {
@@ -13,8 +15,9 @@ kirana::viewport::vulkan::PipelineLayout::PipelineLayout(
         vk::PushConstantRange meshPushConstants(
             vk::ShaderStageFlagBits::eVertex, 0, sizeof(MeshPushConstants));
 
-        m_current = m_device->current.createPipelineLayout(
-            vk::PipelineLayoutCreateInfo({}, {}, meshPushConstants));
+        m_current =
+            m_device->current.createPipelineLayout(vk::PipelineLayoutCreateInfo(
+                {}, m_globalDescSetLayout->current, meshPushConstants));
         Logger::get().log(constants::LOG_CHANNEL_VULKAN, LogSeverity::debug,
                           "Pipeline layout created");
         m_isInitialized = true;

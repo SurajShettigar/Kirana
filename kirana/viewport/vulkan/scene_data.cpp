@@ -4,6 +4,7 @@
 #include "vulkan_types.hpp"
 #include "allocator.hpp"
 #include "shader.hpp"
+#include "descriptor_set_layout.hpp"
 #include "pipeline_layout.hpp"
 #include "pipeline.hpp"
 
@@ -56,7 +57,8 @@ void kirana::viewport::vulkan::SceneData::createMaterials()
         MaterialData matData;
         matData.name = m->getName();
         matData.shaderName = m->getShader();
-        matData.layout = std::make_unique<PipelineLayout>(m_device);
+        matData.layout =
+            std::make_unique<PipelineLayout>(m_device, m_globalDescSetLayout);
         matData.pipeline = std::make_unique<Pipeline>(
             m_device, m_renderPass, shader, matData.layout.get(), m_vertexDesc,
             m_windowResolution);
@@ -66,12 +68,13 @@ void kirana::viewport::vulkan::SceneData::createMaterials()
 }
 
 kirana::viewport::vulkan::SceneData::SceneData(
-    const Device *device, const RenderPass *renderPass,
-    const Allocator *allocator, const std::array<int, 2> windowResolution,
-    const scene::Scene &scene)
-    : m_isInitialized{false}, m_device{device}, m_renderPass{renderPass},
-      m_allocator{allocator}, m_windowResolution{windowResolution}, m_scene{
-                                                                        scene}
+    const Device *device, const Allocator *allocator,
+    const RenderPass *renderPass,
+    const DescriptorSetLayout *globalDescSetLayout,
+    const std::array<int, 2> windowResolution, const scene::Scene &scene)
+    : m_isInitialized{false}, m_device{device}, m_allocator{allocator},
+      m_renderPass{renderPass}, m_globalDescSetLayout{globalDescSetLayout},
+      m_windowResolution{windowResolution}, m_scene{scene}
 {
     // Set the vulkan description of vertex buffers.
     setVertexDescription();
@@ -136,9 +139,10 @@ kirana::viewport::vulkan::SceneData::~SceneData()
     }
 }
 
-kirana::math::Matrix4x4 kirana::viewport::vulkan::SceneData::getClipSpaceMatrix(
-    size_t meshIndex, size_t instanceIndex) const
+const kirana::viewport::vulkan::CameraData &kirana::viewport::vulkan::
+    SceneData::getCameraData() const
 {
-    return math::Matrix4x4::transpose(m_scene.getClipSpaceMatrix(
-        m_meshes[meshIndex].instanceTransforms[instanceIndex]));
+    m_cameraData.viewMatrix = m_scene.getCamera().transform.getMatrix();
+    m_cameraData.projectionMatrix = m_scene.getCamera().projection.getMatrix();
+    return m_cameraData;
 }

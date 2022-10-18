@@ -6,28 +6,19 @@
 
 namespace kirana::viewport::vulkan
 {
-class Device;
-class CommandPool;
-class RenderPass;
 
 class CommandBuffers
 {
   private:
-    bool m_isInitialized = false;
     std::vector<vk::CommandBuffer> m_current;
 
-    const Device *const m_device;
-    const CommandPool *const m_commandPool;
-
   public:
-    explicit CommandBuffers(
-        const Device *device, const CommandPool *commandPool, size_t count = 1,
-        vk::CommandBufferLevel level = vk::CommandBufferLevel::ePrimary);
+    explicit CommandBuffers(std::vector<vk::CommandBuffer> commandBuffers)
+        : m_current{std::move(commandBuffers)} {};
     ~CommandBuffers() = default;
     CommandBuffers(const CommandBuffers &buffers) = delete;
     CommandBuffers &operator=(const CommandBuffers &buffers) = delete;
 
-    const bool &isInitialized = m_isInitialized;
     const std::vector<vk::CommandBuffer> &current = m_current;
 
     void reset(uint32_t index = 0) const;
@@ -38,6 +29,9 @@ class CommandBuffers
                          const std::vector<vk::ClearValue> &clearValues,
                          uint32_t index = 0) const;
     void bindPipeline(const vk::Pipeline &pipeline, uint32_t index = 0) const;
+    void bindDescriptorSets(const vk::PipelineLayout &layout,
+                            const std::vector<vk::DescriptorSet> &sets,
+                            uint32_t index = 0) const;
     void bindVertexBuffer(const vk::Buffer &buffer,
                           const vk::DeviceSize &offset,
                           uint32_t index = 0) const;

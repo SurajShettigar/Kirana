@@ -9,6 +9,8 @@
 #include "swapchain.hpp"
 #include "depth_buffer.hpp"
 #include "renderpass.hpp"
+#include "descriptor_pool.hpp"
+#include "descriptor_set_layout.hpp"
 #include "scene_data.hpp"
 #include "drawer.hpp"
 
@@ -20,7 +22,7 @@ void kirana::viewport::vulkan::VulkanRenderer::init(
 {
 
     m_instance = new Instance(reqInstanceExtensions);
-    if (m_instance->isInitialized)
+    if (m_instance && m_instance->isInitialized)
     {
         VkSurfaceKHR surface;
         if (window->getVulkanWindowSurface(
@@ -31,26 +33,37 @@ void kirana::viewport::vulkan::VulkanRenderer::init(
                                     window->getWindowResolution());
         }
     }
-    if (m_surface->isInitialized)
+    if (m_surface && m_surface->isInitialized)
         m_device = new Device(m_instance, m_surface);
-    if (m_device->isInitialized)
+    if (m_device && m_device->isInitialized)
     {
         m_allocator = new Allocator(m_instance, m_device);
         m_swapchain = new Swapchain(m_device, m_surface);
     }
-    if (m_swapchain->isInitialized)
+    if (m_swapchain && m_swapchain->isInitialized)
         m_depthBuffer = new DepthBuffer(m_device, m_allocator,
                                         window->getWindowResolution());
-    if (m_depthBuffer->isInitialized)
+    if (m_depthBuffer && m_depthBuffer->isInitialized)
         m_renderpass = new RenderPass(m_device, m_swapchain, m_depthBuffer);
-    if (m_renderpass->isInitialized)
+
+    if (m_renderpass && m_renderpass->isInitialized)
     {
-        if (scene.isInitialized())
-            m_currentScene =
-                new SceneData(m_device, m_renderpass, m_allocator,
-                              window->getWindowResolution(), scene);
-        m_drawer =
-            new Drawer(m_device, m_swapchain, m_renderpass, m_currentScene);
+        m_descriptorPool = new DescriptorPool(m_device);
+        m_globalDescSetLayout = new DescriptorSetLayout(m_device);
+    }
+    if (scene.isInitialized() && m_globalDescSetLayout &&
+        m_globalDescSetLayout->isInitialized)
+    {
+        m_currentScene = new SceneData(m_device, m_allocator, m_renderpass,
+                                       m_globalDescSetLayout,
+                                       window->getWindowResolution(), scene);
+    }
+    if (m_descriptorPool && m_descriptorPool->isInitialized &&
+        m_globalDescSetLayout && m_globalDescSetLayout->isInitialized)
+    {
+        m_drawer = new Drawer(m_device, m_allocator, m_descriptorPool,
+                              m_globalDescSetLayout, m_swapchain, m_renderpass,
+                              m_currentScene);
     }
 }
 
@@ -74,6 +87,16 @@ void kirana::viewport::vulkan::VulkanRenderer::clean()
     {
         delete m_currentScene;
         m_currentScene = nullptr;
+    }
+    if (m_globalDescSetLayout)
+    {
+        delete m_globalDescSetLayout;
+        m_globalDescSetLayout = nullptr;
+    }
+    if (m_descriptorPool)
+    {
+        delete m_descriptorPool;
+        m_descriptorPool = nullptr;
     }
     if (m_renderpass)
     {
