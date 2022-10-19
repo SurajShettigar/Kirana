@@ -30,6 +30,7 @@ class Drawer
     const SceneData *const m_scene;
 
     [[nodiscard]] const FrameData &getCurrentFrame() const;
+    [[nodiscard]] uint32_t getCurrentFrameIndex() const;
 
   public:
     explicit Drawer(const Device *device, const Allocator *allocator,

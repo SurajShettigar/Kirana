@@ -9,8 +9,16 @@ namespace kirana::scene
 struct Vertex
 {
     math::Vector3 position;
-    math::Vector3 normal;
-    math::Vector3 color;
+    alignas(16) math::Vector3 normal;
+    alignas(16) math::Vector3 color;
+};
+
+struct WorldData
+{
+    math::Vector4 ambientColor{0.5f, 0.5f, 0.5f, 1.0f};
+    math::Vector3 sunDirection{0.25f, -0.75f, -0.25f};
+    alignas(4) float sunIntensity{2.0f};
+    alignas(16) math::Vector4 sunColor{1.0f, 1.0f, 0.984f, 1.0f};
 };
 
 struct SceneImportSettings
@@ -25,13 +33,8 @@ struct SceneImportSettings
     bool preTransformVertices = false;
 };
 
-struct CommonMaterialProperties
-{
-
-};
-
 static const SceneImportSettings DEFAULT_SCENE_IMPORT_SETTINGS{
-    false, false, false, false, false, true, true, false};
+    false, false, true, false, false, true, true, false};
 
 } // namespace kirana::scene
 

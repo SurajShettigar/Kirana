@@ -10,6 +10,7 @@ namespace kirana::scene
 class SceneManager
 {
   private:
+    uint32_t m_frameNum;
     Scene m_currentScene;
 
     SceneManager() = default;

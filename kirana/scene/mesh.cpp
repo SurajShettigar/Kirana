@@ -24,6 +24,9 @@ kirana::scene::Mesh::Mesh(const aiMesh *mesh, std::shared_ptr<Material> material
             const uint32_t v1 = face.mIndices[0];
             const uint32_t v2 = face.mIndices[1];
             const uint32_t v3 = face.mIndices[2];
+            m_indices.push_back(v1);
+            m_indices.push_back(v2);
+            m_indices.push_back(v3);
 
             m_vertices[v1].position[0] = mesh->mVertices[v1].x;
             m_vertices[v1].position[1] = mesh->mVertices[v1].y;

@@ -39,10 +39,13 @@ class Allocator
     const vma::Allocator &current = *m_current;
 
     bool allocateBuffer(vk::DeviceSize size, vk::BufferUsageFlags usageFlags,
-                  vma::MemoryUsage memoryUsage, AllocatedBuffer *buffer) const;
+                        vma::MemoryUsage memoryUsage,
+                        AllocatedBuffer *buffer) const;
     bool allocateImage(const vk::ImageCreateInfo &imageCreateInfo,
-                        vma::MemoryUsage memoryUsage, vk::MemoryPropertyFlags requiredFlags, AllocateImage *image) const;
-    bool mapToMemory(const AllocatedBuffer &buffer, size_t size,
+                       vma::MemoryUsage memoryUsage,
+                       vk::MemoryPropertyFlags requiredFlags,
+                       AllocateImage *image) const;
+    bool mapToMemory(const AllocatedBuffer &buffer, size_t size, uint32_t offset,
                      const void *data) const;
     void free(const AllocatedBuffer &buffer) const;
     void free(const AllocateImage &image) const;

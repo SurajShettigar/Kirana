@@ -15,10 +15,11 @@ struct aiNode;
 namespace kirana::scene
 {
 class SceneImporter;
+class SceneManager;
 class Scene
 {
     friend class SceneImporter;
-
+    friend class SceneManager;
   private:
     bool m_isInitialized = false;
     std::string m_name = "Scene";
@@ -27,6 +28,7 @@ class Scene
     std::vector<std::shared_ptr<Object>>
         m_objects; // Also contains m_rootObject.
     std::vector<std::shared_ptr<Material>> m_materials;
+    WorldData m_worldData;
 
     PerspectiveCamera m_camera{{1280, 720}, 60.0f, 0.1f, 1000.0f, true, true};
 
@@ -70,6 +72,10 @@ class Scene
         &getMaterials() const
     {
         return m_materials;
+    }
+    [[nodiscard]] inline const WorldData &getWorldData() const
+    {
+        return m_worldData;
     }
 
     [[nodiscard]] inline const PerspectiveCamera &getCamera() const

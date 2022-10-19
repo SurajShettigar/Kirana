@@ -31,6 +31,7 @@ class CommandBuffers
     void bindPipeline(const vk::Pipeline &pipeline, uint32_t index = 0) const;
     void bindDescriptorSets(const vk::PipelineLayout &layout,
                             const std::vector<vk::DescriptorSet> &sets,
+                            const std::vector<uint32_t> &dynamicOffsets,
                             uint32_t index = 0) const;
     void bindVertexBuffer(const vk::Buffer &buffer,
                           const vk::DeviceSize &offset,
@@ -38,6 +39,9 @@ class CommandBuffers
     void bindVertexBuffers(const std::vector<vk::Buffer> &buffers,
                            const std::vector<vk::DeviceSize> &offsets,
                            uint32_t index = 0) const;
+    void bindIndexBuffer(const vk::Buffer &buffer, const vk::DeviceSize &offset,
+                         vk::IndexType indexType = vk::IndexType::eUint32,
+                         uint32_t index = 0) const;
     // TODO: Temporary solution to push constants.
     void pushConstants(vk::PipelineLayout layout,
                        vk::ShaderStageFlags stageFlags, uint32_t offset,
@@ -46,6 +50,9 @@ class CommandBuffers
     void draw(uint32_t vertexCount, uint32_t instanceCount,
               uint32_t firstVertex, uint32_t firstInstance,
               uint32_t index = 0) const;
+    void drawIndexed(uint32_t indexCount, uint32_t instanceCount,
+                     uint32_t firstIndex, int32_t vertexOffset,
+                     uint32_t firstInstance, uint32_t index = 0) const;
     void endRenderPass(uint32_t index = 0) const;
     void end(uint32_t index = 0) const;
 };

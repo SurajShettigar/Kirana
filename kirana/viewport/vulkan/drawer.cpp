@@ -24,6 +24,11 @@ const kirana::viewport::vulkan::FrameData &kirana::viewport::vulkan::Drawer::
                     utils::constants::VULKAN_FRAME_OVERLAP_COUNT];
 }
 
+uint32_t kirana::viewport::vulkan::Drawer::getCurrentFrameIndex() const
+{
+    return m_currentFrameNumber % utils::constants::VULKAN_FRAME_OVERLAP_COUNT;
+}
+
 kirana::viewport::vulkan::Drawer::Drawer(
     const Device *const device, const Allocator *const allocator,
     const DescriptorPool *const descriptorPool,
@@ -42,15 +47,23 @@ kirana::viewport::vulkan::Drawer::Drawer(
             bool bufferAllocated = m_allocator->allocateBuffer(
                 sizeof(CameraData), vk::BufferUsageFlagBits::eUniformBuffer,
                 vma::MemoryUsage::eCpuToGpu, &m_frames[i].cameraBuffer);
+            if (bufferAllocated)
+            {
+                m_frames[i].cameraBuffer.descInfo = vk::DescriptorBufferInfo(
+                    *m_frames[i].cameraBuffer.buffer, 0, sizeof(CameraData));
+            }
 
             bool setAllocated = m_descriptorPool->allocateDescriptorSet(
                 m_frames[i].globalDescriptorSet, globalDescriptorSetLayout);
 
             if (bufferAllocated && setAllocated)
             {
-                m_frames[i].globalDescriptorSet->writeUniformBuffer(
-                    m_frames[i].cameraBuffer.buffer.get(), 0,
-                    sizeof(CameraData), 0);
+                m_frames[i].globalDescriptorSet->writeBuffer(
+                    m_frames[i].cameraBuffer.descInfo,
+                    vk::DescriptorType::eUniformBuffer, 0);
+                m_frames[i].globalDescriptorSet->writeBuffer(
+                    m_scene->getWorldDataBuffer().descInfo,
+                    vk::DescriptorType::eUniformBufferDynamic, 1);
             }
 
             m_frames[i].renderFence = m_device->current.createFence(
@@ -145,8 +158,10 @@ void kirana::viewport::vulkan::Drawer::draw()
 
     if (m_scene)
     {
-        m_allocator->mapToMemory(frame.cameraBuffer, sizeof(CameraData),
+        m_allocator->mapToMemory(frame.cameraBuffer, sizeof(CameraData), 0,
                                  &m_scene->getCameraData());
+
+        m_scene->updateWorldDataBuffer(getCurrentFrameIndex());
 
         MeshPushConstants meshConstants;
         const MaterialData *lastMatData = nullptr;
@@ -159,11 +174,13 @@ void kirana::viewport::vulkan::Drawer::draw()
                     m_scene->meshes[i].material->pipeline->current);
                 frame.commandBuffers->bindDescriptorSets(
                     m_scene->meshes[i].material->layout->current,
-                    {frame.globalDescriptorSet->current});
+                    {frame.globalDescriptorSet->current},
+                    {static_cast<uint32_t>(m_scene->getWorldDataBufferOffset(
+                        getCurrentFrameIndex()))});
                 lastMatData = m_scene->meshes[i].material;
             }
             meshConstants.renderMatrix =
-                m_scene->meshes[i].instanceTransforms[0]->getMatrix();
+                m_scene->meshes[i].instances[0].transform->getMatrix();
 
             frame.commandBuffers->pushConstants(
                 m_scene->meshes[i].material->layout->current,
@@ -171,8 +188,11 @@ void kirana::viewport::vulkan::Drawer::draw()
 
             frame.commandBuffers->bindVertexBuffer(
                 *(m_scene->meshes[i].vertexBuffer.buffer), 0);
-            frame.commandBuffers->draw(
-                static_cast<uint32_t>(m_scene->meshes[i].vertexCount), 1, 0, 0);
+            frame.commandBuffers->bindIndexBuffer(
+                *(m_scene->meshes[i].indexBuffer.buffer), 0);
+            frame.commandBuffers->drawIndexed(
+                static_cast<uint32_t>(m_scene->meshes[i].indexCount), 1, 0, 0,
+                0);
         }
     }
 

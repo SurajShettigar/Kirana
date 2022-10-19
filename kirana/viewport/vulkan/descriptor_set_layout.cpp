@@ -11,7 +11,14 @@ kirana::viewport::vulkan::DescriptorSetLayout::DescriptorSetLayout(
         0, vk::DescriptorType::eUniformBuffer, 1,
         vk::ShaderStageFlagBits::eVertex);
 
-    vk::DescriptorSetLayoutCreateInfo createInfo({}, camBuffer);
+    vk::DescriptorSetLayoutBinding worldDataBuffer(
+        1, vk::DescriptorType::eUniformBufferDynamic, 1,
+        vk::ShaderStageFlagBits::eVertex | vk::ShaderStageFlagBits::eFragment);
+
+    std::vector<vk::DescriptorSetLayoutBinding> bindings{camBuffer,
+                                                         worldDataBuffer};
+
+    vk::DescriptorSetLayoutCreateInfo createInfo({}, bindings);
 
     try
     {
@@ -20,7 +27,7 @@ kirana::viewport::vulkan::DescriptorSetLayout::DescriptorSetLayout(
         Logger::get().log(constants::LOG_CHANNEL_VULKAN, LogSeverity::trace,
                           "Descriptor Set Layout created");
     }
-    catch(...)
+    catch (...)
     {
         handleVulkanException();
     }
@@ -28,9 +35,9 @@ kirana::viewport::vulkan::DescriptorSetLayout::DescriptorSetLayout(
 
 kirana::viewport::vulkan::DescriptorSetLayout::~DescriptorSetLayout()
 {
-    if(m_device)
+    if (m_device)
     {
-        if(m_current)
+        if (m_current)
         {
             m_device->current.destroyDescriptorSetLayout(m_current);
             Logger::get().log(constants::LOG_CHANNEL_VULKAN, LogSeverity::trace,

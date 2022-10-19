@@ -66,10 +66,11 @@ bool kirana::viewport::vulkan::Device::selectIdealGPU()
             deviceScores.insert(std::make_pair(score, d));
             break;
         }
-        score += static_cast<uint64_t>(d.getProperties().limits.maxImageDimension2D);
-        for(const auto &h: d.getMemoryProperties().memoryHeaps)
+        score +=
+            static_cast<uint64_t>(d.getProperties().limits.maxImageDimension2D);
+        for (const auto &h : d.getMemoryProperties().memoryHeaps)
         {
-            if(h.flags & vk::MemoryHeapFlagBits::eDeviceLocal)
+            if (h.flags & vk::MemoryHeapFlagBits::eDeviceLocal)
                 score += static_cast<uint64_t>(h.size);
         }
         std::string name = d.getProperties().deviceName.data();
@@ -115,7 +116,7 @@ bool kirana::viewport::vulkan::Device::selectIdealGPU()
         return false;
     }
 
-    Logger::get().log(constants::LOG_CHANNEL_VULKAN, LogSeverity::error,
+    Logger::get().log(constants::LOG_CHANNEL_VULKAN, LogSeverity::debug,
                       "Selected GPU: " +
                           std::string(m_gpu.getProperties().deviceName.data()));
     return true;
@@ -158,11 +159,11 @@ kirana::viewport::vulkan::Device::Device(const Instance *const instance,
                                          const Surface *surface)
     : m_isInitialized{false}, m_instance{instance}, m_surface{surface}
 {
-    Logger::get().log(constants::LOG_CHANNEL_VULKAN, LogSeverity::debug,
+    Logger::get().log(constants::LOG_CHANNEL_VULKAN, LogSeverity::trace,
                       "Finding ideal GPU...");
     if (selectIdealGPU())
     {
-        Logger::get().log(constants::LOG_CHANNEL_VULKAN, LogSeverity::debug,
+        Logger::get().log(constants::LOG_CHANNEL_VULKAN, LogSeverity::trace,
                           "Creating Logical Device for the GPU...");
         if (createLogicalDevice())
         {
@@ -171,7 +172,7 @@ kirana::viewport::vulkan::Device::Device(const Instance *const instance,
             m_presentationQueue =
                 m_current.getQueue(m_queueFamilyIndices.presentation, 0);
             m_isInitialized = true;
-            Logger::get().log(constants::LOG_CHANNEL_VULKAN, LogSeverity::debug,
+            Logger::get().log(constants::LOG_CHANNEL_VULKAN, LogSeverity::trace,
                               "Device initialized");
         }
     }
@@ -182,7 +183,7 @@ kirana::viewport::vulkan::Device::~Device()
     if (m_current)
     {
         m_current.destroy();
-        Logger::get().log(constants::LOG_CHANNEL_VULKAN, LogSeverity::debug,
+        Logger::get().log(constants::LOG_CHANNEL_VULKAN, LogSeverity::trace,
                           "Device destroyed");
     }
 }

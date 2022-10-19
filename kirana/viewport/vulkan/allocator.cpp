@@ -85,18 +85,19 @@ bool kirana::viewport::vulkan::Allocator::allocateImage(
 
 
 bool kirana::viewport::vulkan::Allocator::mapToMemory(
-    const AllocatedBuffer &buffer, size_t size, const void *data) const
+    const AllocatedBuffer &buffer, size_t size, uint32_t offset, const void *data) const
 {
     try
     {
-        void *temp;
-        if (m_current->mapMemory(*buffer.allocation, &temp) !=
+        char *temp;
+        if (m_current->mapMemory(*buffer.allocation, (void**)&temp) !=
             vk::Result::eSuccess)
         {
             Logger::get().log(constants::LOG_CHANNEL_VULKAN, LogSeverity::error,
                               "Failed to map memory");
             return false;
         }
+        temp += offset;
         memcpy(temp, data, size);
         m_current->unmapMemory(*buffer.allocation);
         return true;

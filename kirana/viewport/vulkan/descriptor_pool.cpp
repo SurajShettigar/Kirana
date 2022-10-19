@@ -11,6 +11,8 @@ kirana::viewport::vulkan::DescriptorPool::DescriptorPool(const Device *device)
 {
     std::vector<vk::DescriptorPoolSize> poolSizes = {
         vk::DescriptorPoolSize(vk::DescriptorType::eUniformBuffer,
+                               constants::VULKAN_DESCRIPTOR_DEFAULT_POOL_SIZE),
+        vk::DescriptorPoolSize(vk::DescriptorType::eUniformBufferDynamic,
                                constants::VULKAN_DESCRIPTOR_DEFAULT_POOL_SIZE)};
     vk::DescriptorPoolCreateInfo createInfo(
         {}, constants::VULKAN_DESCRIPTOR_SET_MAX_COUNT, poolSizes);

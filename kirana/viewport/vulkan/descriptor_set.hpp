@@ -23,8 +23,8 @@ class DescriptorSet
 
     const vk::DescriptorSet &current = m_current;
 
-    void writeUniformBuffer(const vk::Buffer *buffer, vk::DeviceSize offset,
-                            vk::DeviceSize range, uint32_t binding) const;
+    void writeBuffer(const vk::DescriptorBufferInfo &bufferInfo,
+                            vk::DescriptorType type, uint32_t binding) const;
 };
 } // namespace kirana::viewport::vulkan
 

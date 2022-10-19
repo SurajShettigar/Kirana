@@ -77,6 +77,7 @@ struct AllocatedBuffer
 {
     std::unique_ptr<vk::Buffer> buffer;
     std::unique_ptr<vma::Allocation> allocation;
+    vk::DescriptorBufferInfo descInfo;
 };
 
 /**
@@ -86,6 +87,7 @@ struct AllocateImage
 {
     std::unique_ptr<vk::Image> image;
     std::unique_ptr<vma::Allocation> allocation;
+    vk::DescriptorImageInfo descInfo;
 };
 
 /**
@@ -125,31 +127,38 @@ struct MaterialData
     std::unique_ptr<Pipeline> pipeline;
 };
 
+struct InstanceData
+{
+    math::Transform *transform;
+};
+
 /**
  * Holds the mesh data used by vulkan bindVertexBuffers and draw commands.
  */
 struct MeshData
 {
     AllocatedBuffer vertexBuffer;
+    AllocatedBuffer indexBuffer;
     vk::DeviceSize vertexOffset = 0;
     size_t vertexCount;
-    std::vector<math::Transform *> instanceTransforms;
+    size_t indexCount;
+    std::vector<InstanceData> instances;
     MaterialData *material;
 };
 
 /**
  * Holds the command pool, command buffers and sync structures per frame.
  */
- struct FrameData
- {
-     AllocatedBuffer cameraBuffer;
-     const DescriptorSet *globalDescriptorSet = nullptr;
-     vk::Fence renderFence;
-     vk::Semaphore renderSemaphore;
-     vk::Semaphore presentSemaphore;
-     const CommandPool *commandPool = nullptr;
-     const CommandBuffers *commandBuffers = nullptr;
- };
+struct FrameData
+{
+    AllocatedBuffer cameraBuffer;
+    const DescriptorSet *globalDescriptorSet = nullptr;
+    vk::Fence renderFence;
+    vk::Semaphore renderSemaphore;
+    vk::Semaphore presentSemaphore;
+    const CommandPool *commandPool = nullptr;
+    const CommandBuffers *commandBuffers = nullptr;
+};
 
 } // namespace kirana::viewport::vulkan
 

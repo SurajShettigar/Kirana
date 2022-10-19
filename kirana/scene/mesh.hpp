@@ -16,6 +16,7 @@ class Mesh
   private:
     std::string m_name;
     std::vector<Vertex> m_vertices;
+    std::vector<uint32_t> m_indices;
     std::shared_ptr<Material> m_material;
 
   public:
@@ -29,6 +30,10 @@ class Mesh
     [[nodiscard]] inline const std::vector<Vertex> &getVertices() const
     {
         return m_vertices;
+    }
+    [[nodiscard]] inline const std::vector<uint32_t> &getIndices() const
+    {
+        return m_indices;
     }
     [[nodiscard]] inline const std::shared_ptr<Material> &getMaterial() const
     {

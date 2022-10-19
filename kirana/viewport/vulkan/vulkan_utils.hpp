@@ -154,6 +154,20 @@ static bool hasRequiredValidationLayers()
 
     return missingLayers == VALIDATION_LAYERS.end();
 }
+
+static vk::DeviceSize padUniformBufferSize(const vk::PhysicalDevice &device,
+                                           vk::DeviceSize size)
+{
+    vk::DeviceSize minOffset =
+        device.getProperties().limits.minUniformBufferOffsetAlignment;
+    vk::DeviceSize finalSize = size;
+
+    if (minOffset > 0)
+    {
+        finalSize = (size + minOffset - 1) & ~(minOffset - 1);
+    }
+    return finalSize;
+}
 } // namespace kirana::viewport::vulkan
 
 #endif

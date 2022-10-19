@@ -26,6 +26,7 @@ class SceneData
     std::vector<MaterialData> m_materials;
     std::vector<MeshData> m_meshes;
     mutable CameraData m_cameraData;
+    AllocatedBuffer m_worldDataBuffer;
 
     const Device *const m_device;
     const Allocator *const m_allocator;
@@ -38,7 +39,7 @@ class SceneData
     void setVertexDescription();
     const Shader *createShader(const std::string &shaderName);
     void createMaterials();
-
+    void createWorldDataBuffer();
   public:
     SceneData(const Device *device, const Allocator *allocator,
               const RenderPass *renderPass,
@@ -52,6 +53,9 @@ class SceneData
     const std::vector<MeshData> &meshes = m_meshes;
 
     [[nodiscard]] const CameraData &getCameraData() const;
+    [[nodiscard]] const AllocatedBuffer &getWorldDataBuffer() const;
+    [[nodiscard]] vk::DeviceSize getWorldDataBufferOffset(uint32_t offsetIndex) const;
+    void updateWorldDataBuffer(uint32_t offsetIndex) const;
 };
 } // namespace kirana::viewport::vulkan
 #endif

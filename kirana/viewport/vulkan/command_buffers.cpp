@@ -31,12 +31,12 @@ void kirana::viewport::vulkan::CommandBuffers::bindPipeline(
 
 void kirana::viewport::vulkan::CommandBuffers::bindDescriptorSets(
     const vk::PipelineLayout &layout,
-    const std::vector<vk::DescriptorSet> &sets, uint32_t index) const
+    const std::vector<vk::DescriptorSet> &sets,
+    const std::vector<uint32_t> &dynamicOffsets, uint32_t index) const
 {
     m_current[index].bindDescriptorSets(vk::PipelineBindPoint::eGraphics,
-                                        layout, 0, sets, nullptr);
+                                        layout, 0, sets, dynamicOffsets);
 }
-
 
 void kirana::viewport::vulkan::CommandBuffers::bindVertexBuffer(
     const vk::Buffer &buffer, const vk::DeviceSize &offset,
@@ -50,6 +50,13 @@ void kirana::viewport::vulkan::CommandBuffers::bindVertexBuffers(
     const std::vector<vk::DeviceSize> &offsets, uint32_t index) const
 {
     m_current[index].bindVertexBuffers(0, buffers, offsets);
+}
+
+void kirana::viewport::vulkan::CommandBuffers::bindIndexBuffer(
+    const vk::Buffer &buffer, const vk::DeviceSize &offset,
+    vk::IndexType indexType, uint32_t index) const
+{
+    m_current[index].bindIndexBuffer(buffer, offset, indexType);
 }
 
 // TODO: Temporary solution to push constants.
@@ -69,6 +76,14 @@ void kirana::viewport::vulkan::CommandBuffers::draw(uint32_t vertexCount,
 {
     m_current[index].draw(vertexCount, instanceCount, firstVertex,
                           firstInstance);
+}
+
+void kirana::viewport::vulkan::CommandBuffers::drawIndexed(
+    uint32_t indexCount, uint32_t instanceCount, uint32_t firstIndex,
+    int32_t vertexOffset, uint32_t firstInstance, uint32_t index) const
+{
+    m_current[index].drawIndexed(indexCount, instanceCount, firstIndex,
+                                 vertexOffset, firstInstance);
 }
 
 void kirana::viewport::vulkan::CommandBuffers::endRenderPass(
