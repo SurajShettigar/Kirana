@@ -40,7 +40,12 @@ kirana::Application::Application()
     : m_logger{kirana::utils::Logger::get()},
       m_sceneManager{kirana::scene::SceneManager::get()}
 {
+#if DEBUG
     m_logger.setMinSeverity(utils::LogSeverity::debug);
+#else
+    m_logger.setMinSeverity(utils::LogSeverity::info);
+#endif
+
     m_logger.log(constants::LOG_CHANNEL_APPLICATION, utils::LogSeverity::trace,
                  "Application created");
 }
@@ -66,6 +71,7 @@ void kirana::Application::init()
     const scene::Scene &scene = m_sceneManager.loadScene();
     if (scene.isInitialized())
     {
+        scene.updateCameraResolution(m_viewportWindow->getWindowResolution());
         m_logger.log(constants::LOG_CHANNEL_APPLICATION,
                      utils::LogSeverity::debug,
                      "Loaded default scene: " + scene.getRoot()->getName());
@@ -81,7 +87,7 @@ void kirana::Application::init()
     m_isViewportRunning = true;
 
     m_isRunning = true;
-    m_logger.log(constants::LOG_CHANNEL_APPLICATION, utils::LogSeverity::debug,
+    m_logger.log(constants::LOG_CHANNEL_APPLICATION, utils::LogSeverity::trace,
                  "Application initialized");
 }
 
@@ -116,7 +122,7 @@ void kirana::Application::clean()
 
     m_isRunning = false;
 
-    m_logger.log(constants::LOG_CHANNEL_APPLICATION, utils::LogSeverity::debug,
+    m_logger.log(constants::LOG_CHANNEL_APPLICATION, utils::LogSeverity::trace,
                  "Application cleaned");
 }
 

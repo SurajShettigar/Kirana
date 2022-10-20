@@ -21,7 +21,7 @@ class DepthBuffer
 
   public:
     explicit DepthBuffer(const Device *device, const Allocator *allocator,
-                         const std::array<int, 2> &windowResolution);
+                         const std::array<uint32_t, 2> &windowResolution);
     ~DepthBuffer();
     DepthBuffer(const DepthBuffer &buffer) = delete;
     DepthBuffer &operator=(const DepthBuffer &buffer) = delete;

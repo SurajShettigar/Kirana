@@ -8,7 +8,7 @@ VULKAN_HPP_DEFAULT_DISPATCH_LOADER_DYNAMIC_STORAGE
 kirana::viewport::vulkan::Instance::Instance(
     const std::vector<const char *> &reqInstanceExtensions)
 {
-    Logger::get().log(constants::LOG_CHANNEL_VULKAN, LogSeverity::debug,
+    Logger::get().log(constants::LOG_CHANNEL_VULKAN, LogSeverity::trace,
                       "Creating Vulkan Instance...");
 
     // Setup dynamic dispatcher (Used for extension functions).
@@ -59,7 +59,7 @@ kirana::viewport::vulkan::Instance::Instance(
     {
         m_current = vk::createInstance(createInfo);
         m_isInitialized = true;
-        Logger::get().log(constants::LOG_CHANNEL_VULKAN, LogSeverity::debug,
+        Logger::get().log(constants::LOG_CHANNEL_VULKAN, LogSeverity::trace,
                           "Vulkan Instance created");
 
 #if VULKAN_HPP_DISPATCH_LOADER_DYNAMIC == 1
@@ -98,7 +98,7 @@ kirana::viewport::vulkan::Instance::Instance(
                     debugMessengerCreateInfo, nullptr);
                 m_isInitialized = true;
                 Logger::get().log(constants::LOG_CHANNEL_VULKAN,
-                                  LogSeverity::debug,
+                                  LogSeverity::trace,
                                   "Vulkan Debugger initialized");
             }
         }
@@ -133,7 +133,7 @@ kirana::viewport::vulkan::Instance::~Instance()
                     m_current.destroyDebugUtilsMessengerEXT(m_debugMessenger,
                                                             nullptr);
                     Logger::get().log(constants::LOG_CHANNEL_VULKAN,
-                                      LogSeverity::debug,
+                                      LogSeverity::trace,
                                       "Vulkan Debugger destroyed");
                 }
                 catch (...)
@@ -143,7 +143,7 @@ kirana::viewport::vulkan::Instance::~Instance()
             }
         }
         m_current.destroy();
-        Logger::get().log(constants::LOG_CHANNEL_VULKAN, LogSeverity::debug,
+        Logger::get().log(constants::LOG_CHANNEL_VULKAN, LogSeverity::trace,
                           "Vulkan Instance destroyed");
     }
 }

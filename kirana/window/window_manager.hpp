@@ -127,7 +127,8 @@ class WindowManager
      * window object.
      */
     std::shared_ptr<kirana::window::Window> createWindow(
-        const string &name = "Window", int width = 1280, int height = 720);
+        const string &name = "Window", bool fullscreen = true, int width = 1280,
+        int height = 720);
     /**
      * @brief Close the given window.
      *

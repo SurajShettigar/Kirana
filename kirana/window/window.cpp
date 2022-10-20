@@ -32,7 +32,21 @@ void kirana::window::Window::onKeyboardInput(GLFWwindow *window, int key,
 
 void kirana::window::Window::create()
 {
-    m_glfwWindow = glfwCreateWindow(width, height, name.c_str(), NULL, NULL);
+    if (fullscreen)
+    {
+        GLFWmonitor *monitor = glfwGetPrimaryMonitor();
+        const GLFWvidmode *mode = glfwGetVideoMode(monitor);
+
+        glfwWindowHint(GLFW_RED_BITS, mode->redBits);
+        glfwWindowHint(GLFW_GREEN_BITS, mode->greenBits);
+        glfwWindowHint(GLFW_BLUE_BITS, mode->blueBits);
+        glfwWindowHint(GLFW_REFRESH_RATE, mode->refreshRate);
+        m_glfwWindow = glfwCreateWindow(mode->width, mode->height, name.c_str(),
+                                        nullptr, nullptr);
+    }
+    else
+        m_glfwWindow =
+            glfwCreateWindow(width, height, name.c_str(), nullptr, nullptr);
     if (m_glfwWindow)
     {
         glfwSetWindowUserPointer(m_glfwWindow, this);
@@ -57,12 +71,13 @@ void kirana::window::Window::close() const
         glfwSetWindowShouldClose(m_glfwWindow, GLFW_TRUE);
 }
 
-std::array<int, 2> kirana::window::Window::getWindowResolution() const
+std::array<uint32_t, 2> kirana::window::Window::getWindowResolution() const
 {
     int width = 0, height = 0;
     if (m_glfwWindow)
         glfwGetFramebufferSize(m_glfwWindow, &width, &height);
-    return std::array<int, 2>{width, height};
+    return std::array<uint32_t, 2>{static_cast<uint32_t>(width),
+                                   static_cast<uint32_t>(height)};
 }
 
 VkResult kirana::window::Window::getVulkanWindowSurface(

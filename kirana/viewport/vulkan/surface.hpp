@@ -14,18 +14,18 @@ class Surface
     bool m_isInitialized = false;
     vk::SurfaceKHR m_current;
     const Instance *const m_instance;
-    const std::array<int, 2> m_windowResolution;
+    const std::array<uint32_t, 2> m_windowResolution;
 
   public:
     explicit Surface(const Instance *instance, vk::SurfaceKHR &&surface,
-                     const std::array<int, 2> &windowResolution);
+                     const std::array<uint32_t, 2> &windowResolution);
     ~Surface();
     Surface(const Surface &device) = delete;
     Surface &operator=(const Surface &device) = delete;
 
     const bool &isInitialized = m_isInitialized;
     const vk::SurfaceKHR &current = m_current;
-    const std::array<int, 2>& windowResolution = m_windowResolution;
+    const std::array<uint32_t, 2>& windowResolution = m_windowResolution;
 };
 
 } // namespace kirana::viewport::vulkan

@@ -151,7 +151,6 @@ struct MeshData
  */
 struct FrameData
 {
-    AllocatedBuffer cameraBuffer;
     const DescriptorSet *globalDescriptorSet = nullptr;
     vk::Fence renderFence;
     vk::Semaphore renderSemaphore;

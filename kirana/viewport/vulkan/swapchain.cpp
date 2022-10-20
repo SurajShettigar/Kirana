@@ -116,7 +116,7 @@ kirana::viewport::vulkan::Swapchain::Swapchain(const Device *const device,
     initializeSwapchainData();
     if (createSwapchain())
     {
-        Logger::get().log(constants::LOG_CHANNEL_VULKAN, LogSeverity::debug,
+        Logger::get().log(constants::LOG_CHANNEL_VULKAN, LogSeverity::trace,
                           "Swapchain created");
         m_isInitialized = true;
     }
@@ -129,7 +129,7 @@ kirana::viewport::vulkan::Swapchain::~Swapchain()
         if (m_current)
         {
             m_device->current.destroySwapchainKHR(m_current);
-            Logger::get().log(constants::LOG_CHANNEL_VULKAN, LogSeverity::debug,
+            Logger::get().log(constants::LOG_CHANNEL_VULKAN, LogSeverity::trace,
                               "Swapchain destroyed");
         }
         if (m_imageViews.size() > 0)
@@ -138,7 +138,7 @@ kirana::viewport::vulkan::Swapchain::~Swapchain()
                 m_device->current.destroyImageView(i);
             m_imageViews.clear();
             m_images.clear();
-            Logger::get().log(constants::LOG_CHANNEL_VULKAN, LogSeverity::debug,
+            Logger::get().log(constants::LOG_CHANNEL_VULKAN, LogSeverity::trace,
                               "Image-views destroyed");
         }
     }
@@ -153,7 +153,7 @@ uint32_t kirana::viewport::vulkan::Swapchain::acquireNextImage(
         .value;
 }
 
-const std::array<int, 2>
+const std::array<uint32_t, 2>
     &kirana::viewport::vulkan::Swapchain::getWindowResolution() const
 {
     return m_surface->windowResolution;

@@ -26,25 +26,27 @@ class SceneData
     std::vector<MaterialData> m_materials;
     std::vector<MeshData> m_meshes;
     mutable CameraData m_cameraData;
+    AllocatedBuffer m_cameraBuffer;
     AllocatedBuffer m_worldDataBuffer;
 
     const Device *const m_device;
     const Allocator *const m_allocator;
     const RenderPass *const m_renderPass;
     const DescriptorSetLayout *const m_globalDescSetLayout;
-    const std::array<int, 2> m_windowResolution;
+    const std::array<uint32_t, 2> m_windowResolution;
 
     const scene::Scene &m_scene;
 
     void setVertexDescription();
     const Shader *createShader(const std::string &shaderName);
     void createMaterials();
+    void createCameraBuffer();
     void createWorldDataBuffer();
   public:
     SceneData(const Device *device, const Allocator *allocator,
               const RenderPass *renderPass,
               const DescriptorSetLayout *globalDescSetLayout,
-              std::array<int, 2> windowResolution, const scene::Scene &scene);
+              std::array<uint32_t, 2> windowResolution, const scene::Scene &scene);
     ~SceneData();
 
     SceneData(const SceneData &sceneData) = delete;
@@ -52,9 +54,11 @@ class SceneData
     const bool &isInitialized = m_isInitialized;
     const std::vector<MeshData> &meshes = m_meshes;
 
-    [[nodiscard]] const CameraData &getCameraData() const;
+    [[nodiscard]] const AllocatedBuffer &getCameraBuffer() const;
+    [[nodiscard]] uint32_t getCameraBufferOffset(uint32_t offsetIndex) const;
+
     [[nodiscard]] const AllocatedBuffer &getWorldDataBuffer() const;
-    [[nodiscard]] vk::DeviceSize getWorldDataBufferOffset(uint32_t offsetIndex) const;
+    [[nodiscard]] uint32_t getWorldDataBufferOffset(uint32_t offsetIndex) const;
     void updateWorldDataBuffer(uint32_t offsetIndex) const;
 };
 } // namespace kirana::viewport::vulkan

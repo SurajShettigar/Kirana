@@ -52,9 +52,10 @@ void kirana::window::WindowManager::clean()
 }
 
 std::shared_ptr<kirana::window::Window> kirana::window::WindowManager::
-    createWindow(const string &name, int width, int height)
+    createWindow(const string &name, bool fullscreen, int width, int height)
 {
-    shared_ptr<Window> window = std::make_shared<Window>(name, width, height);
+    shared_ptr<Window> window =
+        std::make_shared<Window>(name, fullscreen, width, height);
     window->addOnWindowCloseListener(
         std::bind(&WindowManager::onWindowClosed, this, _1));
     window->addOnKeyboardInputEventListener(

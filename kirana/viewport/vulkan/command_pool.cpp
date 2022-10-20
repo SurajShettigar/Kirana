@@ -16,7 +16,7 @@ kirana::viewport::vulkan::CommandPool::CommandPool(
     {
         m_current = m_device->current.createCommandPool(createInfo);
         m_isInitialized = true;
-        Logger::get().log(constants::LOG_CHANNEL_VULKAN, LogSeverity::debug,
+        Logger::get().log(constants::LOG_CHANNEL_VULKAN, LogSeverity::trace,
                           "Command Pool created");
     }
     catch (...)
@@ -30,7 +30,7 @@ kirana::viewport::vulkan::CommandPool::~CommandPool()
     if (m_device && m_current)
     {
         m_device->current.destroyCommandPool(m_current);
-        Logger::get().log(constants::LOG_CHANNEL_VULKAN, LogSeverity::debug,
+        Logger::get().log(constants::LOG_CHANNEL_VULKAN, LogSeverity::trace,
                           "Command Pool destroyed");
     }
 }

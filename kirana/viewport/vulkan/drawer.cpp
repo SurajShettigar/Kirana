@@ -44,23 +44,14 @@ kirana::viewport::vulkan::Drawer::Drawer(
     {
         try
         {
-            bool bufferAllocated = m_allocator->allocateBuffer(
-                sizeof(CameraData), vk::BufferUsageFlagBits::eUniformBuffer,
-                vma::MemoryUsage::eCpuToGpu, &m_frames[i].cameraBuffer);
-            if (bufferAllocated)
-            {
-                m_frames[i].cameraBuffer.descInfo = vk::DescriptorBufferInfo(
-                    *m_frames[i].cameraBuffer.buffer, 0, sizeof(CameraData));
-            }
-
             bool setAllocated = m_descriptorPool->allocateDescriptorSet(
                 m_frames[i].globalDescriptorSet, globalDescriptorSetLayout);
 
-            if (bufferAllocated && setAllocated)
+            if (setAllocated)
             {
                 m_frames[i].globalDescriptorSet->writeBuffer(
-                    m_frames[i].cameraBuffer.descInfo,
-                    vk::DescriptorType::eUniformBuffer, 0);
+                    m_scene->getCameraBuffer().descInfo,
+                    vk::DescriptorType::eUniformBufferDynamic, 0);
                 m_frames[i].globalDescriptorSet->writeBuffer(
                     m_scene->getWorldDataBuffer().descInfo,
                     vk::DescriptorType::eUniformBufferDynamic, 1);
@@ -102,8 +93,6 @@ kirana::viewport::vulkan::Drawer::~Drawer()
                                          f.renderFence, true,
                                          constants::VULKAN_FRAME_SYNC_TIMEOUT),
                                      "Failed to wait for render fence");
-
-                m_allocator->free(f.cameraBuffer);
                 if (f.globalDescriptorSet)
                     delete f.globalDescriptorSet;
                 if (f.renderFence)
@@ -133,6 +122,7 @@ kirana::viewport::vulkan::Drawer::~Drawer()
 void kirana::viewport::vulkan::Drawer::draw()
 {
     const FrameData &frame = getCurrentFrame();
+    const uint32_t frameIndex = getCurrentFrameIndex();
     VK_HANDLE_RESULT(
         m_device->current.waitForFences(frame.renderFence, true,
                                         constants::VULKAN_FRAME_SYNC_TIMEOUT),
@@ -158,9 +148,6 @@ void kirana::viewport::vulkan::Drawer::draw()
 
     if (m_scene)
     {
-        m_allocator->mapToMemory(frame.cameraBuffer, sizeof(CameraData), 0,
-                                 &m_scene->getCameraData());
-
         m_scene->updateWorldDataBuffer(getCurrentFrameIndex());
 
         MeshPushConstants meshConstants;
@@ -175,8 +162,8 @@ void kirana::viewport::vulkan::Drawer::draw()
                 frame.commandBuffers->bindDescriptorSets(
                     m_scene->meshes[i].material->layout->current,
                     {frame.globalDescriptorSet->current},
-                    {static_cast<uint32_t>(m_scene->getWorldDataBufferOffset(
-                        getCurrentFrameIndex()))});
+                    {m_scene->getCameraBufferOffset(frameIndex),
+                     m_scene->getWorldDataBufferOffset(frameIndex)});
                 lastMatData = m_scene->meshes[i].material;
             }
             meshConstants.renderMatrix =

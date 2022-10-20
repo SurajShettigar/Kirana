@@ -6,12 +6,11 @@
 
 kirana::viewport::vulkan::DepthBuffer::DepthBuffer(
     const Device *const device, const Allocator *const allocator,
-    const std::array<int, 2> &windowResolution)
+    const std::array<uint32_t, 2> &windowResolution)
     : m_isInitialized{false}, m_format{vk::Format::eD32Sfloat},
       m_device{device}, m_allocator{allocator}
 {
-    vk::Extent3D extent(static_cast<uint32_t>(windowResolution[0]),
-                        static_cast<uint32_t>(windowResolution[1]), 1);
+    vk::Extent3D extent(windowResolution[0], windowResolution[1], 1);
 
     vk::ImageCreateInfo imgCreateInfo(
         {}, vk::ImageType::e2D, m_format, extent, 1, 1,
@@ -32,7 +31,7 @@ kirana::viewport::vulkan::DepthBuffer::DepthBuffer(
         {
             m_imageView = m_device->current.createImageView(imgViewCreateInfo);
             m_isInitialized = true;
-            Logger::get().log(constants::LOG_CHANNEL_VULKAN, LogSeverity::debug,
+            Logger::get().log(constants::LOG_CHANNEL_VULKAN, LogSeverity::trace,
                               "Depth Buffer created");
         }
         catch (...)
@@ -50,7 +49,7 @@ kirana::viewport::vulkan::DepthBuffer::~DepthBuffer()
             m_device->current.destroyImageView(m_imageView);
         if (m_image.image)
             m_allocator->free(m_image);
-        Logger::get().log(constants::LOG_CHANNEL_VULKAN, LogSeverity::debug,
+        Logger::get().log(constants::LOG_CHANNEL_VULKAN, LogSeverity::trace,
                           "Depth Buffer destroyed");
     }
 }

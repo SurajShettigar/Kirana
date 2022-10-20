@@ -24,7 +24,7 @@ kirana::viewport::vulkan::Allocator::Allocator(const Instance *instance,
         m_current =
             std::make_unique<vma::Allocator>(vma::createAllocator(createInfo));
         m_isInitialized = true;
-        Logger::get().log(constants::LOG_CHANNEL_VULKAN, LogSeverity::debug,
+        Logger::get().log(constants::LOG_CHANNEL_VULKAN, LogSeverity::trace,
                           "Allocator created");
     }
     catch (...)
@@ -38,7 +38,7 @@ kirana::viewport::vulkan::Allocator::~Allocator()
     if (m_current)
         m_current->destroy();
 
-    Logger::get().log(constants::LOG_CHANNEL_VULKAN, LogSeverity::debug,
+    Logger::get().log(constants::LOG_CHANNEL_VULKAN, LogSeverity::trace,
                       "Allocator destroyed");
 }
 

@@ -84,7 +84,7 @@ static VKAPI_ATTR VkBool32 VKAPI_CALL debugCallback(
                           pCallbackData->pMessage);
         break;
     case VK_DEBUG_UTILS_MESSAGE_SEVERITY_INFO_BIT_EXT:
-        Logger::get().log(constants::LOG_CHANNEL_VULKAN, LogSeverity::info,
+        Logger::get().log(constants::LOG_CHANNEL_VULKAN, LogSeverity::debug,
                           pCallbackData->pMessage);
         break;
     case VK_DEBUG_UTILS_MESSAGE_SEVERITY_WARNING_BIT_EXT:

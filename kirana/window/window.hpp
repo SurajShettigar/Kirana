@@ -113,12 +113,14 @@ class Window
 
   public:
     string name = "Window";
+    bool fullscreen = true;
     int width = 1280;
     int height = 720;
 
-    explicit Window(string name = "Window", int width = 1280, int height = 720)
-        : m_glfwWindow{nullptr}, name{std::move(name)}, width{width},
-          height{height} {};
+    explicit Window(string name = "Window", bool fullscreen = true,
+                    int width = 1280, int height = 720)
+        : m_glfwWindow{nullptr}, name{std::move(name)},
+          fullscreen{fullscreen}, width{width}, height{height} {};
     ~Window() = default;
     Window(const Window &window) = delete;
     Window &operator=(const Window &window) = delete;
@@ -132,9 +134,9 @@ class Window
      * @brief Get the pixel resolution of the framebuffer of the
      * window.
      *
-     * @return array<int, 2> {width, height}
+     * @return array<uint32_t, 2> {width, height}
      */
-    [[nodiscard]] array<int, 2> getWindowResolution() const;
+    [[nodiscard]] array<uint32_t, 2> getWindowResolution() const;
 
     /**
      * @brief Get the Vulkan Window Surface object for the current window.

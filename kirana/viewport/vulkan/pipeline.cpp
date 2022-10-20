@@ -10,7 +10,7 @@ kirana::viewport::vulkan::Pipeline::Pipeline(
     const Device *const device, const RenderPass *const renderPass,
     const Shader *const shader, const PipelineLayout *const pipelineLayout,
     const VertexInputDescription &vertexInputDesc,
-    const std::array<int, 2> windowResolution)
+    const std::array<uint32_t, 2> windowResolution)
     : m_isInitialized{false}, m_device{device}, m_renderPass{renderPass},
       m_shader{shader}, m_pipelineLayout{pipelineLayout}, m_windowResolution{
                                                               windowResolution}
@@ -25,7 +25,7 @@ kirana::viewport::vulkan::Pipeline::~Pipeline()
         if (m_current)
         {
             m_device->current.destroyPipeline(m_current);
-            Logger::get().log(constants::LOG_CHANNEL_VULKAN, LogSeverity::debug,
+            Logger::get().log(constants::LOG_CHANNEL_VULKAN, LogSeverity::trace,
                               "Pipeline destroyed");
         }
     }
@@ -66,8 +66,7 @@ bool kirana::viewport::vulkan::Pipeline::build(
 
     vk::Viewport vp(0.0f, 0.0f, static_cast<float>(m_windowResolution[0]),
                     static_cast<float>(m_windowResolution[1]), 0.0f, 1.0f);
-    vk::Rect2D scissor({0, 0}, {static_cast<uint32_t>(m_windowResolution[0]),
-                                static_cast<uint32_t>(m_windowResolution[1])});
+    vk::Rect2D scissor({0, 0}, {m_windowResolution[0], m_windowResolution[1]});
     vk::PipelineViewportStateCreateInfo viewport({}, vp, scissor);
 
     vk::PipelineRasterizationStateCreateInfo rasterizer(
@@ -99,7 +98,7 @@ bool kirana::viewport::vulkan::Pipeline::build(
             m_device->current
                 .createGraphicsPipeline(nullptr, graphicsPipelineCreateInfo)
                 .value;
-        Logger::get().log(constants::LOG_CHANNEL_VULKAN, LogSeverity::debug,
+        Logger::get().log(constants::LOG_CHANNEL_VULKAN, LogSeverity::trace,
                           "Pipeline created");
         return true;
     }

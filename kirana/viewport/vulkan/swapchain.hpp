@@ -48,7 +48,7 @@ class Swapchain
     [[nodiscard]] uint32_t acquireNextImage(uint64_t timeout = 1000000000,
                                             const vk::Semaphore &semaphore = {},
                                             const vk::Fence &fence = {}) const;
-    [[nodiscard]] const std::array<int, 2> &getWindowResolution() const;
+    [[nodiscard]] const std::array<uint32_t, 2> &getWindowResolution() const;
 };
 } // namespace kirana::viewport::vulkan
 

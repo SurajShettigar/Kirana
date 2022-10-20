@@ -18,7 +18,7 @@ kirana::viewport::vulkan::PipelineLayout::PipelineLayout(
         m_current =
             m_device->current.createPipelineLayout(vk::PipelineLayoutCreateInfo(
                 {}, m_globalDescSetLayout->current, meshPushConstants));
-        Logger::get().log(constants::LOG_CHANNEL_VULKAN, LogSeverity::debug,
+        Logger::get().log(constants::LOG_CHANNEL_VULKAN, LogSeverity::trace,
                           "Pipeline layout created");
         m_isInitialized = true;
     }
@@ -35,7 +35,7 @@ kirana::viewport::vulkan::PipelineLayout::~PipelineLayout()
         {
             m_device->current.destroyPipelineLayout(m_current);
 
-            Logger::get().log(constants::LOG_CHANNEL_VULKAN, LogSeverity::debug,
+            Logger::get().log(constants::LOG_CHANNEL_VULKAN, LogSeverity::trace,
                               "Pipeline layout destroyed");
         }
     }

@@ -68,7 +68,7 @@ kirana::viewport::vulkan::RenderPass::RenderPass(
     try
     {
         m_current = device->current.createRenderPass(createInfo);
-        Logger::get().log(constants::LOG_CHANNEL_VULKAN, LogSeverity::debug,
+        Logger::get().log(constants::LOG_CHANNEL_VULKAN, LogSeverity::trace,
                           "Renderpass created");
 
         vk::FramebufferCreateInfo frameBufferInfo(
@@ -86,7 +86,7 @@ kirana::viewport::vulkan::RenderPass::RenderPass(
                 device->current.createFramebuffer(frameBufferInfo));
         }
         m_isInitialized = true;
-        Logger::get().log(constants::LOG_CHANNEL_VULKAN, LogSeverity::debug,
+        Logger::get().log(constants::LOG_CHANNEL_VULKAN, LogSeverity::trace,
                           "Framebuffers created");
     }
     catch (...)
@@ -102,7 +102,7 @@ kirana::viewport::vulkan::RenderPass::~RenderPass()
         if (m_current)
         {
             m_device->current.destroyRenderPass(m_current);
-            Logger::get().log(constants::LOG_CHANNEL_VULKAN, LogSeverity::debug,
+            Logger::get().log(constants::LOG_CHANNEL_VULKAN, LogSeverity::trace,
                               "Renderpass destroyed");
         }
         if (!m_framebuffers.empty())
@@ -110,7 +110,7 @@ kirana::viewport::vulkan::RenderPass::~RenderPass()
             for (const auto &f : m_framebuffers)
                 m_device->current.destroyFramebuffer(f);
             m_framebuffers.clear();
-            Logger::get().log(constants::LOG_CHANNEL_VULKAN, LogSeverity::debug,
+            Logger::get().log(constants::LOG_CHANNEL_VULKAN, LogSeverity::trace,
                               "Framebuffers destroyed");
         }
     }

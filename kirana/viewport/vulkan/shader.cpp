@@ -91,7 +91,7 @@ kirana::viewport::vulkan::Shader::Shader(const Device *const device,
         }
 
         m_isInitialized = true;
-        Logger::get().log(constants::LOG_CHANNEL_VULKAN, LogSeverity::debug,
+        Logger::get().log(constants::LOG_CHANNEL_VULKAN, LogSeverity::trace,
                           (std::string(name) + " shader initialized").c_str());
     }
     catch (...)
@@ -111,7 +111,7 @@ kirana::viewport::vulkan::Shader::~Shader()
         if (m_vertex)
             m_device->current.destroyShaderModule(m_vertex);
 
-        Logger::get().log(constants::LOG_CHANNEL_VULKAN, LogSeverity::debug,
+        Logger::get().log(constants::LOG_CHANNEL_VULKAN, LogSeverity::trace,
                           (std::string(m_name) + " shader destroyed").c_str());
     }
 }

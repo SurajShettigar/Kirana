@@ -8,7 +8,7 @@ kirana::viewport::vulkan::DescriptorSetLayout::DescriptorSetLayout(
     : m_isInitialized{false}, m_device{device}
 {
     vk::DescriptorSetLayoutBinding camBuffer(
-        0, vk::DescriptorType::eUniformBuffer, 1,
+        0, vk::DescriptorType::eUniformBufferDynamic, 1,
         vk::ShaderStageFlagBits::eVertex);
 
     vk::DescriptorSetLayoutBinding worldDataBuffer(
