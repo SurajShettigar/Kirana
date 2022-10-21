@@ -21,7 +21,6 @@ class Pipeline
     const RenderPass *const m_renderPass;
     const Shader *const m_shader;
     const PipelineLayout *const m_pipelineLayout;
-    const std::array<uint32_t, 2> m_windowResolution;
 
     bool build(
         const std::vector<vk::VertexInputBindingDescription> &vertexBindings,
@@ -32,8 +31,7 @@ class Pipeline
     explicit Pipeline(const Device *device, const RenderPass *renderPass,
                       const Shader *shader,
                       const PipelineLayout *pipelineLayout,
-                      const VertexInputDescription &vertexInputDesc,
-                      std::array<uint32_t, 2> windowResolution);
+                      const VertexInputDescription &vertexInputDesc);
     ~Pipeline();
     Pipeline(const Pipeline &pipeline) = delete;
     Pipeline &operator=(const Pipeline &pipeline) = delete;

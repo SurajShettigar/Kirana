@@ -35,6 +35,7 @@ static const char *DATA_DIR_PATH = DATA_DIR;
 static const char *DEFAULT_SCENE_NAME = "Scene";
 static const char *DEFAULT_SCENE_MATERIAL_NAME = "Material";
 static const char *DEFAULT_SCENE_MATERIAL_SHADER_NAME = VULKAN_SHADER_DEFAULT_NAME;
+//static const char *DEFAULT_MODEL_NAME = "Quad_Model.fbx";
 static const char *DEFAULT_MODEL_NAME = "Large_Model.fbx";
 
 } // namespace kirana::utils::constants

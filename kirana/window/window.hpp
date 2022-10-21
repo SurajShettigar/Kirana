@@ -33,13 +33,28 @@ class Window
     friend class WindowManager;
 
   private:
-    GLFWwindow *m_glfwWindow = nullptr;
-    utils::Event<Window *> m_onWindowCloseEvent;
+    utils::Event<Window *, std::array<uint32_t, 2>> m_onWindowResize;
+    utils::Event<Window *> m_onWindowClose;
     utils::Event<Window *, input::KeyboardInput> m_onKeyboardInput;
+
+    string m_name = "Window";
+    bool m_fullscreen = true;
+    bool m_resizable = false;
+    int m_width = 1280;
+    int m_height = 720;
+    GLFWwindow *m_glfwWindow = nullptr;
+
     /**
-     * @brief Called by GLFW when close flag of a window is set
+     * @brief Called by GLFW when a window is resized.
+     * @param glfwWindow The window which got resized.
+     * @param width New m_width of the window.
+     * @param height New m_height of the window.
+     */
+    static void onWindowResized(GLFWwindow *glfwWindow, int width, int height);
+    /**
+     * @brief Called by GLFW when close flag of a window is set.
      *
-     * @param glfwWindow The window which is being currently closed
+     * @param glfwWindow The window which is being currently closed.
      */
     static void onWindowClosed(GLFWwindow *glfwWindow);
     /**
@@ -53,6 +68,28 @@ class Window
      */
     static void onKeyboardInput(GLFWwindow *window, int key, int scancode,
                                 int action, int mods);
+    /**
+     *@brief Adds the callback function which is called when a window is
+     * resized.
+     * @param callback The function which will be called.
+     * @return uint32_t Unique identifier for the callback function. Use this id
+     * later to remove the callback function from being called.
+     */
+    inline uint32_t addOnWindowResizeListener(
+        const std::function<void(Window *, std::array<uint32_t, 2>)> &callback)
+    {
+        return m_onWindowResize.addListener(callback);
+    }
+    /**
+     * @brief Removes the callback function fow window close with given
+     * identifier from being called after the event.
+     *
+     * @param callbackID
+     */
+    inline void removeOnWindowResizeListener(uint32_t callbackID)
+    {
+        m_onWindowResize.removeListener(callbackID);
+    }
 
     /**
      * @brief Adds the callback function which is called when a window is
@@ -65,7 +102,7 @@ class Window
     inline uint32_t addOnWindowCloseListener(
         const std::function<void(Window *)> &callback)
     {
-        return m_onWindowCloseEvent.addListener(callback);
+        return m_onWindowClose.addListener(callback);
     }
     /**
      * @brief Removes the callback function fow window close with given
@@ -75,12 +112,7 @@ class Window
      */
     inline void removeOnWindowCloseListener(uint32_t callbackID)
     {
-        m_onWindowCloseEvent.removeListener(callbackID);
-    }
-    /// Removes all the callback functions for the window close event.
-    inline void removeAllOnWindowCloseListener()
-    {
-        m_onWindowCloseEvent.removeAllListeners();
+        m_onWindowClose.removeListener(callbackID);
     }
 
     /** Adds a callback function for keyboard input.
@@ -112,15 +144,10 @@ class Window
     void close() const;
 
   public:
-    string name = "Window";
-    bool fullscreen = true;
-    int width = 1280;
-    int height = 720;
-
-    explicit Window(string name = "Window", bool fullscreen = true,
+    explicit Window(string name = "Window", bool fullscreen = true, bool resizable = false,
                     int width = 1280, int height = 720)
-        : m_glfwWindow{nullptr}, name{std::move(name)},
-          fullscreen{fullscreen}, width{width}, height{height} {};
+        : m_glfwWindow{nullptr}, m_name{std::move(name)},
+          m_fullscreen{fullscreen}, m_resizable {resizable}, m_width{width}, m_height{height} {};
     ~Window() = default;
     Window(const Window &window) = delete;
     Window &operator=(const Window &window) = delete;
@@ -134,7 +161,7 @@ class Window
      * @brief Get the pixel resolution of the framebuffer of the
      * window.
      *
-     * @return array<uint32_t, 2> {width, height}
+     * @return array<uint32_t, 2> {m_width, m_height}
      */
     [[nodiscard]] array<uint32_t, 2> getWindowResolution() const;
 

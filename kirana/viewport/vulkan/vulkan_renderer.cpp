@@ -15,24 +15,17 @@
 #include "drawer.hpp"
 
 #include <scene.hpp>
+#include <logger.hpp>
+#include <constants.h>
 
 void kirana::viewport::vulkan::VulkanRenderer::init(
-    const std::vector<const char *> &reqInstanceExtensions,
     const window::Window *const window, const scene::Scene &scene)
 {
-
-    m_instance = new Instance(reqInstanceExtensions);
+    m_window = window;
+    m_instance = new Instance(
+        kirana::window::Window::getReqInstanceExtensionsForVulkan());
     if (m_instance && m_instance->isInitialized)
-    {
-        VkSurfaceKHR surface;
-        if (window->getVulkanWindowSurface(
-                static_cast<VkInstance>(m_instance->current), nullptr,
-                &surface) == VK_SUCCESS)
-        {
-            m_surface = new Surface(m_instance, vk::SurfaceKHR(surface),
-                                    window->getWindowResolution());
-        }
-    }
+        m_surface = new Surface(m_instance, window);
     if (m_surface && m_surface->isInitialized)
         m_device = new Device(m_instance, m_surface);
     if (m_device && m_device->isInitialized)
@@ -55,8 +48,7 @@ void kirana::viewport::vulkan::VulkanRenderer::init(
         m_globalDescSetLayout->isInitialized)
     {
         m_currentScene = new SceneData(m_device, m_allocator, m_renderpass,
-                                       m_globalDescSetLayout,
-                                       window->getWindowResolution(), scene);
+                                       m_globalDescSetLayout, scene);
     }
     if (m_descriptorPool && m_descriptorPool->isInitialized &&
         m_globalDescSetLayout && m_globalDescSetLayout->isInitialized)
@@ -64,6 +56,9 @@ void kirana::viewport::vulkan::VulkanRenderer::init(
         m_drawer = new Drawer(m_device, m_allocator, m_descriptorPool,
                               m_globalDescSetLayout, m_swapchain, m_renderpass,
                               m_currentScene);
+        m_swapchainOutOfDateListener =
+            m_drawer->addOnSwapchainOutOfDateListener(
+                [&]() { this->rebuildSwapchain(); });
     }
 }
 
@@ -80,6 +75,8 @@ void kirana::viewport::vulkan::VulkanRenderer::clean()
 {
     if (m_drawer)
     {
+        m_drawer->removeOnSwapchainOutOfDateListener(
+            m_swapchainOutOfDateListener);
         delete m_drawer;
         m_drawer = nullptr;
     }
@@ -133,6 +130,38 @@ void kirana::viewport::vulkan::VulkanRenderer::clean()
         delete m_instance;
         m_instance = nullptr;
     }
+}
+
+void kirana::viewport::vulkan::VulkanRenderer::rebuildSwapchain()
+{
+    if (m_renderpass)
+    {
+        delete m_renderpass;
+        m_renderpass = nullptr;
+    }
+    if (m_depthBuffer)
+    {
+        delete m_depthBuffer;
+        m_depthBuffer = nullptr;
+    }
+    if (m_swapchain)
+    {
+        delete m_swapchain;
+        m_swapchain = nullptr;
+    }
+    m_device->reinitializeSwapchainInfo();
+    if (m_surface && m_surface->isInitialized)
+        m_swapchain = new Swapchain(m_device, m_surface);
+    if (m_swapchain && m_swapchain->isInitialized)
+        m_depthBuffer = new DepthBuffer(m_device, m_allocator,
+                                        m_window->getWindowResolution());
+    if (m_depthBuffer && m_depthBuffer->isInitialized)
+        m_renderpass = new RenderPass(m_device, m_swapchain, m_depthBuffer);
+    if (m_renderpass && m_renderpass->isInitialized)
+        m_currentScene->rebuildPipeline(m_renderpass);
+    m_drawer->reinitialize(m_swapchain, m_renderpass);
+    utils::Logger::get().log(utils::constants::LOG_CHANNEL_VULKAN,
+                             utils::LogSeverity::trace, "Swapchain rebuilt");
 }
 
 /*

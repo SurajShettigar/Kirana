@@ -2,18 +2,31 @@
 
 #include "window.hpp"
 
-void kirana::window::Window::onWindowClosed(GLFWwindow *glfwWindow)
+void kirana::window::Window::onWindowResized(GLFWwindow *glfwWindow, int width,
+                                             int height)
 {
-    Window *currWin =
-        static_cast<Window *>(glfwGetWindowUserPointer(glfwWindow));
+    auto *currWin = static_cast<Window *>(glfwGetWindowUserPointer(glfwWindow));
     if (currWin)
     {
-        currWin->m_onWindowCloseEvent(currWin);
+        currWin->m_onWindowResize(currWin, {static_cast<uint32_t>(width),
+                                            static_cast<uint32_t>(height)});
+    }
+}
+
+void kirana::window::Window::onWindowClosed(GLFWwindow *glfwWindow)
+{
+    auto *currWin = static_cast<Window *>(glfwGetWindowUserPointer(glfwWindow));
+    if (currWin)
+    {
+        currWin->m_onWindowClose(currWin);
         glfwSetWindowUserPointer(glfwWindow, nullptr);
+        glfwSetFramebufferSizeCallback(glfwWindow, nullptr);
         glfwSetWindowCloseCallback(glfwWindow, nullptr);
         glfwSetKeyCallback(glfwWindow, nullptr);
         glfwDestroyWindow(glfwWindow);
-        currWin->removeAllOnWindowCloseListener();
+        currWin->m_onWindowResize.removeAllListeners();
+        currWin->m_onWindowClose.removeAllListeners();
+        currWin->m_onKeyboardInput.removeAllListeners();
     }
 }
 
@@ -32,24 +45,27 @@ void kirana::window::Window::onKeyboardInput(GLFWwindow *window, int key,
 
 void kirana::window::Window::create()
 {
-    if (fullscreen)
+    glfwWindowHint(GLFW_RESIZABLE, m_resizable);
+    GLFWmonitor *monitor = glfwGetPrimaryMonitor();
+    const GLFWvidmode *mode = glfwGetVideoMode(monitor);
+    if (m_fullscreen)
     {
-        GLFWmonitor *monitor = glfwGetPrimaryMonitor();
-        const GLFWvidmode *mode = glfwGetVideoMode(monitor);
-
         glfwWindowHint(GLFW_RED_BITS, mode->redBits);
         glfwWindowHint(GLFW_GREEN_BITS, mode->greenBits);
         glfwWindowHint(GLFW_BLUE_BITS, mode->blueBits);
         glfwWindowHint(GLFW_REFRESH_RATE, mode->refreshRate);
-        m_glfwWindow = glfwCreateWindow(mode->width, mode->height, name.c_str(),
-                                        nullptr, nullptr);
+        m_glfwWindow = glfwCreateWindow(mode->width, mode->height,
+                                        m_name.c_str(), nullptr, nullptr);
     }
     else
-        m_glfwWindow =
-            glfwCreateWindow(width, height, name.c_str(), nullptr, nullptr);
+        m_glfwWindow = glfwCreateWindow(m_width, m_height, m_name.c_str(),
+                                        nullptr, nullptr);
+    glfwSetWindowSizeLimits(m_glfwWindow, m_width, m_height, mode->width,
+                            mode->height);
     if (m_glfwWindow)
     {
         glfwSetWindowUserPointer(m_glfwWindow, this);
+        glfwSetFramebufferSizeCallback(m_glfwWindow, Window::onWindowResized);
         glfwSetWindowCloseCallback(m_glfwWindow, Window::onWindowClosed);
         glfwSetKeyCallback(m_glfwWindow, Window::onKeyboardInput);
     }

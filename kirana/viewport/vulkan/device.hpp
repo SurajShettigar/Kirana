@@ -52,6 +52,18 @@ class Device
     const SwapchainSupportInfo &swapchainSupportInfo = m_swapchainSupportInfo;
     const vk::Queue &graphicsQueue = m_graphicsQueue;
     const vk::Queue &presentationQueue = m_presentationQueue;
+
+    void reinitializeSwapchainInfo();
+
+    void waitUntilIdle() const;
+    void graphicsSubmit(const vk::Semaphore &waitSemaphore,
+                      vk::PipelineStageFlags stageFlags,
+                      const vk::CommandBuffer &commandBuffer,
+                      const vk::Semaphore &signalSemaphore,
+                      const vk::Fence &fence) const;
+    [[nodiscard]] vk::Result present(const vk::Semaphore &semaphore,
+                                     const vk::SwapchainKHR &swapchain,
+                                     uint32_t imageIndex) const;
 };
 } // namespace kirana::viewport::vulkan
 

@@ -30,6 +30,7 @@ class RenderPass
     const bool &isInitialized = m_isInitialized;
     const vk::RenderPass &current = m_current;
     const std::vector<vk::Framebuffer> &framebuffers = m_framebuffers;
+    [[nodiscard]] std::array<uint32_t, 2> getSurfaceResolution() const;
 };
 } // namespace kirana::viewport::vulkan
 

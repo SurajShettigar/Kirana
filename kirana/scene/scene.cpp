@@ -118,4 +118,5 @@ void kirana::scene::Scene::updateCameraResolution(
     std::array<uint32_t, 2> resolution) const
 {
     m_camera.setResolution(resolution);
+    m_onCameraChange();
 }

@@ -2,6 +2,7 @@
 #define SCENE_DATA_HPP
 
 #include <vector>
+#include <unordered_map>
 #include "vulkan_types.hpp"
 
 namespace kirana::scene
@@ -22,7 +23,7 @@ class SceneData
   private:
     bool m_isInitialized = false;
     VertexInputDescription m_vertexDesc;
-    std::vector<std::unique_ptr<Shader>> m_shaders;
+    std::unordered_map<std::string, std::unique_ptr<Shader>> m_shaders;
     std::vector<MaterialData> m_materials;
     std::vector<MeshData> m_meshes;
     mutable CameraData m_cameraData;
@@ -31,9 +32,8 @@ class SceneData
 
     const Device *const m_device;
     const Allocator *const m_allocator;
-    const RenderPass *const m_renderPass;
+    const RenderPass *m_renderPass;
     const DescriptorSetLayout *const m_globalDescSetLayout;
-    const std::array<uint32_t, 2> m_windowResolution;
 
     const scene::Scene &m_scene;
 
@@ -45,14 +45,15 @@ class SceneData
   public:
     SceneData(const Device *device, const Allocator *allocator,
               const RenderPass *renderPass,
-              const DescriptorSetLayout *globalDescSetLayout,
-              std::array<uint32_t, 2> windowResolution, const scene::Scene &scene);
+              const DescriptorSetLayout *globalDescSetLayout, const scene::Scene &scene);
     ~SceneData();
 
     SceneData(const SceneData &sceneData) = delete;
 
     const bool &isInitialized = m_isInitialized;
     const std::vector<MeshData> &meshes = m_meshes;
+
+    void rebuildPipeline(const RenderPass *renderPass);
 
     [[nodiscard]] const AllocatedBuffer &getCameraBuffer() const;
     [[nodiscard]] uint32_t getCameraBufferOffset(uint32_t offsetIndex) const;

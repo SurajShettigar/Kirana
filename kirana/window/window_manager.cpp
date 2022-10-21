@@ -8,7 +8,7 @@ using namespace std::placeholders;
 
 void kirana::window::WindowManager::onWindowClosed(Window *window)
 {
-    m_onWindowCloseEvent(window);
+    m_onWindowClose(window);
     m_windows.erase(std::remove_if(m_windows.begin(), m_windows.end(),
                                    [&window](const shared_ptr<Window> &w) {
                                        return *window == *w;
@@ -16,13 +16,7 @@ void kirana::window::WindowManager::onWindowClosed(Window *window)
                     m_windows.end()); // Removes the window object from the list
 
     if (m_windows.empty())
-        m_onAllWindowsClosedEvent();
-}
-
-void kirana::window::WindowManager::onKeyboardInput(Window *window,
-                                                    input::KeyboardInput input)
-{
-    m_onKeyboardInput(input);
+        m_onAllWindowsClose();
 }
 
 void kirana::window::WindowManager::init()
@@ -37,7 +31,7 @@ void kirana::window::WindowManager::init()
     }
 }
 
-void kirana::window::WindowManager::update() const
+void kirana::window::WindowManager::update()
 {
     if (!m_windows.empty())
         glfwPollEvents();
@@ -52,14 +46,25 @@ void kirana::window::WindowManager::clean()
 }
 
 std::shared_ptr<kirana::window::Window> kirana::window::WindowManager::
-    createWindow(const string &name, bool fullscreen, int width, int height)
+    createWindow(const string &name, bool fullscreen, bool resizable, int width,
+                 int height)
 {
     shared_ptr<Window> window =
-        std::make_shared<Window>(name, fullscreen, width, height);
+        std::make_shared<Window>(name, fullscreen, resizable, width, height);
+
+    window->addOnWindowResizeListener(
+        [&](Window *window, std::array<uint32_t, 2> resolution) {
+            this->m_onWindowResize(window, resolution);
+        });
+
     window->addOnWindowCloseListener(
         std::bind(&WindowManager::onWindowClosed, this, _1));
+
     window->addOnKeyboardInputEventListener(
-        std::bind(&WindowManager::onKeyboardInput, this, _1, _2));
+        [&](Window *window, input::KeyboardInput input) {
+            this->m_onKeyboardInput(input);
+        });
+
     window->create();
     m_windows.emplace_back(window);
     return window;

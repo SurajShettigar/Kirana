@@ -82,6 +82,7 @@ kirana::viewport::vulkan::Drawer::Drawer(
 
 kirana::viewport::vulkan::Drawer::~Drawer()
 {
+    m_onSwapchainOutOfDate.removeAllListeners();
     if (m_device)
     {
         if (!m_frames.empty())
@@ -126,11 +127,21 @@ void kirana::viewport::vulkan::Drawer::draw()
     VK_HANDLE_RESULT(
         m_device->current.waitForFences(frame.renderFence, true,
                                         constants::VULKAN_FRAME_SYNC_TIMEOUT),
-        "Failed to wait for render fence");
+        "Failed to wait for render fence")
     m_device->current.resetFences(frame.renderFence);
 
-    uint32_t imgIndex = m_swapchain->acquireNextImage(
+    vk::ResultValue<uint32_t> imgValue = m_swapchain->acquireNextImage(
         constants::VULKAN_FRAME_SYNC_TIMEOUT, frame.presentSemaphore, nullptr);
+    if (imgValue.result == vk::Result::eErrorOutOfDateKHR)
+    {
+        m_device->waitUntilIdle();
+        m_onSwapchainOutOfDate();
+    }
+    else if (imgValue.result != vk::Result::eSuccess &&
+             imgValue.result != vk::Result::eSuboptimalKHR)
+        VK_HANDLE_RESULT(imgValue.result, "Failed to acquire swapchain image")
+
+    const uint32_t imgIndex = imgValue.value;
 
     vk::ClearValue clearColor;
     std::array<float, 4> color = {{0.0f, 0.0f, 0.0f, 1.0f}};
@@ -188,17 +199,29 @@ void kirana::viewport::vulkan::Drawer::draw()
 
     vk::PipelineStageFlags pipelineFlags(
         vk::PipelineStageFlagBits::eColorAttachmentOutput);
-    m_device->graphicsQueue.submit(
-        vk::SubmitInfo(frame.presentSemaphore, pipelineFlags,
-                       frame.commandBuffers->current[0], frame.renderSemaphore),
-        frame.renderFence);
+    m_device->graphicsSubmit(frame.presentSemaphore, pipelineFlags,
+                             frame.commandBuffers->current[0],
+                             frame.renderSemaphore, frame.renderFence);
 
-    VK_HANDLE_RESULT(
-        m_device->presentationQueue.presentKHR(vk::PresentInfoKHR(
-            frame.renderSemaphore, m_swapchain->current, imgIndex)),
-        "Failed to present rendered image");
+    vk::Result presentResult = m_device->present(
+        frame.renderSemaphore, m_swapchain->current, imgIndex);
+    if (presentResult == vk::Result::eErrorOutOfDateKHR)
+    {
+        m_device->waitUntilIdle();
+        m_onSwapchainOutOfDate();
+    }
+    else if (presentResult != vk::Result::eSuccess &&
+             presentResult != vk::Result::eSuboptimalKHR)
+        VK_HANDLE_RESULT(presentResult, "Failed to present rendered image")
 
     m_currentFrameNumber++;
+}
+
+void kirana::viewport::vulkan::Drawer::reinitialize(
+    const Swapchain *const swapchain, const RenderPass *const renderPass)
+{
+    m_swapchain = swapchain;
+    m_renderPass = renderPass;
 }
 
 /*void kirana::viewport::vulkan::Drawer::loadScene(SceneData *scene)

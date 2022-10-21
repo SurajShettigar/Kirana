@@ -15,12 +15,13 @@ void kirana::viewport::vulkan::Swapchain::initializeSwapchainData()
         m_extent = m_supportInfo.capabilities.currentExtent;
     else
     {
+        const auto &resolution = m_surface->getResolution();
         uint32_t width =
-            std::clamp(static_cast<uint32_t>(m_surface->windowResolution[0]),
+            std::clamp(static_cast<uint32_t>(resolution[0]),
                        m_supportInfo.capabilities.minImageExtent.width,
                        m_supportInfo.capabilities.maxImageExtent.width);
         uint32_t height =
-            std::clamp(static_cast<uint32_t>(m_surface->windowResolution[1]),
+            std::clamp(static_cast<uint32_t>(resolution[1]),
                        m_supportInfo.capabilities.minImageExtent.height,
                        m_supportInfo.capabilities.maxImageExtent.height);
         m_extent.setWidth(width);
@@ -144,17 +145,24 @@ kirana::viewport::vulkan::Swapchain::~Swapchain()
     }
 }
 
-uint32_t kirana::viewport::vulkan::Swapchain::acquireNextImage(
+vk::ResultValue<uint32_t> kirana::viewport::vulkan::Swapchain::acquireNextImage(
     uint64_t timeout, const vk::Semaphore &semaphore,
     const vk::Fence &fence) const
 {
-    return m_device->current
-        .acquireNextImageKHR(m_current, timeout, semaphore, fence)
-        .value;
-}
+    // The following function is written in C API, because C++ function
+    // throws an exception for eErrorOutOfDateKHR result value, which is not
+    // ideal.
+    uint32_t imgIndex = 0;
+    VkResult result =
+        vkAcquireNextImageKHR(static_cast<VkDevice>(m_device->current),
+                              static_cast<VkSwapchainKHR>(m_current), timeout,
+                              static_cast<VkSemaphore>(semaphore),
+                              static_cast<VkFence>(fence), &imgIndex);
 
-const std::array<uint32_t, 2>
-    &kirana::viewport::vulkan::Swapchain::getWindowResolution() const
+    return {vk::Result(result), imgIndex};
+}
+std::array<uint32_t, 2> kirana::viewport::vulkan::Swapchain::
+    getSurfaceResolution() const
 {
-    return m_surface->windowResolution;
+    return m_surface->getResolution();
 }

@@ -187,3 +187,45 @@ kirana::viewport::vulkan::Device::~Device()
                           "Device destroyed");
     }
 }
+
+
+void kirana::viewport::vulkan::Device::reinitializeSwapchainInfo()
+{
+    m_swapchainSupportInfo = getSwapchainSupportInfo(m_gpu, m_surface->current);
+}
+
+void kirana::viewport::vulkan::Device::waitUntilIdle() const
+{
+    m_current.waitIdle();
+}
+
+void kirana::viewport::vulkan::Device::graphicsSubmit(
+    const vk::Semaphore &waitSemaphore, vk::PipelineStageFlags stageFlags,
+    const vk::CommandBuffer &commandBuffer,
+    const vk::Semaphore &signalSemaphore, const vk::Fence &fence) const
+{
+    m_graphicsQueue.submit(vk::SubmitInfo(waitSemaphore, stageFlags,
+                                          commandBuffer, signalSemaphore),
+                           fence);
+}
+
+vk::Result kirana::viewport::vulkan::Device::present(
+    const vk::Semaphore &semaphore, const vk::SwapchainKHR &swapchain,
+    uint32_t imageIndex) const
+{
+    // The following function is written in C API, because C++ function
+    // throws an exception for eErrorOutOfDateKHR result value, which is not
+    // ideal.
+    VkPresentInfoKHR presentInfo = {};
+    presentInfo.sType = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR;
+    presentInfo.pNext = nullptr;
+    presentInfo.waitSemaphoreCount = 1;
+    presentInfo.pWaitSemaphores = (VkSemaphore *)(&semaphore);
+    presentInfo.swapchainCount = 1;
+    presentInfo.pSwapchains = (VkSwapchainKHR *)(&swapchain);
+    presentInfo.pImageIndices = &imageIndex;
+    VkResult result = vkQueuePresentKHR(
+        static_cast<VkQueue>(m_presentationQueue), &presentInfo);
+
+    return vk::Result(result);
+}

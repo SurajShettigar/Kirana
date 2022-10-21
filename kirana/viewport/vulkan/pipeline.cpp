@@ -9,11 +9,9 @@
 kirana::viewport::vulkan::Pipeline::Pipeline(
     const Device *const device, const RenderPass *const renderPass,
     const Shader *const shader, const PipelineLayout *const pipelineLayout,
-    const VertexInputDescription &vertexInputDesc,
-    const std::array<uint32_t, 2> windowResolution)
+    const VertexInputDescription &vertexInputDesc)
     : m_isInitialized{false}, m_device{device}, m_renderPass{renderPass},
-      m_shader{shader}, m_pipelineLayout{pipelineLayout}, m_windowResolution{
-                                                              windowResolution}
+      m_shader{shader}, m_pipelineLayout{pipelineLayout}
 {
     build(vertexInputDesc.bindings, vertexInputDesc.attributes);
 }
@@ -64,9 +62,10 @@ bool kirana::viewport::vulkan::Pipeline::build(
     vk::PipelineInputAssemblyStateCreateInfo inputAssembly(
         {}, vk::PrimitiveTopology::eTriangleList, false);
 
-    vk::Viewport vp(0.0f, 0.0f, static_cast<float>(m_windowResolution[0]),
-                    static_cast<float>(m_windowResolution[1]), 0.0f, 1.0f);
-    vk::Rect2D scissor({0, 0}, {m_windowResolution[0], m_windowResolution[1]});
+    const std::array<uint32_t, 2> &res = m_renderPass->getSurfaceResolution();
+    vk::Viewport vp(0.0f, 0.0f, static_cast<float>(res[0]),
+                    static_cast<float>(res[1]), 0.0f, 1.0f);
+    vk::Rect2D scissor({0, 0}, {res[0], res[1]});
     vk::PipelineViewportStateCreateInfo viewport({}, vp, scissor);
 
     vk::PipelineRasterizationStateCreateInfo rasterizer(

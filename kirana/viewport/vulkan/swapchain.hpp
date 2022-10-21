@@ -45,10 +45,10 @@ class Swapchain
     const vk::Extent2D &imageExtent = m_extent;
     const std::vector<vk::ImageView> &imageViews = m_imageViews;
 
-    [[nodiscard]] uint32_t acquireNextImage(uint64_t timeout = 1000000000,
-                                            const vk::Semaphore &semaphore = {},
-                                            const vk::Fence &fence = {}) const;
-    [[nodiscard]] const std::array<uint32_t, 2> &getWindowResolution() const;
+    [[nodiscard]] vk::ResultValue<uint32_t> acquireNextImage(
+        uint64_t timeout = 1000000000, const vk::Semaphore &semaphore = {},
+        const vk::Fence &fence = {}) const;
+    [[nodiscard]] std::array<uint32_t, 2> getSurfaceResolution() const;
 };
 } // namespace kirana::viewport::vulkan
 

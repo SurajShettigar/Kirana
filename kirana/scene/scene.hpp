@@ -1,13 +1,15 @@
 #ifndef SCENE_HPP
 #define SCENE_HPP
 
-#include <memory>
-#include <vector>
-#include <string>
 #include "object.hpp"
 #include "mesh.hpp"
 #include "material.hpp"
 #include "scene_utils.hpp"
+
+#include <memory>
+#include <vector>
+#include <string>
+#include <event.hpp>
 
 struct aiScene;
 struct aiNode;
@@ -20,7 +22,11 @@ class Scene
 {
     friend class SceneImporter;
     friend class SceneManager;
+
   private:
+    utils::Event<> m_onCameraChange;
+    utils::Event<> m_onWorldChange;
+
     bool m_isInitialized = false;
     std::string m_name = "Scene";
     std::vector<std::shared_ptr<Mesh>> m_meshes;
@@ -77,10 +83,28 @@ class Scene
     {
         return m_worldData;
     }
-
     [[nodiscard]] inline const PerspectiveCamera &getCamera() const
     {
         return m_camera;
+    }
+
+    inline uint32_t addOnCameraChangeEventListener(
+        const std::function<void()> &callback)
+    {
+        return m_onCameraChange.addListener(callback);
+    }
+    inline void removeOnCameraChangeEventListener(uint32_t callbackID)
+    {
+        m_onCameraChange.removeListener(callbackID);
+    }
+    inline uint32_t addOnWorldChangeEventListener(
+        const std::function<void()> &callback)
+    {
+        return m_onWorldChange.addListener(callback);
+    }
+    inline void removeOnWorldChangeEventListener(uint32_t callbackID)
+    {
+        m_onWorldChange.removeListener(callbackID);
     }
 
     [[nodiscard]] std::vector<math::Transform *> getTransformsForMesh(

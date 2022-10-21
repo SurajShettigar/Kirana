@@ -14,12 +14,22 @@ namespace input = kirana::window::input;
 namespace py = pybind11;
 #endif
 
+void kirana::Application::onWindowResized(kirana::window::Window *window,
+                                          std::array<uint32_t, 2> resolution)
+{
+    if (window == m_viewportWindow.get())
+    {
+        m_sceneManager.getCurrentScene().updateCameraResolution(resolution);
+    }
+}
+
+
 void kirana::Application::onWindowClosed(Window *window)
 {
     if (window == m_viewportWindow.get())
     {
         m_logger.log(constants::LOG_CHANNEL_APPLICATION,
-                     utils::LogSeverity::debug,
+                     utils::LogSeverity::trace,
                      "Viewport Window closed. Cleaning viewport...");
         m_viewport.clean();
         m_isViewportRunning = false;
@@ -38,6 +48,7 @@ void kirana::Application::onKeyboardInput(input::KeyboardInput input)
 
 kirana::Application::Application()
     : m_logger{kirana::utils::Logger::get()},
+      m_time{kirana::utils::Time::get()},
       m_sceneManager{kirana::scene::SceneManager::get()}
 {
 #if DEBUG
@@ -59,6 +70,8 @@ kirana::Application::~Application()
 void kirana::Application::init()
 {
     m_windowManager.init();
+    m_windowResizeListener = m_windowManager.addOnWindowResizeListener(
+        std::bind(&Application::onWindowResized, this, _1, _2));
     m_windowCloseListener = m_windowManager.addOnWindowCloseListener(
         std::bind(&Application::onWindowClosed, this, _1));
     m_allWindowCloseListener = m_windowManager.addOnAllWindowsClosedListener(
@@ -66,7 +79,7 @@ void kirana::Application::init()
     m_keyboardInputListener = m_windowManager.addOnKeyboardInputEventListener(
         std::bind(&Application::onKeyboardInput, this, _1));
 
-    m_viewportWindow = m_windowManager.createWindow();
+    m_viewportWindow = m_windowManager.createWindow("Kirana", true, true);
 
     const scene::Scene &scene = m_sceneManager.loadScene();
     if (scene.isInitialized())
@@ -93,6 +106,7 @@ void kirana::Application::init()
 
 void kirana::Application::update()
 {
+    m_time.update();
     m_windowManager.update();
     m_sceneManager.update();
     if (m_isViewportRunning)
@@ -113,6 +127,7 @@ void kirana::Application::clean()
         m_isViewportRunning = false;
     }
 
+    m_windowManager.removeOnWindowResizeListener(m_windowResizeListener);
     m_windowManager.removeOnWindowCloseListener(m_windowCloseListener);
     m_windowManager.removeOnAllWindowsClosedListener(m_allWindowCloseListener);
     m_windowManager.removeOnKeyboardInputEventListener(m_keyboardInputListener);
@@ -134,6 +149,7 @@ void kirana::Application::run()
     {
         update();
         render();
+//        std::cout << "FPS: " << m_time.getFPS() << "\r" << std::flush;
     }
 
     clean();

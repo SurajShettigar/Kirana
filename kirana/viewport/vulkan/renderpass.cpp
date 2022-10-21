@@ -115,3 +115,9 @@ kirana::viewport::vulkan::RenderPass::~RenderPass()
         }
     }
 }
+
+[[nodiscard]] std::array<uint32_t, 2> kirana::viewport::vulkan::RenderPass::
+    getSurfaceResolution() const
+{
+    return m_swapchain->getSurfaceResolution();
+}

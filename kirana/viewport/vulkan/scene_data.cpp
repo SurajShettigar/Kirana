@@ -33,17 +33,13 @@ void kirana::viewport::vulkan::SceneData::setVertexDescription()
 const kirana::viewport::vulkan::Shader *kirana::viewport::vulkan::SceneData::
     createShader(const std::string &shaderName)
 {
-    auto it = std::find_if(m_shaders.begin(), m_shaders.end(),
-                           [&shaderName](const std::unique_ptr<Shader> &s) {
-                               return s->name == shaderName;
-                           });
-
-    if (it != m_shaders.end())
-        return (*it).get();
+    if (m_shaders.find(shaderName) != m_shaders.end())
+        return m_shaders.at(shaderName).get();
     else
     {
-        m_shaders.emplace_back(std::make_unique<Shader>(m_device, shaderName));
-        return m_shaders.back().get();
+        std::unique_ptr<Shader> &val = m_shaders[shaderName];
+        val = std::make_unique<Shader>(m_device, shaderName);
+        return m_shaders[shaderName].get();
     }
 }
 
@@ -61,8 +57,7 @@ void kirana::viewport::vulkan::SceneData::createMaterials()
         matData.layout =
             std::make_unique<PipelineLayout>(m_device, m_globalDescSetLayout);
         matData.pipeline = std::make_unique<Pipeline>(
-            m_device, m_renderPass, shader, matData.layout.get(), m_vertexDesc,
-            m_windowResolution);
+            m_device, m_renderPass, shader, matData.layout.get(), m_vertexDesc);
 
         m_materials.emplace_back(std::move(matData));
     }
@@ -87,7 +82,8 @@ void kirana::viewport::vulkan::SceneData::createCameraBuffer()
         for (size_t i = 0; i < constants::VULKAN_FRAME_OVERLAP_COUNT; i++)
         {
             m_allocator->mapToMemory(m_cameraBuffer, sizeof(vulkan::CameraData),
-                                     paddedSize * i, &m_cameraData);
+                                     static_cast<uint32_t>(paddedSize * i),
+                                     &m_cameraData);
         }
     }
 }
@@ -107,9 +103,9 @@ void kirana::viewport::vulkan::SceneData::createWorldDataBuffer()
 
         for (size_t i = 0; i < constants::VULKAN_FRAME_OVERLAP_COUNT; i++)
         {
-            m_allocator->mapToMemory(m_worldDataBuffer,
-                                     sizeof(scene::WorldData), paddedSize * i,
-                                     &m_scene.getWorldData());
+            m_allocator->mapToMemory(
+                m_worldDataBuffer, sizeof(scene::WorldData),
+                static_cast<uint32_t>(paddedSize * i), &m_scene.getWorldData());
         }
     }
 }
@@ -117,11 +113,10 @@ void kirana::viewport::vulkan::SceneData::createWorldDataBuffer()
 kirana::viewport::vulkan::SceneData::SceneData(
     const Device *device, const Allocator *allocator,
     const RenderPass *renderPass,
-    const DescriptorSetLayout *globalDescSetLayout,
-    const std::array<uint32_t, 2> windowResolution, const scene::Scene &scene)
+    const DescriptorSetLayout *globalDescSetLayout, const scene::Scene &scene)
     : m_isInitialized{false}, m_device{device}, m_allocator{allocator},
-      m_renderPass{renderPass}, m_globalDescSetLayout{globalDescSetLayout},
-      m_windowResolution{windowResolution}, m_scene{scene}
+      m_renderPass{renderPass},
+      m_globalDescSetLayout{globalDescSetLayout}, m_scene{scene}
 {
     // Set the vulkan description of vertex buffers.
     setVertexDescription();
@@ -217,6 +212,18 @@ kirana::viewport::vulkan::SceneData::~SceneData()
     }
 }
 
+void kirana::viewport::vulkan::SceneData::rebuildPipeline(
+    const RenderPass *renderPass)
+{
+    m_renderPass = renderPass;
+    for (auto &m : m_materials)
+    {
+        m.pipeline = std::make_unique<Pipeline>(m_device, m_renderPass,
+                                                createShader(m.shaderName),
+                                                m.layout.get(), m_vertexDesc);
+    }
+}
+
 const kirana::viewport::vulkan::AllocatedBuffer &kirana::viewport::vulkan::
     SceneData::getCameraBuffer() const
 {
@@ -226,9 +233,10 @@ const kirana::viewport::vulkan::AllocatedBuffer &kirana::viewport::vulkan::
 uint32_t kirana::viewport::vulkan::SceneData::getCameraBufferOffset(
     uint32_t offsetIndex) const
 {
-    return vulkan::padUniformBufferSize(m_device->gpu,
-                                        sizeof(vulkan::CameraData)) *
-           offsetIndex;
+    return static_cast<uint32_t>(
+        vulkan::padUniformBufferSize(m_device->gpu,
+                                     sizeof(vulkan::CameraData)) *
+        offsetIndex);
 }
 
 const kirana::viewport::vulkan::AllocatedBuffer &kirana::viewport::vulkan::
@@ -240,9 +248,9 @@ const kirana::viewport::vulkan::AllocatedBuffer &kirana::viewport::vulkan::
 uint32_t kirana::viewport::vulkan::SceneData::getWorldDataBufferOffset(
     uint32_t offsetIndex) const
 {
-    return vulkan::padUniformBufferSize(m_device->gpu,
-                                        sizeof(scene::WorldData)) *
-           offsetIndex;
+    return static_cast<uint32_t>(
+        vulkan::padUniformBufferSize(m_device->gpu, sizeof(scene::WorldData)) *
+        offsetIndex);
 }
 
 void kirana::viewport::vulkan::SceneData::updateWorldDataBuffer(

@@ -24,12 +24,12 @@ class WindowManager
 
     vector<shared_ptr<Window>> m_windows;
 
-    Event<Window *> m_onWindowCloseEvent;
-    Event<> m_onAllWindowsClosedEvent;
+    Event<Window *, std::array<uint32_t, 2>> m_onWindowResize;
+    Event<Window *> m_onWindowClose;
+    Event<> m_onAllWindowsClose;
     Event<input::KeyboardInput> m_onKeyboardInput;
 
     void onWindowClosed(Window *window);
-    void onKeyboardInput(Window *window, input::KeyboardInput input);
 
   public:
     WindowManager() = default;
@@ -45,9 +45,32 @@ class WindowManager
     /// Initializes the manager and GLFW API
     void init();
     /// Updates the windows and checks for input events. Called every frame.
-    void update() const;
+    void update();
     /// Cleans up the manager and terminates GLFW.
     void clean();
+
+    /**
+     *@brief Adds the callback function which is called when a window is
+     * resized.
+     * @param callback The function which will be called.
+     * @return uint32_t Unique identifier for the callback function. Use this id
+     * later to remove the callback function from being called.
+     */
+    inline uint32_t addOnWindowResizeListener(
+        const std::function<void(Window *, std::array<uint32_t, 2>)> &callback)
+    {
+        return m_onWindowResize.addListener(callback);
+    }
+    /**
+     * @brief Removes the callback function fow window close with given
+     * identifier from being called after the event.
+     *
+     * @param callbackID
+     */
+    inline void removeOnWindowResizeListener(uint32_t callbackID)
+    {
+        m_onWindowResize.removeListener(callbackID);
+    }
 
     /**
      * @brief Adds the callback function which is called when a window is
@@ -59,7 +82,7 @@ class WindowManager
     inline uint32_t addOnWindowCloseListener(
         const std::function<void(Window *)> &callback)
     {
-        return m_onWindowCloseEvent.addListener(callback);
+        return m_onWindowClose.addListener(callback);
     }
     /**
      * @brief Removes the callback function with given identifier from being
@@ -69,7 +92,7 @@ class WindowManager
      */
     inline void removeOnWindowCloseListener(uint32_t callbackID)
     {
-        m_onWindowCloseEvent.removeListener(callbackID);
+        m_onWindowClose.removeListener(callbackID);
     }
 
     /**
@@ -83,7 +106,7 @@ class WindowManager
     inline uint32_t addOnAllWindowsClosedListener(
         const std::function<void(void)> &callback)
     {
-        return m_onAllWindowsClosedEvent.addListener(callback);
+        return m_onAllWindowsClose.addListener(callback);
     }
     /**
      * @brief Removes the callback function with given identifier from being
@@ -93,7 +116,7 @@ class WindowManager
      */
     inline void removeOnAllWindowsClosedListener(uint32_t callbackID)
     {
-        m_onAllWindowsClosedEvent.removeListener(callbackID);
+        m_onAllWindowsClose.removeListener(callbackID);
     }
 
     /** Adds a callback function for keyboard input.
@@ -127,8 +150,8 @@ class WindowManager
      * window object.
      */
     std::shared_ptr<kirana::window::Window> createWindow(
-        const string &name = "Window", bool fullscreen = true, int width = 1280,
-        int height = 720);
+        const string &name = "Window", bool fullscreen = true,
+        bool resizable = false, int width = 1280, int height = 720);
     /**
      * @brief Close the given window.
      *

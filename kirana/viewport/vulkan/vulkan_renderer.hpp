@@ -30,21 +30,27 @@ class SceneData;
 class VulkanRenderer
 {
   private:
-    Allocator *m_allocator;
-    Instance *m_instance;
-    Surface *m_surface;
-    Device *m_device;
-    Swapchain *m_swapchain;
-    DepthBuffer *m_depthBuffer;
-    RenderPass *m_renderpass;
-    DescriptorPool *m_descriptorPool;
-    DescriptorSetLayout *m_globalDescSetLayout;
-    Drawer *m_drawer;
+    const window::Window *m_window = nullptr;
+
+    Allocator *m_allocator = nullptr;
+    Instance *m_instance = nullptr;
+    Surface *m_surface = nullptr;
+    Device *m_device = nullptr;
+    Swapchain *m_swapchain = nullptr;
+    DepthBuffer *m_depthBuffer = nullptr;
+    RenderPass *m_renderpass = nullptr;
+    DescriptorPool *m_descriptorPool = nullptr;
+    DescriptorSetLayout *m_globalDescSetLayout = nullptr;
+    Drawer *m_drawer = nullptr;
+    uint32_t m_swapchainOutOfDateListener =
+        std::numeric_limits<unsigned int>::max();
 
     SceneData *m_currentScene = nullptr;
 
     VulkanRenderer() = default;
     ~VulkanRenderer() = default;
+
+    void rebuildSwapchain();
 
   public:
     VulkanRenderer(const VulkanRenderer &renderer) = delete;
@@ -56,8 +62,7 @@ class VulkanRenderer
     }
 
     /// Initializes vulkan.
-    void init(const std::vector<const char *> &reqInstanceExtensions,
-              const window::Window *window, const scene::Scene &scene);
+    void init(const window::Window *window, const scene::Scene &scene);
     /// Updates the transforms.
     void update();
     /// Executes vulkan draw calls.
@@ -69,7 +74,7 @@ class VulkanRenderer
      * Convert Scene object into vulkan SceneData object.
      * @param scene The Scene object to be converted.
      */
-//    void loadScene(const scene::Scene &scene);
+    //    void loadScene(const scene::Scene &scene);
 };
 } // namespace kirana::viewport::vulkan
 
