@@ -42,6 +42,8 @@ class Window
     bool m_resizable = false;
     int m_width = 1280;
     int m_height = 720;
+    std::array<uint32_t, 2> m_resolution{static_cast<uint32_t>(m_width),
+                                         static_cast<uint32_t>(m_height)};
     GLFWwindow *m_glfwWindow = nullptr;
 
     /**
@@ -144,10 +146,11 @@ class Window
     void close() const;
 
   public:
-    explicit Window(string name = "Window", bool fullscreen = true, bool resizable = false,
-                    int width = 1280, int height = 720)
+    explicit Window(string name = "Window", bool fullscreen = true,
+                    bool resizable = false, int width = 1280, int height = 720)
         : m_glfwWindow{nullptr}, m_name{std::move(name)},
-          m_fullscreen{fullscreen}, m_resizable {resizable}, m_width{width}, m_height{height} {};
+          m_fullscreen{fullscreen},
+          m_resizable{resizable}, m_width{width}, m_height{height} {};
     ~Window() = default;
     Window(const Window &window) = delete;
     Window &operator=(const Window &window) = delete;
@@ -157,13 +160,8 @@ class Window
         return m_glfwWindow == rhs.m_glfwWindow;
     }
 
-    /**
-     * @brief Get the pixel resolution of the framebuffer of the
-     * window.
-     *
-     * @return array<uint32_t, 2> {m_width, m_height}
-     */
-    [[nodiscard]] array<uint32_t, 2> getWindowResolution() const;
+    /// The pixel resolution of the framebuffer of the window.
+    const array<uint32_t, 2> &resolution = m_resolution;
 
     /**
      * @brief Get the Vulkan Window Surface object for the current window.

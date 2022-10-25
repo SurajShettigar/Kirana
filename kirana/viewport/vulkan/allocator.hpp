@@ -19,12 +19,18 @@ namespace kirana::viewport::vulkan
 {
 class Instance;
 class Device;
+class CommandPool;
+class CommandBuffers;
 
 class Allocator
 {
   private:
     bool m_isInitialized = false;
     std::unique_ptr<vma::Allocator> m_current;
+
+    vk::Fence m_copyFence;
+    const CommandPool *m_commandPool;
+    const CommandBuffers *m_commandBuffers;
 
     const Instance *const m_instance;
     const Device *const m_device;
@@ -41,12 +47,20 @@ class Allocator
     bool allocateBuffer(vk::DeviceSize size, vk::BufferUsageFlags usageFlags,
                         vma::MemoryUsage memoryUsage,
                         AllocatedBuffer *buffer) const;
+    bool allocateBufferToGPU(vk::DeviceSize size,
+                             vk::BufferUsageFlags usageFlags,
+                             AllocatedBuffer *buffer,
+                             const void *data) const;
     bool allocateImage(const vk::ImageCreateInfo &imageCreateInfo,
                        vma::MemoryUsage memoryUsage,
                        vk::MemoryPropertyFlags requiredFlags,
                        AllocateImage *image) const;
-    bool mapToMemory(const AllocatedBuffer &buffer, size_t size, uint32_t offset,
-                     const void *data) const;
+    bool mapToMemory(const AllocatedBuffer &buffer, size_t size,
+                     uint32_t offset, const void *data) const;
+    bool copyBuffer(const AllocatedBuffer &stagingBuffer,
+                    const AllocatedBuffer &destBuffer, vk::DeviceSize size,
+                    vk::DeviceSize srcOffset = 0,
+                    vk::DeviceSize dstOffset = 0) const;
     void free(const AllocatedBuffer &buffer) const;
     void free(const AllocateImage &image) const;
 };

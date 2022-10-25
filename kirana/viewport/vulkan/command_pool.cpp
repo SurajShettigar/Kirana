@@ -55,3 +55,9 @@ bool kirana::viewport::vulkan::CommandPool::allocateCommandBuffers(
     }
     return true;
 }
+
+void kirana::viewport::vulkan::CommandPool::reset(
+    vk::CommandPoolResetFlags resetFlags) const
+{
+    m_device->current.resetCommandPool(m_current, resetFlags);
+}

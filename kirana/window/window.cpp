@@ -8,8 +8,9 @@ void kirana::window::Window::onWindowResized(GLFWwindow *glfwWindow, int width,
     auto *currWin = static_cast<Window *>(glfwGetWindowUserPointer(glfwWindow));
     if (currWin)
     {
-        currWin->m_onWindowResize(currWin, {static_cast<uint32_t>(width),
-                                            static_cast<uint32_t>(height)});
+        currWin->m_resolution[0] = static_cast<uint32_t>(width);
+        currWin->m_resolution[1] = static_cast<uint32_t>(height);
+        currWin->m_onWindowResize(currWin, currWin->m_resolution);
     }
 }
 
@@ -60,14 +61,19 @@ void kirana::window::Window::create()
     else
         m_glfwWindow = glfwCreateWindow(m_width, m_height, m_name.c_str(),
                                         nullptr, nullptr);
-    glfwSetWindowSizeLimits(m_glfwWindow, m_width, m_height, mode->width,
-                            mode->height);
     if (m_glfwWindow)
     {
+        glfwSetWindowSizeLimits(m_glfwWindow, m_width, m_height, mode->width,
+                                mode->height);
         glfwSetWindowUserPointer(m_glfwWindow, this);
         glfwSetFramebufferSizeCallback(m_glfwWindow, Window::onWindowResized);
         glfwSetWindowCloseCallback(m_glfwWindow, Window::onWindowClosed);
         glfwSetKeyCallback(m_glfwWindow, Window::onKeyboardInput);
+
+        int resX = 0, resY = 0;
+        glfwGetFramebufferSize(m_glfwWindow, &resX, &resY);
+        m_resolution[0] = static_cast<uint32_t>(resX);
+        m_resolution[1] = static_cast<uint32_t>(resY);
     }
 }
 
@@ -85,15 +91,6 @@ void kirana::window::Window::close() const
 {
     if (m_glfwWindow)
         glfwSetWindowShouldClose(m_glfwWindow, GLFW_TRUE);
-}
-
-std::array<uint32_t, 2> kirana::window::Window::getWindowResolution() const
-{
-    int width = 0, height = 0;
-    if (m_glfwWindow)
-        glfwGetFramebufferSize(m_glfwWindow, &width, &height);
-    return std::array<uint32_t, 2>{static_cast<uint32_t>(width),
-                                   static_cast<uint32_t>(height)};
 }
 
 VkResult kirana::window::Window::getVulkanWindowSurface(

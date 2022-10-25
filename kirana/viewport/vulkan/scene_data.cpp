@@ -149,33 +149,17 @@ kirana::viewport::vulkan::SceneData::SceneData(
                             }));
 
         size_t verticesSize = vertices.size() * sizeof(scene::Vertex);
-        if (m_allocator->allocateBuffer(
+        if (!m_allocator->allocateBufferToGPU(
                 verticesSize, vk::BufferUsageFlagBits::eVertexBuffer,
-                vma::MemoryUsage::eCpuToGpu, &meshData.vertexBuffer))
-        {
-            if (!m_allocator->mapToMemory(meshData.vertexBuffer, verticesSize,
-                                          0, vertices.data()))
-            {
-                m_isInitialized = false;
-            }
-        }
-        else
+                &meshData.vertexBuffer, vertices.data()))
             m_isInitialized = false;
 
         const std::vector<uint32_t> &indices = m->getIndices();
         meshData.indexCount = indices.size();
         size_t indicesSize = indices.size() * sizeof(uint32_t);
-        if (m_allocator->allocateBuffer(
+        if (!m_allocator->allocateBufferToGPU(
                 indicesSize, vk::BufferUsageFlagBits::eIndexBuffer,
-                vma::MemoryUsage::eCpuToGpu, &meshData.indexBuffer))
-        {
-            if (!m_allocator->mapToMemory(meshData.indexBuffer, indicesSize, 0,
-                                          indices.data()))
-            {
-                m_isInitialized = false;
-            }
-        }
-        else
+                &meshData.indexBuffer, indices.data()))
             m_isInitialized = false;
 
         if (m_isInitialized)

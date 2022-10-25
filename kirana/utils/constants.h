@@ -20,6 +20,7 @@ static const bool VULKAN_USE_VALIDATION_LAYERS = true;
 static const bool VULKAN_USE_VALIDATION_LAYERS = false;
 #endif
 static const uint64_t VULKAN_FRAME_SYNC_TIMEOUT = 1000000000; // 1 second
+static const uint64_t VULKAN_COPY_BUFFER_WAIT_TIMEOUT = 10000000000; // 10 seconds
 static const uint16_t VULKAN_FRAME_OVERLAP_COUNT = 2;
 static const uint16_t VULKAN_DESCRIPTOR_SET_MAX_COUNT = 10;
 static const uint16_t VULKAN_DESCRIPTOR_DEFAULT_POOL_SIZE = 10;

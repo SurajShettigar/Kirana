@@ -30,6 +30,8 @@ class CommandPool
     bool allocateCommandBuffers(
         const CommandBuffers *&commandBuffers, size_t count = 1,
         vk::CommandBufferLevel level = vk::CommandBufferLevel::ePrimary) const;
+    void reset(vk::CommandPoolResetFlags resetFlags =
+                   vk::CommandPoolResetFlagBits::eReleaseResources) const;
 };
 } // namespace kirana::viewport::vulkan
 #endif

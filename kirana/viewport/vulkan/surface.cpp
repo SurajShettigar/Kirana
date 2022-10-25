@@ -32,5 +32,5 @@ kirana::viewport::vulkan::Surface::~Surface()
 
 std::array<uint32_t, 2> kirana::viewport::vulkan::Surface::getResolution() const
 {
-    return m_window->getWindowResolution();
+    return m_window->resolution;
 }

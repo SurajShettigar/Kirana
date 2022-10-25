@@ -30,6 +30,7 @@ class SceneData;
 class VulkanRenderer
 {
   private:
+    bool m_isMinimized = false;
     const window::Window *m_window = nullptr;
 
     Allocator *m_allocator = nullptr;

@@ -34,8 +34,8 @@ void kirana::viewport::vulkan::VulkanRenderer::init(
         m_swapchain = new Swapchain(m_device, m_surface);
     }
     if (m_swapchain && m_swapchain->isInitialized)
-        m_depthBuffer = new DepthBuffer(m_device, m_allocator,
-                                        window->getWindowResolution());
+        m_depthBuffer =
+            new DepthBuffer(m_device, m_allocator, window->resolution);
     if (m_depthBuffer && m_depthBuffer->isInitialized)
         m_renderpass = new RenderPass(m_device, m_swapchain, m_depthBuffer);
 
@@ -68,7 +68,10 @@ void kirana::viewport::vulkan::VulkanRenderer::update()
 
 void kirana::viewport::vulkan::VulkanRenderer::render()
 {
-    m_drawer->draw();
+    if (!m_isMinimized)
+        m_drawer->draw();
+    else if (m_window->resolution[0] != 0 && m_window->resolution[1] != 0)
+        m_isMinimized = false;
 }
 
 void kirana::viewport::vulkan::VulkanRenderer::clean()
@@ -134,6 +137,14 @@ void kirana::viewport::vulkan::VulkanRenderer::clean()
 
 void kirana::viewport::vulkan::VulkanRenderer::rebuildSwapchain()
 {
+    if (m_window->resolution[0] == 0 ||
+        m_window->resolution[1] == 0)
+    {
+        m_isMinimized = true;
+        return;
+    }
+    m_isMinimized = false;
+
     if (m_renderpass)
     {
         delete m_renderpass;
@@ -154,7 +165,7 @@ void kirana::viewport::vulkan::VulkanRenderer::rebuildSwapchain()
         m_swapchain = new Swapchain(m_device, m_surface);
     if (m_swapchain && m_swapchain->isInitialized)
         m_depthBuffer = new DepthBuffer(m_device, m_allocator,
-                                        m_window->getWindowResolution());
+                                        m_window->resolution);
     if (m_depthBuffer && m_depthBuffer->isInitialized)
         m_renderpass = new RenderPass(m_device, m_swapchain, m_depthBuffer);
     if (m_renderpass && m_renderpass->isInitialized)

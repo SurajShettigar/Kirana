@@ -209,6 +209,12 @@ void kirana::viewport::vulkan::Device::graphicsSubmit(
                            fence);
 }
 
+void kirana::viewport::vulkan::Device::graphicsSubmit(
+    const vk::CommandBuffer &commandBuffer, const vk::Fence &fence) const
+{
+    m_graphicsQueue.submit(vk::SubmitInfo({}, {}, commandBuffer, {}), fence);
+}
+
 vk::Result kirana::viewport::vulkan::Device::present(
     const vk::Semaphore &semaphore, const vk::SwapchainKHR &swapchain,
     uint32_t imageIndex) const

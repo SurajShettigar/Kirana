@@ -12,6 +12,7 @@ class Time
     std::chrono::time_point<std::chrono::high_resolution_clock> m_currentPoint;
     std::chrono::duration<double> m_elapsedTime;
     std::chrono::duration<double> m_deltaTime;
+    double m_avgDeltaTime[3]{0.0, 0.0, 0.0};
     Time() = default;
     ~Time() = default;
 
@@ -27,9 +28,13 @@ class Time
 
     void update()
     {
-        m_deltaTime = std::chrono::high_resolution_clock::now() - m_currentPoint;
+        m_deltaTime =
+            std::chrono::high_resolution_clock::now() - m_currentPoint;
         m_currentPoint = std::chrono::high_resolution_clock::now();
         m_elapsedTime = m_currentPoint - m_startPoint;
+        m_avgDeltaTime[0] = m_avgDeltaTime[1];
+        m_avgDeltaTime[1] = m_avgDeltaTime[2];
+        m_avgDeltaTime[2] = m_deltaTime.count();
     }
 
     /// Time since the start of the application in seconds.
@@ -46,7 +51,8 @@ class Time
     /// Frames per second
     [[nodiscard]] inline uint32_t getFPS() const
     {
-        return static_cast<uint32_t>(1.0f / m_deltaTime.count());
+        return static_cast<uint32_t>(
+            3.0 / (m_avgDeltaTime[0] + m_avgDeltaTime[1] + m_avgDeltaTime[2]));
     }
 };
 } // namespace kirana::utils

@@ -57,10 +57,12 @@ class Device
 
     void waitUntilIdle() const;
     void graphicsSubmit(const vk::Semaphore &waitSemaphore,
-                      vk::PipelineStageFlags stageFlags,
-                      const vk::CommandBuffer &commandBuffer,
-                      const vk::Semaphore &signalSemaphore,
-                      const vk::Fence &fence) const;
+                        vk::PipelineStageFlags stageFlags,
+                        const vk::CommandBuffer &commandBuffer,
+                        const vk::Semaphore &signalSemaphore,
+                        const vk::Fence &fence) const;
+    void graphicsSubmit(const vk::CommandBuffer &commandBuffer,
+                        const vk::Fence &fence) const;
     [[nodiscard]] vk::Result present(const vk::Semaphore &semaphore,
                                      const vk::SwapchainKHR &swapchain,
                                      uint32_t imageIndex) const;

@@ -84,7 +84,7 @@ void kirana::Application::init()
     const scene::Scene &scene = m_sceneManager.loadScene();
     if (scene.isInitialized())
     {
-        scene.updateCameraResolution(m_viewportWindow->getWindowResolution());
+        scene.updateCameraResolution(m_viewportWindow->resolution);
         m_logger.log(constants::LOG_CHANNEL_APPLICATION,
                      utils::LogSeverity::debug,
                      "Loaded default scene: " + scene.getRoot()->getName());
@@ -149,7 +149,7 @@ void kirana::Application::run()
     {
         update();
         render();
-//        std::cout << "FPS: " << m_time.getFPS() << "\r" << std::flush;
+        std::cout << "FPS: " << m_time.getFPS() << "\r" << std::flush;
     }
 
     clean();

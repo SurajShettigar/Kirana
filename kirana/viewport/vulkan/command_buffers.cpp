@@ -1,15 +1,16 @@
 #include "command_buffers.hpp"
 #include "vulkan_utils.hpp"
 
-void kirana::viewport::vulkan::CommandBuffers::reset(uint32_t index) const
+void kirana::viewport::vulkan::CommandBuffers::reset(
+    vk::CommandBufferResetFlags resetFlags, uint32_t index) const
 {
-    m_current[index].reset();
+    m_current[index].reset(resetFlags);
 }
 
-void kirana::viewport::vulkan::CommandBuffers::begin(uint32_t index) const
+void kirana::viewport::vulkan::CommandBuffers::begin(
+    vk::CommandBufferUsageFlags usageFlags, uint32_t index) const
 {
-    m_current[index].begin(vk::CommandBufferBeginInfo(
-        vk::CommandBufferUsageFlagBits::eOneTimeSubmit));
+    m_current[index].begin(vk::CommandBufferBeginInfo(usageFlags));
 }
 
 void kirana::viewport::vulkan::CommandBuffers::beginRenderPass(
@@ -84,6 +85,13 @@ void kirana::viewport::vulkan::CommandBuffers::drawIndexed(
 {
     m_current[index].drawIndexed(indexCount, instanceCount, firstIndex,
                                  vertexOffset, firstInstance);
+}
+
+void kirana::viewport::vulkan::CommandBuffers::copyBuffer(
+    vk::Buffer srcBuffer, vk::Buffer dstBuffer,
+    const std::vector<vk::BufferCopy> &regions, uint32_t index) const
+{
+    m_current[index].copyBuffer(srcBuffer, dstBuffer, regions);
 }
 
 void kirana::viewport::vulkan::CommandBuffers::endRenderPass(

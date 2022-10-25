@@ -21,8 +21,12 @@ class CommandBuffers
 
     const std::vector<vk::CommandBuffer> &current = m_current;
 
-    void reset(uint32_t index = 0) const;
-    void begin(uint32_t index = 0) const;
+    void reset(vk::CommandBufferResetFlags resetFlags =
+                   vk::CommandBufferResetFlagBits::eReleaseResources,
+               uint32_t index = 0) const;
+    void begin(vk::CommandBufferUsageFlags usageFlags =
+                   vk::CommandBufferUsageFlagBits::eOneTimeSubmit,
+               uint32_t index = 0) const;
     void beginRenderPass(const vk::RenderPass &renderPass,
                          const vk::Framebuffer &framebuffer,
                          vk::Extent2D imageExtent,
@@ -53,6 +57,9 @@ class CommandBuffers
     void drawIndexed(uint32_t indexCount, uint32_t instanceCount,
                      uint32_t firstIndex, int32_t vertexOffset,
                      uint32_t firstInstance, uint32_t index = 0) const;
+    void copyBuffer(vk::Buffer srcBuffer, vk::Buffer dstBuffer,
+                    const std::vector<vk::BufferCopy> &regions,
+                    uint32_t index = 0) const;
     void endRenderPass(uint32_t index = 0) const;
     void end(uint32_t index = 0) const;
 };
