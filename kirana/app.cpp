@@ -38,11 +38,13 @@ void kirana::Application::onWindowClosed(Window *window)
 
 void kirana::Application::onKeyboardInput(input::KeyboardInput input)
 {
-    if (input.action == input::KeyAction::DOWN &&
-        input.key == input::Key::ESCAPE)
+    if (input.action == input::KeyAction::DOWN)
     {
-        if (m_windowManager.isAnyWindowOpen())
-            m_windowManager.closeAllWindows();
+        if (input.key == input::Key::ESCAPE)
+            if (m_windowManager.isAnyWindowOpen())
+                m_windowManager.closeAllWindows();
+        if (input.key == input::Key::W)
+            m_viewport.toggleWireframe();
     }
 }
 
@@ -149,7 +151,7 @@ void kirana::Application::run()
     {
         update();
         render();
-        std::cout << "FPS: " << m_time.getFPS() << "\r" << std::flush;
+        //        std::cout << "FPS: " << m_time.getFPS() << "\r" << std::flush;
     }
 
     clean();

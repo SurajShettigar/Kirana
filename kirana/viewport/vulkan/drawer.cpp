@@ -144,7 +144,7 @@ void kirana::viewport::vulkan::Drawer::draw()
     const uint32_t imgIndex = imgValue.value;
 
     vk::ClearValue clearColor;
-    std::array<float, 4> color = {{0.0f, 0.0f, 0.0f, 1.0f}};
+    std::array<float, 4> color = {{0.05f, 0.05f, 0.05f, 1.0f}};
     clearColor.setColor(vk::ClearColorValue(color));
 
     vk::ClearValue clearDepth;

@@ -14,10 +14,9 @@ layout (set = 0, binding = 1) uniform WorldData
 } worldData;
 
 void main() {
-    //    vec3 color = mix(vec3(0.5f, 0.5f, 0.5f), inColor, inColor);
     vec3 color = vec3(0.5f, 0.5f, 0.5f);
     color = pow(abs((1.0f - dot(inWorldNormal, inCamPos))), 0.75f) * color;
     color *= worldData.ambientColor.rgb;
-    color *= max(dot(inWorldNormal, normalize(-worldData.sunDirection)), 0.005f) * worldData.sunColor.rgb * worldData.sunIntensity;
+    color *= max(dot(inWorldNormal, normalize(-worldData.sunDirection)), 0.1f) * worldData.sunColor.rgb * worldData.sunIntensity;
     outFragColor = vec4(clamp(color, 0.0f, 1.0f), 1.0f);
 }

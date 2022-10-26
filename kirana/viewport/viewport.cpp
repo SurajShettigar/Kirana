@@ -16,10 +16,14 @@ kirana::viewport::Viewport::Viewport()
 }
 
 void kirana::viewport::Viewport::init(const shared_ptr<Window> &window,
-                                      const scene::Scene &scene)
+                                      const scene::Scene &scene,
+                                      Shading shading)
 {
     m_window = window;
-    m_renderer.init(m_window.get(), scene);
+    m_prevShading = m_currentShading;
+    m_currentShading = shading;
+    m_renderer.init(m_window.get(), scene,
+                    static_cast<uint16_t>(m_currentShading));
 }
 
 void kirana::viewport::Viewport::update()
@@ -35,6 +39,29 @@ void kirana::viewport::Viewport::render()
 void kirana::viewport::Viewport::clean()
 {
     m_renderer.clean();
+}
+
+void kirana::viewport::Viewport::setShading(Shading shading)
+{
+    m_prevShading = m_currentShading;
+    m_currentShading = shading;
+    m_renderer.setShading(static_cast<uint16_t>(m_currentShading));
+}
+
+void kirana::viewport::Viewport::toggleWireframe()
+{
+    if (m_currentShading != Shading::WIREFRAME)
+        setShading(Shading::WIREFRAME);
+    else
+        setShading(m_prevShading);
+}
+
+void kirana::viewport::Viewport::togglePBR()
+{
+    if (m_currentShading != Shading::REALTIME_PBR)
+        setShading(Shading::REALTIME_PBR);
+    else
+        setShading(m_prevShading);
 }
 
 /*void kirana::viewport::Viewport::loadScene(const scene::Scene &scene)

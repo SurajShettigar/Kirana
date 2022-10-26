@@ -88,6 +88,14 @@ bool kirana::viewport::vulkan::Device::selectIdealGPU()
         return false;
     }
 
+    // Check if the device supports wireframe mode.
+    if (!m_gpu.getFeatures().fillModeNonSolid || !m_gpu.getFeatures().wideLines)
+    {
+        Logger::get().log(constants::LOG_CHANNEL_VULKAN, LogSeverity::error,
+                          "Failed to find GPU with necessary features");
+        return false;
+    }
+
     // Check if the device has the necessary queue families.
     m_queueFamilyIndices = getQueueFamilyIndices(m_gpu, m_surface->current);
     if (!(m_queueFamilyIndices.isGraphicsSupported() &&
@@ -136,8 +144,10 @@ bool kirana::viewport::vulkan::Device::createLogicalDevice()
     }
 
     vk::PhysicalDeviceFeatures deviceFeatures{};
+    deviceFeatures.fillModeNonSolid = true;
+    deviceFeatures.wideLines = true;
     vk::DeviceCreateInfo createInfo({}, queueCreateInfos, VALIDATION_LAYERS,
-                                    DEVICE_EXTENSIONS);
+                                    DEVICE_EXTENSIONS, &deviceFeatures);
 
     try
     {

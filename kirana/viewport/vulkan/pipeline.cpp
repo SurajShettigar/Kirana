@@ -9,11 +9,13 @@
 kirana::viewport::vulkan::Pipeline::Pipeline(
     const Device *const device, const RenderPass *const renderPass,
     const Shader *const shader, const PipelineLayout *const pipelineLayout,
-    const VertexInputDescription &vertexInputDesc)
+    const VertexInputDescription &vertexInputDesc,
+    const PipelineProperties &pipelineProperties)
     : m_isInitialized{false}, m_device{device}, m_renderPass{renderPass},
       m_shader{shader}, m_pipelineLayout{pipelineLayout}
 {
-    build(vertexInputDesc.bindings, vertexInputDesc.attributes);
+    build(vertexInputDesc.bindings, vertexInputDesc.attributes,
+          pipelineProperties);
 }
 
 kirana::viewport::vulkan::Pipeline::~Pipeline()
@@ -31,7 +33,8 @@ kirana::viewport::vulkan::Pipeline::~Pipeline()
 
 bool kirana::viewport::vulkan::Pipeline::build(
     const std::vector<vk::VertexInputBindingDescription> &vertexBindings,
-    const std::vector<vk::VertexInputAttributeDescription> &vertexAttributes)
+    const std::vector<vk::VertexInputAttributeDescription> &vertexAttributes,
+    const PipelineProperties &properties)
 {
     std::vector<vk::PipelineShaderStageCreateInfo> shaderStages;
     if (m_shader->compute)
@@ -60,7 +63,7 @@ bool kirana::viewport::vulkan::Pipeline::build(
                                                        vertexAttributes);
 
     vk::PipelineInputAssemblyStateCreateInfo inputAssembly(
-        {}, vk::PrimitiveTopology::eTriangleList, false);
+        {}, properties.primitiveType, false);
 
     const std::array<uint32_t, 2> &res = m_renderPass->getSurfaceResolution();
     vk::Viewport vp(0.0f, 0.0f, static_cast<float>(res[0]),
@@ -69,11 +72,12 @@ bool kirana::viewport::vulkan::Pipeline::build(
     vk::PipelineViewportStateCreateInfo viewport({}, vp, scissor);
 
     vk::PipelineRasterizationStateCreateInfo rasterizer(
-        {}, false, false, vk::PolygonMode::eFill, vk::CullModeFlagBits::eBack,
-        vk::FrontFace::eCounterClockwise, false, 0.0f, 0.0f, 0.0f, 1.0f);
+        {}, false, false, properties.polygonMode, properties.cullMode,
+        vk::FrontFace::eCounterClockwise, false, 0.0f, 0.0f, 0.0f,
+        properties.lineWidth);
 
-    vk::PipelineMultisampleStateCreateInfo msaa(
-        {}, vk::SampleCountFlagBits::e1, false, 1.0f, nullptr, false, false);
+    vk::PipelineMultisampleStateCreateInfo msaa({}, properties.msaaLevel, false,
+                                                1.0f, nullptr, false, false);
 
     vk::PipelineDepthStencilStateCreateInfo depthStencil(
         {}, true, true, vk::CompareOp::eLessOrEqual, false, false, {}, {}, 0.0f,

@@ -47,19 +47,49 @@ void kirana::viewport::vulkan::SceneData::createMaterials()
 {
     m_materials.clear();
     m_shaders.clear();
-    for (const auto &m : m_scene.getMaterials())
+
+    switch (m_currentShading)
     {
-        const Shader *shader = createShader(m->getShader());
+    default:
+    case 0:
+    case 1: {
+        const Shader *shader =
+            createShader(m_currentShading == 0
+                             ? utils::constants::VULKAN_SHADER_DEFAULT_NAME
+                             : utils::constants::VULKAN_SHADER_WIREFRAME_NAME);
 
         MaterialData matData;
-        matData.name = m->getName();
-        matData.shaderName = m->getShader();
+        matData.name = utils::constants::VULKAN_SHADER_DEFAULT_NAME;
+        matData.shaderName = utils::constants::VULKAN_SHADER_DEFAULT_NAME;
         matData.layout =
             std::make_unique<PipelineLayout>(m_device, m_globalDescSetLayout);
         matData.pipeline = std::make_unique<Pipeline>(
-            m_device, m_renderPass, shader, matData.layout.get(), m_vertexDesc);
-
+            m_device, m_renderPass, shader, matData.layout.get(), m_vertexDesc,
+            m_currentShading == 0 ? vulkan::PIPELINE_PROPERTIES_BASIC
+                                  : vulkan::PIPELINE_PROPERTIES_WIREFRAME);
         m_materials.emplace_back(std::move(matData));
+        break;
+    }
+    case 2:
+        // TODO: Add PBR Pipeline
+    case 3:
+        // TODO: Add Raytrace PBR Pipeline
+        for (const auto &m : m_scene.getMaterials())
+        {
+            const Shader *shader = createShader(m->getShader());
+
+            MaterialData matData;
+            matData.name = m->getName();
+            matData.shaderName = m->getShader();
+            matData.layout = std::make_unique<PipelineLayout>(
+                m_device, m_globalDescSetLayout);
+            matData.pipeline =
+                std::make_unique<Pipeline>(m_device, m_renderPass, shader,
+                                           matData.layout.get(), m_vertexDesc);
+
+            m_materials.emplace_back(std::move(matData));
+        }
+        break;
     }
 }
 
@@ -110,12 +140,25 @@ void kirana::viewport::vulkan::SceneData::createWorldDataBuffer()
     }
 }
 
+kirana::viewport::vulkan::MaterialData &kirana::viewport::vulkan::SceneData::
+    findMaterial(const std::string &materialName)
+{
+    if (m_materials.size() == 1)
+        return m_materials[0];
+    else
+        return *std::find_if(m_materials.begin(), m_materials.end(),
+                             [&materialName](const MaterialData &mat) {
+                                 return mat.name == materialName;
+                             });
+}
+
 kirana::viewport::vulkan::SceneData::SceneData(
     const Device *device, const Allocator *allocator,
     const RenderPass *renderPass,
-    const DescriptorSetLayout *globalDescSetLayout, const scene::Scene &scene)
-    : m_isInitialized{false}, m_device{device}, m_allocator{allocator},
-      m_renderPass{renderPass},
+    const DescriptorSetLayout *globalDescSetLayout, const scene::Scene &scene,
+    uint16_t shadingIndex)
+    : m_isInitialized{false}, m_currentShading{shadingIndex}, m_device{device},
+      m_allocator{allocator}, m_renderPass{renderPass},
       m_globalDescSetLayout{globalDescSetLayout}, m_scene{scene}
 {
     // Set the vulkan description of vertex buffers.
@@ -142,11 +185,7 @@ kirana::viewport::vulkan::SceneData::SceneData(
         for (size_t i = 0; i < transforms.size(); i++)
             meshData.instances[i] = {transforms[i]};
 
-        meshData.material =
-            &(*std::find_if(m_materials.begin(), m_materials.end(),
-                            [&m](const MaterialData &mat) {
-                                return mat.name == m->getMaterial()->getName();
-                            }));
+        meshData.material = &findMaterial(m->getMaterial()->getName());
 
         size_t verticesSize = vertices.size() * sizeof(scene::Vertex);
         if (!m_allocator->allocateBufferToGPU(
@@ -196,15 +235,45 @@ kirana::viewport::vulkan::SceneData::~SceneData()
     }
 }
 
+void kirana::viewport::vulkan::SceneData::setShading(uint16_t shadingIndex)
+{
+    m_currentShading = shadingIndex;
+    rebuildPipeline(m_renderPass);
+}
+
 void kirana::viewport::vulkan::SceneData::rebuildPipeline(
     const RenderPass *renderPass)
 {
     m_renderPass = renderPass;
-    for (auto &m : m_materials)
+    switch (m_currentShading)
     {
-        m.pipeline = std::make_unique<Pipeline>(m_device, m_renderPass,
-                                                createShader(m.shaderName),
-                                                m.layout.get(), m_vertexDesc);
+    default:
+    case 0:
+    case 1:
+        for (auto &m : m_materials)
+        {
+            m.pipeline = std::make_unique<Pipeline>(
+                m_device, m_renderPass,
+                createShader(
+                    m_currentShading == 0
+                        ? utils::constants::VULKAN_SHADER_DEFAULT_NAME
+                        : utils::constants::VULKAN_SHADER_WIREFRAME_NAME),
+                m.layout.get(), m_vertexDesc,
+                m_currentShading == 0 ? vulkan::PIPELINE_PROPERTIES_BASIC
+                                      : vulkan::PIPELINE_PROPERTIES_WIREFRAME);
+        }
+        break;
+    case 2:
+        // TODO: Add PBR Pipeline
+    case 3:
+        // TODO: Add Raytrace PBR Pipeline
+        for (auto &m : m_materials)
+        {
+            m.pipeline = std::make_unique<Pipeline>(
+                m_device, m_renderPass, createShader(m.shaderName),
+                m.layout.get(), m_vertexDesc);
+        }
+        break;
     }
 }
 

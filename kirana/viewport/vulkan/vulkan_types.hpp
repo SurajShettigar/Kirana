@@ -100,6 +100,19 @@ struct VertexInputDescription
     std::vector<vk::VertexInputAttributeDescription> attributes;
 };
 
+struct PipelineProperties
+{
+    vk::PrimitiveTopology primitiveType = vk::PrimitiveTopology::eTriangleList;
+    vk::PolygonMode polygonMode = vk::PolygonMode::eFill;
+    vk::CullModeFlags cullMode = vk::CullModeFlagBits::eBack;
+    float lineWidth = 1.0f;
+    vk::SampleCountFlagBits msaaLevel = vk::SampleCountFlagBits::e1;
+};
+
+static const PipelineProperties PIPELINE_PROPERTIES_BASIC;
+static const PipelineProperties PIPELINE_PROPERTIES_WIREFRAME{
+    vk::PrimitiveTopology::eTriangleList, vk::PolygonMode::eLine};
+
 // TODO: Remove it once descriptor set is implemented.
 struct MeshPushConstants
 {

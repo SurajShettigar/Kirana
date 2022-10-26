@@ -22,6 +22,7 @@ class SceneData
 {
   private:
     bool m_isInitialized = false;
+    uint16_t m_currentShading = 0;
     VertexInputDescription m_vertexDesc;
     std::unordered_map<std::string, std::unique_ptr<Shader>> m_shaders;
     std::vector<MaterialData> m_materials;
@@ -42,10 +43,14 @@ class SceneData
     void createMaterials();
     void createCameraBuffer();
     void createWorldDataBuffer();
+
+    MaterialData &findMaterial(const std::string &materialName);
+
   public:
     SceneData(const Device *device, const Allocator *allocator,
               const RenderPass *renderPass,
-              const DescriptorSetLayout *globalDescSetLayout, const scene::Scene &scene);
+              const DescriptorSetLayout *globalDescSetLayout,
+              const scene::Scene &scene, uint16_t shadingIndex = 0);
     ~SceneData();
 
     SceneData(const SceneData &sceneData) = delete;
@@ -53,6 +58,7 @@ class SceneData
     const bool &isInitialized = m_isInitialized;
     const std::vector<MeshData> &meshes = m_meshes;
 
+    void setShading(uint16_t shadingIndex);
     void rebuildPipeline(const RenderPass *renderPass);
 
     [[nodiscard]] const AllocatedBuffer &getCameraBuffer() const;

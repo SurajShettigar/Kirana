@@ -19,7 +19,8 @@
 #include <constants.h>
 
 void kirana::viewport::vulkan::VulkanRenderer::init(
-    const window::Window *const window, const scene::Scene &scene)
+    const window::Window *const window, const scene::Scene &scene,
+    uint16_t shadingIndex)
 {
     m_window = window;
     m_instance = new Instance(
@@ -137,8 +138,7 @@ void kirana::viewport::vulkan::VulkanRenderer::clean()
 
 void kirana::viewport::vulkan::VulkanRenderer::rebuildSwapchain()
 {
-    if (m_window->resolution[0] == 0 ||
-        m_window->resolution[1] == 0)
+    if (m_window->resolution[0] == 0 || m_window->resolution[1] == 0)
     {
         m_isMinimized = true;
         return;
@@ -164,8 +164,8 @@ void kirana::viewport::vulkan::VulkanRenderer::rebuildSwapchain()
     if (m_surface && m_surface->isInitialized)
         m_swapchain = new Swapchain(m_device, m_surface);
     if (m_swapchain && m_swapchain->isInitialized)
-        m_depthBuffer = new DepthBuffer(m_device, m_allocator,
-                                        m_window->resolution);
+        m_depthBuffer =
+            new DepthBuffer(m_device, m_allocator, m_window->resolution);
     if (m_depthBuffer && m_depthBuffer->isInitialized)
         m_renderpass = new RenderPass(m_device, m_swapchain, m_depthBuffer);
     if (m_renderpass && m_renderpass->isInitialized)
@@ -173,6 +173,25 @@ void kirana::viewport::vulkan::VulkanRenderer::rebuildSwapchain()
     m_drawer->reinitialize(m_swapchain, m_renderpass);
     utils::Logger::get().log(utils::constants::LOG_CHANNEL_VULKAN,
                              utils::LogSeverity::trace, "Swapchain rebuilt");
+}
+
+void kirana::viewport::vulkan::VulkanRenderer::setShading(uint16_t shadingIndex)
+{
+    m_device->waitUntilIdle();
+    m_currentScene->setShading(shadingIndex);
+    /*switch (shadingIndex)
+    {
+    case 0:
+        break;
+    case 1:
+        break;
+    case 2:
+        break;
+    case 3:
+        break;
+    default:
+        break;
+    }*/
 }
 
 /*

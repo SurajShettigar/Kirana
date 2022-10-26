@@ -1,6 +1,8 @@
 #ifndef VIEWPORT_HPP
 #define VIEWPORT_HPP
 
+#include "viewport_types.hpp"
+
 #include <memory>
 
 // Forward declarations
@@ -31,13 +33,16 @@ class Viewport
   private:
     shared_ptr<window::Window> m_window;
     VulkanRenderer &m_renderer;
+    Shading m_prevShading = Shading::BASIC;
+    Shading m_currentShading = Shading::BASIC;
 
   public:
     Viewport();
     ~Viewport() = default;
 
     /// Initializes the viewport by binding the window to the renderer (Vulkan).
-    void init(const shared_ptr<Window> &window, const scene::Scene &scene);
+    void init(const shared_ptr<Window> &window, const scene::Scene &scene,
+              Shading shading = Shading::BASIC);
     /// Calls the update function of the renderer.
     void update();
     /// Calls the render function of the renderer.
@@ -45,6 +50,12 @@ class Viewport
     /// Calls the cleanup function of the renderer.
     void clean();
 
+    /// Changes the current viewport shading.
+    void setShading(Shading shading);
+    /// Toggles wireframe shading.
+    void toggleWireframe();
+    /// Toggles realtime PBR shading.
+    void togglePBR();
     /**
      * Loads the scene into viewport.
      * @param scene The Scene object to be loaded.
