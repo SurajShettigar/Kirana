@@ -1,4 +1,5 @@
 #include "math_utils.hpp"
+#include "vector2.hpp"
 #include "vector3.hpp"
 #include "vector4.hpp"
 #include "matrix4x4.hpp"
@@ -9,6 +10,7 @@
 using namespace kirana::math;
 int main(int argc, char **argv)
 {
+    std::cout << "Size of Vector2: " << sizeof(Vector2) << std::endl;
     std::cout << "Size of Vector3: " << sizeof(Vector3) << std::endl;
     std::cout << "Size of Vector4: " << sizeof(Vector4) << std::endl;
     std::cout << "Size of Matrix4x4: " << sizeof(Matrix4x4) << std::endl;
