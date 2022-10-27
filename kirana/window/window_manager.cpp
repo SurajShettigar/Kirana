@@ -61,8 +61,14 @@ std::shared_ptr<kirana::window::Window> kirana::window::WindowManager::
         std::bind(&WindowManager::onWindowClosed, this, _1));
 
     window->addOnKeyboardInputEventListener(
-        [&](Window *window, input::KeyboardInput input) {
+        [&](Window *window, KeyboardInput input) {
             this->m_onKeyboardInput(input);
+        });
+    window->addOnMouseInputEventListener(
+        [&](Window *window, MouseInput input) { this->m_onMouseInput(input); });
+    window->addOnScrollInputEventListener(
+        [&](Window *window, double xOffset, double yOffset) {
+            this->m_onScrollInput(xOffset, yOffset);
         });
 
     window->create();

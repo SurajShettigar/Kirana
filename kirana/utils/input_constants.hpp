@@ -1,8 +1,9 @@
 #ifndef INPUT_CONSTANTS_HPP
 #define INPUT_CONSTANTS_HPP
 
-namespace kirana::window::input
+namespace kirana::utils::input
 {
+/// Keyboard button (GLFW compatible IDs).
 enum class Key
 {
     UNKNOWN = -1,
@@ -128,19 +129,67 @@ enum class Key
     MENU = 348,
 };
 
+
+/// Mouse button (GLFW Compatible IDs).
+enum class MouseButton
+{
+    LEFT = 0,
+    RIGHT = 1,
+    MIDDLE = 2,
+    BUTTON_01 = 3,
+    BUTTON_02 = 4,
+    BUTTON_03 = 5,
+    BUTTON_04 = 6,
+    BUTTON_05 = 7,
+};
+
+/// Keyboard button press action.
 enum class KeyAction
 {
+    /// No Key action.
+    NONE = -1,
+    /// Key release.
     UP = 0,
+    /// Key pressed.
     DOWN = 1,
+    /// Key held down.
     HELD = 2,
 };
 
+/// Keyboard input information.
 struct KeyboardInput
 {
     Key key;
     KeyAction action;
+    Key modifierKey;
 };
-} // namespace kirana::window::input
+
+/// Mouse input information.
+struct MouseInput
+{
+    MouseButton button;
+    KeyAction action;
+    Key modifierKey;
+};
+
+inline Key operator|(Key lhs, Key rhs)
+{
+    return static_cast<Key>(static_cast<int>(lhs) | static_cast<int>(rhs));
+}
+inline Key operator&(Key lhs, Key rhs)
+{
+    return static_cast<Key>(static_cast<int>(lhs) & static_cast<int>(rhs));
+}
+inline Key operator^(Key lhs, Key rhs)
+{
+    return static_cast<Key>(static_cast<int>(lhs) ^ static_cast<int>(rhs));
+}
+inline Key operator~(Key key)
+{
+    return static_cast<Key>(~static_cast<int>(key));
+}
+
+} // namespace kirana::utils::input
 
 
 #endif

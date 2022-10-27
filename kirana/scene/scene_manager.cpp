@@ -4,6 +4,7 @@
 #include <file_system.hpp>
 #include <constants.h>
 #include <time.hpp>
+#include <input_manager.hpp>
 
 namespace constants = kirana::utils::constants;
 
@@ -34,11 +35,9 @@ void kirana::scene::SceneManager::init()
 
 void kirana::scene::SceneManager::update()
 {
-    if (m_currentScene.isInitialized())
-    {
+    if (utils::input::InputManager::get().getKey(utils::input::Key::R))
         m_currentScene.m_rootObject->transform->rotateY(
-            10.0f * utils::Time::get().getDeltaTime());
-    }
+            100.0f * utils::Time::get().getDeltaTime());
 }
 
 void kirana::scene::SceneManager::clean()

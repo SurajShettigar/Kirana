@@ -4,7 +4,7 @@
 #include <memory>
 #include <string>
 #include <vector>
-#include <event.hpp>
+#include <input_manager.hpp>
 
 #include "window.hpp"
 
@@ -15,6 +15,9 @@ using std::shared_ptr;
 using std::string;
 using std::vector;
 
+using kirana::utils::input::KeyboardInput;
+using kirana::utils::input::MouseInput;
+using kirana::utils::input::MouseButton;
 using kirana::utils::Event;
 
 class WindowManager
@@ -27,7 +30,9 @@ class WindowManager
     Event<Window *, std::array<uint32_t, 2>> m_onWindowResize;
     Event<Window *> m_onWindowClose;
     Event<> m_onAllWindowsClose;
-    Event<input::KeyboardInput> m_onKeyboardInput;
+    Event<KeyboardInput> m_onKeyboardInput;
+    Event<MouseInput> m_onMouseInput;
+    Event<double, double> m_onScrollInput;
 
     void onWindowClosed(Window *window);
 
@@ -126,7 +131,7 @@ class WindowManager
      * later to remove the callback function from being called.
      */
     inline uint32_t addOnKeyboardInputEventListener(
-        const std::function<void(input::KeyboardInput)> &callback)
+        const std::function<void(KeyboardInput)> &callback)
     {
         return m_onKeyboardInput.addListener(callback);
     }
@@ -138,6 +143,46 @@ class WindowManager
     inline void removeOnKeyboardInputEventListener(uint32_t callbackID)
     {
         m_onKeyboardInput.removeListener(callbackID);
+    }
+    /** Adds a callback function for mouse input.
+     *
+     * @param callback The function to be called on input.
+     * uint32_t Unique identifier for the callback function. Use this id
+     * later to remove the callback function from being called.
+     */
+    inline uint32_t addOnMouseInputEventListener(
+        const std::function<void(MouseInput)> &callback)
+    {
+        return m_onMouseInput.addListener(callback);
+    }
+    /** Removes the callback function for mouse input with given identifier
+     * from being called after the event.
+     *
+     * @param callbackID
+     */
+    inline void removeOnMouseInputEventListener(uint32_t callbackID)
+    {
+        m_onMouseInput.removeListener(callbackID);
+    }
+    /** Adds a callback function for scroll input.
+     *
+     * @param callback The function to be called on input.
+     * uint32_t Unique identifier for the callback function. Use this id
+     * later to remove the callback function from being called.
+     */
+    inline uint32_t addOnScrollInputEventListener(
+        const std::function<void(double, double)> &callback)
+    {
+        return m_onScrollInput.addListener(callback);
+    }
+    /** Removes the callback function for scroll input with given identifier
+     * from being called after the event.
+     *
+     * @param callbackID
+     */
+    inline void removeOnScrollInputEventListener(uint32_t callbackID)
+    {
+        m_onScrollInput.removeListener(callbackID);
     }
 
     /**

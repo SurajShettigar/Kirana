@@ -23,6 +23,13 @@ using window::WindowManager;
 
 using std::shared_ptr;
 
+using kirana::utils::input::InputManager;
+using kirana::utils::input::Key;
+using kirana::utils::input::KeyAction;
+using kirana::utils::input::KeyboardInput;
+using kirana::utils::input::MouseInput;
+using kirana::utils::input::MouseButton;
+
 /**
  * As the m_name suggests, this class is the entry point of the entire
  * program. It defines the application loop in the order of initialization,
@@ -44,7 +51,11 @@ class Application
     uint32_t m_allWindowCloseListener =
         std::numeric_limits<unsigned int>::max();
     uint32_t m_keyboardInputListener = std::numeric_limits<unsigned int>::max();
+    uint32_t m_mouseInputListener = std::numeric_limits<unsigned int>::max();
+    uint32_t m_scrollInputListener = std::numeric_limits<unsigned int>::max();
     WindowManager m_windowManager;
+
+    InputManager &m_inputManager;
 
     scene::SceneManager &m_sceneManager;
 
@@ -64,9 +75,22 @@ class Application
     void onWindowClosed(Window *window);
     /**
      * Used as a callback function for keyboard input event.
-     * @param input Struct containing key and the action performed.
+     * @param input Struct containing button, action performed and the modifier button
+     * (CTRL, SHIFT,...) held.
      */
-    void onKeyboardInput(window::input::KeyboardInput input);
+    void onKeyboardInput(KeyboardInput input);
+    /**
+     * Used as a callback function for mouse input event.
+     * @param input Struct containing mouse button, action performed and the
+     * modifier button (CTRL, SHIFT,...) held.
+     */
+    void onMouseInput(MouseInput input);
+    /**
+     * Used as a callback function for scroll input event.
+     * @param xOffset offset value in X-axis.
+     * @param yOffset offset value in Y-axis. (Mouse scroll).
+     */
+    void onScrollInput(double xOffset, double yOffset);
 
     /**
      * Loads the default scene into m_currentScene object.

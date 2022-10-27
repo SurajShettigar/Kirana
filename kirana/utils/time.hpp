@@ -13,7 +13,12 @@ class Time
     std::chrono::duration<double> m_elapsedTime;
     std::chrono::duration<double> m_deltaTime;
     double m_avgDeltaTime[3]{0.0, 0.0, 0.0};
-    Time() = default;
+
+    Time()
+    {
+        m_startPoint = std::chrono::high_resolution_clock::now();
+        m_currentPoint = std::chrono::high_resolution_clock::now();
+    };
     ~Time() = default;
 
   public:
@@ -21,8 +26,6 @@ class Time
     static Time &get()
     {
         static Time instance;
-        instance.m_startPoint = std::chrono::high_resolution_clock::now();
-        instance.m_currentPoint = std::chrono::high_resolution_clock::now();
         return instance;
     }
 

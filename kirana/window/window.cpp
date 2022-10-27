@@ -24,6 +24,8 @@ void kirana::window::Window::onWindowClosed(GLFWwindow *glfwWindow)
         glfwSetFramebufferSizeCallback(glfwWindow, nullptr);
         glfwSetWindowCloseCallback(glfwWindow, nullptr);
         glfwSetKeyCallback(glfwWindow, nullptr);
+        glfwSetMouseButtonCallback(glfwWindow, nullptr);
+        glfwSetScrollCallback(glfwWindow, nullptr);
         glfwDestroyWindow(glfwWindow);
         currWin->m_onWindowResize.removeAllListeners();
         currWin->m_onWindowClose.removeAllListeners();
@@ -34,13 +36,36 @@ void kirana::window::Window::onWindowClosed(GLFWwindow *glfwWindow)
 void kirana::window::Window::onKeyboardInput(GLFWwindow *window, int key,
                                              int scancode, int action, int mods)
 {
-    Window *currWin = static_cast<Window *>(glfwGetWindowUserPointer(window));
+    auto *currWin = static_cast<Window *>(glfwGetWindowUserPointer(window));
     if (currWin)
     {
-        currWin->m_onKeyboardInput(
-            currWin,
-            input::KeyboardInput{static_cast<input::Key>(key),
-                                 static_cast<input::KeyAction>(action)});
+        currWin->m_onKeyboardInput(currWin,
+                                   KeyboardInput{static_cast<Key>(key),
+                                                 static_cast<KeyAction>(action),
+                                                 static_cast<Key>(mods)});
+    }
+}
+
+void kirana::window::Window::onMouseInput(GLFWwindow *window, int button,
+                                          int action, int mods)
+{
+    auto *currWin = static_cast<Window *>(glfwGetWindowUserPointer(window));
+    if (currWin)
+    {
+        currWin->m_onMouseInput(currWin,
+                                MouseInput{static_cast<MouseButton>(button),
+                                           static_cast<KeyAction>(action),
+                                           static_cast<Key>(mods)});
+    }
+}
+
+void kirana::window::Window::onScrollInput(GLFWwindow *window, double xOffset,
+                   double yOffset)
+{
+    auto *currWin = static_cast<Window *>(glfwGetWindowUserPointer(window));
+    if (currWin)
+    {
+        currWin->m_onScrollInput(currWin, xOffset, yOffset);
     }
 }
 
@@ -69,6 +94,8 @@ void kirana::window::Window::create()
         glfwSetFramebufferSizeCallback(m_glfwWindow, Window::onWindowResized);
         glfwSetWindowCloseCallback(m_glfwWindow, Window::onWindowClosed);
         glfwSetKeyCallback(m_glfwWindow, Window::onKeyboardInput);
+        glfwSetMouseButtonCallback(m_glfwWindow, Window::onMouseInput);
+        glfwSetScrollCallback(m_glfwWindow, Window::onScrollInput);
 
         int resX = 0, resY = 0;
         glfwGetFramebufferSize(m_glfwWindow, &resX, &resY);

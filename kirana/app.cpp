@@ -6,7 +6,6 @@
 using namespace std::placeholders;
 
 namespace constants = kirana::utils::constants;
-namespace input = kirana::window::input;
 
 
 #ifdef COMPILE_BINDINGS
@@ -36,20 +35,32 @@ void kirana::Application::onWindowClosed(Window *window)
     }
 }
 
-void kirana::Application::onKeyboardInput(input::KeyboardInput input)
+void kirana::Application::onKeyboardInput(KeyboardInput input)
 {
-    if (input.action == input::KeyAction::DOWN)
+    m_inputManager.m_callKeyboardEvent(input);
+    if (input.action == KeyAction::DOWN)
     {
-        if (input.key == input::Key::ESCAPE)
+        if (input.key == Key::ESCAPE)
             if (m_windowManager.isAnyWindowOpen())
                 m_windowManager.closeAllWindows();
-        if (input.key == input::Key::W)
+        if (input.key == Key::W)
             m_viewport.toggleWireframe();
     }
 }
 
+void kirana::Application::onMouseInput(MouseInput input)
+{
+    m_inputManager.m_callMouseEvent(input);
+}
+
+void kirana::Application::onScrollInput(double xOffset, double yOffset)
+{
+    m_inputManager.m_callScrollEvent(xOffset, yOffset);
+}
+
 kirana::Application::Application()
     : m_logger{kirana::utils::Logger::get()},
+      m_inputManager{utils::input::InputManager::get()},
       m_time{kirana::utils::Time::get()},
       m_sceneManager{kirana::scene::SceneManager::get()}
 {
@@ -80,6 +91,10 @@ void kirana::Application::init()
         [=]() { m_isRunning = false; });
     m_keyboardInputListener = m_windowManager.addOnKeyboardInputEventListener(
         std::bind(&Application::onKeyboardInput, this, _1));
+    m_mouseInputListener = m_windowManager.addOnMouseInputEventListener(
+        std::bind(&Application::onMouseInput, this, _1));
+    m_scrollInputListener = m_windowManager.addOnScrollInputEventListener(
+        std::bind(&Application::onScrollInput, this, _1, _2));
 
     m_viewportWindow = m_windowManager.createWindow("Kirana", true, true);
 
@@ -133,6 +148,8 @@ void kirana::Application::clean()
     m_windowManager.removeOnWindowCloseListener(m_windowCloseListener);
     m_windowManager.removeOnAllWindowsClosedListener(m_allWindowCloseListener);
     m_windowManager.removeOnKeyboardInputEventListener(m_keyboardInputListener);
+    m_windowManager.removeOnMouseInputEventListener(m_mouseInputListener);
+    m_windowManager.removeOnScrollInputEventListener(m_scrollInputListener);
     m_windowManager.clean();
 
     m_sceneManager.clean();

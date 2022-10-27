@@ -9,7 +9,7 @@
 #include <string>
 #include <utility>
 #include <vector>
-#include <event.hpp>
+#include <input_manager.hpp>
 #include "input_constants.hpp"
 
 // Forward declaration of Vulkan API
@@ -28,14 +28,23 @@ using std::shared_ptr;
 using std::string;
 using std::vector;
 
+using utils::Event;
+using utils::input::Key;
+using utils::input::KeyAction;
+using utils::input::KeyboardInput;
+using utils::input::MouseInput;
+using utils::input::MouseButton;
+
 class Window
 {
     friend class WindowManager;
 
   private:
-    utils::Event<Window *, std::array<uint32_t, 2>> m_onWindowResize;
-    utils::Event<Window *> m_onWindowClose;
-    utils::Event<Window *, input::KeyboardInput> m_onKeyboardInput;
+    Event<Window *, std::array<uint32_t, 2>> m_onWindowResize;
+    Event<Window *> m_onWindowClose;
+    Event<Window *, KeyboardInput> m_onKeyboardInput;
+    Event<Window *, MouseInput> m_onMouseInput;
+    Event<Window *, double, double> m_onScrollInput;
 
     string m_name = "Window";
     bool m_fullscreen = true;
@@ -60,16 +69,35 @@ class Window
      */
     static void onWindowClosed(GLFWwindow *glfwWindow);
     /**
-     * Called by GLFW when a keyboard key is pressed, released or held down.
+     * Called by GLFW when a keyboard button is pressed, released or held down.
      * @param window The current window on focus.
-     * @param key GLFW keycode for key.
-     * @param scancode Unique identifier of the key (system-specific).
+     * @param key GLFW keycode for button.
+     * @param scancode Unique identifier of the button (system-specific).
      * @param action One of GLFW_RELEASE, GLFW_PRESS, GLFW_REPEAT.
      * @param mods Bit field describing which modifier keys were held down (Like
      * SHIFT, CTRL etc.).
      */
     static void onKeyboardInput(GLFWwindow *window, int key, int scancode,
                                 int action, int mods);
+    /**
+     * Called by GLFW when a mouse button is pressed, released or held down.
+     * @param window The current window on focus.
+     * @param key GLFW keycode for mouse button.
+     * @param action One of GLFW_RELEASE, GLFW_PRESS, GLFW_REPEAT.
+     * @param mods Bit field describing which modifier keys were held down (Like
+     * SHIFT, CTRL etc.).
+     */
+    static void onMouseInput(GLFWwindow *window, int button, int action,
+                             int mods);
+    /**
+     * Called by GLFW when a scrolling device is used (mouse, touchpad).
+     * @param window The current window on focus.
+     * @param xOffset The scroll offset along X-axis.
+     * @param yOffset The scroll offset along Y-axis. Mouse scroll values will
+     * be in this axis.
+     */
+    static void onScrollInput(GLFWwindow *window, double xOffset,
+                              double yOffset);
     /**
      *@brief Adds the callback function which is called when a window is
      * resized.
@@ -124,7 +152,7 @@ class Window
      * later to remove the callback function from being called.
      */
     inline uint32_t addOnKeyboardInputEventListener(
-        const std::function<void(Window *, input::KeyboardInput)> &callback)
+        const std::function<void(Window *, KeyboardInput)> &callback)
     {
         return m_onKeyboardInput.addListener(callback);
     }
@@ -136,6 +164,46 @@ class Window
     inline void removeOnKeyboardInputEventListener(uint32_t callbackID)
     {
         m_onKeyboardInput.removeListener(callbackID);
+    }
+    /** Adds a callback function for mouse input.
+     *
+     * @param callback The function to be called on input.
+     * uint32_t Unique identifier for the callback function. Use this id
+     * later to remove the callback function from being called.
+     */
+    inline uint32_t addOnMouseInputEventListener(
+        const std::function<void(Window *, MouseInput)> &callback)
+    {
+        return m_onMouseInput.addListener(callback);
+    }
+    /** Removes the callback function for mouse input with given identifier
+     * from being called after the event.
+     *
+     * @param callbackID
+     */
+    inline void removeOnMouseInputEventListener(uint32_t callbackID)
+    {
+        m_onMouseInput.removeListener(callbackID);
+    }
+    /** Adds a callback function for scroll input.
+     *
+     * @param callback The function to be called on input.
+     * uint32_t Unique identifier for the callback function. Use this id
+     * later to remove the callback function from being called.
+     */
+    inline uint32_t addOnScrollInputEventListener(
+        const std::function<void(Window *, double, double)> &callback)
+    {
+        return m_onScrollInput.addListener(callback);
+    }
+    /** Removes the callback function for scroll input with given identifier
+     * from being called after the event.
+     *
+     * @param callbackID
+     */
+    inline void removeOnScrollInputEventListener(uint32_t callbackID)
+    {
+        m_onScrollInput.removeListener(callbackID);
     }
 
     /// Creates the actual window from given specification.
