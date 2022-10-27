@@ -1,15 +1,17 @@
 #include "vector3.hpp"
+#include "vector2.hpp"
 #include "vector4.hpp"
 
 #include <iostream>
 #include <cmath>
 #include <limits>
 
+using kirana::math::Vector2;
 using kirana::math::Vector3;
 using kirana::math::Vector4;
 
 const Vector3 Vector3::ZERO{0.0f, 0.0f, 0.0f};
-const Vector3 Vector3::ONE{1.0f, 1.0f, 1.0};
+const Vector3 Vector3::ONE{1.0f, 1.0f, 1.0f};
 const Vector3 Vector3::UP{0.0f, 1.0f, 0.0f};
 const Vector3 Vector3::DOWN{0.0f, -1.0f, 0.0f};
 const Vector3 Vector3::LEFT{-1.0f, 0.0f, 0.0f};
@@ -21,6 +23,9 @@ Vector3::Vector3(float x, float y, float z) : m_current{x, y, z}
 {
 }
 
+Vector3::Vector3(const Vector2 &vec2) : m_current{vec2[0], vec2[1], 0.0f}
+{
+}
 
 Vector3::Vector3(const Vector4 &vec4) : m_current{vec4[0], vec4[1], vec4[2]}
 {
@@ -28,20 +33,28 @@ Vector3::Vector3(const Vector4 &vec4) : m_current{vec4[0], vec4[1], vec4[2]}
 
 Vector3::Vector3(const Vector3 &vec3)
 {
-    m_current[0] = vec3[0];
-    m_current[1] = vec3[1];
-    m_current[2] = vec3[2];
+    if (this != &vec3)
+    {
+        m_current[0] = vec3[0];
+        m_current[1] = vec3[1];
+        m_current[2] = vec3[2];
+    }
 }
 
 Vector3 &Vector3::operator=(const Vector3 &vec3)
 {
-    if (&vec3 != this)
+    if (this != &vec3)
     {
         m_current[0] = vec3[0];
         m_current[1] = vec3[1];
         m_current[2] = vec3[2];
     }
     return *this;
+}
+
+Vector3::operator Vector2() const
+{
+    return Vector2(m_current[0], m_current[1]);
 }
 
 Vector3::operator Vector4() const

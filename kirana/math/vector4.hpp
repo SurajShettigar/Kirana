@@ -7,6 +7,7 @@
 
 namespace kirana::math
 {
+class Vector2;
 class Vector3;
 class Vector4
 {
@@ -14,15 +15,21 @@ class Vector4
     float m_current[4]{0, 0, 0, 0};
 
   public:
+    // static values
+    static const Vector4 ZERO;
+    static const Vector4 ONE;
 
     Vector4() = default;
     ~Vector4() = default;
     explicit Vector4(float x, float y, float z, float w);
+    explicit Vector4(const Vector2 &vec2, float z = 0.0f, float w = 0.0f);
     explicit Vector4(const Vector3 &vec3, float w = 0.0f);
 
     Vector4(const Vector4 &vec4);
     Vector4 &operator=(const Vector4 &vec4);
 
+    /// Cast to Vector2
+    explicit operator Vector2() const;
     /// Cast to Vector3
     explicit operator Vector3() const;
 
