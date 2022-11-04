@@ -312,5 +312,6 @@ void kirana::viewport::vulkan::SceneData::updateWorldDataBuffer(
     vk::DeviceSize paddedSize =
         vulkan::padUniformBufferSize(m_device->gpu, sizeof(scene::WorldData));
     m_allocator->mapToMemory(m_worldDataBuffer, sizeof(scene::WorldData),
-                             paddedSize * offsetIndex, &m_scene.getWorldData());
+                             static_cast<uint32_t>(paddedSize * offsetIndex),
+                             &m_scene.getWorldData());
 }

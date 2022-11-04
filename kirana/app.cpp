@@ -179,9 +179,9 @@ void kirana::Application::run()
  *
  */
 #ifdef COMPILE_BINDINGS
-PYBIND11_MODULE(kirana_app, m_current)
+PYBIND11_MODULE(PY_MODULE_NAME, m)
 {
-    py::class_<kirana::Application>(m_current, "Application")
+    py::class_<kirana::Application>(m, "Application")
         .def(py::init())
         .def("run", &kirana::Application::run);
 }
