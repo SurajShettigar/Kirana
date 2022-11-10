@@ -6,41 +6,43 @@
 #include <vector>
 #include <input_manager.hpp>
 
-#include "window.hpp"
+#include "api_window.hpp"
+#include "platform_window.hpp"
 
 namespace kirana::window
 {
 
-using std::shared_ptr;
 using std::string;
 using std::vector;
 
-using kirana::utils::input::KeyboardInput;
-using kirana::utils::input::MouseInput;
-using kirana::utils::input::MouseButton;
 using kirana::utils::Event;
+using kirana::utils::input::KeyboardInput;
+using kirana::utils::input::MouseButton;
+using kirana::utils::input::MouseInput;
 
 class WindowManager
 {
   private:
     bool m_isInitialized = false;
 
-    vector<shared_ptr<Window>> m_windows;
+    vector<std::shared_ptr<Window>> m_windows;
 
-    Event<Window *, std::array<uint32_t, 2>> m_onWindowResize;
-    Event<Window *> m_onWindowClose;
+    Event<const Window *, std::array<uint32_t, 2>> m_onWindowResize;
+    Event<const Window *> m_onWindowClose;
     Event<> m_onAllWindowsClose;
     Event<KeyboardInput> m_onKeyboardInput;
     Event<MouseInput> m_onMouseInput;
     Event<double, double> m_onScrollInput;
 
-    void onWindowClosed(Window *window);
+    void onWindowClosed(const Window *window);
 
   public:
     WindowManager() = default;
     ~WindowManager() = default;
     WindowManager(const WindowManager &window) = delete;
     WindowManager &operator=(const WindowManager &window) = delete;
+
+    const bool &isInitialized = m_isInitialized;
 
     inline bool isAnyWindowOpen()
     {
@@ -62,7 +64,8 @@ class WindowManager
      * later to remove the callback function from being called.
      */
     inline uint32_t addOnWindowResizeListener(
-        const std::function<void(Window *, std::array<uint32_t, 2>)> &callback)
+        const std::function<void(const Window *, std::array<uint32_t, 2>)>
+            &callback)
     {
         return m_onWindowResize.addListener(callback);
     }
@@ -85,7 +88,7 @@ class WindowManager
      * @return uint32_t
      */
     inline uint32_t addOnWindowCloseListener(
-        const std::function<void(Window *)> &callback)
+        const std::function<void(const Window *)> &callback)
     {
         return m_onWindowClose.addListener(callback);
     }
@@ -189,20 +192,37 @@ class WindowManager
      * @brief Creates a window with given specifications.
      *
      * @param name Name of the window.
+     * @param fullscreen If the window should open in fullscreen mode.
+     * @param resizable If the window should be resizable.
      * @param width Width of the window.
      * @param height Height of the window.
-     * @return std::shared_ptr<kirana::window::Window>  Shared pointer to the
-     * window object.
+     * @return Window* Pointer to the window object.
      */
-    std::shared_ptr<kirana::window::Window> createWindow(
+    [[nodiscard]]std::shared_ptr<Window> createWindow(
         const string &name = "Window", bool fullscreen = true,
         bool resizable = false, int width = 1280, int height = 720);
+
+    /** @brief Creates a Window object from the given platform specific window
+     * pointer.
+     *
+     * @param windowPointer The pointer to the platform specific window.
+     * @param name Name of the window.
+     * @param fullscreen If the window is in fullscreen mode.
+     * @param resizable If the window is resizable.
+     * @param width Width of the window.
+     * @param height Height of the window.
+     * @return Window*  Shared pointer to the window object.
+     */
+    [[nodiscard]]std::shared_ptr<Window> createWindow(
+        int windowPointer, const string &name = "Window",
+        bool fullscreen = true, bool resizable = false, int width = 1280,
+        int height = 720);
     /**
      * @brief Close the given window.
      *
      * @param window Window to be closed.
      */
-    void closeWindow(const shared_ptr<Window> &window) const;
+    void closeWindow(const Window *window) const;
     /**
      * @brief Closes all the windows.
      *
