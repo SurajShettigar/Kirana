@@ -1,11 +1,11 @@
-#include <vulkan/vulkan.hpp>
+#include <vulkan/vulkan.h>
+#include "api_window.hpp"
 
-#include "window.hpp"
-
-void kirana::window::Window::onWindowResized(GLFWwindow *glfwWindow, int width,
-                                             int height)
+void kirana::window::APIWindow::onWindowResized(GLFWwindow *glfwWindow,
+                                                int width, int height)
 {
-    auto *currWin = static_cast<Window *>(glfwGetWindowUserPointer(glfwWindow));
+    auto *currWin =
+        static_cast<APIWindow *>(glfwGetWindowUserPointer(glfwWindow));
     if (currWin)
     {
         currWin->m_resolution[0] = static_cast<uint32_t>(width);
@@ -14,29 +14,22 @@ void kirana::window::Window::onWindowResized(GLFWwindow *glfwWindow, int width,
     }
 }
 
-void kirana::window::Window::onWindowClosed(GLFWwindow *glfwWindow)
+void kirana::window::APIWindow::onWindowClosed(GLFWwindow *glfwWindow)
 {
-    auto *currWin = static_cast<Window *>(glfwGetWindowUserPointer(glfwWindow));
+    auto *currWin =
+        static_cast<APIWindow *>(glfwGetWindowUserPointer(glfwWindow));
     if (currWin)
     {
         currWin->m_onWindowClose(currWin);
-        glfwSetWindowUserPointer(glfwWindow, nullptr);
-        glfwSetFramebufferSizeCallback(glfwWindow, nullptr);
-        glfwSetWindowCloseCallback(glfwWindow, nullptr);
-        glfwSetKeyCallback(glfwWindow, nullptr);
-        glfwSetMouseButtonCallback(glfwWindow, nullptr);
-        glfwSetScrollCallback(glfwWindow, nullptr);
-        glfwDestroyWindow(glfwWindow);
-        currWin->m_onWindowResize.removeAllListeners();
-        currWin->m_onWindowClose.removeAllListeners();
-        currWin->m_onKeyboardInput.removeAllListeners();
+        currWin->clean();
     }
 }
 
-void kirana::window::Window::onKeyboardInput(GLFWwindow *window, int key,
-                                             int scancode, int action, int mods)
+void kirana::window::APIWindow::onKeyboardInput(GLFWwindow *window, int key,
+                                                int scancode, int action,
+                                                int mods)
 {
-    auto *currWin = static_cast<Window *>(glfwGetWindowUserPointer(window));
+    auto *currWin = static_cast<APIWindow *>(glfwGetWindowUserPointer(window));
     if (currWin)
     {
         currWin->m_onKeyboardInput(currWin,
@@ -46,10 +39,10 @@ void kirana::window::Window::onKeyboardInput(GLFWwindow *window, int key,
     }
 }
 
-void kirana::window::Window::onMouseInput(GLFWwindow *window, int button,
-                                          int action, int mods)
+void kirana::window::APIWindow::onMouseInput(GLFWwindow *window, int button,
+                                             int action, int mods)
 {
-    auto *currWin = static_cast<Window *>(glfwGetWindowUserPointer(window));
+    auto *currWin = static_cast<APIWindow *>(glfwGetWindowUserPointer(window));
     if (currWin)
     {
         currWin->m_onMouseInput(currWin,
@@ -59,17 +52,17 @@ void kirana::window::Window::onMouseInput(GLFWwindow *window, int button,
     }
 }
 
-void kirana::window::Window::onScrollInput(GLFWwindow *window, double xOffset,
-                   double yOffset)
+void kirana::window::APIWindow::onScrollInput(GLFWwindow *window,
+                                              double xOffset, double yOffset)
 {
-    auto *currWin = static_cast<Window *>(glfwGetWindowUserPointer(window));
+    auto *currWin = static_cast<APIWindow *>(glfwGetWindowUserPointer(window));
     if (currWin)
     {
         currWin->m_onScrollInput(currWin, xOffset, yOffset);
     }
 }
 
-void kirana::window::Window::create()
+void kirana::window::APIWindow::create()
 {
     glfwWindowHint(GLFW_RESIZABLE, m_resizable);
     GLFWmonitor *monitor = glfwGetPrimaryMonitor();
@@ -91,11 +84,12 @@ void kirana::window::Window::create()
         glfwSetWindowSizeLimits(m_glfwWindow, m_width, m_height, mode->width,
                                 mode->height);
         glfwSetWindowUserPointer(m_glfwWindow, this);
-        glfwSetFramebufferSizeCallback(m_glfwWindow, Window::onWindowResized);
-        glfwSetWindowCloseCallback(m_glfwWindow, Window::onWindowClosed);
-        glfwSetKeyCallback(m_glfwWindow, Window::onKeyboardInput);
-        glfwSetMouseButtonCallback(m_glfwWindow, Window::onMouseInput);
-        glfwSetScrollCallback(m_glfwWindow, Window::onScrollInput);
+        glfwSetFramebufferSizeCallback(m_glfwWindow,
+                                       APIWindow::onWindowResized);
+        glfwSetWindowCloseCallback(m_glfwWindow, APIWindow::onWindowClosed);
+        glfwSetKeyCallback(m_glfwWindow, APIWindow::onKeyboardInput);
+        glfwSetMouseButtonCallback(m_glfwWindow, APIWindow::onMouseInput);
+        glfwSetScrollCallback(m_glfwWindow, APIWindow::onScrollInput);
 
         int resX = 0, resY = 0;
         glfwGetFramebufferSize(m_glfwWindow, &resX, &resY);
@@ -104,33 +98,49 @@ void kirana::window::Window::create()
     }
 }
 
-void kirana::window::Window::update() const
+void kirana::window::APIWindow::update() const
 {
     if (!glfwWindowShouldClose(m_glfwWindow))
     {
         return;
     }
-    else
-        Window::onWindowClosed(m_glfwWindow);
+    else if (m_glfwWindow != nullptr)
+        APIWindow::onWindowClosed(m_glfwWindow);
 }
 
-void kirana::window::Window::close() const
+void kirana::window::APIWindow::close() const
 {
     if (m_glfwWindow)
         glfwSetWindowShouldClose(m_glfwWindow, GLFW_TRUE);
 }
 
-VkResult kirana::window::Window::getVulkanWindowSurface(
+void kirana::window::APIWindow::clean() const
+{
+    glfwSetWindowUserPointer(m_glfwWindow, nullptr);
+    glfwSetFramebufferSizeCallback(m_glfwWindow, nullptr);
+    glfwSetWindowCloseCallback(m_glfwWindow, nullptr);
+    glfwSetKeyCallback(m_glfwWindow, nullptr);
+    glfwSetMouseButtonCallback(m_glfwWindow, nullptr);
+    glfwSetScrollCallback(m_glfwWindow, nullptr);
+    glfwDestroyWindow(m_glfwWindow);
+    Window::clean();
+}
+
+VkResult kirana::window::APIWindow::getVulkanWindowSurface(
     VkInstance instance, const VkAllocationCallbacks *allocator,
     VkSurfaceKHR *surface) const
 {
     return glfwCreateWindowSurface(instance, m_glfwWindow, allocator, surface);
 }
 
-std::vector<const char *> kirana::window::Window::
-    getReqInstanceExtensionsForVulkan()
+std::vector<const char *> kirana::window::APIWindow::
+    getReqInstanceExtensionsForVulkan() const
 {
     uint32_t count = 0;
     const char **exts = glfwGetRequiredInstanceExtensions(&count);
+    for(uint32_t i = 0; i < count; i++)
+    {
+        std::cout << exts[i] << std::endl;
+    }
     return std::vector<const char *>(exts, exts + count);
 }
