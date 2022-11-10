@@ -41,6 +41,7 @@ if (EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/venv/Scripts/python.exe")
     if (${Python_FOUND})
         message("Found Python: " ${Python_VERSION})
         message("Python Location: " ${Python_EXECUTABLE})
+        message("Python Library Location: " ${Python_SITELIB})
         # Setup python libraries
         message("Downloading required Python libraries...")
         execute_process(
@@ -48,7 +49,7 @@ if (EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/venv/Scripts/python.exe")
         )
     endif ()
 else ()
-    message("Failed to find Python virtual environment")
+    message(FATAL_ERROR "Failed to find Python virtual environment")
 endif ()
 
 

@@ -27,8 +27,8 @@ using kirana::utils::input::InputManager;
 using kirana::utils::input::Key;
 using kirana::utils::input::KeyAction;
 using kirana::utils::input::KeyboardInput;
-using kirana::utils::input::MouseInput;
 using kirana::utils::input::MouseButton;
+using kirana::utils::input::MouseInput;
 
 /**
  * As the m_name suggests, this class is the entry point of the entire
@@ -42,6 +42,10 @@ class Application
   private:
     bool m_isRunning = false;
     bool m_isViewportRunning = false;
+
+    int m_windowPointer = 0;
+    uint32_t m_windowWidth = 0;
+    uint32_t m_windowHeight = 0;
 
     utils::Logger &m_logger;
     utils::Time &m_time;
@@ -59,7 +63,7 @@ class Application
 
     scene::SceneManager &m_sceneManager;
 
-    shared_ptr<Window> m_viewportWindow;
+    std::shared_ptr<Window> m_viewportWindow;
     Viewport m_viewport;
 
     /**
@@ -67,16 +71,17 @@ class Application
      * @param window Pointer to the window object which was resized.
      * @param resolution New resolution of the window.
      */
-    void onWindowResized(Window *window, std::array<uint32_t, 2> resolution);
+    void onWindowResized(const Window *window,
+                         std::array<uint32_t, 2> resolution);
     /**
      * Used as a callback function for window close event.
      * @param window Pointer to the window object which was closed.
      */
-    void onWindowClosed(Window *window);
+    void onWindowClosed(const Window *window);
     /**
      * Used as a callback function for keyboard input event.
-     * @param input Struct containing button, action performed and the modifier button
-     * (CTRL, SHIFT,...) held.
+     * @param input Struct containing button, action performed and the modifier
+     * button (CTRL, SHIFT,...) held.
      */
     void onKeyboardInput(KeyboardInput input);
     /**
@@ -116,6 +121,7 @@ class Application
 
     /// Runs the application.
     void run();
+    void run(long windowId, uint32_t width, uint32_t height);
 };
 } // namespace kirana
 

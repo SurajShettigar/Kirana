@@ -4,6 +4,7 @@
 #include "viewport_types.hpp"
 
 #include <memory>
+#include <array>
 
 // Forward declarations
 namespace kirana
@@ -31,7 +32,7 @@ using window::Window;
 class Viewport
 {
   private:
-    shared_ptr<window::Window> m_window;
+    const window::Window *m_window;
     VulkanRenderer &m_renderer;
     Shading m_prevShading = Shading::BASIC;
     Shading m_currentShading = Shading::BASIC;
@@ -41,7 +42,7 @@ class Viewport
     ~Viewport() = default;
 
     /// Initializes the viewport by binding the window to the renderer (Vulkan).
-    void init(const shared_ptr<Window> &window, const scene::Scene &scene,
+    void init(const window::Window *window, const scene::Scene &scene,
               Shading shading = Shading::BASIC);
     /// Calls the update function of the renderer.
     void update();

@@ -9,4 +9,7 @@
       <file path="$PROJECT_DIR$/data" />
     </excludeRoots>
   </component>
+  <component name="PythonCompatibilityInspectionAdvertiser">
+    <option name="version" value="3" />
+  </component>
 </project>

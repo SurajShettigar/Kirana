@@ -23,8 +23,7 @@ void kirana::viewport::vulkan::VulkanRenderer::init(
     uint16_t shadingIndex)
 {
     m_window = window;
-    m_instance = new Instance(
-        kirana::window::Window::getReqInstanceExtensionsForVulkan());
+    m_instance = new Instance(m_window->getReqInstanceExtensionsForVulkan());
     if (m_instance && m_instance->isInitialized)
         m_surface = new Surface(m_instance, window);
     if (m_surface && m_surface->isInitialized)
@@ -36,7 +35,7 @@ void kirana::viewport::vulkan::VulkanRenderer::init(
     }
     if (m_swapchain && m_swapchain->isInitialized)
         m_depthBuffer =
-            new DepthBuffer(m_device, m_allocator, window->resolution);
+            new DepthBuffer(m_device, m_allocator, m_window->resolution);
     if (m_depthBuffer && m_depthBuffer->isInitialized)
         m_renderpass = new RenderPass(m_device, m_swapchain, m_depthBuffer);
 
