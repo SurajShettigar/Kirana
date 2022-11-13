@@ -27,8 +27,8 @@ using std::string;
 using std::vector;
 
 using utils::Event;
-using utils::input::KeyAction;
 using utils::input::Key;
+using utils::input::KeyAction;
 using utils::input::KeyboardInput;
 using utils::input::MouseButton;
 using utils::input::MouseInput;
@@ -59,7 +59,8 @@ class Window
      * later to remove the callback function from being called.
      */
     inline uint32_t addOnWindowResizeListener(
-        const std::function<void(const Window *, std::array<uint32_t, 2>)> &callback)
+        const std::function<void(const Window *, std::array<uint32_t, 2>)>
+            &callback)
     {
         return m_onWindowResize.addListener(callback);
     }
@@ -174,6 +175,7 @@ class Window
         m_onMouseInput.removeAllListeners();
         m_onScrollInput.removeAllListeners();
     }
+
   public:
     explicit Window(string name = "Window", bool fullscreen = true,
                     bool resizable = false, int width = 1280, int height = 720)
@@ -185,6 +187,8 @@ class Window
 
     /// The pixel resolution of the framebuffer of the window.
     const array<uint32_t, 2> &resolution = m_resolution;
+
+    const std::string &name = m_name;
 
     /**
      * @brief Get the Vulkan Window Surface object for the current window.
@@ -206,7 +210,20 @@ class Window
      */
     [[nodiscard]] virtual std::vector<const char *>
     getReqInstanceExtensionsForVulkan() const = 0;
+
+#ifdef COMPILE_BINDINGS
+    static void onWindowResizeBindFunc(Window &window, uint32_t width,
+                                       uint32_t height)
+    {
+        window.m_resolution[0] = width;
+        window.m_resolution[1] = height;
+        window.m_onWindowResize(&window, {width, height});
+    }
+    static void onWindowCloseBindFunc(Window &window)
+    {
+        window.m_onWindowClose(&window);
+    }
+#endif
 };
 } // namespace kirana::window
-
 #endif
