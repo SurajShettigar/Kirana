@@ -122,6 +122,14 @@ class Application
     /// Runs the application.
     void run();
     void run(long windowId, uint32_t width, uint32_t height);
+
+    [[nodiscard]] inline std::shared_ptr<Window> getViewportWindow()
+    {
+        if (m_viewportWindow)
+            return m_viewportWindow;
+        else
+            return nullptr;
+    }
 };
 } // namespace kirana
 

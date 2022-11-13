@@ -8,15 +8,11 @@ using namespace std::placeholders;
 
 namespace constants = kirana::utils::constants;
 
-
-#ifdef COMPILE_BINDINGS
-#include <pybind11/pybind11.h>
-namespace py = pybind11;
-#endif
-
 void kirana::Application::onWindowResized(const kirana::window::Window *window,
                                           std::array<uint32_t, 2> resolution)
 {
+    std::cout << "Window Resized: " << resolution[0] << "x" << resolution[1]
+              << std::endl;
     if (window == m_viewportWindow.get())
     {
         m_sceneManager.getCurrentScene().updateCameraResolution(resolution);
@@ -195,17 +191,3 @@ void kirana::Application::run(long windowId, uint32_t width, uint32_t height)
     m_windowHeight = height;
     run();
 }
-
-/**
- * @brief Construct Python Binding for Application
- *
- */
-#ifdef COMPILE_BINDINGS
-PYBIND11_MODULE(PY_MODULE_NAME, m)
-{
-    py::class_<kirana::Application>(m, "Application")
-        .def(py::init())
-        .def("run", static_cast<void (kirana::Application::*)(
-                        long, uint32_t, uint32_t)>(&kirana::Application::run));
-}
-#endif

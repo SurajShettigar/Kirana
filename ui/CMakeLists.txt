@@ -1,10 +1,10 @@
 # Generate python bindings
-pybind11_add_module(KiranaPython ../kirana/app.cpp)
+pybind11_add_module(KiranaPython ../kirana/app.cpp ../kirana/app_bindings.cpp)
 target_include_directories(KiranaPython PRIVATE ../kirana)
 target_include_directories(KiranaPython PRIVATE ${pybind11_INCLUDE_DIR})
-target_link_libraries(KiranaPython PRIVATE utils window scene viewport)
 target_compile_definitions(KiranaPython PRIVATE COMPILE_BINDINGS
         PY_MODULE_NAME=KiranaPython)
+target_link_libraries(KiranaPython PRIVATE utils window scene viewport)
 set_target_properties(KiranaPython PROPERTIES
         CXX_VISIBILITY_PRESET ON
         VISIBILITY_INLINES_HIDDEN ON
