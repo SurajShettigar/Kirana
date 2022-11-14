@@ -5,7 +5,7 @@ from enum import Enum
 
 from PySide2.QtUiTools import QUiLoader
 from PySide2.QtCore import QFile, QIODevice, Qt, QObject, QEvent
-from PySide2.QtWidgets import QDockWidget, QMainWindow
+from PySide2.QtWidgets import QDockWidget, QMainWindow, QLayout
 
 
 class DockType(Enum):
@@ -22,10 +22,14 @@ class AppWindow(QObject):
             print(f"Cannot open Main Window UI file")
         loader = QUiLoader()
         self.qt_window: QMainWindow = loader.load(ui_file)
+        self._viewport_dock: QDockWidget = self.qt_window.findChild(QDockWidget, "viewport_dock")
+        self._scene_hierarchy_dock: QDockWidget = self.qt_window.findChild(QDockWidget, "scene_hierarchy_dock")
+        self._object_properties_dock: QDockWidget = self.qt_window.findChild(QDockWidget, "object_properties_dock")
+
         self.qt_window.installEventFilter(self)
         ui_file.close()
 
-        self._close_callbacks: List[Callable[[None], None]] = []
+        self._close_callbacks: List[Callable[[], None]] = []
 
     def eventFilter(self, event_object: QObject, event: QEvent) -> bool:
         if event_object == self.qt_window:
@@ -48,10 +52,10 @@ class AppWindow(QObject):
         return self.qt_window is not None
 
     # Event Listeners
-    def add_close_listener(self, callback: Callable[[None], None]):
+    def add_close_listener(self, callback: Callable[[], None]):
         self._close_callbacks.append(callback)
 
-    def remove_close_listener(self, callback: Callable[[None], None]):
+    def remove_close_listener(self, callback: Callable[[], None]):
         if self._close_callbacks.count(callback) > 0:
             self._close_callbacks.remove(callback)
 
@@ -71,8 +75,8 @@ class AppWindow(QObject):
 
     def get_dock(self, dock_type: DockType) -> QDockWidget:
         if dock_type == DockType.VIEWPORT:
-            return self.qt_window.findChild(QDockWidget, "viewport_dock")
+            return self._viewport_dock
         if dock_type == DockType.SCENE_HIERARCHY:
-            return self.qt_window.findChild(QDockWidget, "scene_hierarchy_dock")
+            return self._scene_hierarchy_dock
         if dock_type == DockType.OBJECT_PROPERTIES:
-            return self.qt_window.findChild(QDockWidget, "object_properties_dock")
+            return self._object_properties_dock
