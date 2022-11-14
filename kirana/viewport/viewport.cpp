@@ -16,7 +16,7 @@ kirana::viewport::Viewport::Viewport()
 }
 
 void kirana::viewport::Viewport::init(const window::Window *window,
-                                      const scene::Scene &scene,
+                                      scene::Scene &scene,
                                       Shading shading)
 {
     m_window = window;

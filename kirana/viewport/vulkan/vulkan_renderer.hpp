@@ -63,7 +63,7 @@ class VulkanRenderer
     }
 
     /// Initializes vulkan.
-    void init(const window::Window *window, const scene::Scene &scene,
+    void init(const window::Window *window, scene::Scene &scene,
               uint16_t shadingIndex);
     /// Updates the transforms.
     void update();

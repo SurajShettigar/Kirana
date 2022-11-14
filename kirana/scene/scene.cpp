@@ -113,10 +113,3 @@ std::vector<kirana::math::Transform *> kirana::scene::Scene::
     }
     return transforms;
 }
-
-void kirana::scene::Scene::updateCameraResolution(
-    std::array<uint32_t, 2> resolution) const
-{
-    m_camera.setResolution(resolution);
-    m_onCameraChange();
-}

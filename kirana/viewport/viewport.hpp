@@ -42,7 +42,7 @@ class Viewport
     ~Viewport() = default;
 
     /// Initializes the viewport by binding the window to the renderer (Vulkan).
-    void init(const window::Window *window, const scene::Scene &scene,
+    void init(const window::Window *window, scene::Scene &scene,
               Shading shading = Shading::BASIC);
     /// Calls the update function of the renderer.
     void update();

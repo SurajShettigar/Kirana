@@ -8,7 +8,7 @@
 
 namespace constants = kirana::utils::constants;
 
-const kirana::scene::Scene &kirana::scene::SceneManager::loadScene(
+kirana::scene::Scene &kirana::scene::SceneManager::loadScene(
     std::string path, const SceneImportSettings &importSettings)
 {
     if (path.empty())

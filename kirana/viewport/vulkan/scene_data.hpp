@@ -36,7 +36,9 @@ class SceneData
     const RenderPass *m_renderPass;
     const DescriptorSetLayout *const m_globalDescSetLayout;
 
-    const scene::Scene &m_scene;
+    scene::Scene &m_scene;
+    uint32_t m_cameraChangeListener;
+    uint32_t m_worldChangeListener;
 
     void setVertexDescription();
     const Shader *createShader(const std::string &shaderName);
@@ -46,11 +48,13 @@ class SceneData
 
     MaterialData &findMaterial(const std::string &materialName);
 
+    void onCameraChanged();
+    void onWorldChanged();
   public:
     SceneData(const Device *device, const Allocator *allocator,
               const RenderPass *renderPass,
               const DescriptorSetLayout *globalDescSetLayout,
-              const scene::Scene &scene, uint16_t shadingIndex = 0);
+              scene::Scene &scene, uint16_t shadingIndex = 0);
     ~SceneData();
 
     SceneData(const SceneData &sceneData) = delete;
@@ -66,7 +70,6 @@ class SceneData
 
     [[nodiscard]] const AllocatedBuffer &getWorldDataBuffer() const;
     [[nodiscard]] uint32_t getWorldDataBufferOffset(uint32_t offsetIndex) const;
-    void updateWorldDataBuffer(uint32_t offsetIndex) const;
 };
 } // namespace kirana::viewport::vulkan
 #endif

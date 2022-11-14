@@ -24,7 +24,6 @@ class Scene
     friend class SceneManager;
 
   private:
-    utils::Event<> m_onCameraChange;
     utils::Event<> m_onWorldChange;
 
     bool m_isInitialized = false;
@@ -79,24 +78,15 @@ class Scene
     {
         return m_materials;
     }
-    [[nodiscard]] inline const WorldData &getWorldData() const
+    [[nodiscard]] inline WorldData &getWorldData()
     {
         return m_worldData;
     }
-    [[nodiscard]] inline const PerspectiveCamera &getCamera() const
+    [[nodiscard]] inline PerspectiveCamera &getCamera()
     {
         return m_camera;
     }
 
-    inline uint32_t addOnCameraChangeEventListener(
-        const std::function<void()> &callback)
-    {
-        return m_onCameraChange.addListener(callback);
-    }
-    inline void removeOnCameraChangeEventListener(uint32_t callbackID)
-    {
-        m_onCameraChange.removeListener(callbackID);
-    }
     inline uint32_t addOnWorldChangeEventListener(
         const std::function<void()> &callback)
     {
@@ -109,8 +99,6 @@ class Scene
 
     [[nodiscard]] std::vector<math::Transform *> getTransformsForMesh(
         const Mesh *mesh) const;
-
-    void updateCameraResolution(std::array<uint32_t, 2> resolution) const;
 };
 } // namespace kirana::scene
 #endif
