@@ -2,8 +2,6 @@
 #define WINDOW_HPP
 
 
-#include <GLFW/glfw3.h>
-
 #include <array>
 #include <memory>
 #include <string>
@@ -32,19 +30,19 @@ using utils::Event;
 using utils::input::Key;
 using utils::input::KeyAction;
 using utils::input::KeyboardInput;
-using utils::input::MouseInput;
 using utils::input::MouseButton;
+using utils::input::MouseInput;
 
 class Window
 {
     friend class WindowManager;
 
-  private:
-    Event<Window *, std::array<uint32_t, 2>> m_onWindowResize;
-    Event<Window *> m_onWindowClose;
-    Event<Window *, KeyboardInput> m_onKeyboardInput;
-    Event<Window *, MouseInput> m_onMouseInput;
-    Event<Window *, double, double> m_onScrollInput;
+  protected:
+    mutable Event<const Window *, std::array<uint32_t, 2>> m_onWindowResize;
+    mutable Event<const Window *> m_onWindowClose;
+    mutable Event<const Window *, KeyboardInput> m_onKeyboardInput;
+    mutable Event<const Window *, MouseInput> m_onMouseInput;
+    mutable Event<const Window *, double, double> m_onScrollInput;
 
     string m_name = "Window";
     bool m_fullscreen = true;
@@ -53,51 +51,6 @@ class Window
     int m_height = 720;
     std::array<uint32_t, 2> m_resolution{static_cast<uint32_t>(m_width),
                                          static_cast<uint32_t>(m_height)};
-    GLFWwindow *m_glfwWindow = nullptr;
-
-    /**
-     * @brief Called by GLFW when a window is resized.
-     * @param glfwWindow The window which got resized.
-     * @param width New m_width of the window.
-     * @param height New m_height of the window.
-     */
-    static void onWindowResized(GLFWwindow *glfwWindow, int width, int height);
-    /**
-     * @brief Called by GLFW when close flag of a window is set.
-     *
-     * @param glfwWindow The window which is being currently closed.
-     */
-    static void onWindowClosed(GLFWwindow *glfwWindow);
-    /**
-     * Called by GLFW when a keyboard button is pressed, released or held down.
-     * @param window The current window on focus.
-     * @param key GLFW keycode for button.
-     * @param scancode Unique identifier of the button (system-specific).
-     * @param action One of GLFW_RELEASE, GLFW_PRESS, GLFW_REPEAT.
-     * @param mods Bit field describing which modifier keys were held down (Like
-     * SHIFT, CTRL etc.).
-     */
-    static void onKeyboardInput(GLFWwindow *window, int key, int scancode,
-                                int action, int mods);
-    /**
-     * Called by GLFW when a mouse button is pressed, released or held down.
-     * @param window The current window on focus.
-     * @param key GLFW keycode for mouse button.
-     * @param action One of GLFW_RELEASE, GLFW_PRESS, GLFW_REPEAT.
-     * @param mods Bit field describing which modifier keys were held down (Like
-     * SHIFT, CTRL etc.).
-     */
-    static void onMouseInput(GLFWwindow *window, int button, int action,
-                             int mods);
-    /**
-     * Called by GLFW when a scrolling device is used (mouse, touchpad).
-     * @param window The current window on focus.
-     * @param xOffset The scroll offset along X-axis.
-     * @param yOffset The scroll offset along Y-axis. Mouse scroll values will
-     * be in this axis.
-     */
-    static void onScrollInput(GLFWwindow *window, double xOffset,
-                              double yOffset);
     /**
      *@brief Adds the callback function which is called when a window is
      * resized.
@@ -106,7 +59,8 @@ class Window
      * later to remove the callback function from being called.
      */
     inline uint32_t addOnWindowResizeListener(
-        const std::function<void(Window *, std::array<uint32_t, 2>)> &callback)
+        const std::function<void(const Window *, std::array<uint32_t, 2>)>
+            &callback)
     {
         return m_onWindowResize.addListener(callback);
     }
@@ -130,7 +84,7 @@ class Window
      * later to remove the callback function from being called.
      */
     inline uint32_t addOnWindowCloseListener(
-        const std::function<void(Window *)> &callback)
+        const std::function<void(const Window *)> &callback)
     {
         return m_onWindowClose.addListener(callback);
     }
@@ -152,7 +106,7 @@ class Window
      * later to remove the callback function from being called.
      */
     inline uint32_t addOnKeyboardInputEventListener(
-        const std::function<void(Window *, KeyboardInput)> &callback)
+        const std::function<void(const Window *, KeyboardInput)> &callback)
     {
         return m_onKeyboardInput.addListener(callback);
     }
@@ -172,7 +126,7 @@ class Window
      * later to remove the callback function from being called.
      */
     inline uint32_t addOnMouseInputEventListener(
-        const std::function<void(Window *, MouseInput)> &callback)
+        const std::function<void(const Window *, MouseInput)> &callback)
     {
         return m_onMouseInput.addListener(callback);
     }
@@ -192,7 +146,7 @@ class Window
      * later to remove the callback function from being called.
      */
     inline uint32_t addOnScrollInputEventListener(
-        const std::function<void(Window *, double, double)> &callback)
+        const std::function<void(const Window *, double, double)> &callback)
     {
         return m_onScrollInput.addListener(callback);
     }
@@ -207,29 +161,34 @@ class Window
     }
 
     /// Creates the actual window from given specification.
-    void create();
+    virtual void create() = 0;
     /// Updates the window and checks for events. Called every frame.
-    void update() const;
+    virtual void update() const = 0;
     /// Closes the window.
-    void close() const;
+    virtual void close() const = 0;
+    /// Cleans the window.
+    virtual void clean() const
+    {
+        m_onWindowResize.removeAllListeners();
+        m_onWindowClose.removeAllListeners();
+        m_onKeyboardInput.removeAllListeners();
+        m_onMouseInput.removeAllListeners();
+        m_onScrollInput.removeAllListeners();
+    }
 
   public:
     explicit Window(string name = "Window", bool fullscreen = true,
                     bool resizable = false, int width = 1280, int height = 720)
-        : m_glfwWindow{nullptr}, m_name{std::move(name)},
-          m_fullscreen{fullscreen},
+        : m_name{std::move(name)}, m_fullscreen{fullscreen},
           m_resizable{resizable}, m_width{width}, m_height{height} {};
-    ~Window() = default;
+    virtual ~Window() = default;
     Window(const Window &window) = delete;
     Window &operator=(const Window &window) = delete;
 
-    inline bool operator==(const Window &rhs) const
-    {
-        return m_glfwWindow == rhs.m_glfwWindow;
-    }
-
     /// The pixel resolution of the framebuffer of the window.
     const array<uint32_t, 2> &resolution = m_resolution;
+
+    const std::string &name = m_name;
 
     /**
      * @brief Get the Vulkan Window Surface object for the current window.
@@ -239,9 +198,9 @@ class Window
      * @param surface Vulkan surface object to be initialized.
      * @return VkResult Result of the operation.
      */
-    VkResult getVulkanWindowSurface(VkInstance instance,
-                                    const VkAllocationCallbacks *allocator,
-                                    VkSurfaceKHR *surface) const;
+    virtual VkResult getVulkanWindowSurface(
+        VkInstance instance, const VkAllocationCallbacks *allocator,
+        VkSurfaceKHR *surface) const = 0;
 
     /** Gets a vector of required extensions when creating an instance of
      * Vulkan.
@@ -249,9 +208,22 @@ class Window
      * @return std::vector<const char *> A vector containing the names of the
      * required extensions.
      */
-    [[nodiscard]] static std::vector<const char *>
-    getReqInstanceExtensionsForVulkan();
+    [[nodiscard]] virtual std::vector<const char *>
+    getReqInstanceExtensionsForVulkan() const = 0;
+
+#ifdef COMPILE_BINDINGS
+    static void onWindowResizeBindFunc(Window &window, uint32_t width,
+                                       uint32_t height)
+    {
+        window.m_resolution[0] = width;
+        window.m_resolution[1] = height;
+        window.m_onWindowResize(&window, {width, height});
+    }
+    static void onWindowCloseBindFunc(Window &window)
+    {
+        window.m_onWindowClose(&window);
+    }
+#endif
 };
 } // namespace kirana::window
-
 #endif

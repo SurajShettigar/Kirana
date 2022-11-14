@@ -2,20 +2,17 @@
 #include <constants.h>
 #include <file_system.hpp>
 #include <scene_manager.hpp>
+#include <iostream>
 
 using namespace std::placeholders;
 
 namespace constants = kirana::utils::constants;
 
-
-#ifdef COMPILE_BINDINGS
-#include <pybind11/pybind11.h>
-namespace py = pybind11;
-#endif
-
-void kirana::Application::onWindowResized(kirana::window::Window *window,
+void kirana::Application::onWindowResized(const kirana::window::Window *window,
                                           std::array<uint32_t, 2> resolution)
 {
+    std::cout << "Window Resized: " << resolution[0] << "x" << resolution[1]
+              << std::endl;
     if (window == m_viewportWindow.get())
     {
         m_sceneManager.getCurrentScene().updateCameraResolution(resolution);
@@ -23,7 +20,7 @@ void kirana::Application::onWindowResized(kirana::window::Window *window,
 }
 
 
-void kirana::Application::onWindowClosed(Window *window)
+void kirana::Application::onWindowClosed(const Window *window)
 {
     if (window == m_viewportWindow.get())
     {
@@ -83,6 +80,14 @@ kirana::Application::~Application()
 void kirana::Application::init()
 {
     m_windowManager.init();
+    if (!m_windowManager.isInitialized)
+    {
+        m_logger.log(
+            constants::LOG_CHANNEL_APPLICATION, utils::LogSeverity::error,
+            "Application failed to initialize. Window Manager not initialized");
+        return;
+    }
+
     m_windowResizeListener = m_windowManager.addOnWindowResizeListener(
         std::bind(&Application::onWindowResized, this, _1, _2));
     m_windowCloseListener = m_windowManager.addOnWindowCloseListener(
@@ -96,7 +101,12 @@ void kirana::Application::init()
     m_scrollInputListener = m_windowManager.addOnScrollInputEventListener(
         std::bind(&Application::onScrollInput, this, _1, _2));
 
-    m_viewportWindow = m_windowManager.createWindow("Kirana", true, true);
+    if (m_windowPointer)
+        m_viewportWindow =
+            m_windowManager.createWindow(m_windowPointer, "Kirana", false,
+                                         false, m_windowWidth, m_windowHeight);
+    else
+        m_viewportWindow = m_windowManager.createWindow("Kirana", true, true);
 
     const scene::Scene &scene = m_sceneManager.loadScene();
     if (scene.isInitialized())
@@ -113,7 +123,7 @@ void kirana::Application::init()
     }
     m_sceneManager.init();
 
-    m_viewport.init(m_viewportWindow, scene);
+    m_viewport.init(m_viewportWindow.get(), scene);
     m_isViewportRunning = true;
 
     m_isRunning = true;
@@ -174,15 +184,10 @@ void kirana::Application::run()
     clean();
 }
 
-/**
- * @brief Construct Python Binding for Application
- *
- */
-#ifdef COMPILE_BINDINGS
-PYBIND11_MODULE(kirana_app, m_current)
+void kirana::Application::run(long windowId, uint32_t width, uint32_t height)
 {
-    py::class_<kirana::Application>(m_current, "Application")
-        .def(py::init())
-        .def("run", &kirana::Application::run);
+    m_windowPointer = windowId;
+    m_windowWidth = width;
+    m_windowHeight = height;
+    run();
 }
-#endif

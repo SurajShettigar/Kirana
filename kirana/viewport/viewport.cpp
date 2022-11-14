@@ -15,14 +15,14 @@ kirana::viewport::Viewport::Viewport()
 {
 }
 
-void kirana::viewport::Viewport::init(const shared_ptr<Window> &window,
+void kirana::viewport::Viewport::init(const window::Window *window,
                                       const scene::Scene &scene,
                                       Shading shading)
 {
     m_window = window;
     m_prevShading = m_currentShading;
     m_currentShading = shading;
-    m_renderer.init(m_window.get(), scene,
+    m_renderer.init(m_window, scene,
                     static_cast<uint16_t>(m_currentShading));
 }
 
