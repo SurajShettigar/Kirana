@@ -5,6 +5,9 @@
 
 #include <utility>
 
+struct HWND__;
+typedef HWND__ *HWND;
+
 namespace kirana::window
 {
 class PlatformWindow : public Window
@@ -13,6 +16,7 @@ class PlatformWindow : public Window
 
   protected:
     int m_windowPointer = 0;
+    HWND m_hwndWindowPointer;
 
     /// Creates the actual window from given specification.
     void create() override{};
@@ -24,13 +28,7 @@ class PlatformWindow : public Window
   public:
     explicit PlatformWindow(int windowPointer, string name = "Window",
                             bool fullscreen = true, bool resizable = false,
-                            int width = 1280, int height = 720)
-        : Window(std::move(name), fullscreen, resizable, width, height),
-          m_windowPointer{windowPointer}
-    {
-        m_resolution[0] = static_cast<uint32_t>(width);
-        m_resolution[1] = static_cast<uint32_t>(height);
-    };
+                            int width = 1280, int height = 720);
     ~PlatformWindow() override = default;
     PlatformWindow(const PlatformWindow &window) = delete;
     PlatformWindow &operator=(const PlatformWindow &window) = delete;
