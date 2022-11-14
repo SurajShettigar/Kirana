@@ -25,7 +25,6 @@ class Viewport(QObject):
             elif event.type() == QEvent.WindowActivate or event.type() == QEvent.WindowDeactivate:
                 for c in self._active_callbacks:
                     c(event.type() == QEvent.WindowActivate)
-
         return False
 
     def get_render_area_pointer(self) -> int:
