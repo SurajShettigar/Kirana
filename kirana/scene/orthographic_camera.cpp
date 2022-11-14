@@ -36,9 +36,10 @@ kirana::scene::OrthographicCamera &kirana::scene::OrthographicCamera::operator=(
 }
 
 void kirana::scene::OrthographicCamera::setResolution(
-    std::array<uint32_t, 2> resolution) const
+    std::array<uint32_t, 2> resolution)
 {
     Camera::setResolution(resolution);
     m_projection = math::Transform::getOrthographicTransform(
         m_size, m_aspectRatio, m_nearPlane, m_farPlane, m_graphicsAPI, m_flipY);
+    m_onCameraChange();
 }

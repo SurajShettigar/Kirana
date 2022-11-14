@@ -36,9 +36,9 @@ kirana::scene::Camera &kirana::scene::Camera::operator=(const Camera &camera)
     return *this;
 }
 
-void kirana::scene::Camera::setResolution(std::array<uint32_t, 2> resolution) const
+void kirana::scene::Camera::setResolution(std::array<uint32_t, 2> resolution)
 {
-    m_windowResolution = windowResolution;
+    m_windowResolution = resolution;
     m_aspectRatio = static_cast<float>(m_windowResolution[0]) /
                     static_cast<float>(m_windowResolution[1]);
 }

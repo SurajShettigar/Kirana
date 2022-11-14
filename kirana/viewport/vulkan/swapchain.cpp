@@ -53,7 +53,7 @@ void kirana::viewport::vulkan::Swapchain::initializeSwapchainData()
     auto presentMode = std::find_if(
         m_supportInfo.presentModes.begin(), m_supportInfo.presentModes.end(),
         [](const vk::PresentModeKHR &p) {
-            return p == vk::PresentModeKHR::eImmediate;
+            return p == vk::PresentModeKHR::eMailbox;
         });
     if (presentMode != m_supportInfo.presentModes.end())
         m_presentMode = *presentMode;

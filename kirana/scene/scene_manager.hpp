@@ -24,10 +24,10 @@ class SceneManager
         return instance;
     }
 
-    const Scene &loadScene(std::string path = "",
-                     const SceneImportSettings &importSettings =
-                         DEFAULT_SCENE_IMPORT_SETTINGS);
-    inline const Scene &getCurrentScene() const
+    Scene &loadScene(std::string path = "",
+                           const SceneImportSettings &importSettings =
+                               DEFAULT_SCENE_IMPORT_SETTINGS);
+    inline Scene &getCurrentScene()
     {
         return m_currentScene;
     }

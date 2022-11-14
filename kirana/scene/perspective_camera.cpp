@@ -35,9 +35,10 @@ kirana::scene::PerspectiveCamera &kirana::scene::PerspectiveCamera::operator=(
 }
 
 void kirana::scene::PerspectiveCamera::setResolution(
-    std::array<uint32_t, 2> resolution) const
+    std::array<uint32_t, 2> resolution)
 {
     Camera::setResolution(resolution);
     m_projection = math::Transform::getPerspectiveTransform(
         m_fov, m_aspectRatio, m_nearPlane, m_farPlane, m_graphicsAPI, m_flipY);
+    m_onCameraChange();
 }

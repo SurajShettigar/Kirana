@@ -27,7 +27,7 @@ class OrthographicCamera : public Camera
 
     const float &size = m_size;
 
-    void setResolution(std::array<uint32_t, 2> resolution)const override;
+    void setResolution(std::array<uint32_t, 2> resolution) override;
 };
 } // namespace kirana::scene
 

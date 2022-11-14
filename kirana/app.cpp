@@ -2,7 +2,6 @@
 #include <constants.h>
 #include <file_system.hpp>
 #include <scene_manager.hpp>
-#include <iostream>
 
 using namespace std::placeholders;
 
@@ -11,11 +10,9 @@ namespace constants = kirana::utils::constants;
 void kirana::Application::onWindowResized(const kirana::window::Window *window,
                                           std::array<uint32_t, 2> resolution)
 {
-    std::cout << "Window Resized: " << resolution[0] << "x" << resolution[1]
-              << std::endl;
     if (window == m_viewportWindow.get())
     {
-        m_sceneManager.getCurrentScene().updateCameraResolution(resolution);
+        m_sceneManager.getCurrentScene().getCamera().setResolution(resolution);
     }
 }
 
@@ -108,10 +105,10 @@ void kirana::Application::init()
     else
         m_viewportWindow = m_windowManager.createWindow("Kirana", true, true);
 
-    const scene::Scene &scene = m_sceneManager.loadScene();
+    scene::Scene &scene = m_sceneManager.loadScene();
     if (scene.isInitialized())
     {
-        scene.updateCameraResolution(m_viewportWindow->resolution);
+        scene.getCamera().setResolution(m_viewportWindow->resolution);
         m_logger.log(constants::LOG_CHANNEL_APPLICATION,
                      utils::LogSeverity::debug,
                      "Loaded default scene: " + scene.getRoot()->getName());

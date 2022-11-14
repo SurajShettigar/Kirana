@@ -3,6 +3,7 @@
 
 #include <transform.hpp>
 #include <array>
+#include <event.hpp>
 
 namespace kirana::scene
 {
@@ -12,10 +13,12 @@ using math::Transform;
 class Camera
 {
   protected:
-    mutable std::array<uint32_t, 2> m_windowResolution;
+    utils::Event<> m_onCameraChange;
+
+    std::array<uint32_t, 2> m_windowResolution;
     float m_nearPlane = 0.1f;
     float m_farPlane = 1000.0f;
-    mutable float m_aspectRatio;
+    float m_aspectRatio;
 
     Transform m_transform;
     mutable Transform m_projection;
@@ -36,7 +39,17 @@ class Camera
     const float &farPlane = m_farPlane;
     const float &aspectRatio = m_aspectRatio;
 
-    virtual void setResolution(std::array<uint32_t, 2> resolution) const;
+    inline uint32_t addOnCameraChangeEventListener(
+        const std::function<void()> &callback)
+    {
+        return m_onCameraChange.addListener(callback);
+    }
+    inline void removeOnCameraChangeEventListener(uint32_t callbackID)
+    {
+        m_onCameraChange.removeListener(callbackID);
+    }
+
+    virtual void setResolution(std::array<uint32_t, 2> resolution);
 };
 } // namespace kirana::scene
 

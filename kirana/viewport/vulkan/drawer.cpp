@@ -149,7 +149,7 @@ void kirana::viewport::vulkan::Drawer::draw()
 
     vk::ClearValue clearDepth;
     clearDepth.setDepthStencil(vk::ClearDepthStencilValue(1.0f));
-
+    
     frame.commandBuffers->reset();
     frame.commandBuffers->begin();
     frame.commandBuffers->beginRenderPass(
@@ -159,8 +159,6 @@ void kirana::viewport::vulkan::Drawer::draw()
 
     if (m_scene)
     {
-        m_scene->updateWorldDataBuffer(getCurrentFrameIndex());
-
         MeshPushConstants meshConstants;
         const MaterialData *lastMatData = nullptr;
         // TODO: Bind Vertex Buffers together and draw them at once.

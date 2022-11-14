@@ -19,7 +19,7 @@
 #include <constants.h>
 
 void kirana::viewport::vulkan::VulkanRenderer::init(
-    const window::Window *const window, const scene::Scene &scene,
+    const window::Window *const window, scene::Scene &scene,
     uint16_t shadingIndex)
 {
     m_window = window;
