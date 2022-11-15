@@ -3,10 +3,24 @@
 
 #include "window.hpp"
 
-#include <utility>
+// Forward declarations of windows.h API
+#if defined(_WIN64)
+typedef unsigned __int64 UINT_PTR;
+typedef __int64 LONG_PTR;
+#else
+typedef _W64 unsigned int UINT_PTR;
+typedef _W64 long LONG_PTR;
+#endif
+typedef unsigned int UINT;
+
+#define CALLBACK __stdcall
 
 struct HWND__;
 typedef HWND__ *HWND;
+typedef LONG_PTR LRESULT;
+typedef UINT_PTR WPARAM;
+typedef LONG_PTR LPARAM;
+typedef LRESULT(CALLBACK *WNDPROC)(HWND, UINT, WPARAM, LPARAM);
 
 namespace kirana::window
 {
@@ -15,18 +29,30 @@ class PlatformWindow : public Window
     friend class WindowManager;
 
   protected:
-    int m_windowPointer = 0;
-    HWND m_hwndWindowPointer;
+    long m_windowPointer = 0;
+    HWND m_hwndWindowPointer = nullptr;
+    WNDPROC m_prevWindowProc = nullptr;
+
+    utils::input::ModifierKey getMouseModifierKey(WPARAM wParam);
+    utils::input::MouseInput getMouseInput(UINT uMsg,
+                                           WPARAM wParam);
+
+    void handleWindowEvents(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam);
+    void handleMouseInput(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam);
+    void handleKeyboardInput(HWND hwnd, UINT uMsg, WPARAM wParam,
+                             LPARAM lParam);
+    static LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam,
+                                       LPARAM lParam);
 
     /// Creates the actual window from given specification.
     void create() override{};
     /// Updates the window and checks for events. Called every frame.
-    void update() const override{};
+    void update() const override;
     /// Closes the window.
-    void close() const override{};
+    void close() const override;
 
   public:
-    explicit PlatformWindow(int windowPointer, string name = "Window",
+    explicit PlatformWindow(long windowPointer, string name = "Window",
                             bool fullscreen = true, bool resizable = false,
                             int width = 1280, int height = 720);
     ~PlatformWindow() override = default;
@@ -38,6 +64,7 @@ class PlatformWindow : public Window
         return m_windowPointer == rhs.m_windowPointer;
     }
 
+    void setFocus(bool value) override;
     /**
      * @brief Get the Vulkan Window Surface object for the current window.
      *

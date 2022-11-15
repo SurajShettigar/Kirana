@@ -24,8 +24,10 @@ class WindowManager
 {
   private:
     bool m_isInitialized = false;
+    std::array<int, 2> m_mousePosition;
 
     vector<std::shared_ptr<Window>> m_windows;
+    const Window *m_currentWindow;
 
     Event<const Window *, std::array<uint32_t, 2>> m_onWindowResize;
     Event<const Window *> m_onWindowClose;
@@ -43,6 +45,7 @@ class WindowManager
     WindowManager &operator=(const WindowManager &window) = delete;
 
     const bool &isInitialized = m_isInitialized;
+    const std::array<int, 2> &mousePosition = m_mousePosition;
 
     inline bool isAnyWindowOpen()
     {
@@ -189,6 +192,13 @@ class WindowManager
     }
 
     /**
+     * Sets the focus to the given window. The window will then receive all the
+     * input events.
+     * @param window The pointer to the window.
+     */
+    void setFocus(const Window *window);
+
+    /**
      * @brief Creates a window with given specifications.
      *
      * @param name Name of the window.
@@ -198,7 +208,7 @@ class WindowManager
      * @param height Height of the window.
      * @return Window* Pointer to the window object.
      */
-    [[nodiscard]]std::shared_ptr<Window> createWindow(
+    [[nodiscard]] std::shared_ptr<Window> createWindow(
         const string &name = "Window", bool fullscreen = true,
         bool resizable = false, int width = 1280, int height = 720);
 
@@ -213,8 +223,8 @@ class WindowManager
      * @param height Height of the window.
      * @return Window*  Shared pointer to the window object.
      */
-    [[nodiscard]]std::shared_ptr<Window> createWindow(
-        int windowPointer, const string &name = "Window",
+    [[nodiscard]] std::shared_ptr<Window> createWindow(
+        long windowPointer, const string &name = "Window",
         bool fullscreen = true, bool resizable = false, int width = 1280,
         int height = 720);
     /**

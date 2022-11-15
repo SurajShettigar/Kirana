@@ -30,6 +30,7 @@ using utils::Event;
 using utils::input::Key;
 using utils::input::KeyAction;
 using utils::input::KeyboardInput;
+using utils::input::ModifierKey;
 using utils::input::MouseButton;
 using utils::input::MouseInput;
 
@@ -51,6 +52,8 @@ class Window
     int m_height = 720;
     std::array<uint32_t, 2> m_resolution{static_cast<uint32_t>(m_width),
                                          static_cast<uint32_t>(m_height)};
+    std::array<int, 2> m_mousePosition{-1, -1};
+    bool m_isFocused = false;
     /**
      *@brief Adds the callback function which is called when a window is
      * resized.
@@ -185,11 +188,22 @@ class Window
     Window(const Window &window) = delete;
     Window &operator=(const Window &window) = delete;
 
+    /// The name of the window.
+    const std::string &name = m_name;
     /// The pixel resolution of the framebuffer of the window.
     const array<uint32_t, 2> &resolution = m_resolution;
+    /// The screen coordinate position of mouse pointer. Value is [-1,-1] if
+    /// the pointer is outside the window.
+    const std::array<int, 2> &mousePosition = m_mousePosition;
+    /// If the window is in focus and receiving input events.
+    const bool &isFocused = m_isFocused;
 
-    const std::string &name = m_name;
-
+    /// Set the focus of window. If set to true, the current window receives
+    /// input events.
+    virtual inline void setFocus(bool value)
+    {
+        m_isFocused = value;
+    }
     /**
      * @brief Get the Vulkan Window Surface object for the current window.
      *

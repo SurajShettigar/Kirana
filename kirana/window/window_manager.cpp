@@ -33,7 +33,10 @@ void kirana::window::WindowManager::init()
 void kirana::window::WindowManager::update()
 {
     if (!m_windows.empty())
+    {
         glfwPollEvents();
+        m_mousePosition = m_currentWindow->m_mousePosition;
+    }
     for (const auto &w : m_windows)
         w->update();
 }
@@ -42,6 +45,23 @@ void kirana::window::WindowManager::clean()
 {
     glfwTerminate();
     m_isInitialized = false;
+}
+
+void kirana::window::WindowManager::setFocus(const Window *window)
+{
+    if (m_windows.empty())
+        return;
+
+    for (const auto &w : m_windows)
+    {
+        if (w.get() == window)
+        {
+            w->setFocus(true);
+            m_currentWindow = w.get();
+        }
+        else
+            w->setFocus(false);
+    }
 }
 
 std::shared_ptr<kirana::window::Window> kirana::window::WindowManager::
@@ -73,12 +93,14 @@ std::shared_ptr<kirana::window::Window> kirana::window::WindowManager::
         });
 
     window->create();
+    window->setFocus(true);
     m_windows.emplace_back(std::move(window));
+    m_currentWindow = m_windows.back().get();
     return m_windows.back();
 }
 
 std::shared_ptr<kirana::window::Window> kirana::window::WindowManager::
-    createWindow(int windowPointer, const string &name, bool fullscreen,
+    createWindow(long windowPointer, const string &name, bool fullscreen,
                  bool resizable, int width, int height)
 {
     std::shared_ptr<PlatformWindow> window = std::make_shared<PlatformWindow>(
@@ -105,7 +127,9 @@ std::shared_ptr<kirana::window::Window> kirana::window::WindowManager::
             this->m_onScrollInput(xOffset, yOffset);
         });
     window->create();
+    window->setFocus(true);
     m_windows.emplace_back(std::move(window));
+    m_currentWindow = m_windows.back().get();
     return m_windows.back();
 }
 

@@ -23,6 +23,7 @@ class InputManager
     std::unordered_map<Key, KeyAction> m_keyboardKeyStatus;
     std::unordered_map<MouseButton, KeyAction> m_mouseKeyStatus;
     math::Vector2 m_scrollValue;
+    math::Vector2 m_mousePosition;
 
     Event<KeyboardInput> m_onKeyboardInput;
     Event<MouseInput> m_onMouseInput;
@@ -244,6 +245,11 @@ class InputManager
     inline float getMouseScrollOffset()
     {
         return m_scrollValue[1];
+    }
+
+    inline math::Vector2 getMousePosition()
+    {
+        return m_mousePosition;
     }
 };
 

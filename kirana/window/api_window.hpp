@@ -4,8 +4,6 @@
 #include "window.hpp"
 #include <GLFW/glfw3.h>
 
-#include <utility>
-
 namespace kirana::window
 {
 class APIWindow : public Window
@@ -80,6 +78,7 @@ class APIWindow : public Window
         return m_glfwWindow == rhs.m_glfwWindow;
     }
 
+    void setFocus(bool value) override;
     /**
      * @brief Get the Vulkan Window Surface object for the current window.
      *

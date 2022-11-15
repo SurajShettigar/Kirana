@@ -2,6 +2,7 @@
 #include <constants.h>
 #include <file_system.hpp>
 #include <scene_manager.hpp>
+#include <iostream>
 
 using namespace std::placeholders;
 
@@ -49,6 +50,7 @@ void kirana::Application::onMouseInput(MouseInput input)
 
 void kirana::Application::onScrollInput(double xOffset, double yOffset)
 {
+    std::cout << "Mouse Scroll: " << xOffset << "x" << yOffset << std::endl;
     m_inputManager.m_callScrollEvent(xOffset, yOffset);
 }
 
@@ -181,7 +183,7 @@ void kirana::Application::run()
     clean();
 }
 
-void kirana::Application::run(long windowId, uint32_t width, uint32_t height)
+void kirana::Application::run(long windowId, int width, int height)
 {
     m_windowPointer = windowId;
     m_windowWidth = width;

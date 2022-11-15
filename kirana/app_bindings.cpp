@@ -32,7 +32,7 @@ PYBIND11_MODULE(PY_MODULE_NAME, m)
     py::class_<kirana::Application>(m, "Application")
         .def(py::init())
         .def("run", static_cast<void (kirana::Application::*)(
-                        long, uint32_t, uint32_t)>(&kirana::Application::run))
+                        long, int, int)>(&kirana::Application::run))
         .def("getViewportWindow", &kirana::Application::getViewportWindow);
 }
 #endif
