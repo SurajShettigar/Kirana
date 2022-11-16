@@ -98,23 +98,27 @@ void kirana::window::APIWindow::create()
     }
 }
 
-void kirana::window::APIWindow::update() const
+void kirana::window::APIWindow::update()
 {
     if (!glfwWindowShouldClose(m_glfwWindow))
     {
+        m_isCursorInside = glfwGetWindowAttrib(m_glfwWindow, GLFW_HOVERED) != 0;
+        glfwGetCursorPos(m_glfwWindow, &m_cursorX, &m_cursorY);
+        m_cursorPosition[0] = static_cast<int>(m_cursorX);
+        m_cursorPosition[1] = static_cast<int>(m_cursorY);
         return;
     }
     else if (m_glfwWindow != nullptr)
         APIWindow::onWindowClosed(m_glfwWindow);
 }
 
-void kirana::window::APIWindow::close() const
+void kirana::window::APIWindow::close()
 {
     if (m_glfwWindow)
         glfwSetWindowShouldClose(m_glfwWindow, GLFW_TRUE);
 }
 
-void kirana::window::APIWindow::clean() const
+void kirana::window::APIWindow::clean()
 {
     glfwSetWindowUserPointer(m_glfwWindow, nullptr);
     glfwSetFramebufferSizeCallback(m_glfwWindow, nullptr);

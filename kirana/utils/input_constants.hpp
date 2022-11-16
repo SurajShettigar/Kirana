@@ -7,7 +7,6 @@ namespace kirana::utils::input
 enum class Key
 {
     UNKNOWN = -1,
-    NONE = 0,
     SPACE = 32,
     APOSTROPHE = 39, /* ' */
     COMMA = 44,      /* , */

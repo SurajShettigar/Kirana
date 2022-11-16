@@ -2,7 +2,6 @@
 #include <constants.h>
 #include <file_system.hpp>
 #include <scene_manager.hpp>
-#include <iostream>
 
 using namespace std::placeholders;
 
@@ -134,6 +133,10 @@ void kirana::Application::update()
 {
     m_time.update();
     m_windowManager.update();
+    m_inputManager.m_isMouseInside =
+        m_windowManager.getCurrentWindow()->isCursorInside;
+    m_inputManager.m_updateMousePosition(
+        m_windowManager.getCurrentWindow()->cursorPosition);
     m_sceneManager.update();
     if (m_isViewportRunning)
         m_viewport.update();

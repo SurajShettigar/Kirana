@@ -34,22 +34,19 @@ class PlatformWindow : public Window
     WNDPROC m_prevWindowProc = nullptr;
 
     utils::input::ModifierKey getMouseModifierKey(WPARAM wParam);
-    utils::input::MouseInput getMouseInput(UINT uMsg,
-                                           WPARAM wParam);
 
-    void handleWindowEvents(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam);
-    void handleMouseInput(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam);
-    void handleKeyboardInput(HWND hwnd, UINT uMsg, WPARAM wParam,
-                             LPARAM lParam);
+    void handleWindowEvents(UINT uMsg, WPARAM wParam, LPARAM lParam);
+    void handleMouseInput(UINT uMsg, WPARAM wParam, LPARAM lParam);
+    void handleKeyboardInput(UINT uMsg, WPARAM wParam, LPARAM lParam);
     static LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam,
                                        LPARAM lParam);
 
     /// Creates the actual window from given specification.
     void create() override{};
     /// Updates the window and checks for events. Called every frame.
-    void update() const override;
+    void update() override;
     /// Closes the window.
-    void close() const override;
+    void close() override;
 
   public:
     explicit PlatformWindow(long windowPointer, string name = "Window",

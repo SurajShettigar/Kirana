@@ -35,7 +35,6 @@ void kirana::window::WindowManager::update()
     if (!m_windows.empty())
     {
         glfwPollEvents();
-        m_mousePosition = m_currentWindow->m_mousePosition;
     }
     for (const auto &w : m_windows)
         w->update();
@@ -133,15 +132,15 @@ std::shared_ptr<kirana::window::Window> kirana::window::WindowManager::
     return m_windows.back();
 }
 
-void kirana::window::WindowManager::closeWindow(const Window *window) const
+void kirana::window::WindowManager::closeWindow(Window *window) const
 {
     if (m_isInitialized)
         window->close();
 }
 
-void kirana::window::WindowManager::closeAllWindows()
+void kirana::window::WindowManager::closeAllWindows() const
 {
     if (m_isInitialized)
-        for (const auto &w : m_windows)
+        for (auto &w : m_windows)
             closeWindow(w.get());
 }

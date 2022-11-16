@@ -24,7 +24,6 @@ class WindowManager
 {
   private:
     bool m_isInitialized = false;
-    std::array<int, 2> m_mousePosition;
 
     vector<std::shared_ptr<Window>> m_windows;
     const Window *m_currentWindow;
@@ -45,7 +44,12 @@ class WindowManager
     WindowManager &operator=(const WindowManager &window) = delete;
 
     const bool &isInitialized = m_isInitialized;
-    const std::array<int, 2> &mousePosition = m_mousePosition;
+
+    /// Returns the current active window.
+    [[nodiscard]] inline const Window *getCurrentWindow() const
+    {
+        return m_currentWindow;
+    }
 
     inline bool isAnyWindowOpen()
     {
@@ -232,12 +236,12 @@ class WindowManager
      *
      * @param window Window to be closed.
      */
-    void closeWindow(const Window *window) const;
+    void closeWindow(Window *window) const;
     /**
      * @brief Closes all the windows.
      *
      */
-    void closeAllWindows();
+    void closeAllWindows() const;
 };
 } // namespace kirana::window
 
