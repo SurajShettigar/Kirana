@@ -2,26 +2,33 @@
 #define TRANSFORM_HPP
 
 #include "matrix4x4.hpp"
+#include "vector3.hpp"
 #include <string>
 
 namespace kirana::math
 {
-class Vector3;
+
 class Transform
 {
+    enum class Space
+    {
+        Local = 0,
+        World = 1
+    };
+
   private:
     Transform *m_parent = nullptr;
-    bool m_isDirty = false;
-    mutable Matrix4x4 m_current;
-    mutable Matrix4x4 m_inverse;
+    Matrix4x4 m_localMatrix;
+    Vector3 m_localPosition;
+    Vector3 m_localRotation;
+    Vector3 m_localScale;
 
+    void calculateLocalMatrix();
+    [[nodiscard]] Matrix4x4 getParentMatrix() const;
+    [[nodiscard]] Matrix4x4 getGlobalMatrix() const;
   public:
-    std::string name;
     explicit Transform(Transform *parent = nullptr);
-    explicit Transform(const Matrix4x4 &mat,
-                       Transform *parent = nullptr);
-    explicit Transform(const Matrix4x4 &mat, const Matrix4x4 &matInverse,
-                       Transform *parent = nullptr);
+    explicit Transform(const Matrix4x4 &mat, Transform *parent = nullptr);
     ~Transform() = default;
 
     Transform(const Transform &transform);
@@ -29,8 +36,6 @@ class Transform
 
     bool operator==(const Transform &rhs) const;
     bool operator!=(const Transform &rhs) const;
-
-    Transform &operator*=(const Transform &rhs);
 
     [[nodiscard]] inline Transform *getParent() const
     {
@@ -40,28 +45,29 @@ class Transform
     {
         m_parent = transform;
     }
-    [[nodiscard]] inline bool isDirty() const
-    {
-        return m_isDirty;
-    }
-    inline void setDirty(bool value)
-    {
-        m_isDirty = value;
-    }
-    [[nodiscard]] Matrix4x4 getMatrix(bool inverse = false) const;
-    [[nodiscard]] Matrix4x4 getMatrixTransposed(bool inverse = false) const;
 
-    void translate(const Vector3 &translation);
-    void rotateX(float angle);
-    void rotateY(float angle);
-    void rotateZ(float angle);
-    void rotate(const Vector3 &rotation);
-    void rotateAround(float angle, const Vector3 &axis);
-    void lookAt(const Vector3 &lookAtPos, const Vector3 &up);
-    void scale(const Vector3 &scale);
+    [[nodiscard]] Matrix4x4 getMatrix(Space space = Space::World) const;
 
-    static Transform inverse(const Transform &transform);
-    static Transform transpose(const Transform &transform);
+    [[nodiscard]] Vector3 getRight(Space space = Space::World) const;
+    [[nodiscard]] Vector3 getUp(Space space = Space::World) const;
+    [[nodiscard]] Vector3 getForward(Space space = Space::World) const;
+
+    [[nodiscard]] Vector3 getPosition(Space space = Space::World) const;
+    [[nodiscard]] Vector3 getRotation(Space space = Space::World) const;
+    [[nodiscard]] Vector3 getScale(Space space = Space::Local) const;
+
+    void setPosition(const Vector3 &position, Space space = Space::World);
+    void setRotation(const Vector3 &rotation, Space space = Space::World);
+    void setLocalScale(const Vector3 &scale);
+
+    void translate(const Vector3 &translation, Space space = Space::World);
+    void rotateX(float angle, Space space = Space::World);
+    void rotateY(float angle, Space space = Space::World);
+    void rotateZ(float angle, Space space = Space::World);
+    void rotate(const Vector3 &rotation, Space space = Space::World);
+    void rotateAround(float angle, const Vector3 &axis, Space space = Space::World);
+    void lookAt(const Vector3 &lookAtPos, const Vector3 &up, Space space = Space::World);
+
     static Transform getOrthographicTransform(float left, float right,
                                               float bottom, float top,
                                               float near, float far,
@@ -75,9 +81,6 @@ class Transform
                                              float near, float far,
                                              bool graphicsAPI = false,
                                              bool flipY = false);
-
-    friend Transform operator*(const Transform &lhs, const Transform &rhs);
-    friend Vector4 operator*(const Transform &lhs, const Vector4 &rhs);
 };
 } // namespace kirana::math
 #endif

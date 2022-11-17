@@ -1,12 +1,35 @@
 #include "matrix4x4.hpp"
 #include "math_utils.hpp"
-#include <algorithm>
 #include "vector3.hpp"
 
+#include <algorithm>
+
 using kirana::math::Matrix4x4;
+using kirana::math::Vector3;
 using kirana::math::Vector4;
 
 const Matrix4x4 Matrix4x4::IDENTITY = Matrix4x4();
+
+float Matrix4x4::m_determinant2x2(float m00, float m01, float m10,
+                                  float m11) const
+{
+    // | m00    m01|
+    // | m10    m11|
+    return m00 * m11 - m01 * m10;
+}
+
+float Matrix4x4::m_determinant3x3(float m00, float m01, float m02, float m10,
+                                  float m11, float m12, float m20, float m21,
+                                  float m22) const
+{
+    // | m00    m01     m02|
+    // | m10    m11     m12|
+    // | m20    m21     m22|
+    return m00 * m_determinant2x2(m11, m12, m21, m22) -
+           m01 * m_determinant2x2(m10, m12, m20, m22) +
+           m02 * m_determinant2x2(m10, m11, m20, m21);
+}
+
 
 Matrix4x4::Matrix4x4(float matrix[4][4])
 {
@@ -193,6 +216,224 @@ std::ostream &kirana::math::operator<<(std::ostream &out, const Matrix4x4 &mat)
                << mat[2][3] << ", \n"
                << mat[3][0] << ", " << mat[3][1] << ", " << mat[3][2] << ", "
                << mat[3][3] << "]";
+}
+
+float Matrix4x4::determinant() const
+{
+    const auto &m = m_current;
+    // | m00    m01     m02     m03|
+    // | m10    m11     m12     m13|
+    // | m20    m21     m22     m23|
+    // | m30    m31     m32     m33|
+    return m[0][0] * m_determinant3x3(m[1][1], m[1][2], m[1][3], m[2][1],
+                                      m[2][2], m[2][3], m[3][1], m[3][2],
+                                      m[3][3]) -
+           m[0][1] * m_determinant3x3(m[1][0], m[1][2], m[1][3], m[2][0],
+                                      m[2][2], m[2][3], m[3][0], m[3][2],
+                                      m[3][3]) +
+           m[0][2] * m_determinant3x3(m[1][0], m[1][1], m[1][3], m[2][0],
+                                      m[2][1], m[2][3], m[3][0], m[3][1],
+                                      m[3][3]) -
+           m[0][3] * m_determinant3x3(m[1][0], m[1][1], m[1][2], m[2][0],
+                                      m[2][1], m[2][2], m[3][0], m[3][1],
+                                      m[3][2]);
+}
+
+bool Matrix4x4::decomposeMatrix(const Matrix4x4 &mat, Vector3 *translation,
+                                Vector3 *scale, Vector3 *skew,
+                                Vector3 *rotation)
+{
+    // Algorithm from Graphic Gems II: Decomposing a matrix into simple
+    // transformations. By Spencer W. Thomas.
+    // Link:
+    // https://github.com/erich666/GraphicsGems/blob/master/gemsii/unmatrix.c
+
+    Vector3 xAxis = Vector3(mat[0][0], mat[1][0], mat[2][0]);
+    Vector3 yAxis = Vector3(mat[0][1], mat[1][1], mat[2][1]);
+    Vector3 zAxis = Vector3(mat[0][2], mat[1][2], mat[2][2]);
+    Vector3 wAxis = Vector3(mat[0][3], mat[1][3], mat[2][3]);
+
+    // Extract translation
+    if (translation != nullptr)
+        *translation = wAxis;
+
+    if (scale == nullptr && skew == nullptr && rotation == nullptr)
+        return true;
+
+    // Extract scale and skew
+    Vector3 tempScale;
+    Vector3 tempSkew;
+    tempScale[0] = xAxis.length();
+    xAxis = xAxis / xAxis.length();
+
+    tempSkew[2] = Vector3::dot(xAxis, yAxis);
+    yAxis = yAxis + xAxis * -tempSkew[2];
+
+    tempScale[1] = yAxis.length();
+    yAxis = yAxis / yAxis.length();
+
+    tempSkew[2] /= tempScale[1];
+
+    tempSkew[1] = Vector3::dot(xAxis, zAxis);
+    zAxis = zAxis + xAxis * -tempSkew[1];
+    tempSkew[0] = Vector3::dot(yAxis, zAxis);
+    zAxis = zAxis + yAxis * -tempSkew[0];
+
+    tempScale[2] = zAxis.length();
+    zAxis = zAxis / zAxis.length();
+
+    tempSkew[1] /= tempScale[2];
+    tempSkew[0] /= tempScale[2];
+
+    if (Vector3::dot(xAxis, Vector3::cross(yAxis, zAxis)) < 0)
+    {
+        tempScale = -tempScale;
+        xAxis = -xAxis;
+        yAxis = -yAxis;
+        zAxis = -zAxis;
+    }
+
+    if (scale != nullptr)
+        *scale = tempScale;
+    if (skew != nullptr)
+        *skew = tempSkew;
+
+    if (rotation == nullptr)
+        return true;
+
+    // Extract rotation
+    Vector3 tempRotation;
+    tempRotation[1] = std::asin(-xAxis[2]);
+    if (!kirana::math::approximatelyEqual(std::cos(tempRotation[1]), 0.0f))
+    {
+        tempRotation[0] = std::atan2(yAxis[2], zAxis[2]);
+        tempRotation[2] = std::atan2(xAxis[1], xAxis[0]);
+    }
+    else
+    {
+        tempRotation[0] = std::atan2(-zAxis[0], yAxis[1]);
+        tempRotation[2] = 0.0f;
+    }
+
+    if (rotation != nullptr)
+        *rotation = tempRotation;
+
+    return true;
+}
+
+bool Matrix4x4::decomposeProjectionMatrix(const Matrix4x4 &mat,
+                                          Vector4 *perspective,
+                                          Vector3 *translation, Vector3 *scale,
+                                          Vector3 *skew, Vector3 *rotation)
+{
+    // Algorithm from Graphic Gems II: Decomposing a matrix into simple
+    // transformations. By Spencer W. Thomas.
+    // Link:
+    // https://github.com/erich666/GraphicsGems/blob/master/gemsii/unmatrix.c
+
+    Matrix4x4 tempMat(Matrix4x4::transpose(mat));
+
+    if (approximatelyEqual(tempMat[3][3], 0.0f))
+        return false;
+    tempMat[0][0] /= tempMat[3][3];
+    tempMat[0][1] /= tempMat[3][3];
+    tempMat[0][2] /= tempMat[3][3];
+    tempMat[0][3] /= tempMat[3][3];
+    tempMat[1][0] /= tempMat[3][3];
+    tempMat[1][1] /= tempMat[3][3];
+    tempMat[1][2] /= tempMat[3][3];
+    tempMat[1][3] /= tempMat[3][3];
+    tempMat[2][0] /= tempMat[3][3];
+    tempMat[2][1] /= tempMat[3][3];
+    tempMat[2][2] /= tempMat[3][3];
+    tempMat[2][3] /= tempMat[3][3];
+    tempMat[3][0] /= tempMat[3][3];
+    tempMat[3][1] /= tempMat[3][3];
+    tempMat[3][2] /= tempMat[3][3];
+    tempMat[3][3] /= tempMat[3][3];
+
+    Matrix4x4 projMat(tempMat);
+    projMat[3][0] = 0.0f;
+    projMat[3][1] = 0.0f;
+    projMat[3][2] = 0.0f;
+    projMat[3][3] = 1.0f;
+
+    if (approximatelyEqual(projMat.determinant(), 0.0f))
+        return false;
+
+    if (!approximatelyEqual(tempMat[3][0], 0.0f) ||
+        !approximatelyEqual(tempMat[3][1], 0.0f) ||
+        !approximatelyEqual(tempMat[3][2], 0.0f))
+    {
+        Vector4 rhs(tempMat[3][0], tempMat[3][1], tempMat[3][2], tempMat[3][3]);
+
+        (*perspective) =
+            Matrix4x4::transpose(Matrix4x4::inverse(projMat)) * rhs;
+
+        tempMat[3][0] = 0.0f;
+        tempMat[3][1] = 0.0f;
+        tempMat[3][2] = 0.0f;
+        tempMat[3][3] = 1.0f;
+    }
+    else
+    {
+        if (perspective != nullptr)
+            (*perspective) = Vector4(0.0f, 0.0f, 0.0f, 1.0f);
+    }
+
+
+    if (translation == nullptr && scale == nullptr && skew == nullptr &&
+        rotation == nullptr)
+        return true;
+    return decomposeMatrix(tempMat, translation, scale, skew, rotation);
+}
+
+Matrix4x4 Matrix4x4::translationMatrix(const Vector3 &translation)
+{
+    return Matrix4x4(0.0f, 0.0f, 0.0f, translation[0], 0.0f, 0.0f, 0.0f,
+                     translation[1], 0.0f, 0.0f, 0.0f, translation[2], 0.0f,
+                     0.0f, 0.0f, 1.0f);
+}
+
+Matrix4x4 Matrix4x4::rotationMatrix(const Vector3 &rotation)
+{
+    float cosX = std::cos(math::radians(rotation[0]));
+    float sinX = std::sin(math::radians(rotation[0]));
+    float cosY = std::cos(math::radians(rotation[1]));
+    float sinY = std::sin(math::radians(rotation[1]));
+    float cosZ = std::cos(math::radians(rotation[2]));
+    float sinZ = std::sin(math::radians(rotation[2]));
+
+    // Combined XYZ rotation (euler angles).
+    return Matrix4x4(cosY * cosZ, sinX * sinY * cosZ - cosX * sinZ,
+                     cosX * sinY * cosZ + sinX * sinZ, 0.0f, cosY * sinZ,
+                     sinX * sinY * sinZ + cosX * cosZ,
+                     cosX * sinY * sinZ - sinX * cosZ, 0.0f, -sinY, sinX * cosY,
+                     cosX * cosY, 0.0f, 0.0f, 0.0f, 0.0f, 1.0f);
+}
+
+
+Matrix4x4 Matrix4x4::rotationMatrix(const Vector3 &a, float angle)
+{
+    // Goldman, Ronald, “Matrices and Transformations,” in Andrew S. Glassner,
+    // ed., Graphics Gems, Academic Press, pp. 472–475, 1990. Cited on p. 75
+    // @link {https://dl.acm.org/doi/10.5555/90767.90908}
+
+    float c = std::cos(math::radians(angle));
+    float omc = 1.0f - c;
+    float s = std::sin(math::radians(angle));
+    return Matrix4x4(c + omc * a[0] * a[0], omc * a[0] * a[1] - a[2] * s,
+                     omc * a[0] * a[2] + a[1] * s, 0.0f,
+                     omc * a[0] * a[1] + a[2] * s, c + omc * a[1] * a[1],
+                     omc * a[1] * a[2] - a[0] * s, 0.0f,
+                     omc * a[0] * a[2] - a[1] * s, omc * a[1] * a[2] + a[0] * s,
+                     c + omc * a[2] * a[2], 0.0f, 0.0f, 0.0f, 0.0f, 1.0f);
+}
+
+Matrix4x4 Matrix4x4::scaleMatrix(const Vector3 &scale)
+{
+    return Matrix4x4(scale[0], 0.0f, 0.0f, 0.0f, 0.0f, scale[1], 0.0f, 0.0f,
+                     0.0f, 0.0f, scale[2], 0.0f, 0.0f, 0.0f, 0.0f, 1.0f);
 }
 
 Matrix4x4 Matrix4x4::transpose(const Matrix4x4 &mat)

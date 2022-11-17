@@ -29,6 +29,14 @@ inline bool approximatelyEqual(double x, double y)
     return abs(x - y) <= std::numeric_limits<double>::epsilon();
 }
 
+inline float clampEulerAngle(float angle)
+{
+    if(angle > 360.0f)
+        return angle - 360.0f;
+    else if(angle < -360.0f)
+        return angle + 360.0f;
+}
+
 } // namespace kirana::math
 
 #endif
