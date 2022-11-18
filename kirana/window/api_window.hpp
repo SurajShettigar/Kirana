@@ -4,8 +4,6 @@
 #include "window.hpp"
 #include <GLFW/glfw3.h>
 
-#include <utility>
-
 namespace kirana::window
 {
 class APIWindow : public Window
@@ -13,6 +11,8 @@ class APIWindow : public Window
     friend class WindowManager;
   protected:
     GLFWwindow *m_glfwWindow = nullptr;
+    double m_cursorX = 0.0;
+    double m_cursorY = 0.0;
     /**
      * @brief Called by GLFW when a window is resized.
      * @param glfwWindow The window which got resized.
@@ -60,11 +60,11 @@ class APIWindow : public Window
     /// Creates the actual window from given specification.
     void create() override;
     /// Updates the window and checks for events. Called every frame.
-    void update() const override;
+    void update() override;
     /// Closes the window.
-    void close() const override;
+    void close() override;
     /// Cleans the window.
-    void clean() const override;
+    void clean() override;
   public:
     explicit APIWindow(string name = "Window", bool fullscreen = true,
                        bool resizable = false, int width = 1280,
@@ -80,6 +80,7 @@ class APIWindow : public Window
         return m_glfwWindow == rhs.m_glfwWindow;
     }
 
+    void setFocus(bool value) override;
     /**
      * @brief Get the Vulkan Window Surface object for the current window.
      *

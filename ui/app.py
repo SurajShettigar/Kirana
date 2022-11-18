@@ -33,16 +33,10 @@ class Application:
         self.viewport.add_size_change_listener(self.on_viewport_size_changed)
 
     def on_app_window_closed(self):
-        if self.core_app and self.core_app.getViewportWindow():
-            win = self.core_app.getViewportWindow()
-            win.onWindowClose(win)
         sys.exit(0)
 
     def on_viewport_size_changed(self, new_size: QSize, old_size: QSize):
-        if self.core_app and self.core_app.getViewportWindow():
-            res = self.viewport.get_pixel_resolution()
-            win = self.core_app.getViewportWindow()
-            win.onWindowResize(win, res[0], res[1])
+        pass
 
     def run(self) -> int:
         self.app_window.show()

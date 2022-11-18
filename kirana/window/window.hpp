@@ -30,6 +30,7 @@ using utils::Event;
 using utils::input::Key;
 using utils::input::KeyAction;
 using utils::input::KeyboardInput;
+using utils::input::ModifierKey;
 using utils::input::MouseButton;
 using utils::input::MouseInput;
 
@@ -38,11 +39,11 @@ class Window
     friend class WindowManager;
 
   protected:
-    mutable Event<const Window *, std::array<uint32_t, 2>> m_onWindowResize;
-    mutable Event<const Window *> m_onWindowClose;
-    mutable Event<const Window *, KeyboardInput> m_onKeyboardInput;
-    mutable Event<const Window *, MouseInput> m_onMouseInput;
-    mutable Event<const Window *, double, double> m_onScrollInput;
+    Event<const Window *, std::array<uint32_t, 2>> m_onWindowResize;
+    Event<const Window *> m_onWindowClose;
+    Event<const Window *, KeyboardInput> m_onKeyboardInput;
+    Event<const Window *, MouseInput> m_onMouseInput;
+    Event<const Window *, double, double> m_onScrollInput;
 
     string m_name = "Window";
     bool m_fullscreen = true;
@@ -51,6 +52,9 @@ class Window
     int m_height = 720;
     std::array<uint32_t, 2> m_resolution{static_cast<uint32_t>(m_width),
                                          static_cast<uint32_t>(m_height)};
+    std::array<int, 2> m_cursorPosition{0, 0};
+    bool m_isCursorInside = false;
+    bool m_isFocused = false;
     /**
      *@brief Adds the callback function which is called when a window is
      * resized.
@@ -163,11 +167,11 @@ class Window
     /// Creates the actual window from given specification.
     virtual void create() = 0;
     /// Updates the window and checks for events. Called every frame.
-    virtual void update() const = 0;
+    virtual void update() = 0;
     /// Closes the window.
-    virtual void close() const = 0;
+    virtual void close() = 0;
     /// Cleans the window.
-    virtual void clean() const
+    virtual void clean()
     {
         m_onWindowResize.removeAllListeners();
         m_onWindowClose.removeAllListeners();
@@ -185,11 +189,23 @@ class Window
     Window(const Window &window) = delete;
     Window &operator=(const Window &window) = delete;
 
+    /// The name of the window.
+    const std::string &name = m_name;
     /// The pixel resolution of the framebuffer of the window.
     const array<uint32_t, 2> &resolution = m_resolution;
+    /// The screen coordinate position of cursor.
+    const std::array<int, 2> &cursorPosition = m_cursorPosition;
+    const bool &isCursorInside = m_isCursorInside;
 
-    const std::string &name = m_name;
+    /// If the window is in focus and receiving input events.
+    const bool &isFocused = m_isFocused;
 
+    /// Set the focus of window. If set to true, the current window receives
+    /// input events.
+    virtual inline void setFocus(bool value)
+    {
+        m_isFocused = value;
+    }
     /**
      * @brief Get the Vulkan Window Surface object for the current window.
      *
@@ -210,20 +226,6 @@ class Window
      */
     [[nodiscard]] virtual std::vector<const char *>
     getReqInstanceExtensionsForVulkan() const = 0;
-
-#ifdef COMPILE_BINDINGS
-    static void onWindowResizeBindFunc(Window &window, uint32_t width,
-                                       uint32_t height)
-    {
-        window.m_resolution[0] = width;
-        window.m_resolution[1] = height;
-        window.m_onWindowResize(&window, {width, height});
-    }
-    static void onWindowCloseBindFunc(Window &window)
-    {
-        window.m_onWindowClose(&window);
-    }
-#endif
 };
 } // namespace kirana::window
 #endif
