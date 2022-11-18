@@ -7,6 +7,7 @@
 
 #include <vector2.hpp>
 #include <initializer_list>
+#include <array>
 
 namespace kirana
 {
@@ -23,6 +24,9 @@ class InputManager
     std::unordered_map<Key, KeyAction> m_keyboardKeyStatus;
     std::unordered_map<MouseButton, KeyAction> m_mouseKeyStatus;
     math::Vector2 m_scrollValue;
+    math::Vector2 m_prevMousePosition;
+    math::Vector2 m_mousePosition;
+    bool m_isMouseInside;
 
     Event<KeyboardInput> m_onKeyboardInput;
     Event<MouseInput> m_onMouseInput;
@@ -168,6 +172,13 @@ class InputManager
         m_onKeyboardInput.removeAllListeners();
     }
 
+    inline void m_updateMousePosition(const std::array<int, 2> &pos)
+    {
+        m_prevMousePosition = m_mousePosition;
+        m_mousePosition[0] = static_cast<float>(pos[0]);
+        m_mousePosition[1] = static_cast<float>(pos[1]);
+    }
+
     inline void m_callKeyboardEvent(KeyboardInput input)
     {
         m_keyboardKeyStatus[input.key] = input.action;
@@ -244,6 +255,21 @@ class InputManager
     inline float getMouseScrollOffset()
     {
         return m_scrollValue[1];
+    }
+
+    inline math::Vector2 getMousePosition()
+    {
+        return m_mousePosition;
+    }
+
+    inline math::Vector2 getMousePositionDelta()
+    {
+        return m_mousePosition - m_prevMousePosition;
+    }
+
+    inline bool isMouseInside()
+    {
+        return m_isMouseInside;
     }
 };
 

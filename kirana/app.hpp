@@ -43,9 +43,9 @@ class Application
     bool m_isRunning = false;
     bool m_isViewportRunning = false;
 
-    int m_windowPointer = 0;
-    uint32_t m_windowWidth = 0;
-    uint32_t m_windowHeight = 0;
+    long m_windowPointer = 0;
+    int m_windowWidth = 0;
+    int m_windowHeight = 0;
 
     utils::Logger &m_logger;
     utils::Time &m_time;
@@ -121,7 +121,7 @@ class Application
 
     /// Runs the application.
     void run();
-    void run(long windowId, uint32_t width, uint32_t height);
+    void run(long windowId, int width, int height);
 
     [[nodiscard]] inline std::shared_ptr<Window> getViewportWindow()
     {

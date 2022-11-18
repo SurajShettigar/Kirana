@@ -129,6 +129,16 @@ enum class Key
     MENU = 348,
 };
 
+enum ModifierKey {
+    NONE = 0x0000,
+    SHIFT = 0x0001,
+    CONTROL = 0x0002,
+    ALT = 0x0004,
+    SUPER = 0x0008,
+    CAPS_LOCK = 0x0010,
+    NUM_LOCK = 0x0020
+};
+
 
 /// Mouse button (GLFW Compatible IDs).
 enum class MouseButton
@@ -154,6 +164,8 @@ enum class KeyAction
     DOWN = 1,
     /// Key held down.
     HELD = 2,
+    /// Key double clicked.
+    DCLICK = 3
 };
 
 /// Keyboard input information.
@@ -161,7 +173,7 @@ struct KeyboardInput
 {
     Key key;
     KeyAction action;
-    Key modifierKey;
+    ModifierKey modifier;
 };
 
 /// Mouse input information.
@@ -169,24 +181,24 @@ struct MouseInput
 {
     MouseButton button;
     KeyAction action;
-    Key modifierKey;
+    ModifierKey modifier;
 };
 
-inline Key operator|(Key lhs, Key rhs)
+inline ModifierKey operator|(ModifierKey lhs, ModifierKey rhs)
 {
-    return static_cast<Key>(static_cast<int>(lhs) | static_cast<int>(rhs));
+    return static_cast<ModifierKey>(static_cast<int>(lhs) | static_cast<int>(rhs));
 }
-inline Key operator&(Key lhs, Key rhs)
+inline ModifierKey operator&(ModifierKey lhs, ModifierKey rhs)
 {
-    return static_cast<Key>(static_cast<int>(lhs) & static_cast<int>(rhs));
+    return static_cast<ModifierKey>(static_cast<int>(lhs) & static_cast<int>(rhs));
 }
-inline Key operator^(Key lhs, Key rhs)
+inline ModifierKey operator^(ModifierKey lhs, ModifierKey rhs)
 {
-    return static_cast<Key>(static_cast<int>(lhs) ^ static_cast<int>(rhs));
+    return static_cast<ModifierKey>(static_cast<int>(lhs) ^ static_cast<int>(rhs));
 }
-inline Key operator~(Key key)
+inline ModifierKey operator~(ModifierKey key)
 {
-    return static_cast<Key>(~static_cast<int>(key));
+    return static_cast<ModifierKey>(~static_cast<int>(key));
 }
 
 } // namespace kirana::utils::input

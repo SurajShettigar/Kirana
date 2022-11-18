@@ -49,6 +49,7 @@ void kirana::Application::onMouseInput(MouseInput input)
 
 void kirana::Application::onScrollInput(double xOffset, double yOffset)
 {
+    std::cout << "Mouse Scroll: " << xOffset << "x" << yOffset << std::endl;
     m_inputManager.m_callScrollEvent(xOffset, yOffset);
 }
 
@@ -132,6 +133,10 @@ void kirana::Application::update()
 {
     m_time.update();
     m_windowManager.update();
+    m_inputManager.m_isMouseInside =
+        m_windowManager.getCurrentWindow()->isCursorInside;
+    m_inputManager.m_updateMousePosition(
+        m_windowManager.getCurrentWindow()->cursorPosition);
     m_sceneManager.update();
     if (m_isViewportRunning)
         m_viewport.update();
@@ -181,7 +186,7 @@ void kirana::Application::run()
     clean();
 }
 
-void kirana::Application::run(long windowId, uint32_t width, uint32_t height)
+void kirana::Application::run(long windowId, int width, int height)
 {
     m_windowPointer = windowId;
     m_windowWidth = width;
