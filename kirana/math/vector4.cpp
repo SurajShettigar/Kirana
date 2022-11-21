@@ -1,9 +1,8 @@
 #include "vector4.hpp"
 #include "vector2.hpp"
 #include "vector3.hpp"
+#include "math_utils.hpp"
 
-#include <cmath>
-#include <limits>
 #include <iostream>
 
 using kirana::math::Vector2;
@@ -99,14 +98,18 @@ Vector4 &Vector4::operator/=(const float rhs)
 
 bool Vector4::operator==(const Vector4 &rhs) const
 {
-    return std::fabsf((*this).length() - rhs.length()) <=
-           std::numeric_limits<float>::epsilon();
+    return approximatelyEqual(m_current[0], rhs.m_current[0]) &&
+           approximatelyEqual(m_current[1], rhs.m_current[1]) &&
+           approximatelyEqual(m_current[2], rhs.m_current[2]) &&
+           approximatelyEqual(m_current[3], rhs.m_current[3]);
 }
 
 bool Vector4::operator!=(const Vector4 &rhs) const
 {
-    return std::fabsf((*this).length() - rhs.length()) >
-           std::numeric_limits<float>::epsilon();
+    return !approximatelyEqual(m_current[0], rhs.m_current[0]) ||
+           !approximatelyEqual(m_current[1], rhs.m_current[1]) ||
+           !approximatelyEqual(m_current[2], rhs.m_current[2]) ||
+           !approximatelyEqual(m_current[3], rhs.m_current[3]);
 }
 
 

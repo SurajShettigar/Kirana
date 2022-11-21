@@ -101,20 +101,16 @@ Vector4 &Matrix4x4::operator[](size_t i)
 
 bool Matrix4x4::operator==(const Matrix4x4 &mat) const
 {
-    for (size_t i = 0; i < 4; i++)
-        for (size_t j = 0; j < 4; j++)
-            if (!approximatelyEqual(m_current[i][j], mat[i][j]))
-                return false;
-    return true;
+    return m_current[0] == mat.m_current[0] &&
+           m_current[1] == mat.m_current[1] &&
+           m_current[2] == mat.m_current[2] && m_current[3] == mat.m_current[3];
 }
 
 bool Matrix4x4::operator!=(const Matrix4x4 &mat) const
 {
-    for (size_t i = 0; i < 4; i++)
-        for (size_t j = 0; j < 4; j++)
-            if (!approximatelyEqual(m_current[i][j], mat[i][j]))
-                return true;
-    return false;
+    return m_current[0] != mat.m_current[0] ||
+           m_current[1] != mat.m_current[1] ||
+           m_current[2] != mat.m_current[2] || m_current[3] != mat.m_current[3];
 }
 
 Matrix4x4 &Matrix4x4::operator*=(const Matrix4x4 &rhs)

@@ -258,7 +258,6 @@ void kirana::math::Transform::rotateX(float angle, Space space)
 
     // TODO: Calculate local x-angle from global x-angle.
     m_localRotation[0] += angle;
-    m_localRotation[0] = math::clampEulerAngle(m_localRotation[0]);
 }
 
 void kirana::math::Transform::rotateY(float angle, Space space)
@@ -290,7 +289,6 @@ void kirana::math::Transform::rotateY(float angle, Space space)
 
     // TODO: Calculate local y-angle from global y-angle.
     m_localRotation[1] += angle;
-    m_localRotation[1] = math::clampEulerAngle(m_localRotation[1]);
 }
 
 void kirana::math::Transform::rotateZ(float angle, Space space)
@@ -322,7 +320,6 @@ void kirana::math::Transform::rotateZ(float angle, Space space)
 
     // TODO: Calculate local Z-angle from global z-angle.
     m_localRotation[2] += angle;
-    m_localRotation[2] = math::clampEulerAngle(m_localRotation[2]);
 }
 
 void kirana::math::Transform::rotate(const Vector3 &rotation, Space space)
@@ -342,9 +339,6 @@ void kirana::math::Transform::rotate(const Vector3 &rotation, Space space)
 
     // TODO: Calculate local rotation from global rotation.
     m_localRotation += rotation;
-    m_localRotation[0] = math::clampEulerAngle(m_localRotation[0]);
-    m_localRotation[1] = math::clampEulerAngle(m_localRotation[1]);
-    m_localRotation[2] = math::clampEulerAngle(m_localRotation[2]);
 }
 
 void kirana::math::Transform::rotateAround(float angle, const Vector3 &a,
@@ -367,9 +361,6 @@ void kirana::math::Transform::rotateAround(float angle, const Vector3 &a,
     m_localRotation[0] += angle;
     m_localRotation[1] += angle;
     m_localRotation[2] += angle;
-    m_localRotation[0] = math::clampEulerAngle(m_localRotation[0]);
-    m_localRotation[1] = math::clampEulerAngle(m_localRotation[1]);
-    m_localRotation[2] = math::clampEulerAngle(m_localRotation[2]);
 }
 
 void kirana::math::Transform::lookAt(const Vector3 &lookAtPos,

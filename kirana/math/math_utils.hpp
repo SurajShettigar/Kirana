@@ -29,12 +29,25 @@ inline bool approximatelyEqual(double x, double y)
     return abs(x - y) <= std::numeric_limits<double>::epsilon();
 }
 
-inline float clampEulerAngle(float angle)
+/**
+ * Clamps the Euler angles to it's canonical range.
+ * @param x Clamps x to [-90.0, 90.0]
+ * @param y Clamps y to [-180.0, 180.0]
+ * @param z Clamps z to [-180.0, 180.0], but if x = +-90.0, z will be 0
+ */
+inline void clampEulerAngles(float *x, float *y, float *z)
 {
-    if(angle > 360.0f)
-        return angle - 360.0f;
-    else if(angle < -360.0f)
-        return angle + 360.0f;
+    std::fmaxf(-90.0f, std::fminf(*x, 90.0f));
+    std::fmaxf(-180.0f, std::fminf(*y, 180.0f));
+    std::fmaxf(-180.0f, std::fminf(*z, 180.0f));
+    if (approximatelyEqual(*x, 90.0f) || approximatelyEqual(*x, -90.0f))
+        *z = 0.0f;
+}
+
+/// Wraps an angle to range [-180.0, 180.0]
+inline float wrapAngle(float angle)
+{
+    return angle - (360.0f * std::floorf((angle + 180.0f) / 360.0f));
 }
 
 } // namespace kirana::math
