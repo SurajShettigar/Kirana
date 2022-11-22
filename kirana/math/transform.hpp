@@ -1,8 +1,7 @@
 #ifndef TRANSFORM_HPP
 #define TRANSFORM_HPP
 
-#include "matrix4x4.hpp"
-#include "vector3.hpp"
+#include "quaternion.hpp"
 #include <string>
 
 namespace kirana::math
@@ -20,12 +19,26 @@ class Transform
     Transform *m_parent = nullptr;
     Matrix4x4 m_localMatrix;
     Vector3 m_localPosition;
-    Vector3 m_localRotation;
+    Quaternion m_localRotation;
     Vector3 m_localScale;
 
     void calculateLocalMatrix();
-    [[nodiscard]] Matrix4x4 getParentMatrix() const;
-    [[nodiscard]] Matrix4x4 getGlobalMatrix() const;
+    /**
+     * Returns the world matrix of only the parent. Does not include the local
+     * matrix.
+     * @param includeScale if set to false, the matrix will only include
+     * translation and rotation.
+     * @return Matrix4x4
+     */
+    [[nodiscard]] Matrix4x4 getParentMatrix(bool includeScale = true) const;
+    /**
+     * Returns the world matrix including the current local matrix.
+     * @param includeScale if set to false, the matrix will only include
+     * translation and rotation.
+     * @return Matrix4x4
+     */
+    [[nodiscard]] Matrix4x4 getWorldMatrix(bool includeScale = true) const;
+
   public:
     explicit Transform(Transform *parent = nullptr);
     explicit Transform(const Matrix4x4 &mat, Transform *parent = nullptr);
@@ -53,7 +66,7 @@ class Transform
     [[nodiscard]] Vector3 getForward(Space space = Space::World) const;
 
     [[nodiscard]] Vector3 getPosition(Space space = Space::World) const;
-    [[nodiscard]] Vector3 getRotation(Space space = Space::World) const;
+    [[nodiscard]] Quaternion getRotation(Space space = Space::World) const;
     [[nodiscard]] Vector3 getScale(Space space = Space::Local) const;
 
     void setPosition(const Vector3 &position, Space space = Space::World);
@@ -65,22 +78,10 @@ class Transform
     void rotateY(float angle, Space space = Space::World);
     void rotateZ(float angle, Space space = Space::World);
     void rotate(const Vector3 &rotation, Space space = Space::World);
-    void rotateAround(float angle, const Vector3 &axis, Space space = Space::World);
-    void lookAt(const Vector3 &lookAtPos, const Vector3 &up, Space space = Space::World);
-
-    static Transform getOrthographicTransform(float left, float right,
-                                              float bottom, float top,
-                                              float near, float far,
-                                              bool graphicsAPI = false,
-                                              bool flipY = false);
-    static Transform getOrthographicTransform(float size, float aspectRatio,
-                                              float near, float far,
-                                              bool graphicsAPI = false,
-                                              bool flipY = false);
-    static Transform getPerspectiveTransform(float fov, float aspectRatio,
-                                             float near, float far,
-                                             bool graphicsAPI = false,
-                                             bool flipY = false);
+    void rotateAround(float angle, const Vector3 &axis,
+                      Space space = Space::World);
+    void lookAt(const Vector3 &lookAtPos, const Vector3 &up,
+                Space space = Space::World);
 };
 } // namespace kirana::math
 #endif

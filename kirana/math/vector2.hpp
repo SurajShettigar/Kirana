@@ -9,6 +9,9 @@ namespace kirana::math
 {
 class Vector3;
 class Vector4;
+/**
+ * Column 2D-Vector
+ */
 class Vector2
 {
   private:

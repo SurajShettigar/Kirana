@@ -29,6 +29,25 @@ inline bool approximatelyEqual(double x, double y)
     return abs(x - y) <= std::numeric_limits<double>::epsilon();
 }
 
+inline double clamp(double x, double min, double max)
+{
+    return std::fmax(min, std::fmin(x, max));
+}
+
+inline float clampf(float x, float min, float max)
+{
+    return std::fmaxf(min, std::fminf(x, max));
+}
+
+template <typename T> inline T map(T x, T inMin, T inMax, T outMin, T outMax)
+{
+    double val =
+        static_cast<double>(outMin) + static_cast<double>(x - inMin) *
+                                          static_cast<double>(outMax - outMin) /
+                                          static_cast<double>(inMax - inMin);
+    return static_cast<T>(clamp(val, outMin, outMax));
+}
+
 /**
  * Clamps the Euler angles to it's canonical range.
  * @param x Clamps x to [-90.0, 90.0]
