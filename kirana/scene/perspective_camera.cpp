@@ -6,7 +6,7 @@ kirana::scene::PerspectiveCamera::PerspectiveCamera(
     : Camera{windowResolution, nearPlane, farPlane}, m_fov{fov},
       m_graphicsAPI{graphicsAPI}, m_flipY{flipY}
 {
-    m_projection = math::Transform::getPerspectiveTransform(
+    m_projection = math::Matrix4x4::perspectiveProjection(
         m_fov, m_aspectRatio, m_nearPlane, m_farPlane, m_graphicsAPI, m_flipY);
 }
 
@@ -38,7 +38,7 @@ void kirana::scene::PerspectiveCamera::setResolution(
     std::array<uint32_t, 2> resolution)
 {
     Camera::setResolution(resolution);
-    m_projection = math::Transform::getPerspectiveTransform(
+    m_projection = math::Matrix4x4::perspectiveProjection(
         m_fov, m_aspectRatio, m_nearPlane, m_farPlane, m_graphicsAPI, m_flipY);
     m_onCameraChange();
 }

@@ -7,11 +7,17 @@
 
 namespace kirana::scene
 {
+class SceneImporter;
+class SceneManager;
+
 using math::Matrix4x4;
 using math::Transform;
 
 class Camera
 {
+    friend class SceneImporter;
+    friend class SceneManager;
+
   protected:
     utils::Event<> m_onCameraChange;
 
@@ -21,7 +27,7 @@ class Camera
     float m_aspectRatio;
 
     Transform m_transform;
-    mutable Transform m_projection;
+    Matrix4x4 m_projection;
 
   public:
     Camera(std::array<uint32_t, 2> windowResolution, float nearPlane = 0.1f,
@@ -32,7 +38,6 @@ class Camera
     Camera &operator=(const Camera &camera);
 
     Transform &transform = m_transform;
-    const Transform &projection = m_projection;
 
     const std::array<uint32_t, 2> &windowResolution = m_windowResolution;
     const float &nearPlane = m_nearPlane;
@@ -47,6 +52,21 @@ class Camera
     inline void removeOnCameraChangeEventListener(uint32_t callbackID)
     {
         m_onCameraChange.removeListener(callbackID);
+    }
+
+    [[nodiscard]] inline Matrix4x4 getViewMatrix() const
+    {
+        return m_transform.getMatrix();
+    }
+
+    [[nodiscard]] inline Matrix4x4 getProjectionMatrix() const
+    {
+        return m_projection;
+    }
+
+    [[nodiscard]] inline Matrix4x4 getViewProjectionMatrix() const
+    {
+        return getProjectionMatrix() * getViewMatrix();
     }
 
     virtual void setResolution(std::array<uint32_t, 2> resolution);

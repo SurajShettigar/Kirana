@@ -21,10 +21,8 @@ kirana::scene::Object::Object(const aiNode *node,
                               std::vector<std::shared_ptr<Mesh>> meshes,
                               math::Transform *parent)
     : m_name{node->mName.C_Str()}, m_meshes{std::move(meshes)},
-      m_transform{
-          new Transform(getMatrixFromNode(node), parent)}
+      m_transform{new Transform(getMatrixFromNode(node), parent)}
 {
-    m_transform->name = m_name;
 }
 
 kirana::scene::Object::~Object()

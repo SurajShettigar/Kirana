@@ -49,7 +49,6 @@ void kirana::Application::onMouseInput(MouseInput input)
 
 void kirana::Application::onScrollInput(double xOffset, double yOffset)
 {
-    std::cout << "Mouse Scroll: " << xOffset << "x" << yOffset << std::endl;
     m_inputManager.m_callScrollEvent(xOffset, yOffset);
 }
 

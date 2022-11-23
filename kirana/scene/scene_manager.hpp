@@ -3,6 +3,8 @@
 
 #include "scene.hpp"
 
+#include <input_manager.hpp>
+#include <time.hpp>
 #include <string>
 
 namespace kirana::scene
@@ -10,9 +12,24 @@ namespace kirana::scene
 class SceneManager
 {
   private:
+    struct ViewportCameraData
+    {
+        math::Vector2 prevMousePos;
+        math::Vector2 mousePos;
+        math::Vector2 mouseDelta;
+        bool firstClick = true;
+        utils::input::MouseButton currentButton;
+    };
+
     Scene m_currentScene;
 
-    SceneManager() = default;
+    utils::input::InputManager &m_inputManager;
+    utils::Time &m_time;
+
+    ViewportCameraData m_viewportCamData;
+
+    void handleViewportCameraInput();
+    SceneManager();
     ~SceneManager() = default;
 
   public:
@@ -25,8 +42,8 @@ class SceneManager
     }
 
     Scene &loadScene(std::string path = "",
-                           const SceneImportSettings &importSettings =
-                               DEFAULT_SCENE_IMPORT_SETTINGS);
+                     const SceneImportSettings &importSettings =
+                         DEFAULT_SCENE_IMPORT_SETTINGS);
     inline Scene &getCurrentScene()
     {
         return m_currentScene;

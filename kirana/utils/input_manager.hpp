@@ -23,6 +23,9 @@ class InputManager
   private:
     std::unordered_map<Key, KeyAction> m_keyboardKeyStatus;
     std::unordered_map<MouseButton, KeyAction> m_mouseKeyStatus;
+    std::array<Key, 8> m_axisKeys{Key::W,  Key::S,    Key::A,    Key::D,
+                                  Key::UP, Key::DOWN, Key::LEFT, Key::RIGHT};
+    math::Vector2 m_axis;
     math::Vector2 m_scrollValue;
     math::Vector2 m_prevMousePosition;
     math::Vector2 m_mousePosition;
@@ -172,16 +175,26 @@ class InputManager
         m_onKeyboardInput.removeAllListeners();
     }
 
-    inline void m_updateMousePosition(const std::array<int, 2> &pos)
+    inline void m_setAxisValues(KeyboardInput input)
     {
-        m_prevMousePosition = m_mousePosition;
-        m_mousePosition[0] = static_cast<float>(pos[0]);
-        m_mousePosition[1] = static_cast<float>(pos[1]);
+        float value =
+            input.action == KeyAction::DOWN || input.action == KeyAction::HELD
+                ? 1.0f
+                : 0.0f;
+        if (input.key == m_axisKeys[0] || input.key == m_axisKeys[4])
+            m_axis[1] = value;
+        else if (input.key == m_axisKeys[1] || input.key == m_axisKeys[5])
+            m_axis[1] = -value;
+        if (input.key == m_axisKeys[2] || input.key == m_axisKeys[6])
+            m_axis[0] = -value;
+        else if (input.key == m_axisKeys[3] || input.key == m_axisKeys[7])
+            m_axis[0] = value;
     }
 
     inline void m_callKeyboardEvent(KeyboardInput input)
     {
         m_keyboardKeyStatus[input.key] = input.action;
+        m_setAxisValues(input);
         m_onKeyboardInput(input);
     }
 
@@ -197,6 +210,13 @@ class InputManager
         m_scrollValue[0] = static_cast<float>(xOffset);
         m_scrollValue[1] = static_cast<float>(yOffset);
         m_onScrollInput(m_scrollValue);
+    }
+
+    inline void m_updateMousePosition(const std::array<int, 2> &pos)
+    {
+        m_prevMousePosition = m_mousePosition;
+        m_mousePosition[0] = static_cast<float>(pos[0]);
+        m_mousePosition[1] = static_cast<float>(pos[1]);
     }
 
   public:
@@ -226,9 +246,25 @@ class InputManager
         m_onMouseInput.removeListener(callbackID);
     }
 
+    inline void setAxisKeys(Key forward = Key::W, Key back = Key::S,
+                            Key left = Key::A, Key right = Key::D,
+                            Key altForward = Key::UP, Key altBack = Key::DOWN,
+                            Key altLeft = Key::LEFT, Key altRight = Key::RIGHT)
+    {
+        m_axisKeys[0] = forward;
+        m_axisKeys[1] = back;
+        m_axisKeys[2] = left;
+        m_axisKeys[3] = right;
+        m_axisKeys[4] = altForward;
+        m_axisKeys[5] = altBack;
+        m_axisKeys[6] = altLeft;
+        m_axisKeys[7] = altRight;
+    }
+
     inline bool getKey(Key key)
     {
-        return m_keyboardKeyStatus[key] == KeyAction::HELD;
+        return m_keyboardKeyStatus[key] == KeyAction::DOWN ||
+               m_keyboardKeyStatus[key] == KeyAction::HELD;
     }
     inline bool getKeyDown(Key key)
     {
@@ -239,10 +275,6 @@ class InputManager
         return m_keyboardKeyStatus[key] == KeyAction::UP;
     }
 
-    inline bool getMouse(MouseButton key)
-    {
-        return m_mouseKeyStatus[key] == KeyAction::HELD;
-    }
     inline bool getMouseDown(MouseButton key)
     {
         return m_mouseKeyStatus[key] == KeyAction::DOWN;
@@ -250,6 +282,25 @@ class InputManager
     inline bool getMouseUp(MouseButton key)
     {
         return m_mouseKeyStatus[key] == KeyAction::UP;
+    }
+
+    inline bool isAnyMouseButtonDown(MouseButton *button)
+    {
+        for (int i = 0; i < m_mouseKeyStatus.size(); i++)
+        {
+            if (m_mouseKeyStatus[static_cast<MouseButton>(i)] ==
+                KeyAction::DOWN)
+            {
+                *button = static_cast<MouseButton>(i);
+                return true;
+            }
+        }
+        return false;
+    }
+
+    inline math::Vector2 getAxis()
+    {
+        return m_axis;
     }
 
     inline float getMouseScrollOffset()

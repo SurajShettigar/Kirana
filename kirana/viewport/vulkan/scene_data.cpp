@@ -95,8 +95,8 @@ void kirana::viewport::vulkan::SceneData::createMaterials()
 
 void kirana::viewport::vulkan::SceneData::createCameraBuffer()
 {
-    m_cameraData.viewMatrix = m_scene.getCamera().transform.getMatrix();
-    m_cameraData.projectionMatrix = m_scene.getCamera().projection.getMatrix();
+    m_cameraData.viewMatrix = m_scene.getCamera().getViewMatrix();
+    m_cameraData.projectionMatrix = m_scene.getCamera().getProjectionMatrix();
 
     vk::DeviceSize paddedSize =
         vulkan::padUniformBufferSize(m_device->gpu, sizeof(vulkan::CameraData));
@@ -154,8 +154,8 @@ kirana::viewport::vulkan::MaterialData &kirana::viewport::vulkan::SceneData::
 
 void kirana::viewport::vulkan::SceneData::onCameraChanged()
 {
-    m_cameraData.viewMatrix = m_scene.getCamera().transform.getMatrix();
-    m_cameraData.projectionMatrix = m_scene.getCamera().projection.getMatrix();
+    m_cameraData.viewMatrix = m_scene.getCamera().getViewMatrix();
+    m_cameraData.projectionMatrix = m_scene.getCamera().getProjectionMatrix();
     vk::DeviceSize paddedSize =
         vulkan::padUniformBufferSize(m_device->gpu, sizeof(vulkan::CameraData));
     for (size_t i = 0; i < constants::VULKAN_FRAME_OVERLAP_COUNT; i++)
