@@ -9,6 +9,7 @@ namespace kirana::math
 
 class Transform
 {
+  public:
     enum class Space
     {
         Local = 0,

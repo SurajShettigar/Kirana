@@ -333,17 +333,16 @@ bool Matrix4x4::decompose(const Matrix4x4 &mat, Vector3 *translation,
     // Link:
     // https://github.com/erich666/GraphicsGems/blob/master/gemsii/unmatrix.c
 
-    Vector3 xAxis = Vector3(mat[0][0], mat[1][0], mat[2][0]);
-    Vector3 yAxis = Vector3(mat[0][1], mat[1][1], mat[2][1]);
-    Vector3 zAxis = Vector3(mat[0][2], mat[1][2], mat[2][2]);
-    Vector3 wAxis = Vector3(mat[0][3], mat[1][3], mat[2][3]);
-
     // Extract translation
     if (translation != nullptr)
-        *translation = wAxis;
+        *translation = Vector3(mat[0][3], mat[1][3], mat[2][3]);
 
     if (scale == nullptr && skew == nullptr && rotation == nullptr)
         return true;
+
+    Vector3 xAxis = Vector3(mat[0][0], mat[1][0], mat[2][0]);
+    Vector3 yAxis = Vector3(mat[0][1], mat[1][1], mat[2][1]);
+    Vector3 zAxis = Vector3(mat[0][2], mat[1][2], mat[2][2]);
 
     // Extract scale and skew
     Vector3 tempScale;
@@ -493,8 +492,8 @@ bool Matrix4x4::decomposeProjection(const Matrix4x4 &mat, Vector4 *perspective,
 
 Matrix4x4 Matrix4x4::translation(const Vector3 &translation)
 {
-    return Matrix4x4(0.0f, 0.0f, 0.0f, translation[0], 0.0f, 0.0f, 0.0f,
-                     translation[1], 0.0f, 0.0f, 0.0f, translation[2], 0.0f,
+    return Matrix4x4(1.0f, 0.0f, 0.0f, translation[0], 0.0f, 1.0f, 0.0f,
+                     translation[1], 0.0f, 0.0f, 1.0f, translation[2], 0.0f,
                      0.0f, 0.0f, 1.0f);
 }
 

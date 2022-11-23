@@ -123,8 +123,63 @@ kirana::math::Vector3 kirana::math::Quaternion::getEulerAngles() const
 
 kirana::math::Quaternion kirana::math::Quaternion::matrix(const Matrix4x4 &mat)
 {
-    // TODO: Implement Quaternion construction from rotation matrix.
-    return Quaternion::IDENTITY;
+    // Taken from 3D Math Primer, by Fletcher Dunn and Ian Parbery
+    // Refer: (Section 8.7.4)
+    // https://gamemath.com/book/orient.html
+    float wComp = mat[0][0] + mat[1][1] + mat[2][2];
+    float xComp = mat[0][0] - mat[1][1] - mat[2][2];
+    float yComp = mat[1][1] - mat[0][0] - mat[2][2];
+    float zComp = mat[2][2] - mat[0][0] - mat[1][1];
+
+    float biggestComp =
+        std::fmaxf(wComp, std::fmaxf(xComp, std::fmaxf(yComp, zComp)));
+    int biggestIndex =
+        biggestComp == wComp
+            ? 0
+            : (biggestComp == xComp ? 1 : (biggestComp == yComp ? 2 : 3));
+    biggestComp = std::sqrtf(biggestComp + 1.0f) * 0.5f;
+    float multiplier = 0.25f / biggestComp;
+
+    // | m00    m01     m02     m03 |
+    // | m10    m11     m12     m13 |
+    // | m20    m21     m22     m23 |
+    // | m30    m31     m32     m33 |
+    Quaternion q;
+    switch (biggestIndex)
+    {
+    case 0: {
+        q.m_w = biggestComp;
+        q.m_v[0] = (mat[2][1] - mat[1][2]) * multiplier;
+        q.m_v[1] = (mat[0][2] - mat[2][0]) * multiplier;
+        q.m_v[2] = (mat[1][0] - mat[0][1]) * multiplier;
+    }
+    break;
+    case 1: {
+        q.m_v[0] = biggestComp;
+        q.m_w = (mat[2][1] - mat[1][2]) * multiplier;
+        q.m_v[1] = (mat[1][0] + mat[0][1]) * multiplier;
+        q.m_v[2] = (mat[0][2] + mat[2][0]) * multiplier;
+    }
+    break;
+    case 2: {
+        q.m_v[1] = biggestComp;
+        q.m_w = (mat[0][2] - mat[2][0]) * multiplier;
+        q.m_v[0] = (mat[1][0] + mat[0][1]) * multiplier;
+        q.m_v[2] = (mat[2][1] + mat[1][2]) * multiplier;
+    }
+    break;
+    case 3: {
+        q.m_v[2] = biggestComp;
+        q.m_w = (mat[1][0] - mat[0][1]) * multiplier;
+        q.m_v[0] = (mat[0][2] + mat[2][0]) * multiplier;
+        q.m_v[1] = (mat[2][1] + mat[1][2]) * multiplier;
+    }
+    break;
+    default:
+        break;
+    }
+
+    return q;
 }
 
 kirana::math::Quaternion kirana::math::Quaternion::euler(const Vector3 &euler)

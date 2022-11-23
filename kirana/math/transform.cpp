@@ -2,7 +2,6 @@
 
 #include "vector3.hpp"
 #include "vector4.hpp"
-#include "math_utils.hpp"
 
 
 void kirana::math::Transform::calculateLocalMatrix()
@@ -207,6 +206,7 @@ void kirana::math::Transform::setRotation(const Vector3 &rotation, Space space)
     }
     else
         m_localRotation = Quaternion::euler(rotation);
+
     calculateLocalMatrix();
 }
 
@@ -224,22 +224,18 @@ void kirana::math::Transform::translate(
     {
         if (m_parent != nullptr && m_parent != this)
         {
-            m_localMatrix = Matrix4x4::inverse(getParentMatrix()) *
-                            Matrix4x4::translation(translation) *
-                            m_parent->getMatrix() * m_localMatrix;
-            m_localPosition[0] = m_localMatrix[0][3];
-            m_localPosition[1] = m_localMatrix[1][3];
-            m_localPosition[2] = m_localMatrix[2][3];
+            m_localPosition = static_cast<Vector3>(
+                Matrix4x4::inverse(getParentMatrix()) *
+                (Vector4(translation, 1.0f) +
+                 getParentMatrix() * Vector4(m_localPosition, 1.0f)));
         }
         else
-            m_localMatrix = Matrix4x4::translation(translation) * m_localMatrix;
+            m_localPosition += translation;
     }
     else
-        m_localMatrix = Matrix4x4::translation(translation) * m_localMatrix;
+        m_localPosition += translation;
 
-    m_localPosition[0] = m_localMatrix[0][3];
-    m_localPosition[1] = m_localMatrix[1][3];
-    m_localPosition[2] = m_localMatrix[2][3];
+    calculateLocalMatrix();
 }
 
 void kirana::math::Transform::rotateX(float angle, Space space)
@@ -251,13 +247,15 @@ void kirana::math::Transform::rotateX(float angle, Space space)
             m_localRotation =
                 Quaternion::matrix(Matrix4x4::inverse(getParentMatrix())) *
                 Quaternion::matrix(Matrix4x4::rotationX(angle)) *
-                Quaternion::matrix(getParentMatrix());
+                Quaternion::matrix(getParentMatrix()) * m_localRotation;
         }
         else
-            m_localRotation = Quaternion::matrix(Matrix4x4::rotationX(angle));
+            m_localRotation = Quaternion::matrix(Matrix4x4::rotationX(angle)) *
+                              m_localRotation;
     }
     else
-        m_localRotation = Quaternion::matrix(Matrix4x4::rotationX(angle));
+        m_localRotation =
+            Quaternion::matrix(Matrix4x4::rotationX(angle)) * m_localRotation;
 
     calculateLocalMatrix();
 }
@@ -271,13 +269,15 @@ void kirana::math::Transform::rotateY(float angle, Space space)
             m_localRotation =
                 Quaternion::matrix(Matrix4x4::inverse(getParentMatrix())) *
                 Quaternion::matrix(Matrix4x4::rotationY(angle)) *
-                Quaternion::matrix(getParentMatrix());
+                Quaternion::matrix(getParentMatrix()) * m_localRotation;
         }
         else
-            m_localRotation = Quaternion::matrix(Matrix4x4::rotationY(angle));
+            m_localRotation = Quaternion::matrix(Matrix4x4::rotationY(angle)) *
+                              m_localRotation;
     }
     else
-        m_localRotation = Quaternion::matrix(Matrix4x4::rotationY(angle));
+        m_localRotation =
+            Quaternion::matrix(Matrix4x4::rotationY(angle)) * m_localRotation;
 
     calculateLocalMatrix();
 }
@@ -291,13 +291,15 @@ void kirana::math::Transform::rotateZ(float angle, Space space)
             m_localRotation =
                 Quaternion::matrix(Matrix4x4::inverse(getParentMatrix())) *
                 Quaternion::matrix(Matrix4x4::rotationZ(angle)) *
-                Quaternion::matrix(getParentMatrix());
+                Quaternion::matrix(getParentMatrix()) * m_localRotation;
         }
         else
-            m_localRotation = Quaternion::matrix(Matrix4x4::rotationZ(angle));
+            m_localRotation = Quaternion::matrix(Matrix4x4::rotationZ(angle)) *
+                              m_localRotation;
     }
     else
-        m_localRotation = Quaternion::matrix(Matrix4x4::rotationZ(angle));
+        m_localRotation =
+            Quaternion::matrix(Matrix4x4::rotationZ(angle)) * m_localRotation;
 
     calculateLocalMatrix();
 }
@@ -311,13 +313,13 @@ void kirana::math::Transform::rotate(const Vector3 &rotation, Space space)
             m_localRotation =
                 Quaternion::matrix(Matrix4x4::inverse(getParentMatrix())) *
                 Quaternion::euler(rotation) *
-                Quaternion::matrix(getParentMatrix());
+                Quaternion::matrix(getParentMatrix()) * m_localRotation;
         }
         else
-            m_localRotation = Quaternion::euler(rotation);
+            m_localRotation = Quaternion::euler(rotation) * m_localRotation;
     }
     else
-        m_localRotation = Quaternion::euler(rotation);
+        m_localRotation = Quaternion::euler(rotation) * m_localRotation;
 
     calculateLocalMatrix();
 }
@@ -332,13 +334,14 @@ void kirana::math::Transform::rotateAround(float angle, const Vector3 &axis,
             m_localRotation =
                 Quaternion::matrix(Matrix4x4::inverse(getParentMatrix())) *
                 Quaternion::angleAxis(angle, axis) *
-                Quaternion::matrix(getParentMatrix());
+                Quaternion::matrix(getParentMatrix()) * m_localRotation;
         }
         else
-            m_localRotation = Quaternion::angleAxis(angle, axis);
+            m_localRotation =
+                Quaternion::angleAxis(angle, axis) * m_localRotation;
     }
     else
-        m_localRotation = Quaternion::angleAxis(angle, axis);
+        m_localRotation = Quaternion::angleAxis(angle, axis) * m_localRotation;
 
     calculateLocalMatrix();
 }
@@ -362,4 +365,7 @@ void kirana::math::Transform::lookAt(const Vector3 &lookAtPos,
         x[0], x[1], x[2], Vector3::dot(x, m_localPosition), y[0], y[1], y[2],
         Vector3::dot(y, m_localPosition), z[0], z[1], z[2],
         -Vector3::dot(z, m_localPosition), 0.0f, 0.0f, 0.0f, 1.0f);
+
+    Matrix4x4::decompose(m_localMatrix, &m_localPosition, &m_localRotation);
+    calculateLocalMatrix();
 }

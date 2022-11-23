@@ -24,11 +24,6 @@ inline bool approximatelyEqual(float x, float y)
     return fabsf(x - y) <= std::numeric_limits<float>::epsilon();
 }
 
-inline bool approximatelyEqual(double x, double y)
-{
-    return abs(x - y) <= std::numeric_limits<double>::epsilon();
-}
-
 inline double clamp(double x, double min, double max)
 {
     return std::fmax(min, std::fmin(x, max));
