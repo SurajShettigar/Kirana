@@ -124,9 +124,9 @@ float Vector4::lengthSquared() const
            (m_current[2] * m_current[2]) + (m_current[3] * m_current[3]);
 }
 
-Vector4 Vector4::normalize() const
+void Vector4::normalize()
 {
-    return (*this / length());
+    *this = *this / length();
 }
 
 Vector4 Vector4::normalize(const Vector4 &vec4)

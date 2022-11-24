@@ -79,6 +79,7 @@ class Transform
     void rotateY(float angle, Space space = Space::World);
     void rotateZ(float angle, Space space = Space::World);
     void rotate(const Vector3 &rotation, Space space = Space::World);
+    void rotate(const Quaternion &rotation, Space space = Space::World);
     void rotateAround(float angle, const Vector3 &axis,
                       Space space = Space::World);
     void lookAt(const Vector3 &lookAtPos, const Vector3 &up,

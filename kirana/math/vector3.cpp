@@ -15,8 +15,8 @@ const Vector3 Vector3::UP{0.0f, 1.0f, 0.0f};
 const Vector3 Vector3::DOWN{0.0f, -1.0f, 0.0f};
 const Vector3 Vector3::LEFT{-1.0f, 0.0f, 0.0f};
 const Vector3 Vector3::RIGHT{1.0f, 0.0f, 0.0f};
-const Vector3 Vector3::FORWARD{0.0f, 0.0f, -1.0f};
-const Vector3 Vector3::BACK{0.0f, 0.0f, 1.0f};
+const Vector3 Vector3::FORWARD{0.0f, 0.0f, 1.0f};
+const Vector3 Vector3::BACK{0.0f, 0.0f, -1.0f};
 
 Vector3::Vector3(float x, float y, float z) : m_current{x, y, z}
 {
@@ -120,9 +120,9 @@ float Vector3::lengthSquared() const
            (m_current[2] * m_current[2]);
 }
 
-Vector3 Vector3::normalize() const
+void Vector3::normalize()
 {
-    return (*this / length());
+    *this = *this / length();
 }
 
 float Vector3::dot(const Vector3 &v, const Vector3 &w)
@@ -158,6 +158,26 @@ Vector3 Vector3::lerp(const Vector3 &v, const Vector3 &w, float t)
 Vector3 Vector3::reflect(const Vector3 &v, const Vector3 &normal)
 {
     return v - 2 * dot(v, normal) * normal;
+}
+
+
+Vector3 Vector3::spherical(const Vector3 &direction, float radius)
+{
+    Vector3 newVec(direction);
+    newVec[0] /= radius;
+    newVec[1] /= radius;
+    newVec[2] = newVec[0] * newVec[0] + newVec[1] * newVec[1];
+
+    if (newVec[2] > 1.0f)
+    {
+        float s = 1.0f / std::sqrt(newVec[2]);
+        newVec[0] *= s;
+        newVec[1] *= s;
+        newVec[2] = 0.0f;
+    }
+    else
+        newVec[2] = sqrt(1.0f - newVec[2]);
+    return newVec;
 }
 
 void Vector3::coordinateFrame(const Vector3 &w, Vector3 *u, Vector3 *v)

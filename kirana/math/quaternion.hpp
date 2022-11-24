@@ -83,6 +83,21 @@ class Quaternion
      */
     static Quaternion slerp(const Quaternion &from, const Quaternion &to,
                             float t);
+    /**
+     * Creates an orientation which looks in the given direction.
+     * @param direction The unit direction in which to look at.
+     * @param up The unit up vector
+     * @return The orientation in the given direction
+     */
+    static Quaternion lookAtDirection(const Vector3 &direction, const Vector3 &up);
+    /**
+     * Calculates the rotation between two vectors.
+     * @param from The starting unit vector.
+     * @param to The final unit vector.
+     * @return The rotation between two vectors.
+     */
+    static Quaternion rotationFromVectors(const Vector3 &from,
+                                          const Vector3 &to);
 
     // Other operations
     friend std::ostream &operator<<(std::ostream &out, const Quaternion &q);

@@ -109,9 +109,9 @@ float Vector2::lengthSquared() const
     return (m_current[0] * m_current[0]) + (m_current[1] * m_current[1]);
 }
 
-Vector2 Vector2::normalize() const
+void Vector2::normalize()
 {
-    return (*this / length());
+    *this = *this / length();
 }
 
 float Vector2::dot(const Vector2 &v, const Vector2 &w)
