@@ -39,10 +39,11 @@ int main(int argc, char **argv)
               << std::endl;
 
     Vector3 vec1(1.0f, 2.0f, 3.0f);
+    vec1.normalize();
     Vector3 vec2, vec3;
 
-    Vector3::coordinateFrame(vec1.normalize(), &vec2, &vec3);
-    std::cout << "Co-ordinate frame: " << vec1.normalize() << " " << vec2 << " "
+    Vector3::coordinateFrame(vec1, &vec2, &vec3);
+    std::cout << "Co-ordinate frame: " << vec1 << " " << vec2 << " "
               << vec3 << std::endl;
 
     Matrix4x4 mat1;

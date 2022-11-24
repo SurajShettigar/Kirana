@@ -282,6 +282,36 @@ kirana::math::Quaternion kirana::math::Quaternion::slerp(const Quaternion &from,
                       from.m_w * k0 + newTo.m_w * k1);
 }
 
+kirana::math::Quaternion kirana::math::Quaternion::lookAtDirection(
+    const Vector3 &direction, const Vector3 &up)
+{
+    if (Vector3::dot(direction, Vector3::FORWARD) >= 0.9999f)
+        return Quaternion::IDENTITY;
+    else if (Vector3::dot(direction, Vector3::BACK) >= 0.9999f)
+        return Quaternion::euler(Vector3::UP * 180.0f);
+
+    float angle =
+        math::degrees(std::acos(Vector3::dot(Vector3::FORWARD, direction)));
+    Vector3 axis = Vector3::cross(Vector3::FORWARD, direction);
+    axis.normalize();
+    return Quaternion::angleAxis(angle, axis);
+
+    //    Vector3 z = direction;
+    //    Vector3 x = Vector3::cross(Vector3::normalize(up), z);
+    //    Vector3 y = Vector3::cross(z, x);
+    //
+    //    Matrix4x4 mat = Matrix4x4(x[0], y[0], z[0], 0.0f, x[1], y[1], z[1], 0.0f,
+    //                              x[2], y[2], z[2], 0.0f, 0.0f, 0.0f, 0.0f, 1.0f);
+    //
+    //    return Quaternion::matrix(mat);
+}
+
+kirana::math::Quaternion kirana::math::Quaternion::rotationFromVectors(
+    const Vector3 &from, const Vector3 &to)
+{
+    return Quaternion(to, 0.0f) * Quaternion::inverse(Quaternion(from, 0.0f));
+}
+
 std::ostream &kirana::math::operator<<(std::ostream &out, const Quaternion &q)
 {
     return out << q.getEulerAngles();
