@@ -37,6 +37,7 @@ class Camera
     Camera(const Camera &camera);
     Camera &operator=(const Camera &camera);
 
+    // TODO: Call on camera change event when transform changes.
     Transform &transform = m_transform;
 
     const std::array<uint32_t, 2> &windowResolution = m_windowResolution;
@@ -56,7 +57,7 @@ class Camera
 
     [[nodiscard]] inline Matrix4x4 getViewMatrix() const
     {
-        return m_transform.getMatrix();
+        return Matrix4x4::inverse(m_transform.getMatrix());
     }
 
     [[nodiscard]] inline Matrix4x4 getProjectionMatrix() const

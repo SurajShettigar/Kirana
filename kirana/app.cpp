@@ -132,6 +132,7 @@ void kirana::Application::update()
 {
     m_time.update();
     m_windowManager.update();
+    // TODO: Update input manager keyboard and mouse clicks every frame.
     m_inputManager.m_isMouseInside =
         m_windowManager.getCurrentWindow()->isCursorInside;
     m_inputManager.m_updateMousePosition(

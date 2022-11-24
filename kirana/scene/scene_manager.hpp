@@ -19,9 +19,26 @@ class SceneManager
         math::Vector2 mouseDelta;
         bool firstClick = true;
         utils::input::MouseButton currentButton;
+
+        [[nodiscard]] math::Vector2 normalizedPrevMousePos(
+            const std::array<uint32_t, 2> windowSize) const
+        {
+            return math::Vector2::normalize(math::Vector2(
+                prevMousePos[0] / static_cast<float>(windowSize[0]),
+                prevMousePos[1] / static_cast<float>(windowSize[1])));
+        }
+
+        [[nodiscard]] math::Vector2 normalizedMousePos(
+            const std::array<uint32_t, 2> windowSize) const
+        {
+            return math::Vector2::normalize(
+                math::Vector2(mousePos[0] / static_cast<float>(windowSize[0]),
+                              mousePos[1] / static_cast<float>(windowSize[1])));
+        }
     };
 
     Scene m_currentScene;
+    PerspectiveCamera &m_viewportCamera;
 
     utils::input::InputManager &m_inputManager;
     utils::Time &m_time;
