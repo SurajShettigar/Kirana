@@ -44,57 +44,43 @@ void kirana::scene::SceneManager::handleViewportCameraInput()
         {
         case MouseButton::LEFT: {
             // Camera Orbit
-            //            auto fromV = static_cast<math::Vector3>(
-            //                m_viewportCamData.normalizedPrevMousePos(
-            //                    m_viewportCamera.m_windowResolution));
-            //            auto toV =
-            //                static_cast<math::Vector3>(m_viewportCamData.normalizedMousePos(
-            //                    m_viewportCamera.m_windowResolution));
-            //            // Flip Y-axis
-            //            fromV[1] = -fromV[1];
-            //            toV[1] = -toV[1];
-            //            // TODO: Calculate vectors with the current object as
-            //            origin. fromV = math::Vector3::spherical(
-            //                fromV, 1.0f);
-            //            toV = math::Vector3::spherical(
-            //                toV, 1.0f);
-            //            m_viewportCamera.m_transform.rotate(
-            //                math::Quaternion::rotationFromVectors(fromV,
-            //                toV));
-            math::Vector3 pivot = m_currentScene.m_rootObject->transform->getPosition();
-            float xAngle = static_cast<float>(
-                               2.0 * math::PI /
-                               static_cast<double>(
-                                   m_viewportCamera.m_windowResolution[0])) *
-                           m_viewportCamData.mouseDelta[0] * 50.0f;
-            float yAngle =
-                static_cast<float>(
-                    math::PI / static_cast<double>(
-                                   m_viewportCamera.m_windowResolution[1])) *
-                m_viewportCamData.mouseDelta[1] * 50.0f;
-            if (std::fabsf(math::Vector3::dot(
-                    m_viewportCamera.m_transform.getForward(),
-                    math::Vector3::UP)) >= 0.9999f)
-                yAngle = 0.0f;
-            math::Vector3 pos =
-                math::Quaternion::angleAxis(xAngle, math::Vector3::UP) *
-                    (m_viewportCamera.m_transform.getPosition() - pivot) +
-                pivot;
-            pos = math::Quaternion::angleAxis(yAngle, math::Vector3::RIGHT) *
-                      (pos - pivot) +
-                  pivot;
+            math::Vector2 delta = m_viewportCamData.mouseDelta;
+            delta[0] = m_viewportCamData.mouseDelta[0] /
+                       static_cast<float>(m_viewportCamera.windowResolution[0]);
+            delta[1] = m_viewportCamData.mouseDelta[1] /
+                       static_cast<float>(m_viewportCamera.windowResolution[1]);
 
-            m_viewportCamera.m_transform.setPosition(pos);
-            m_viewportCamera.m_transform.lookAt(pivot, math::Vector3::UP);
+            float xAngle = 180.0f * delta[1];
+            float yAngle = -360.0f * delta[0];
+
+            if (xAngle > 89.0f)
+                xAngle = 89.0f;
+            else if (xAngle < -89.0f)
+                xAngle = -89.0f;
+
+            math::Vector3 lookPos =
+                (math::Quaternion::angleAxis(xAngle, math::Vector3::RIGHT) *
+                 (m_viewportCamera.transform.getPosition() -
+                  m_viewportCamera.pivot)) +
+                m_viewportCamera.pivot;
+            lookPos = (math::Quaternion::angleAxis(yAngle, math::Vector3::UP) *
+                       (lookPos - m_viewportCamera.pivot)) +
+                      m_viewportCamera.pivot;
+
+            m_viewportCamera.transform.setPosition(lookPos);
+            m_viewportCamera.lookAt(m_viewportCamera.pivot);
         }
         break;
         case MouseButton::MIDDLE: {
             // Camera Pan
-            math::Vector3 translation(m_viewportCamData.mouseDelta[0],
-                                      -m_viewportCamData.mouseDelta[1], 0.0f);
+            math::Vector3 translation(-m_viewportCamData.mouseDelta[0],
+                                      m_viewportCamData.mouseDelta[1], 0.0f);
             translation *= constants::VIEWPORT_CAMERA_MOUSE_SENSITIVITY *
-                           m_time.getDeltaTime();
-            m_viewportCamera.m_transform.translate(translation);
+                           m_time.getDeltaTime() *
+                           m_viewportCamera.transform.getPosition()[2];
+            m_viewportCamera.pivot += translation;
+            m_viewportCamera.transform.translate(translation,
+                                                 Transform::Space::World);
         }
         break;
         case MouseButton::RIGHT: {
@@ -104,22 +90,24 @@ void kirana::scene::SceneManager::handleViewportCameraInput()
                                std::fabsf(m_viewportCamData.mouseDelta[1])
                            ? m_viewportCamData.mouseDelta[1]
                            : maxDelta;
+
             math::Vector3 translation =
-                -m_viewportCamera.m_transform.getForward() * maxDelta *
+                -m_viewportCamera.transform.getForward() * maxDelta *
                 constants::VIEWPORT_CAMERA_MOUSE_SENSITIVITY *
-                m_time.getDeltaTime();
-            m_viewportCamera.m_transform.translate(translation);
+                m_time.getDeltaTime() *
+                m_viewportCamera.transform.getPosition()[2];
+
+            m_viewportCamera.transform.translate(translation);
         }
         break;
         default:
             break;
         }
-        m_viewportCamera.m_onCameraChange();
     }
     if (m_inputManager.getMouseUp(m_viewportCamData.currentButton))
     {
-        m_viewportCamData.prevMousePos = math::Vector2::ZERO;
-        m_viewportCamData.mousePos = math::Vector2::ZERO;
+        m_viewportCamData.prevMousePos = m_inputManager.getMousePosition();
+        m_viewportCamData.mousePos = m_inputManager.getMousePosition();
         m_viewportCamData.mouseDelta = math::Vector2::ZERO;
         m_viewportCamData.firstClick = true;
     }
@@ -153,10 +141,11 @@ void kirana::scene::SceneManager::init()
     {
         //        m_currentScene.getCamera().transform.translate(
         //            kirana::math::Vector3(0.0f, 1.5f, 3.0f));
-        m_viewportCamera.m_transform.translate(
+        m_viewportCamera.transform.translate(
             kirana::math::Vector3(0.0f, 5.0f, 10.0f));
-        m_viewportCamera.m_transform.lookAt(kirana::math::Vector3::ZERO,
-                                            kirana::math::Vector3::UP);
+        m_viewportCamera.lookAt(
+            m_currentScene.m_rootObject->transform->getPosition(),
+            kirana::math::Vector3::UP);
     }
 }
 
@@ -168,10 +157,10 @@ void kirana::scene::SceneManager::update()
 
     if (m_inputManager.getKey(Key::R))
         m_currentScene.m_rootObject->transform->rotateY(
-            rotSpeed, Transform::Space::World);
+            rotSpeed, Transform::Space::Local);
     if (m_inputManager.getKey(Key::E))
         m_currentScene.m_rootObject->transform->rotateX(
-            rotSpeed, Transform::Space::World);
+            rotSpeed, Transform::Space::Local);
     if (m_inputManager.getKey(Key::T))
         m_currentScene.m_objects[2]->transform->rotateY(
             rotSpeed, Transform::Space::Local);
@@ -184,22 +173,22 @@ void kirana::scene::SceneManager::update()
                 moveSpeed,
             Transform::Space::Local);
 
-    if (m_inputManager.getKeyDown(Key::SPACE))
+    if (m_inputManager.getKeyDown(Key::F))
     {
-        m_viewportCamera.m_transform.lookAt(math::Vector3::ZERO,
-                                            math::Vector3::UP);
-        m_viewportCamera.m_onCameraChange();
+        m_viewportCamera.transform.setPosition(
+            kirana::math::Vector3(0.0f, 5.0f, 10.0f));
+        m_viewportCamera.lookAt(
+            m_currentScene.m_rootObject->transform->getPosition(),
+            math::Vector3::UP);
     }
 
     if (m_inputManager.getKeyDown(Key::L))
     {
         math::Vector3 dir =
-            m_viewportCamera.m_transform.getPosition() -
+            m_viewportCamera.transform.getPosition() -
             m_currentScene.m_rootObject->transform->getPosition();
         dir.normalize();
-        m_currentScene.m_rootObject->transform->setRotation(
-            math::Quaternion::lookAtDirection(dir, math::Vector3::UP)
-                .getEulerAngles());
+        m_currentScene.m_rootObject->transform->lookAt(dir, math::Vector3::UP);
     }
 }
 

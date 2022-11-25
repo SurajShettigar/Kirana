@@ -23,17 +23,23 @@ class SceneManager
         [[nodiscard]] math::Vector2 normalizedPrevMousePos(
             const std::array<uint32_t, 2> windowSize) const
         {
-            return math::Vector2::normalize(math::Vector2(
+            math::Vector2 pos = math::Vector2::normalize(math::Vector2(
                 prevMousePos[0] / static_cast<float>(windowSize[0]),
-                prevMousePos[1] / static_cast<float>(windowSize[1])));
+                prevMousePos[1] / static_cast<float>(windowSize[0])));
+            pos[0] = pos[0] * 2.0f - 1.0f;
+            pos[1] = pos[1] * 2.0f - 1.0f;
+            return pos;
         }
 
         [[nodiscard]] math::Vector2 normalizedMousePos(
             const std::array<uint32_t, 2> windowSize) const
         {
-            return math::Vector2::normalize(
+            math::Vector2 pos = math::Vector2::normalize(
                 math::Vector2(mousePos[0] / static_cast<float>(windowSize[0]),
-                              mousePos[1] / static_cast<float>(windowSize[1])));
+                              mousePos[1] / static_cast<float>(windowSize[0])));
+            pos[0] = pos[0] * 2.0f - 1.0f;
+            pos[1] = pos[1] * 2.0f - 1.0f;
+            return pos;
         }
     };
 

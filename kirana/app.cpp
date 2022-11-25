@@ -103,7 +103,7 @@ void kirana::Application::init()
             m_windowManager.createWindow(m_windowPointer, "Kirana", false,
                                          false, m_windowWidth, m_windowHeight);
     else
-        m_viewportWindow = m_windowManager.createWindow("Kirana", true, true);
+        m_viewportWindow = m_windowManager.createWindow("Kirana", false, true);
 
     scene::Scene &scene = m_sceneManager.loadScene();
     if (scene.isInitialized())

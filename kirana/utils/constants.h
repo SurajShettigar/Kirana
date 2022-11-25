@@ -39,7 +39,7 @@ static const char *DEFAULT_SCENE_MATERIAL_SHADER_NAME = VULKAN_SHADER_DEFAULT_NA
 static const char *DEFAULT_MODEL_NAME = "Quad_Model.fbx";
 //static const char *DEFAULT_MODEL_NAME = "Large_Model.fbx";
 
-static const float VIEWPORT_CAMERA_MOUSE_SENSITIVITY = 6.0f;
+static const float VIEWPORT_CAMERA_MOUSE_SENSITIVITY = 3.0f;
 
 } // namespace kirana::utils::constants
 
