@@ -9,6 +9,8 @@ void kirana::math::Transform::calculateLocalMatrix()
     m_localMatrix = Matrix4x4::translation(m_localPosition) *
                     m_localRotation.getMatrix() *
                     Matrix4x4::scale(m_localScale);
+    if (m_enableEvents)
+        m_onChangeEvent();
 }
 
 
@@ -40,14 +42,16 @@ kirana::math::Matrix4x4 kirana::math::Transform::getWorldMatrix(
     }
 }
 
-kirana::math::Transform::Transform(Transform *parent)
+kirana::math::Transform::Transform(Transform *parent, bool enableEvents)
     : m_parent{parent}, m_localMatrix{Matrix4x4::IDENTITY}, m_localPosition{},
-      m_localRotation{}, m_localScale{Vector3::ONE}
+      m_localRotation{}, m_localScale{Vector3::ONE}, m_enableEvents{
+                                                         enableEvents}
 {
 }
 
-kirana::math::Transform::Transform(const Matrix4x4 &mat, Transform *parent)
-    : m_parent{parent}, m_localMatrix{mat}
+kirana::math::Transform::Transform(const Matrix4x4 &mat, Transform *parent,
+                                   bool enableEvents)
+    : m_parent{parent}, m_localMatrix{mat}, m_enableEvents{enableEvents}
 {
     Vector3 eulerAngles;
     Matrix4x4::decompose(m_localMatrix, &m_localPosition, &m_localScale,
@@ -103,35 +107,47 @@ kirana::math::Matrix4x4 kirana::math::Transform::getMatrix(Space space) const
 
 kirana::math::Vector3 kirana::math::Transform::getRight(Space space) const
 {
-    if (space == Space::World)
-    {
-        Matrix4x4 globalMat = getWorldMatrix();
-        return Vector3(globalMat[0][0], globalMat[1][0], globalMat[2][0]);
-    }
-    return Vector3(m_localMatrix[0][0], m_localMatrix[1][0],
-                   m_localMatrix[2][0]);
+    return getRotation(space).rotateVector(Vector3::RIGHT);
 }
 
 kirana::math::Vector3 kirana::math::Transform::getUp(Space space) const
 {
-    if (space == Space::World)
-    {
-        Matrix4x4 globalMat = getWorldMatrix();
-        return Vector3(globalMat[0][1], globalMat[1][1], globalMat[2][1]);
-    }
-    return Vector3(m_localMatrix[0][1], m_localMatrix[1][1],
-                   m_localMatrix[2][1]);
+    return getRotation(space).rotateVector(Vector3::UP);
 }
 
 kirana::math::Vector3 kirana::math::Transform::getForward(Space space) const
 {
+    return getRotation(space).rotateVector(Vector3::FORWARD);
+}
+
+
+void kirana::math::Transform::setForward(const Vector3 &forward, Space space)
+{
+    Vector3 right;
+    Vector3 up;
     if (space == Space::World)
     {
-        Matrix4x4 globalMat = getWorldMatrix();
-        return Vector3(globalMat[0][2], globalMat[1][2], globalMat[2][2]);
+        Vector3 fwd = inverseTransformVector(forward);
+        right = Vector3::cross(Vector3::UP, fwd);
+        up = Vector3::cross(fwd, right);
     }
-    return Vector3(m_localMatrix[0][2], m_localMatrix[1][2],
-                   m_localMatrix[2][2]);
+    else
+    {
+        right = Vector3::cross(Vector3::UP, forward);
+        up = Vector3::cross(forward, right);
+    }
+    m_localMatrix[0][0] = right[0];
+    m_localMatrix[1][0] = right[1];
+    m_localMatrix[2][0] = right[2];
+    m_localMatrix[0][1] = up[0];
+    m_localMatrix[1][1] = up[1];
+    m_localMatrix[2][1] = up[2];
+    m_localMatrix[0][2] = forward[0];
+    m_localMatrix[1][2] = forward[1];
+    m_localMatrix[2][2] = forward[2];
+
+    Matrix4x4::decompose(m_localMatrix, nullptr, &m_localRotation);
+    calculateLocalMatrix();
 }
 
 kirana::math::Vector3 kirana::math::Transform::getPosition(Space space) const
@@ -197,19 +213,25 @@ void kirana::math::Transform::setPosition(const Vector3 &position, Space space)
 
 void kirana::math::Transform::setRotation(const Vector3 &rotation, Space space)
 {
+    setRotation(Quaternion::euler(rotation), space);
+}
+
+void kirana::math::Transform::setRotation(const Quaternion &rotation,
+                                          Space space)
+{
     if (space == Space::World)
     {
         if (m_parent != nullptr && m_parent != this)
         {
             m_localRotation =
                 Quaternion::matrix(Matrix4x4::inverse(getParentMatrix())) *
-                Quaternion::euler(rotation);
+                rotation;
         }
         else
-            m_localRotation = Quaternion::euler(rotation);
+            m_localRotation = rotation;
     }
     else
-        m_localRotation = Quaternion::euler(rotation);
+        m_localRotation = rotation;
 
     calculateLocalMatrix();
 }
@@ -218,6 +240,52 @@ void kirana::math::Transform::setLocalScale(const Vector3 &scale)
 {
     m_localScale = scale;
     calculateLocalMatrix();
+}
+
+
+kirana::math::Vector3 kirana::math::Transform::inverseTransformVector(
+    const Vector3 &vector)
+{
+    return static_cast<Vector3>(Matrix4x4::inverse(getWorldMatrix()) *
+                                Vector4(vector, 0.0f));
+}
+
+
+kirana::math::Vector3 kirana::math::Transform::inverseTransformPoint(
+    const Vector3 &point)
+{
+    return static_cast<Vector3>(Matrix4x4::inverse(getWorldMatrix()) *
+                                Vector4(point, 1.0f));
+}
+
+
+kirana::math::Vector3 kirana::math::Transform::inverseTransformDirection(
+    const Vector3 &direction)
+{
+    return static_cast<Vector3>(Matrix4x4::inverse(getWorldMatrix(false)) *
+                                Vector4(direction, 0.0f));
+}
+
+
+kirana::math::Vector3 kirana::math::Transform::transformVector(
+    const Vector3 &vector)
+{
+    return static_cast<Vector3>(getWorldMatrix() * Vector4(vector, 0.0f));
+}
+
+
+kirana::math::Vector3 kirana::math::Transform::transformPoint(
+    const Vector3 &point)
+{
+    return static_cast<Vector3>(getWorldMatrix() * Vector4(point, 1.0f));
+}
+
+
+kirana::math::Vector3 kirana::math::Transform::transformDirection(
+    const Vector3 &direction)
+{
+    return static_cast<Vector3>(getWorldMatrix(false) *
+                                Vector4(direction, 0.0f));
 }
 
 
@@ -374,11 +442,11 @@ void kirana::math::Transform::rotateAround(float angle, const Vector3 &axis,
     calculateLocalMatrix();
 }
 
-void kirana::math::Transform::lookAt(const Vector3 &lookAtPos,
+void kirana::math::Transform::lookAt(const Vector3 &direction,
                                      const Vector3 &up, Space space)
 {
     // TODO: Implement World space lookAt.
-    Vector3 z = Vector3::normalize(m_localPosition - lookAtPos);
+    Vector3 z = Vector3::normalize(direction);
     Vector3 x = Vector3::cross(Vector3::normalize(up), z);
     Vector3 y = Vector3::cross(z, x);
 
@@ -389,15 +457,15 @@ void kirana::math::Transform::lookAt(const Vector3 &lookAtPos,
     // explanation.
 
     // m_localMatrix is now a view-matrix.
-    //    m_localMatrix = Matrix4x4(
-    //        x[0], x[1], x[2], Vector3::dot(x, m_localPosition), y[0], y[1],
-    //        y[2], Vector3::dot(y, m_localPosition), z[0], z[1], z[2],
-    //        -Vector3::dot(z, m_localPosition), 0.0f, 0.0f, 0.0f, 1.0f);
+    //        m_localMatrix = Matrix4x4(
+    //            x[0], x[1], x[2], Vector3::dot(x, m_localPosition), y[0],
+    //            y[1], y[2], Vector3::dot(y, m_localPosition), z[0], z[1],
+    //            z[2], -Vector3::dot(z, m_localPosition), 0.0f, 0.0f,
+    //            0.0f, 1.0f);
 
-    m_localMatrix = Matrix4x4(x[0], y[0], z[0], m_localPosition[0], x[1], y[1],
-                              z[1], m_localPosition[1], x[2], y[2], z[2],
-                              m_localPosition[2], 0.0f, 0.0f, 0.0f, 1.0f);
+    m_localMatrix = Matrix4x4(x[0], y[0], z[0], 0.0f, x[1], y[1], z[1], 0.0f,
+                              x[2], y[2], z[2], 0.0f, 0.0f, 0.0f, 0.0f, 1.0f);
 
-    Matrix4x4::decompose(m_localMatrix, &m_localPosition, &m_localRotation);
+    Matrix4x4::decompose(m_localMatrix, nullptr, &m_localRotation);
     calculateLocalMatrix();
 }

@@ -565,6 +565,27 @@ Matrix4x4 Matrix4x4::scale(const Vector3 &scale)
     return Matrix4x4(scale[0], 0.0f, 0.0f, 0.0f, 0.0f, scale[1], 0.0f, 0.0f,
                      0.0f, 0.0f, scale[2], 0.0f, 0.0f, 0.0f, 0.0f, 1.0f);
 }
+
+
+Matrix4x4 Matrix4x4::view(const Vector3 &eyePosition,
+                          const Vector3 &lookAtPosition, const Vector3 &up)
+{
+    math::Vector3 z = math::Vector3::normalize(eyePosition - lookAtPosition);
+    math::Vector3 x = math::Vector3::cross(math::Vector3::normalize(up), z);
+    math::Vector3 y = math::Vector3::cross(z, x);
+
+    // The above calculated basis vectors are camera's basis in world space
+    // (Camera's transform matrix). In order to get view matrix, we just invert
+    // the matrix one would obtain from the above basis vectors. Look at
+    // https://www.3dgep.com/understanding-the-view-matrix/ for a detailed
+    // explanation.
+
+    return Matrix4x4(x[0], x[1], x[2], math::Vector3::dot(x, eyePosition), y[0],
+                     y[1], y[2], math::Vector3::dot(y, eyePosition), z[0], z[1],
+                     z[2], -math::Vector3::dot(z, eyePosition), 0.0f, 0.0f,
+                     0.0f, 1.0f);
+}
+
 Matrix4x4 Matrix4x4::orthographicProjection(float left, float right,
                                             float bottom, float top, float near,
                                             float far, bool graphicsAPI,
