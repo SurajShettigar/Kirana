@@ -7,11 +7,16 @@
 
 namespace kirana::scene
 {
+class SceneImporter;
+class SceneManager;
+
 using math::Matrix4x4;
 using math::Transform;
 
 class Camera
 {
+    friend class SceneImporter;
+
   protected:
     utils::Event<> m_onCameraChange;
 
@@ -20,19 +25,23 @@ class Camera
     float m_farPlane = 1000.0f;
     float m_aspectRatio;
 
-    Transform m_transform;
-    mutable Transform m_projection;
+    Transform m_transform{nullptr, true};
+    math::Vector3 m_pivot;
+    Matrix4x4 m_view;
+    Matrix4x4 m_projection;
 
+    uint32_t m_transformChangeListener;
+    void onTransformChanged();
   public:
-    Camera(std::array<uint32_t, 2> windowResolution, float nearPlane = 0.1f,
+    explicit Camera(std::array<uint32_t, 2> windowResolution, float nearPlane = 0.1f,
            float farPlane = 1000.0f);
-    ~Camera() = default;
+    virtual ~Camera();
 
     Camera(const Camera &camera);
     Camera &operator=(const Camera &camera);
 
     Transform &transform = m_transform;
-    const Transform &projection = m_projection;
+    math::Vector3 &pivot = m_pivot;
 
     const std::array<uint32_t, 2> &windowResolution = m_windowResolution;
     const float &nearPlane = m_nearPlane;
@@ -47,6 +56,24 @@ class Camera
     inline void removeOnCameraChangeEventListener(uint32_t callbackID)
     {
         m_onCameraChange.removeListener(callbackID);
+    }
+
+    void lookAt(const math::Vector3 &position,
+                const math::Vector3 &up = math::Vector3::UP);
+
+    [[nodiscard]] inline Matrix4x4 getViewMatrix() const
+    {
+        return m_view;
+    }
+
+    [[nodiscard]] inline Matrix4x4 getProjectionMatrix() const
+    {
+        return m_projection;
+    }
+
+    [[nodiscard]] inline Matrix4x4 getViewProjectionMatrix() const
+    {
+        return getProjectionMatrix() * getViewMatrix();
     }
 
     virtual void setResolution(std::array<uint32_t, 2> resolution);

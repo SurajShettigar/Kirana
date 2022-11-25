@@ -9,6 +9,9 @@ namespace kirana::math
 {
 class Vector2;
 class Vector3;
+/**
+ * Column 4D-Vector
+ */
 class Vector4
 {
   private:
@@ -54,7 +57,7 @@ class Vector4
     // Vector Specific operations
     [[nodiscard]] float length() const;
     [[nodiscard]] float lengthSquared() const;
-    [[nodiscard]] Vector4 normalize() const;
+    void normalize();
 
     [[nodiscard]] inline size_t size() const
     {

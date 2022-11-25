@@ -9,6 +9,9 @@ namespace kirana::math
 {
 class Vector2;
 class Vector4;
+/**
+ * Column 3D-Vector
+ */
 class Vector3
 {
   private:
@@ -60,7 +63,7 @@ class Vector3
     // Vector Specific operations
     [[nodiscard]] float length() const;
     [[nodiscard]] float lengthSquared() const;
-    [[nodiscard]] Vector3 normalize() const;
+    void normalize();
 
     [[nodiscard]] inline size_t size() const
     {
@@ -82,6 +85,7 @@ class Vector3
     static Vector3 normalize(const Vector3 &v);
     static Vector3 lerp(const Vector3 &v, const Vector3 &w, float t);
     static Vector3 reflect(const Vector3 &v, const Vector3 &normal);
+    static Vector3 spherical(const Vector3 &v, float radius=1.0f);
     static void coordinateFrame(const Vector3 &w, Vector3 *u, Vector3 *v);
 
     // Arithmetic operations

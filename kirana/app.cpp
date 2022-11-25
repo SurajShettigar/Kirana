@@ -49,7 +49,6 @@ void kirana::Application::onMouseInput(MouseInput input)
 
 void kirana::Application::onScrollInput(double xOffset, double yOffset)
 {
-    std::cout << "Mouse Scroll: " << xOffset << "x" << yOffset << std::endl;
     m_inputManager.m_callScrollEvent(xOffset, yOffset);
 }
 
@@ -104,7 +103,7 @@ void kirana::Application::init()
             m_windowManager.createWindow(m_windowPointer, "Kirana", false,
                                          false, m_windowWidth, m_windowHeight);
     else
-        m_viewportWindow = m_windowManager.createWindow("Kirana", true, true);
+        m_viewportWindow = m_windowManager.createWindow("Kirana", false, true);
 
     scene::Scene &scene = m_sceneManager.loadScene();
     if (scene.isInitialized())
@@ -133,6 +132,7 @@ void kirana::Application::update()
 {
     m_time.update();
     m_windowManager.update();
+    // TODO: Update input manager keyboard and mouse clicks every frame.
     m_inputManager.m_isMouseInside =
         m_windowManager.getCurrentWindow()->isCursorInside;
     m_inputManager.m_updateMousePosition(

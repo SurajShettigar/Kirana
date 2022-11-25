@@ -1,27 +1,53 @@
 #ifndef TRANSFORM_HPP
 #define TRANSFORM_HPP
 
-#include "matrix4x4.hpp"
+#include "quaternion.hpp"
+
+#include <event.hpp>
 #include <string>
 
 namespace kirana::math
 {
-class Vector3;
+
 class Transform
 {
+  public:
+    enum class Space
+    {
+        Local = 0,
+        World = 1
+    };
+
   private:
     Transform *m_parent = nullptr;
-    bool m_isDirty = false;
-    mutable Matrix4x4 m_current;
-    mutable Matrix4x4 m_inverse;
+    Matrix4x4 m_localMatrix;
+    Vector3 m_localPosition;
+    Quaternion m_localRotation;
+    Vector3 m_localScale;
+
+    bool m_enableEvents = false;
+    utils::Event<> m_onChangeEvent;
+
+    void calculateLocalMatrix();
+    /**
+     * Returns the world matrix of only the parent. Does not include the local
+     * matrix.
+     * @param includeScale if set to false, the matrix will only include
+     * translation and rotation.
+     * @return Matrix4x4
+     */
+    [[nodiscard]] Matrix4x4 getParentMatrix(bool includeScale = true) const;
+    /**
+     * Returns the world matrix including the current local matrix.
+     * @param includeScale if set to false, the matrix will only include
+     * translation and rotation.
+     * @return Matrix4x4
+     */
+    [[nodiscard]] Matrix4x4 getWorldMatrix(bool includeScale = true) const;
 
   public:
-    std::string name;
-    explicit Transform(Transform *parent = nullptr);
-    explicit Transform(const Matrix4x4 &mat,
-                       Transform *parent = nullptr);
-    explicit Transform(const Matrix4x4 &mat, const Matrix4x4 &matInverse,
-                       Transform *parent = nullptr);
+    explicit Transform(Transform *parent = nullptr, bool enableEvents=false);
+    explicit Transform(const Matrix4x4 &mat, Transform *parent = nullptr, bool enableEvents=false);
     ~Transform() = default;
 
     Transform(const Transform &transform);
@@ -30,8 +56,6 @@ class Transform
     bool operator==(const Transform &rhs) const;
     bool operator!=(const Transform &rhs) const;
 
-    Transform &operator*=(const Transform &rhs);
-
     [[nodiscard]] inline Transform *getParent() const
     {
         return m_parent;
@@ -39,45 +63,54 @@ class Transform
     inline void setParent(Transform *transform)
     {
         m_parent = transform;
+        if(m_enableEvents)
+            m_onChangeEvent();
     }
-    [[nodiscard]] inline bool isDirty() const
+
+    inline uint32_t addOnChangeListener(const std::function<void()> &callback)
     {
-        return m_isDirty;
+        return m_onChangeEvent.addListener(callback);
     }
-    inline void setDirty(bool value)
+
+    inline void removeOnChangeListener(uint32_t callbackId)
     {
-        m_isDirty = value;
+        m_onChangeEvent.removeListener(callbackId);
     }
-    [[nodiscard]] Matrix4x4 getMatrix(bool inverse = false) const;
-    [[nodiscard]] Matrix4x4 getMatrixTransposed(bool inverse = false) const;
 
-    void translate(const Vector3 &translation);
-    void rotateX(float angle);
-    void rotateY(float angle);
-    void rotateZ(float angle);
-    void rotate(const Vector3 &rotation);
-    void rotateAround(float angle, const Vector3 &axis);
-    void lookAt(const Vector3 &lookAtPos, const Vector3 &up);
-    void scale(const Vector3 &scale);
+    [[nodiscard]] Matrix4x4 getMatrix(Space space = Space::World) const;
 
-    static Transform inverse(const Transform &transform);
-    static Transform transpose(const Transform &transform);
-    static Transform getOrthographicTransform(float left, float right,
-                                              float bottom, float top,
-                                              float near, float far,
-                                              bool graphicsAPI = false,
-                                              bool flipY = false);
-    static Transform getOrthographicTransform(float size, float aspectRatio,
-                                              float near, float far,
-                                              bool graphicsAPI = false,
-                                              bool flipY = false);
-    static Transform getPerspectiveTransform(float fov, float aspectRatio,
-                                             float near, float far,
-                                             bool graphicsAPI = false,
-                                             bool flipY = false);
+    [[nodiscard]] Vector3 getRight(Space space = Space::World) const;
+    [[nodiscard]] Vector3 getUp(Space space = Space::World) const;
+    [[nodiscard]] Vector3 getForward(Space space = Space::World) const;
 
-    friend Transform operator*(const Transform &lhs, const Transform &rhs);
-    friend Vector4 operator*(const Transform &lhs, const Vector4 &rhs);
+    void setForward(const Vector3& forward, Space space=Space::World);
+
+    [[nodiscard]] Vector3 getPosition(Space space = Space::World) const;
+    [[nodiscard]] Quaternion getRotation(Space space = Space::World) const;
+    [[nodiscard]] Vector3 getScale(Space space = Space::Local) const;
+
+    void setPosition(const Vector3 &position, Space space = Space::World);
+    void setRotation(const Vector3 &rotation, Space space = Space::World);
+    void setRotation(const Quaternion &rotation, Space space = Space::World);
+    void setLocalScale(const Vector3 &scale);
+
+    Vector3 inverseTransformVector(const Vector3 &vector);
+    Vector3 inverseTransformPoint(const Vector3 &point);
+    Vector3 inverseTransformDirection(const Vector3 &direction);
+    Vector3 transformVector(const Vector3 &vector);
+    Vector3 transformPoint(const Vector3 &point);
+    Vector3 transformDirection(const Vector3 &direction);
+
+    void translate(const Vector3 &translation, Space space = Space::World);
+    void rotateX(float angle, Space space = Space::World);
+    void rotateY(float angle, Space space = Space::World);
+    void rotateZ(float angle, Space space = Space::World);
+    void rotate(const Vector3 &rotation, Space space = Space::World);
+    void rotate(const Quaternion &rotation, Space space = Space::World);
+    void rotateAround(float angle, const Vector3 &axis,
+                      Space space = Space::World);
+    void lookAt(const Vector3 &lookAtPos, const Vector3 &up,
+                Space space = Space::World);
 };
 } // namespace kirana::math
 #endif

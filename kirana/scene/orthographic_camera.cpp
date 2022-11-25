@@ -6,7 +6,7 @@ kirana::scene::OrthographicCamera::OrthographicCamera(
     : Camera{windowResolution, nearPlane, farPlane}, m_size{size},
       m_graphicsAPI{graphicsAPI}, m_flipY{flipY}
 {
-    m_projection = math::Transform::getOrthographicTransform(
+    m_projection = math::Matrix4x4::orthographicProjection(
         m_size, m_aspectRatio, m_nearPlane, m_farPlane, m_graphicsAPI, m_flipY);
 }
 
@@ -39,7 +39,7 @@ void kirana::scene::OrthographicCamera::setResolution(
     std::array<uint32_t, 2> resolution)
 {
     Camera::setResolution(resolution);
-    m_projection = math::Transform::getOrthographicTransform(
+    m_projection = math::Matrix4x4::orthographicProjection(
         m_size, m_aspectRatio, m_nearPlane, m_farPlane, m_graphicsAPI, m_flipY);
     m_onCameraChange();
 }
