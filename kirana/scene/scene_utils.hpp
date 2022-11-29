@@ -2,7 +2,7 @@
 #define SCENE_UTILS_HPP
 
 #include <vector3.hpp>
-#include <perspective_camera.hpp>
+#include <vector4.hpp>
 
 namespace kirana::scene
 {

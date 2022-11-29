@@ -17,18 +17,20 @@ Matrix4x4 kirana::scene::Object::getMatrixFromNode(const aiNode *node) const
                      mat.d3, mat.d4);
 }
 
+
+kirana::scene::Object::Object(std::string name, std::shared_ptr<Mesh> mesh,
+                              const Transform &m_transform)
+    : m_name{std::move(name)}, m_meshes{std::move(mesh)},
+      m_transform{std::make_unique<Transform>(m_transform)}
+{
+}
+
 kirana::scene::Object::Object(const aiNode *node,
                               std::vector<std::shared_ptr<Mesh>> meshes,
                               math::Transform *parent)
     : m_name{node->mName.C_Str()}, m_meshes{std::move(meshes)},
-      m_transform{new Transform(getMatrixFromNode(node), parent)}
+      m_transform{std::make_unique<Transform>(getMatrixFromNode(node), parent)}
 {
-}
-
-kirana::scene::Object::~Object()
-{
-    delete m_transform;
-    m_transform = nullptr;
 }
 
 bool kirana::scene::Object::hasMesh(const Mesh *const mesh) const

@@ -89,7 +89,8 @@ bool kirana::viewport::vulkan::Device::selectIdealGPU()
     }
 
     // Check if the device supports wireframe mode.
-    if (!m_gpu.getFeatures().fillModeNonSolid || !m_gpu.getFeatures().wideLines)
+    if (!m_gpu.getFeatures().fillModeNonSolid || !m_gpu.getFeatures().wideLines ||
+        !m_gpu.getFeatures().logicOp)
     {
         Logger::get().log(constants::LOG_CHANNEL_VULKAN, LogSeverity::error,
                           "Failed to find GPU with necessary features");
@@ -146,6 +147,7 @@ bool kirana::viewport::vulkan::Device::createLogicalDevice()
     vk::PhysicalDeviceFeatures deviceFeatures{};
     deviceFeatures.fillModeNonSolid = true;
     deviceFeatures.wideLines = true;
+    deviceFeatures.logicOp = true;
     vk::DeviceCreateInfo createInfo({}, queueCreateInfos, VALIDATION_LAYERS,
                                     DEVICE_EXTENSIONS, &deviceFeatures);
 

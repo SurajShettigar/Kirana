@@ -14,6 +14,7 @@ class SceneManager
   private:
     struct ViewportCameraData
     {
+        math::Transform pivot;
         math::Vector2 prevMousePos;
         math::Vector2 mousePos;
         math::Vector2 mouseDelta;
@@ -44,7 +45,7 @@ class SceneManager
     };
 
     Scene m_currentScene;
-    PerspectiveCamera &m_viewportCamera;
+    Camera *m_viewportCamera;
 
     utils::input::InputManager &m_inputManager;
     utils::Time &m_time;

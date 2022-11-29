@@ -93,10 +93,25 @@ void kirana::viewport::vulkan::SceneData::createMaterials()
     }
 }
 
+kirana::viewport::vulkan::MaterialData &kirana::viewport::vulkan::SceneData::
+    findMaterial(const std::string &materialName)
+{
+    if (m_currentShading < 2)
+        return m_materials[0];
+    else
+        return *std::find_if(m_materials.begin(), m_materials.end(),
+                             [&materialName](const MaterialData &mat) {
+                                 return mat.name == materialName;
+                             });
+}
+
 void kirana::viewport::vulkan::SceneData::createCameraBuffer()
 {
-    m_cameraData.viewMatrix = m_scene.getCamera().getViewMatrix();
-    m_cameraData.projectionMatrix = m_scene.getCamera().getProjectionMatrix();
+    m_cameraData.viewMatrix = m_scene.getActiveCamera()->getViewMatrix();
+    m_cameraData.projectionMatrix =
+        m_scene.getActiveCamera()->getProjectionMatrix();
+    m_cameraData.viewProjectionMatrix =
+        m_cameraData.projectionMatrix * m_cameraData.viewMatrix;
 
     vk::DeviceSize paddedSize =
         vulkan::padUniformBufferSize(m_device->gpu, sizeof(vulkan::CameraData));
@@ -140,22 +155,105 @@ void kirana::viewport::vulkan::SceneData::createWorldDataBuffer()
     }
 }
 
-kirana::viewport::vulkan::MaterialData &kirana::viewport::vulkan::SceneData::
-    findMaterial(const std::string &materialName)
+bool kirana::viewport::vulkan::SceneData::createViewportMeshes()
 {
-    if (m_materials.size() == 1)
-        return m_materials[0];
-    else
-        return *std::find_if(m_materials.begin(), m_materials.end(),
-                             [&materialName](const MaterialData &mat) {
-                                 return mat.name == materialName;
-                             });
+    bool initialized = true;
+    for (const auto &o : m_scene.getViewportObjects())
+    {
+        // TODO: Calculate offset based on previous index MeshData.
+        const auto &mesh = o->getMeshes()[0];
+        const auto &material = mesh->getMaterial();
+        const auto &vertices = mesh->getVertices();
+
+        MeshData meshData;
+        meshData.vertexCount = vertices.size();
+        // TODO: Find instances for each mesh
+        meshData.instances.resize(1);
+        meshData.instances[0].transform = o->transform;
+
+        meshData.material = &findMaterial(material->getName());
+        if (meshData.material->name != material->getName())
+        {
+            const Shader *shader = createShader(material->getShader());
+            MaterialData matData;
+            matData.name = material->getName();
+            matData.shaderName = material->getShader();
+            matData.layout = std::make_unique<PipelineLayout>(
+                m_device, m_globalDescSetLayout);
+            matData.pipeline = std::make_unique<Pipeline>(
+                m_device, m_renderPass, shader, matData.layout.get(),
+                m_vertexDesc,
+                vulkan::PIPELINE_PROPERTIES_TWO_SIDED_TRANSPARENT);
+            m_materials.emplace_back(std::move(matData));
+            meshData.material = &m_materials.back();
+        }
+
+        size_t verticesSize = vertices.size() * sizeof(scene::Vertex);
+        if (!m_allocator->allocateBufferToGPU(
+                verticesSize, vk::BufferUsageFlagBits::eVertexBuffer,
+                &meshData.vertexBuffer, vertices.data()))
+            initialized = false;
+
+        const std::vector<uint32_t> &indices = mesh->getIndices();
+        meshData.indexCount = indices.size();
+        size_t indicesSize = indices.size() * sizeof(uint32_t);
+        if (!m_allocator->allocateBufferToGPU(
+                indicesSize, vk::BufferUsageFlagBits::eIndexBuffer,
+                &meshData.indexBuffer, indices.data()))
+            initialized = false;
+
+        if (initialized)
+            m_meshes.emplace_back(std::move(meshData));
+    }
+    return initialized;
+}
+
+bool kirana::viewport::vulkan::SceneData::createSceneMeshes()
+{
+    bool initialized = true;
+    for (const auto &m : m_scene.getMeshes())
+    {
+        // TODO: Calculate offset based on previous index MeshData.
+        MeshData meshData;
+
+        const auto &vertices = m->getVertices();
+        const auto &transforms = m_scene.getTransformsForMesh(m.get());
+
+        meshData.vertexCount = vertices.size();
+
+        meshData.instances.resize(transforms.size());
+        for (size_t i = 0; i < transforms.size(); i++)
+            meshData.instances[i] = {transforms[i]};
+
+        meshData.material = &findMaterial(m->getMaterial()->getName());
+
+        size_t verticesSize = vertices.size() * sizeof(scene::Vertex);
+        if (!m_allocator->allocateBufferToGPU(
+                verticesSize, vk::BufferUsageFlagBits::eVertexBuffer,
+                &meshData.vertexBuffer, vertices.data()))
+            initialized = false;
+
+        const std::vector<uint32_t> &indices = m->getIndices();
+        meshData.indexCount = indices.size();
+        size_t indicesSize = indices.size() * sizeof(uint32_t);
+        if (!m_allocator->allocateBufferToGPU(
+                indicesSize, vk::BufferUsageFlagBits::eIndexBuffer,
+                &meshData.indexBuffer, indices.data()))
+            initialized = false;
+
+        if (initialized)
+            m_meshes.emplace_back(std::move(meshData));
+    }
+    return initialized;
 }
 
 void kirana::viewport::vulkan::SceneData::onCameraChanged()
 {
-    m_cameraData.viewMatrix = m_scene.getCamera().getViewMatrix();
-    m_cameraData.projectionMatrix = m_scene.getCamera().getProjectionMatrix();
+    m_cameraData.viewMatrix = m_scene.getActiveCamera()->getViewMatrix();
+    m_cameraData.projectionMatrix =
+        m_scene.getActiveCamera()->getProjectionMatrix();
+    m_cameraData.viewProjectionMatrix =
+        m_cameraData.projectionMatrix * m_cameraData.viewMatrix;
     vk::DeviceSize paddedSize =
         vulkan::padUniformBufferSize(m_device->gpu, sizeof(vulkan::CameraData));
     for (size_t i = 0; i < constants::VULKAN_FRAME_OVERLAP_COUNT; i++)
@@ -200,40 +298,12 @@ kirana::viewport::vulkan::SceneData::SceneData(
     // Create vertex buffers and map it to memory for each mesh of the scene.
     m_isInitialized = true;
     m_meshes.clear();
-    for (const auto &m : m_scene.getMeshes())
-    {
-        // TODO: Calculate offset based on previous index MeshData.
-        MeshData meshData;
-        const std::vector<scene::Vertex> &vertices = m->getVertices();
-        meshData.vertexCount = vertices.size();
-        const auto &transforms = m_scene.getTransformsForMesh(m.get());
-        meshData.instances.resize(transforms.size());
-        for (size_t i = 0; i < transforms.size(); i++)
-            meshData.instances[i] = {transforms[i]};
-
-        meshData.material = &findMaterial(m->getMaterial()->getName());
-
-        size_t verticesSize = vertices.size() * sizeof(scene::Vertex);
-        if (!m_allocator->allocateBufferToGPU(
-                verticesSize, vk::BufferUsageFlagBits::eVertexBuffer,
-                &meshData.vertexBuffer, vertices.data()))
-            m_isInitialized = false;
-
-        const std::vector<uint32_t> &indices = m->getIndices();
-        meshData.indexCount = indices.size();
-        size_t indicesSize = indices.size() * sizeof(uint32_t);
-        if (!m_allocator->allocateBufferToGPU(
-                indicesSize, vk::BufferUsageFlagBits::eIndexBuffer,
-                &meshData.indexBuffer, indices.data()))
-            m_isInitialized = false;
-
-        if (m_isInitialized)
-            m_meshes.emplace_back(std::move(meshData));
-    }
+    m_isInitialized = createViewportMeshes();
+    m_isInitialized = createSceneMeshes();
     if (m_isInitialized)
     {
         m_cameraChangeListener =
-            m_scene.getCamera().addOnCameraChangeEventListener(
+            m_scene.getActiveCamera()->addOnCameraChangeEventListener(
                 [&]() { this->onCameraChanged(); });
         m_worldChangeListener = m_scene.addOnWorldChangeEventListener(
             [&]() { this->onWorldChanged(); });
@@ -252,7 +322,7 @@ kirana::viewport::vulkan::SceneData::SceneData(
 kirana::viewport::vulkan::SceneData::~SceneData()
 {
     m_scene.removeOnWorldChangeEventListener(m_worldChangeListener);
-    m_scene.getCamera().removeOnCameraChangeEventListener(
+    m_scene.getActiveCamera()->removeOnCameraChangeEventListener(
         m_cameraChangeListener);
 
     if (m_cameraBuffer.buffer)

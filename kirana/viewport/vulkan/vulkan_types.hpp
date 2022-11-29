@@ -107,11 +107,17 @@ struct PipelineProperties
     vk::CullModeFlags cullMode = vk::CullModeFlagBits::eBack;
     float lineWidth = 1.0f;
     vk::SampleCountFlagBits msaaLevel = vk::SampleCountFlagBits::e1;
+    bool alphaBlending = false;
 };
 
 static const PipelineProperties PIPELINE_PROPERTIES_BASIC;
 static const PipelineProperties PIPELINE_PROPERTIES_WIREFRAME{
     vk::PrimitiveTopology::eTriangleList, vk::PolygonMode::eLine};
+static const PipelineProperties PIPELINE_PROPERTIES_TWO_SIDED_TRANSPARENT{
+    vk::PrimitiveTopology::eTriangleList, vk::PolygonMode::eFill,
+    vk::CullModeFlagBits::eNone,          1.0f,
+    vk::SampleCountFlagBits::e1, true
+};
 
 // TODO: Remove it once descriptor set is implemented.
 struct MeshPushConstants
@@ -126,6 +132,7 @@ struct CameraData
 {
     math::Matrix4x4 viewMatrix;
     math::Matrix4x4 projectionMatrix;
+    math::Matrix4x4 viewProjectionMatrix;
 };
 
 /**

@@ -80,10 +80,17 @@ bool kirana::viewport::vulkan::Pipeline::build(
                                                 1.0f, nullptr, false, false);
 
     vk::PipelineDepthStencilStateCreateInfo depthStencil(
-        {}, true, true, vk::CompareOp::eLessOrEqual, false, false, {}, {}, 0.0f,
-        1.0f);
+        {}, true, !properties.alphaBlending, vk::CompareOp::eLessOrEqual, false,
+        false, {}, {}, 0.0f, 1.0f);
 
     vk::PipelineColorBlendAttachmentState attachment(false);
+    if (properties.alphaBlending)
+    {
+        attachment = vk::PipelineColorBlendAttachmentState(
+            true, vk::BlendFactor::eSrcAlpha,
+            vk::BlendFactor::eOneMinusSrcAlpha, vk::BlendOp::eAdd,
+            vk::BlendFactor::eOne, vk::BlendFactor::eZero, vk::BlendOp::eAdd);
+    }
     attachment.setColorWriteMask(
         vk::ColorComponentFlagBits::eR | vk::ColorComponentFlagBits::eG |
         vk::ColorComponentFlagBits::eB | vk::ColorComponentFlagBits::eA);

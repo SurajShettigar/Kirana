@@ -4,6 +4,7 @@
 #include "object.hpp"
 #include "mesh.hpp"
 #include "material.hpp"
+#include "perspective_camera.hpp"
 #include "scene_utils.hpp"
 
 #include <memory>
@@ -16,6 +17,10 @@ struct aiNode;
 
 namespace kirana::scene
 {
+namespace primitives
+{
+class Plane;
+}
 class SceneImporter;
 class SceneManager;
 class Scene
@@ -25,19 +30,25 @@ class Scene
 
   private:
     utils::Event<> m_onWorldChange;
+    utils::Event<Object> m_onActiveSelectionChange;
 
     bool m_isInitialized = false;
+
+    // Scene data
     std::string m_name = "Scene";
     std::vector<std::shared_ptr<Mesh>> m_meshes;
     std::shared_ptr<Object> m_rootObject = nullptr;
     std::vector<std::shared_ptr<Object>>
         m_objects; // Also contains m_rootObject.
     std::vector<std::shared_ptr<Material>> m_materials;
+    std::vector<Camera> m_cameras;
     WorldData m_worldData;
 
-    PerspectiveCamera m_camera{{1280, 720}, 60.0f, 0.1f, 1000.0f, true, true};
+    // Active scene properties
+    std::unique_ptr<Camera> m_viewportCamera;
+    std::unique_ptr<primitives::Plane> m_grid;
+    std::vector<const Object *> m_activeSelection;
 
-    const Object *findObject(const aiNode *node) const;
     void getMeshesFromNode(const aiNode *node,
                            std::vector<std::shared_ptr<Mesh>> *nodeMeshes);
     void initializeChildObjects(std::shared_ptr<Object> parent,
@@ -45,10 +56,20 @@ class Scene
     void initFromAiScene(const aiScene *scene);
 
   public:
-    Scene() = default;
-    ~Scene() = default;
+    Scene();
+    ~Scene();
 
     Scene(const Scene &scene) = delete;
+
+    inline uint32_t addOnWorldChangeEventListener(
+        const std::function<void()> &callback)
+    {
+        return m_onWorldChange.addListener(callback);
+    }
+    inline void removeOnWorldChangeEventListener(uint32_t callbackID)
+    {
+        m_onWorldChange.removeListener(callbackID);
+    }
 
     [[nodiscard]] inline bool isInitialized() const
     {
@@ -59,6 +80,7 @@ class Scene
     {
         return m_name;
     }
+
     [[nodiscard]] inline const std::vector<std::shared_ptr<Mesh>> &getMeshes()
         const
     {
@@ -82,23 +104,22 @@ class Scene
     {
         return m_worldData;
     }
-    [[nodiscard]] inline PerspectiveCamera &getCamera()
+    [[nodiscard]] inline Camera *getActiveCamera()
     {
-        return m_camera;
+        // TODO: Replace with current active camera.
+        return m_viewportCamera.get();
     }
 
-    inline uint32_t addOnWorldChangeEventListener(
-        const std::function<void()> &callback)
-    {
-        return m_onWorldChange.addListener(callback);
-    }
-    inline void removeOnWorldChangeEventListener(uint32_t callbackID)
-    {
-        m_onWorldChange.removeListener(callbackID);
-    }
+    [[nodiscard]] std::vector<const kirana::scene::Object *>
+    getViewportObjects();
 
     [[nodiscard]] std::vector<math::Transform *> getTransformsForMesh(
         const Mesh *mesh) const;
+
+    [[nodiscard]] inline std::vector<const Object *> getActiveSelection() const
+    {
+        return m_activeSelection;
+    }
 };
 } // namespace kirana::scene
 #endif

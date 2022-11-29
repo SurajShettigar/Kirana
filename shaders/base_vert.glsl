@@ -1,5 +1,3 @@
-#version 450
-
 layout (location = 0) in vec3 vPosition;
 layout (location = 1) in vec3 vNormal;
 layout (location = 2) in vec3 vColor;
@@ -22,7 +20,7 @@ layout (push_constant) uniform constants
 vec4 getVertexPosition()
 {
     return transpose(pushConstants.modelMatrix * camData.viewProj)
-            * vec4(vPosition, 1.0f);
+    * vec4(vPosition, 1.0f);
 }
 
 vec3 getWorldNormal()
@@ -41,17 +39,6 @@ vec3 getWorldNormal()
 
 vec3 getWorldCameraPosition() {
     return vec3((camData.viewProj[0][3] / camData.viewProj[3][3],
-                camData.viewProj[1][3] / camData.viewProj[3][3],
-                camData.viewProj[2][3] / camData.viewProj[3][3]));
-}
-
-layout (location = 0) out vec3 outColor;
-layout (location = 1) out vec3 outWorldNormal;
-layout (location = 2) out vec3 outCamPos;
-
-void main() {
-    gl_Position = getVertexPosition();
-    outColor = vColor;
-    outWorldNormal = getWorldNormal();
-    outCamPos = getWorldCameraPosition();
+    camData.viewProj[1][3] / camData.viewProj[3][3],
+    camData.viewProj[2][3] / camData.viewProj[3][3]));
 }

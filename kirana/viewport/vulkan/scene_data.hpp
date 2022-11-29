@@ -43,10 +43,12 @@ class SceneData
     void setVertexDescription();
     const Shader *createShader(const std::string &shaderName);
     void createMaterials();
+    MaterialData &findMaterial(const std::string &materialName);
     void createCameraBuffer();
     void createWorldDataBuffer();
+    bool createViewportMeshes();
+    bool createSceneMeshes();
 
-    MaterialData &findMaterial(const std::string &materialName);
 
     void onCameraChanged();
     void onWorldChanged();

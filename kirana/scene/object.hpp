@@ -17,19 +17,25 @@ class Object
 {
     friend class Scene;
 
-  private:
+  protected:
     std::string m_name;
     std::vector<std::shared_ptr<Mesh>> m_meshes;
-    math::Transform *m_transform = nullptr;
+    std::unique_ptr<math::Transform> m_transform = nullptr;
 
     math::Matrix4x4 getMatrixFromNode(const aiNode *node) const;
 
   public:
-    Object(const aiNode *node, std::vector<std::shared_ptr<Mesh>> meshes,
-           math::Transform *parent = nullptr);
-    ~Object();
+    Object()
+        : m_name{"Object"}, m_meshes{},
+          m_transform{std::make_unique<math::Transform>()} {};
+    explicit Object(std::string name, std::shared_ptr<Mesh> mesh,
+                    const math::Transform &m_transform);
+    explicit Object(const aiNode *node,
+                    std::vector<std::shared_ptr<Mesh>> meshes,
+                    math::Transform *parent = nullptr);
+    virtual ~Object() = default;
 
-    math::Transform *const transform = m_transform;
+    math::Transform *const transform = m_transform.get();
 
     [[nodiscard]] inline const std::string &getName() const
     {

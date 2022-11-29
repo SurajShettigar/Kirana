@@ -11,7 +11,8 @@ class Material
     std::string m_name = "Material";
     std::string m_shader = "MatCap";
   public:
-    Material(std::string name="", std::string shader="");
+    Material() = default;
+    explicit Material(std::string name, std::string shader="");
     ~Material() = default;
 
     Material(const Material &material);

@@ -13,15 +13,19 @@ struct Vertex;
 class Material;
 class Mesh
 {
-  private:
+  protected:
     std::string m_name;
     std::vector<Vertex> m_vertices;
     std::vector<uint32_t> m_indices;
     std::shared_ptr<Material> m_material;
 
   public:
+    Mesh() = default;
+    Mesh(std::string name, std::vector<Vertex> vertices,
+         std::vector<uint32_t> indices,
+         std::shared_ptr<Material> material);
     Mesh(const aiMesh *mesh, std::shared_ptr<Material> material);
-    ~Mesh() = default;
+    virtual ~Mesh() = default;
 
     [[nodiscard]] inline const std::string &getName() const
     {

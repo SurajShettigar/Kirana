@@ -1,5 +1,9 @@
 #include "scene.hpp"
 
+#include "material.hpp"
+#include "primitives/plane.hpp"
+
+
 #include <assimp/scene.h>
 #include <algorithm>
 #include <constants.h>
@@ -8,22 +12,6 @@
 typedef kirana::utils::Logger Logger;
 typedef kirana::utils::LogSeverity LogSeverity;
 namespace constants = kirana::utils::constants;
-
-const kirana::scene::Object *kirana::scene::Scene::findObject(
-    const aiNode *node) const
-{
-    if (node != nullptr)
-    {
-        auto it = std::find_if(m_objects.begin(), m_objects.end(),
-                               [&node](const std::shared_ptr<Object> &o) {
-                                   return o->getName() == node->mName.C_Str();
-                               });
-
-        if (it != m_objects.end())
-            return (*it).get();
-    }
-    return nullptr;
-}
 
 void kirana::scene::Scene::getMeshesFromNode(
     const aiNode *node, std::vector<std::shared_ptr<Mesh>> *nodeMeshes)
@@ -42,8 +30,7 @@ void kirana::scene::Scene::initializeChildObjects(
         std::vector<std::shared_ptr<Mesh>> meshes;
         getMeshesFromNode(children[i], &meshes);
         m_objects.emplace_back(std::make_shared<Object>(
-            children[i], std::move(meshes), parent->m_transform));
-
+            children[i], meshes, parent->m_transform.get()));
         if (children[i]->mNumChildren > 0)
             initializeChildObjects(m_objects.back(), children[i]->mNumChildren,
                                    children[i]->mChildren);
@@ -58,6 +45,8 @@ void kirana::scene::Scene::initFromAiScene(const aiScene *scene)
 
     Logger::get().log(constants::LOG_CHANNEL_SCENE, LogSeverity::debug,
                       "Loading Scene: " + std::string(scene->mName.C_Str()));
+
+    // TODO: Populate scene cameras
 
     // Create Material objects for all the materials in the scene.
     m_materials.clear();
@@ -99,6 +88,30 @@ void kirana::scene::Scene::initFromAiScene(const aiScene *scene)
                       "Object count: " + std::to_string(m_objects.size()));
 
     m_isInitialized = true;
+}
+
+kirana::scene::Scene::Scene()
+    : m_viewportCamera{std::make_unique<kirana::scene::PerspectiveCamera>(
+          std::array<uint32_t, 2>({1280, 702}), 50.0f, 0.1f, 1000.0f, true,
+          true)},
+      m_grid{std::make_unique<primitives::Plane>(
+          std::make_shared<Material>("Grid", "Grid"))}
+{
+    m_grid->transform->setLocalScale(math::Vector3::ONE * 100.0f);
+}
+
+kirana::scene::Scene::~Scene()
+{
+
+    m_onWorldChange.removeAllListeners();
+    m_onActiveSelectionChange.removeAllListeners();
+}
+
+std::vector<const kirana::scene::Object *> kirana::scene::Scene::
+    getViewportObjects()
+{
+    // TODO: Return viewport objects for Cameras, Lights
+    return {m_grid.get()};
 }
 
 

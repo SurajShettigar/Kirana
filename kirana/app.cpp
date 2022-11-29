@@ -12,7 +12,8 @@ void kirana::Application::onWindowResized(const kirana::window::Window *window,
 {
     if (window == m_viewportWindow.get())
     {
-        m_sceneManager.getCurrentScene().getCamera().setResolution(resolution);
+        m_sceneManager.getCurrentScene().getActiveCamera()->setResolution(
+            resolution);
     }
 }
 
@@ -108,7 +109,7 @@ void kirana::Application::init()
     scene::Scene &scene = m_sceneManager.loadScene();
     if (scene.isInitialized())
     {
-        scene.getCamera().setResolution(m_viewportWindow->resolution);
+        scene.getActiveCamera()->setResolution(m_viewportWindow->resolution);
         m_logger.log(constants::LOG_CHANNEL_APPLICATION,
                      utils::LogSeverity::debug,
                      "Loaded default scene: " + scene.getRoot()->getName());
