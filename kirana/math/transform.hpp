@@ -109,7 +109,7 @@ class Transform
     void rotate(const Quaternion &rotation, Space space = Space::World);
     void rotateAround(float angle, const Vector3 &axis,
                       Space space = Space::World);
-    void lookAt(const Vector3 &lookAtPos, const Vector3 &up,
+    void lookAt(const Vector3 &direction, const Vector3 &up,
                 Space space = Space::World);
 };
 } // namespace kirana::math

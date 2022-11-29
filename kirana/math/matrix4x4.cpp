@@ -580,10 +580,18 @@ Matrix4x4 Matrix4x4::view(const Vector3 &eyePosition,
     // https://www.3dgep.com/understanding-the-view-matrix/ for a detailed
     // explanation.
 
-    return Matrix4x4(x[0], x[1], x[2], math::Vector3::dot(x, eyePosition), y[0],
-                     y[1], y[2], math::Vector3::dot(y, eyePosition), z[0], z[1],
-                     z[2], -math::Vector3::dot(z, eyePosition), 0.0f, 0.0f,
-                     0.0f, 1.0f);
+    return view(eyePosition, z, x, y);
+}
+
+
+Matrix4x4 Matrix4x4::view(const Vector3 &position, const Vector3 &forward,
+                          const Vector3 &right, const Vector3 &up)
+{
+    return Matrix4x4(right[0], right[1], right[2],
+                     math::Vector3::dot(right, position), up[0], up[1], up[2],
+                     math::Vector3::dot(up, position), forward[0], forward[1],
+                     forward[2], -math::Vector3::dot(forward, position), 0.0f,
+                     0.0f, 0.0f, 1.0f);
 }
 
 Matrix4x4 Matrix4x4::orthographicProjection(float left, float right,

@@ -129,6 +129,7 @@ class Matrix4x4
     static Matrix4x4 rotation(const Vector3 &axis, float angle);
     static Matrix4x4 scale(const Vector3 &scale);
     static Matrix4x4 view(const Vector3 &eyePosition, const Vector3 &lookAtPosition, const Vector3 &up);
+    static Matrix4x4 view(const Vector3 &position, const Vector3 &forward, const Vector3 &right, const Vector3 &up);
 
     // Projection Transformation functions
     static Matrix4x4 orthographicProjection(float left, float right,

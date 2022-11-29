@@ -69,6 +69,9 @@ kirana::math::Transform::Transform(const Transform &transform)
         m_localPosition = transform.m_localPosition;
         m_localRotation = transform.m_localRotation;
         m_localScale = transform.m_localScale;
+
+        m_enableEvents = transform.m_enableEvents;
+        m_onChangeEvent = transform.m_onChangeEvent;
     }
 }
 
@@ -82,6 +85,9 @@ kirana::math::Transform &kirana::math::Transform::operator=(
         m_localPosition = transform.m_localPosition;
         m_localRotation = transform.m_localRotation;
         m_localScale = transform.m_localScale;
+
+        m_enableEvents = transform.m_enableEvents;
+        m_onChangeEvent = transform.m_onChangeEvent;
     }
     return *this;
 }
@@ -450,22 +456,10 @@ void kirana::math::Transform::lookAt(const Vector3 &direction,
     Vector3 x = Vector3::cross(Vector3::normalize(up), z);
     Vector3 y = Vector3::cross(z, x);
 
-    // The above calculated basis vectors are camera's basis in world space
-    // (Camera's transform matrix). In order to get view matrix, we just invert
-    // the matrix one would obtain from the above basis vectors. Look at
-    // https://www.3dgep.com/understanding-the-view-matrix/ for a detailed
-    // explanation.
+    m_localMatrix = Matrix4x4(x[0], y[0], z[0], m_localPosition[0], x[1], y[1],
+                              z[1], m_localPosition[1], x[2], y[2], z[2],
+                              m_localPosition[2], 0.0f, 0.0f, 0.0f, 1.0f);
 
-    // m_localMatrix is now a view-matrix.
-    //        m_localMatrix = Matrix4x4(
-    //            x[0], x[1], x[2], Vector3::dot(x, m_localPosition), y[0],
-    //            y[1], y[2], Vector3::dot(y, m_localPosition), z[0], z[1],
-    //            z[2], -Vector3::dot(z, m_localPosition), 0.0f, 0.0f,
-    //            0.0f, 1.0f);
-
-    m_localMatrix = Matrix4x4(x[0], y[0], z[0], 0.0f, x[1], y[1], z[1], 0.0f,
-                              x[2], y[2], z[2], 0.0f, 0.0f, 0.0f, 0.0f, 1.0f);
-
-    Matrix4x4::decompose(m_localMatrix, nullptr, &m_localRotation);
+    Matrix4x4::decompose(m_localMatrix, &m_localPosition, &m_localRotation);
     calculateLocalMatrix();
 }
