@@ -1,20 +1,27 @@
+// Vertex Buffer input
 layout (location = 0) in vec3 vPosition;
 layout (location = 1) in vec3 vNormal;
 layout (location = 2) in vec3 vColor;
 
+// Descriptor Set Buffer input
 layout (set = 0, binding = 0) uniform CameraBuffer {
-    mat4 view;
-    mat4 proj;
-    mat4 viewProj;
+    mat4 view; // Row-major storage
+    mat4 proj; // Row-major
+    mat4 viewProj; // Row-major
+    vec3 position;
+    vec3 direction;
+    float nearPlane;
+    float farPlane;
 } camData;
 
 layout (set = 0, binding = 1) uniform ModelBuffer {
-    mat4 modelMatrix;
+    mat4 modelMatrix; // Row-major
 } modelData;
 
+// Push Constant input
 layout (push_constant) uniform constants
 {
-    mat4 modelMatrix;
+    mat4 modelMatrix; // Row-major
 } pushConstants;
 
 vec4 getVertexPosition()
@@ -35,10 +42,4 @@ vec3 getWorldNormal()
                 m[0][1] * m[1][2] - m[0][2] * m[1][1],
                 m[0][2] * m[1][0] - m[0][0] * m[1][2],
                 m[0][0] * m[1][1] - m[0][1] * m[1][0]) * vNormal;
-}
-
-vec3 getWorldCameraPosition() {
-    return vec3((camData.viewProj[0][3] / camData.viewProj[3][3],
-    camData.viewProj[1][3] / camData.viewProj[3][3],
-    camData.viewProj[2][3] / camData.viewProj[3][3]));
 }

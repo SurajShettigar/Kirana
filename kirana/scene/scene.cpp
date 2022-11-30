@@ -54,7 +54,9 @@ void kirana::scene::Scene::initFromAiScene(const aiScene *scene)
     for (size_t i = 0; i < scene->mNumMaterials; i++)
     {
         m_materials[i] = std::move(std::make_shared<Material>(
-            scene->mMaterials[i]->GetName().C_Str()));
+            scene->mMaterials[i]->GetName().C_Str(),
+            constants::DEFAULT_SCENE_MATERIAL_SHADER_NAME,
+            Material::MaterialProperties{}));
     }
 
     // Create Mesh objects for all the meshes in the scene.
@@ -95,7 +97,7 @@ kirana::scene::Scene::Scene()
           std::array<uint32_t, 2>({1280, 702}), 50.0f, 0.1f, 1000.0f, true,
           true)},
       m_grid{std::make_unique<primitives::Plane>(
-          std::make_shared<Material>("Grid", "Grid"))}
+          std::make_shared<Material>(Material::DEFAULT_MATERIAL_GRID))}
 {
     m_grid->transform->setLocalScale(math::Vector3::ONE * 100.0f);
 }

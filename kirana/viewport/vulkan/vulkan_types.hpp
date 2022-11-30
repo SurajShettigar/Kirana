@@ -110,15 +110,6 @@ struct PipelineProperties
     bool alphaBlending = false;
 };
 
-static const PipelineProperties PIPELINE_PROPERTIES_BASIC;
-static const PipelineProperties PIPELINE_PROPERTIES_WIREFRAME{
-    vk::PrimitiveTopology::eTriangleList, vk::PolygonMode::eLine};
-static const PipelineProperties PIPELINE_PROPERTIES_TWO_SIDED_TRANSPARENT{
-    vk::PrimitiveTopology::eTriangleList, vk::PolygonMode::eFill,
-    vk::CullModeFlagBits::eNone,          1.0f,
-    vk::SampleCountFlagBits::e1, true
-};
-
 // TODO: Remove it once descriptor set is implemented.
 struct MeshPushConstants
 {
@@ -133,6 +124,10 @@ struct CameraData
     math::Matrix4x4 viewMatrix;
     math::Matrix4x4 projectionMatrix;
     math::Matrix4x4 viewProjectionMatrix;
+    math::Vector3 position;
+    alignas(16) math::Vector3 direction;
+    float nearPlane;
+    alignas(4) float farPlane;
 };
 
 /**
@@ -143,6 +138,7 @@ struct MaterialData
 {
     std::string name;
     std::string shaderName;
+    PipelineProperties properties;
     std::unique_ptr<PipelineLayout> layout;
     std::unique_ptr<Pipeline> pipeline;
 };

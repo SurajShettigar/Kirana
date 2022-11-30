@@ -43,76 +43,78 @@ const kirana::viewport::vulkan::Shader *kirana::viewport::vulkan::SceneData::
     }
 }
 
+kirana::viewport::vulkan::MaterialData kirana::viewport::vulkan::SceneData::
+    getMaterialData(const scene::Material &material)
+{
+    MaterialData matData;
+    const Shader *shader = createShader(material.getShader());
+
+    const scene::Material::MaterialProperties &prop = material.getProperties();
+
+    matData.properties = {
+        vk::PrimitiveTopology::eTriangleList,
+        prop.renderWireframe ? vk::PolygonMode::eLine : vk::PolygonMode::eFill,
+        vk::CullModeFlags(static_cast<VkCullModeFlagBits>(prop.cullMode)),
+        prop.wireframeWidth,
+        vk::SampleCountFlagBits::e1,
+        prop.surfaceType == scene::Material::SurfaceType::Transparent};
+
+    matData.name = material.getName();
+    matData.shaderName = material.getShader();
+    matData.layout =
+        std::make_unique<PipelineLayout>(m_device, m_globalDescSetLayout);
+    matData.pipeline = std::make_unique<Pipeline>(
+        m_device, m_renderPass, shader, matData.layout.get(), m_vertexDesc,
+        matData.properties);
+
+    return matData;
+}
+
 void kirana::viewport::vulkan::SceneData::createMaterials()
 {
-    m_materials.clear();
-    m_shaders.clear();
+    // Create internal viewport materials (MatCap, grid, etc.)
+    const auto &mats = scene::Material::getDefaultMaterials();
+    for (const auto &m : mats)
+        m_materials[m.getName()] = std::move(getMaterialData(m));
 
     switch (m_currentShading)
     {
-    default:
-    case 0:
-    case 1: {
-        const Shader *shader =
-            createShader(m_currentShading == 0
-                             ? utils::constants::VULKAN_SHADER_DEFAULT_NAME
-                             : utils::constants::VULKAN_SHADER_WIREFRAME_NAME);
-
-        MaterialData matData;
-        matData.name = utils::constants::VULKAN_SHADER_DEFAULT_NAME;
-        matData.shaderName = utils::constants::VULKAN_SHADER_DEFAULT_NAME;
-        matData.layout =
-            std::make_unique<PipelineLayout>(m_device, m_globalDescSetLayout);
-        matData.pipeline = std::make_unique<Pipeline>(
-            m_device, m_renderPass, shader, matData.layout.get(), m_vertexDesc,
-            m_currentShading == 0 ? vulkan::PIPELINE_PROPERTIES_BASIC
-                                  : vulkan::PIPELINE_PROPERTIES_WIREFRAME);
-        m_materials.emplace_back(std::move(matData));
-        break;
-    }
     case 2:
         // TODO: Add PBR Pipeline
     case 3:
         // TODO: Add Raytrace PBR Pipeline
         for (const auto &m : m_scene.getMaterials())
-        {
-            const Shader *shader = createShader(m->getShader());
-
-            MaterialData matData;
-            matData.name = m->getName();
-            matData.shaderName = m->getShader();
-            matData.layout = std::make_unique<PipelineLayout>(
-                m_device, m_globalDescSetLayout);
-            matData.pipeline =
-                std::make_unique<Pipeline>(m_device, m_renderPass, shader,
-                                           matData.layout.get(), m_vertexDesc);
-
-            m_materials.emplace_back(std::move(matData));
-        }
+            m_materials[m->getName()] = std::move(getMaterialData(*m.get()));
+        break;
+    default:
         break;
     }
 }
 
 kirana::viewport::vulkan::MaterialData &kirana::viewport::vulkan::SceneData::
-    findMaterial(const std::string &materialName)
+    findMaterial(const std::string &materialName, bool overrideShading)
 {
-    if (m_currentShading < 2)
-        return m_materials[0];
-    else
-        return *std::find_if(m_materials.begin(), m_materials.end(),
-                             [&materialName](const MaterialData &mat) {
-                                 return mat.name == materialName;
-                             });
+    // Check if default material
+    if (overrideShading)
+        return m_materials[materialName];
+
+    switch (m_currentShading)
+    {
+    case 0:
+        return m_materials[constants::DEFAULT_MATERIAL_MAT_CAP_NAME];
+    case 1:
+        return m_materials[constants::DEFAULT_MATERIAL_WIREFRAME_NAME];
+    default:
+    case 2:
+        // TODO: Add PBR Pipeline
+    case 3:
+        // TODO: Add Raytrace PBR Pipeline
+        return m_materials[materialName];
+    }
 }
 
 void kirana::viewport::vulkan::SceneData::createCameraBuffer()
 {
-    m_cameraData.viewMatrix = m_scene.getActiveCamera()->getViewMatrix();
-    m_cameraData.projectionMatrix =
-        m_scene.getActiveCamera()->getProjectionMatrix();
-    m_cameraData.viewProjectionMatrix =
-        m_cameraData.projectionMatrix * m_cameraData.viewMatrix;
-
     vk::DeviceSize paddedSize =
         vulkan::padUniformBufferSize(m_device->gpu, sizeof(vulkan::CameraData));
     vk::DeviceSize bufferSize =
@@ -123,13 +125,7 @@ void kirana::viewport::vulkan::SceneData::createCameraBuffer()
     {
         m_cameraBuffer.descInfo = vk::DescriptorBufferInfo(
             *m_cameraBuffer.buffer, 0, sizeof(vulkan::CameraData));
-
-        for (size_t i = 0; i < constants::VULKAN_FRAME_OVERLAP_COUNT; i++)
-        {
-            m_allocator->mapToMemory(m_cameraBuffer, sizeof(vulkan::CameraData),
-                                     static_cast<uint32_t>(paddedSize * i),
-                                     &m_cameraData);
-        }
+        onCameraChanged();
     }
 }
 
@@ -145,13 +141,7 @@ void kirana::viewport::vulkan::SceneData::createWorldDataBuffer()
     {
         m_worldDataBuffer.descInfo = vk::DescriptorBufferInfo(
             *m_worldDataBuffer.buffer, 0, sizeof(scene::WorldData));
-
-        for (size_t i = 0; i < constants::VULKAN_FRAME_OVERLAP_COUNT; i++)
-        {
-            m_allocator->mapToMemory(
-                m_worldDataBuffer, sizeof(scene::WorldData),
-                static_cast<uint32_t>(paddedSize * i), &m_scene.getWorldData());
-        }
+        onWorldChanged();
     }
 }
 
@@ -171,22 +161,7 @@ bool kirana::viewport::vulkan::SceneData::createViewportMeshes()
         meshData.instances.resize(1);
         meshData.instances[0].transform = o->transform;
 
-        meshData.material = &findMaterial(material->getName());
-        if (meshData.material->name != material->getName())
-        {
-            const Shader *shader = createShader(material->getShader());
-            MaterialData matData;
-            matData.name = material->getName();
-            matData.shaderName = material->getShader();
-            matData.layout = std::make_unique<PipelineLayout>(
-                m_device, m_globalDescSetLayout);
-            matData.pipeline = std::make_unique<Pipeline>(
-                m_device, m_renderPass, shader, matData.layout.get(),
-                m_vertexDesc,
-                vulkan::PIPELINE_PROPERTIES_TWO_SIDED_TRANSPARENT);
-            m_materials.emplace_back(std::move(matData));
-            meshData.material = &m_materials.back();
-        }
+        meshData.material = &findMaterial(material->getName(), true);
 
         size_t verticesSize = vertices.size() * sizeof(scene::Vertex);
         if (!m_allocator->allocateBufferToGPU(
@@ -249,11 +224,16 @@ bool kirana::viewport::vulkan::SceneData::createSceneMeshes()
 
 void kirana::viewport::vulkan::SceneData::onCameraChanged()
 {
-    m_cameraData.viewMatrix = m_scene.getActiveCamera()->getViewMatrix();
-    m_cameraData.projectionMatrix =
-        m_scene.getActiveCamera()->getProjectionMatrix();
+    const auto &camera = m_scene.getActiveCamera();
+    m_cameraData.viewMatrix = camera->getViewMatrix();
+    m_cameraData.projectionMatrix = camera->getProjectionMatrix();
     m_cameraData.viewProjectionMatrix =
         m_cameraData.projectionMatrix * m_cameraData.viewMatrix;
+    m_cameraData.position = camera->transform.getPosition();
+    m_cameraData.direction = camera->transform.getForward();
+    m_cameraData.nearPlane = camera->nearPlane;
+    m_cameraData.farPlane = camera->farPlane;
+
     vk::DeviceSize paddedSize =
         vulkan::padUniformBufferSize(m_device->gpu, sizeof(vulkan::CameraData));
     for (size_t i = 0; i < constants::VULKAN_FRAME_OVERLAP_COUNT; i++)
@@ -285,18 +265,23 @@ kirana::viewport::vulkan::SceneData::SceneData(
       m_allocator{allocator}, m_renderPass{renderPass},
       m_globalDescSetLayout{globalDescSetLayout}, m_scene{scene}
 {
+    m_isInitialized = true;
+
     // Set the vulkan description of vertex buffers.
     setVertexDescription();
+
     // Create shaders, pipeline layouts and pipelines for all the materials in
     // the scene.
+    m_materials.clear();
+    m_shaders.clear();
     createMaterials();
     // Create Camera data buffer.
-    createCameraBuffer();
+    if (m_isInitialized)
+        createCameraBuffer();
     // Create World data buffer.
     createWorldDataBuffer();
 
     // Create vertex buffers and map it to memory for each mesh of the scene.
-    m_isInitialized = true;
     m_meshes.clear();
     m_isInitialized = createViewportMeshes();
     m_isInitialized = createSceneMeshes();
@@ -351,35 +336,11 @@ void kirana::viewport::vulkan::SceneData::rebuildPipeline(
     const RenderPass *renderPass)
 {
     m_renderPass = renderPass;
-    switch (m_currentShading)
+    for (auto &m : m_materials)
     {
-    default:
-    case 0:
-    case 1:
-        for (auto &m : m_materials)
-        {
-            m.pipeline = std::make_unique<Pipeline>(
-                m_device, m_renderPass,
-                createShader(
-                    m_currentShading == 0
-                        ? utils::constants::VULKAN_SHADER_DEFAULT_NAME
-                        : utils::constants::VULKAN_SHADER_WIREFRAME_NAME),
-                m.layout.get(), m_vertexDesc,
-                m_currentShading == 0 ? vulkan::PIPELINE_PROPERTIES_BASIC
-                                      : vulkan::PIPELINE_PROPERTIES_WIREFRAME);
-        }
-        break;
-    case 2:
-        // TODO: Add PBR Pipeline
-    case 3:
-        // TODO: Add Raytrace PBR Pipeline
-        for (auto &m : m_materials)
-        {
-            m.pipeline = std::make_unique<Pipeline>(
-                m_device, m_renderPass, createShader(m.shaderName),
-                m.layout.get(), m_vertexDesc);
-        }
-        break;
+        m.second.pipeline = std::make_unique<Pipeline>(
+            m_device, m_renderPass, m_shaders[m.second.shaderName].get(),
+            m.second.layout.get(), m_vertexDesc, m.second.properties);
     }
 }
 
