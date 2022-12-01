@@ -4,6 +4,8 @@
 #include "vector4.hpp"
 #include "matrix4x4.hpp"
 #include "transform.hpp"
+#include "bounds3.hpp"
+#include "ray.hpp"
 
 #include <iostream>
 
@@ -43,14 +45,30 @@ int main(int argc, char **argv)
     Vector3 vec2, vec3;
 
     Vector3::coordinateFrame(vec1, &vec2, &vec3);
-    std::cout << "Co-ordinate frame: " << vec1 << " " << vec2 << " "
-              << vec3 << std::endl;
+    std::cout << "Co-ordinate frame: " << vec1 << " " << vec2 << " " << vec3
+              << std::endl;
 
     Matrix4x4 mat1;
     Matrix4x4 mat2(1.0f, 0.0f, 0.0f, 1.0f, 0.0f, 1.0f, 0.0f, -2.0f, 0.0f, 0.0f,
                    1.0f, 3.0f, 0.0f, 0.0f, 0.0f, 1.0f);
 
     std::cout << "Matrix Mul: " << (mat1 * mat2) << std::endl;
-    std::cout << "Matrix Inverse: " << Matrix4x4::inverse((mat1 * mat2)) << std::endl;
+    std::cout << "Matrix Inverse: " << Matrix4x4::inverse((mat1 * mat2))
+              << std::endl;
+
+    Bounds3 bounds(Vector3{-0.5f, -0.5f, -0.5f}, Vector3{0.5f, 0.5f, 0.5f});
+    std::cout << "Bounds: " << bounds << std::endl;
+
+    Ray ray(Vector3{0.0f, 0.1f, 2.0f}, Vector3{0.0f, 0.1f, -1.0f});
+
+    std::cout << "Ray: " << ray << std::endl;
+
+    Vector3 enterPoint, exitPoint;
+    std::cout << "Intersection: "
+              << bounds.intersectWithRay(ray, &enterPoint, &exitPoint)
+              << std::endl;
+    std::cout << "Intersection Points: " << enterPoint << ", " << exitPoint
+              << std::endl;
+
     return 0;
 }
