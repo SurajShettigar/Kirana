@@ -8,20 +8,47 @@ namespace kirana::math
 {
 
 static constexpr double PI = 3.141592653589793;
+static constexpr float DEGREE_360 = 360.0f;
+static constexpr float DEGREE_180 = 180.0f;
+static constexpr float DEGREE_90 = 90.0f;
+static constexpr float DEGREE_45 = 45.0f;
+static constexpr float MACHINE_EPSILON_F =
+    std::numeric_limits<float>::epsilon() * 0.5f;
+static constexpr double MACHINE_EPSILON_D =
+    std::numeric_limits<double>::epsilon() * 0.5;
+
+/// Computed floating-point error. (Refer Section 3.9.1 in PBRT 3rd Edition)
+inline constexpr double gamma(int n)
+{
+    return (static_cast<double>(n) * MACHINE_EPSILON_D) /
+           (1.0 - static_cast<double>(n) * MACHINE_EPSILON_D);
+}
+
+/// Computed floating-point error. (Refer Section 3.9.1 in PBRT 3rd Edition)
+inline constexpr float gammaf(int n)
+{
+    return (static_cast<float>(n) * MACHINE_EPSILON_F) /
+           (1.0f - static_cast<float>(n) * MACHINE_EPSILON_F);
+}
 
 inline float radians(float degrees)
 {
-    return (static_cast<float>(PI) / 180.0f) * degrees;
+    return (static_cast<float>(PI) / DEGREE_180) * degrees;
 }
 
 inline float degrees(float radians)
 {
-    return (180.0f / static_cast<float>(PI)) * radians;
+    return (DEGREE_180 / static_cast<float>(PI)) * radians;
 }
 
 inline bool approximatelyEqual(float x, float y)
 {
     return fabsf(x - y) <= std::numeric_limits<float>::epsilon();
+}
+
+inline float lerp(float x, float y, float t)
+{
+    return (1.0f - t) * x + t * y;
 }
 
 inline double clamp(double x, double min, double max)
@@ -51,17 +78,18 @@ template <typename T> inline T map(T x, T inMin, T inMax, T outMin, T outMax)
  */
 inline void clampEulerAngles(float *x, float *y, float *z)
 {
-    std::fmaxf(-90.0f, std::fminf(*x, 90.0f));
-    std::fmaxf(-180.0f, std::fminf(*y, 180.0f));
-    std::fmaxf(-180.0f, std::fminf(*z, 180.0f));
-    if (approximatelyEqual(*x, 90.0f) || approximatelyEqual(*x, -90.0f))
+    *x = std::fmaxf(-DEGREE_90, std::fminf(*x, DEGREE_90));
+    *y = std::fmaxf(-DEGREE_180, std::fminf(*y, DEGREE_180));
+    *z = std::fmaxf(-DEGREE_180, std::fminf(*z, DEGREE_180));
+    if (approximatelyEqual(*x, DEGREE_90) || approximatelyEqual(*x, -DEGREE_90))
         *z = 0.0f;
 }
 
 /// Wraps an angle to range [-180.0, 180.0]
 inline float wrapAngle(float angle)
 {
-    return angle - (360.0f * std::floorf((angle + 180.0f) / 360.0f));
+    return angle -
+           (DEGREE_360 * std::floorf((angle + DEGREE_180) / DEGREE_360));
 }
 
 } // namespace kirana::math

@@ -226,6 +226,11 @@ Vector3 kirana::math::operator/(const Vector3 &lhs, float rhs)
     return (1 / rhs) * lhs;
 }
 
+Vector3 kirana::math::operator/(float lhs, const Vector3 &rhs)
+{
+    return Vector3(lhs / rhs[0], lhs / rhs[1], lhs / rhs[2]);
+}
+
 std::ostream &kirana::math::operator<<(std::ostream &out, const Vector3 &vec3)
 {
     return out << '{' << vec3[0] << ", " << vec3[1] << ", " << vec3[2] << '}';
