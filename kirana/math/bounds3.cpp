@@ -25,6 +25,32 @@ kirana::math::Bounds3::Bounds3(const Vector3 &min, const Vector3 &max)
                                                                    m_size *
                                                                    0.5f} {};
 
+
+kirana::math::Bounds3::Bounds3(const Bounds3 &bounds)
+{
+    if (this != &bounds)
+    {
+        m_min = bounds.m_min;
+        m_max = bounds.m_max;
+        m_center = bounds.m_center;
+        m_size = bounds.m_size;
+        m_extent = bounds.m_extent;
+    }
+}
+
+kirana::math::Bounds3 &kirana::math::Bounds3::operator=(const Bounds3 &bounds)
+{
+    if (this != &bounds)
+    {
+        m_min = bounds.m_min;
+        m_max = bounds.m_max;
+        m_center = bounds.m_center;
+        m_size = bounds.m_size;
+        m_extent = bounds.m_extent;
+    }
+    return *this;
+}
+
 void kirana::math::Bounds3::encapsulate(const Vector3 &point)
 {
     m_min =
@@ -62,9 +88,9 @@ void kirana::math::Bounds3::expand(float delta)
 
 bool kirana::math::Bounds3::contains(const Vector3 &point)
 {
-    bool x = (point[0] >= m_min[0]) && (point[0] <= m_max[0]);
-    bool y = (point[1] >= m_min[1]) && (point[1] <= m_max[1]);
-    bool z = (point[2] >= m_min[2]) && (point[2] <= m_max[2]);
+    const bool x = (point[0] >= m_min[0]) && (point[0] <= m_max[0]);
+    const bool y = (point[1] >= m_min[1]) && (point[1] <= m_max[1]);
+    const bool z = (point[2] >= m_min[2]) && (point[2] <= m_max[2]);
     return x && y && z;
 }
 
@@ -81,7 +107,7 @@ bool kirana::math::Bounds3::intersectWithRay(const Ray &ray,
 
     for (size_t i = 0; i < 3; i++)
     {
-        float invRayDir = 1.0f / ray.getDirection()[i];
+        const float invRayDir = 1.0f / ray.getDirection()[i];
         float tNear = (m_min[i] - ray.getOrigin()[i]) * invRayDir;
         float tFar = (m_max[i] - ray.getOrigin()[i]) * invRayDir;
 
@@ -173,9 +199,12 @@ kirana::math::Bounds3 kirana::math::Bounds3::createFromCenterSize(
 
 bool kirana::math::Bounds3::overlaps(const Bounds3 &lhs, const Bounds3 &rhs)
 {
-    bool x = (lhs.m_max[0] >= rhs.m_min[0]) && (lhs.m_min[0] <= rhs.m_max[0]);
-    bool y = (lhs.m_max[1] >= rhs.m_min[1]) && (lhs.m_min[1] <= rhs.m_max[1]);
-    bool z = (lhs.m_max[2] >= rhs.m_min[2]) && (lhs.m_min[2] <= rhs.m_max[2]);
+    const bool x =
+        (lhs.m_max[0] >= rhs.m_min[0]) && (lhs.m_min[0] <= rhs.m_max[0]);
+    const bool y =
+        (lhs.m_max[1] >= rhs.m_min[1]) && (lhs.m_min[1] <= rhs.m_max[1]);
+    const bool z =
+        (lhs.m_max[2] >= rhs.m_min[2]) && (lhs.m_min[2] <= rhs.m_max[2]);
     return x && y && z;
 }
 
@@ -193,6 +222,6 @@ kirana::math::Bounds3 kirana::math::Bounds3::intersect(const Bounds3 &lhs,
 std::ostream &kirana::math::operator<<(std::ostream &out, const Bounds3 &bounds)
 {
     return out << "<Min: " << bounds.m_min << ", Max: " << bounds.m_max
-        << ", Center: " << bounds.m_center << ", Size: " << bounds.m_size
-        << ", Extent: " << bounds.m_extent << ">";
+               << ", Center: " << bounds.m_center << ", Size: " << bounds.m_size
+               << ", Extent: " << bounds.m_extent << ">";
 }

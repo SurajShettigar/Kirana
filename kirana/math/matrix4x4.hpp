@@ -42,7 +42,8 @@ class Matrix4x4
                        float m22, float m23, float m30, float m31, float m32,
                        float m33);
     explicit Matrix4x4(Vector4 rows[4]);
-    explicit Matrix4x4(Vector4 row0, Vector4 row1, Vector4 row2, Vector4 row3);
+    explicit Matrix4x4(const Vector4 &row0, const Vector4 &row1,
+                       const Vector4 &row2, const Vector4 &row3);
     ~Matrix4x4() = default;
 
     Matrix4x4(const Matrix4x4 &mat);
@@ -128,8 +129,10 @@ class Matrix4x4
     static Matrix4x4 rotation(const Vector3 &rotation);
     static Matrix4x4 rotation(const Vector3 &axis, float angle);
     static Matrix4x4 scale(const Vector3 &scale);
-    static Matrix4x4 view(const Vector3 &eyePosition, const Vector3 &lookAtPosition, const Vector3 &up);
-    static Matrix4x4 view(const Vector3 &position, const Vector3 &forward, const Vector3 &right, const Vector3 &up);
+    static Matrix4x4 view(const Vector3 &eyePosition,
+                          const Vector3 &lookAtPosition, const Vector3 &up);
+    static Matrix4x4 view(const Vector3 &position, const Vector3 &forward,
+                          const Vector3 &right, const Vector3 &up);
 
     // Projection Transformation functions
     static Matrix4x4 orthographicProjection(float left, float right,

@@ -25,6 +25,9 @@ class Bounds3
     explicit Bounds3(const Vector3 &min, const Vector3 &max);
     ~Bounds3() = default;
 
+    Bounds3(const Bounds3 &bounds);
+    Bounds3 &operator=(const Bounds3 &bounds);
+
     Vector3 operator[](int i) const
     {
         return (i == 0) ? m_min : m_max;
@@ -33,6 +36,28 @@ class Bounds3
     Vector3 &operator[](int i)
     {
         return (i == 0) ? m_min : m_max;
+    }
+
+    // Getters-Setters
+    [[nodiscard]] inline Vector3 getMin() const
+    {
+        return m_min;
+    }
+    [[nodiscard]] inline Vector3 getMax() const
+    {
+        return m_max;
+    }
+    [[nodiscard]] inline Vector3 getCenter() const
+    {
+        return m_center;
+    }
+    [[nodiscard]] inline Vector3 getSize() const
+    {
+        return m_size;
+    }
+    [[nodiscard]] inline Vector3 getExtent() const
+    {
+        return m_extent;
     }
 
     void encapsulate(const Vector3 &point);

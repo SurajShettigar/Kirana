@@ -5,6 +5,7 @@
 #include "matrix4x4.hpp"
 #include "transform.hpp"
 #include "bounds3.hpp"
+#include "bounds2.hpp"
 #include "ray.hpp"
 
 #include <iostream>
@@ -57,7 +58,9 @@ int main(int argc, char **argv)
               << std::endl;
 
     Bounds3 bounds(Vector3{-0.5f, -0.5f, -0.5f}, Vector3{0.5f, 0.5f, 0.5f});
+    Bounds2 bounds2(Vector2{-0.5f, -0.5f}, Vector2{0.5f, 0.5f});
     std::cout << "Bounds: " << bounds << std::endl;
+    std::cout << "Bounds 2: " << bounds2 << std::endl;
 
     Ray ray(Vector3{0.0f, 0.1f, 2.0f}, Vector3{0.0f, 0.1f, -1.0f});
 
