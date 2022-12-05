@@ -34,6 +34,8 @@ uint32_t kirana::scene::SceneImporter::getPostProcessMask(
         mask |= aiProcess_PreTransformVertices;
     if (importSettings.optimizeMesh)
         mask |= aiProcess_OptimizeMeshes;
+    if(importSettings.generateBoundingBoxes)
+        mask |= aiProcess_GenBoundingBoxes;
 
     return mask;
 }

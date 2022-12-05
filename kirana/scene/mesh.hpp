@@ -1,6 +1,7 @@
 #ifndef MESH_HPP
 #define MESH_HPP
 
+#include <bounds3.hpp>
 #include <vector>
 #include <string>
 #include <memory>
@@ -15,17 +16,21 @@ class Mesh
 {
   protected:
     std::string m_name;
+    math::Bounds3 m_bounds;
     std::vector<Vertex> m_vertices;
     std::vector<uint32_t> m_indices;
     std::shared_ptr<Material> m_material;
 
   public:
     Mesh() = default;
-    Mesh(std::string name, std::vector<Vertex> vertices,
-         std::vector<uint32_t> indices,
-         std::shared_ptr<Material> material);
+    Mesh(const std::string &name, const math::Bounds3 &bounds,
+         const std::vector<Vertex> &vertices,
+         const std::vector<uint32_t> &indices,
+         const std::shared_ptr<Material> &material);
     Mesh(const aiMesh *mesh, std::shared_ptr<Material> material);
     virtual ~Mesh() = default;
+
+    Mesh(const Mesh &mesh) = delete;
 
     [[nodiscard]] inline const std::string &getName() const
     {
@@ -38,6 +43,10 @@ class Mesh
     [[nodiscard]] inline const std::vector<uint32_t> &getIndices() const
     {
         return m_indices;
+    }
+    [[nodiscard]] inline const math::Bounds3 &getBounds() const
+    {
+        return m_bounds;
     }
     [[nodiscard]] inline const std::shared_ptr<Material> &getMaterial() const
     {

@@ -155,8 +155,33 @@ void kirana::scene::SceneManager::init()
 void kirana::scene::SceneManager::update()
 {
     handleViewportCameraInput();
-    float rotSpeed = 100.0f * m_time.getDeltaTime();
-    float moveSpeed = 10.0f * m_time.getDeltaTime();
+    const float rotSpeed = 100.0f * m_time.getDeltaTime();
+    const float moveSpeed = 10.0f * m_time.getDeltaTime();
+    static float dirVal = 1.0f;
+    if (m_inputManager.getKey(Key::I))
+        dirVal += m_time.getDeltaTime();
+    if (m_inputManager.getKey(Key::U))
+        dirVal -= m_time.getDeltaTime();
+
+    if (m_inputManager.getMouseDown(MouseButton::LEFT))
+    {
+        math::Vector3 screenPos =
+            math::Vector3(m_inputManager.getMousePosition()[0],
+                          m_inputManager.getMousePosition()[1], 1.0f);
+
+        math::Ray ray = m_viewportCamera->screenPositionToRay(screenPos);
+//        std::cout << "Ray: " << ray << std::endl;
+
+        if (m_currentScene.m_objects[2]
+                ->transform
+                ->transformBounds(
+                    m_currentScene.m_objects[2]->getMeshes()[0]->getBounds())
+                .intersectWithRay(ray))
+        {
+            std::cout << "Hit: " << m_currentScene.m_objects[2]->getName()
+                      << std::endl;
+        }
+    }
 
     if (m_inputManager.getKey(Key::R))
         m_currentScene.m_rootObject->transform->rotateY(

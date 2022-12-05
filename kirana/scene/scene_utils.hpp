@@ -31,10 +31,11 @@ struct SceneImportSettings
     bool improveCacheLocality = true;
     bool optimizeMesh = true;
     bool preTransformVertices = false;
+    bool generateBoundingBoxes = true;
 };
 
 static const SceneImportSettings DEFAULT_SCENE_IMPORT_SETTINGS{
-    false, false, true, false, false, true, true, false};
+    false, false, true, false, false, true, true, false, true};
 
 } // namespace kirana::scene
 

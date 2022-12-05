@@ -6,6 +6,7 @@
 #include <string>
 
 #include <transform.hpp>
+#include <bounds3.hpp>
 
 struct aiNode;
 
@@ -21,8 +22,9 @@ class Object
     std::string m_name;
     std::vector<std::shared_ptr<Mesh>> m_meshes;
     std::unique_ptr<math::Transform> m_transform = nullptr;
+    math::Bounds3 m_bounds;
 
-    math::Matrix4x4 getMatrixFromNode(const aiNode *node) const;
+    static math::Matrix4x4 getMatrixFromNode(const aiNode *node);
 
   public:
     Object()
@@ -46,6 +48,14 @@ class Object
     {
         return m_meshes;
     }
+    [[nodiscard]] inline math::Bounds3 getBounds(
+        math::Transform::Space space = math::Transform::Space::World) const
+    {
+        return space == math::Transform::Space::World
+                   ? m_transform->transformBounds(m_bounds)
+                   : m_bounds;
+    }
+
 
     bool hasMesh(const Mesh *mesh) const;
 };

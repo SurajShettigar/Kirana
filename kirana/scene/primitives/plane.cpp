@@ -22,5 +22,8 @@ kirana::scene::primitives::Plane::Plane(
                                         math::Vector3{0.0f, 0.0f, 0.0f}}};
     std::vector<uint32_t> indices{0, 1, 3, 2, 3, 1};
     m_meshes.resize(1);
-    m_meshes[0] = std::make_shared<Mesh>("Plane", vertices, indices, material);
+    math::Bounds3 bounds(math::Vector3(-0.5f, -0.01f, -0.05f),
+                         math::Vector3(0.5f, 0.01f, 0.05f));
+    m_meshes[0] =
+        std::make_shared<Mesh>("Plane", bounds, vertices, indices, material);
 }

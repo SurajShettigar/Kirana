@@ -2,6 +2,7 @@
 #define CAMERA_HPP
 
 #include <transform.hpp>
+#include <ray.hpp>
 #include <array>
 #include <event.hpp>
 
@@ -57,9 +58,6 @@ class Camera
         m_onCameraChange.removeListener(callbackID);
     }
 
-    void lookAt(const math::Vector3 &position,
-                const math::Vector3 &up = math::Vector3::UP);
-
     [[nodiscard]] inline Matrix4x4 getViewMatrix() const
     {
         return Matrix4x4::view(m_transform.getPosition(),
@@ -76,6 +74,16 @@ class Camera
     {
         return getProjectionMatrix() * getViewMatrix();
     }
+
+    void lookAt(const math::Vector3 &position,
+                const math::Vector3 &up = math::Vector3::UP);
+
+    [[nodiscard]] math::Vector3 screenToWorldPosition(
+        const math::Vector3 &screenPos) const;
+    [[nodiscard]] math::Vector3 worldToScreenPosition(
+        const math::Vector3 &worldPos) const;
+    [[nodiscard]] math::Ray screenPositionToRay(
+        const math::Vector3 &screenPos) const;
 
     virtual void setResolution(std::array<uint32_t, 2> resolution);
 };

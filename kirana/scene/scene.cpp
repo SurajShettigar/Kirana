@@ -59,6 +59,9 @@ void kirana::scene::Scene::initFromAiScene(const aiScene *scene)
             Material::MaterialProperties{}));
     }
 
+    Logger::get().log(constants::LOG_CHANNEL_SCENE, LogSeverity::debug,
+                      "Material count: " + std::to_string(m_materials.size()));
+
     // Create Mesh objects for all the meshes in the scene.
     m_meshes.clear();
     m_meshes.resize(scene->mNumMeshes);
@@ -75,10 +78,6 @@ void kirana::scene::Scene::initFromAiScene(const aiScene *scene)
     getMeshesFromNode(scene->mRootNode, &nodeMeshes);
     m_rootObject = std::make_shared<Object>(scene->mRootNode,
                                             std::move(nodeMeshes), nullptr);
-
-    Logger::get().log(constants::LOG_CHANNEL_SCENE, LogSeverity::debug,
-                      "Root Object: " +
-                          std::string(scene->mRootNode->mName.C_Str()));
 
     // Recursively initialize child objects of the scene.
     m_objects.clear();
@@ -99,7 +98,6 @@ kirana::scene::Scene::Scene()
       m_grid{std::make_unique<primitives::Plane>(
           std::make_shared<Material>(Material::DEFAULT_MATERIAL_GRID))}
 {
-    m_grid->transform->setLocalScale(math::Vector3::ONE * 100.0f);
 }
 
 kirana::scene::Scene::~Scene()
