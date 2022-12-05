@@ -32,6 +32,7 @@ class Quaternion
     bool operator==(const Quaternion &rhs) const;
     bool operator!=(const Quaternion &rhs) const;
 
+    explicit operator std::string() const;
 
     friend Vector3 operator*(const Quaternion &quaternion,
                              const Vector3 &vector);

@@ -50,6 +50,12 @@ class Ray
         return m_origin != rhs.m_origin || m_direction != rhs.m_direction;
     }
 
+    explicit operator std::string() const
+    {
+        return std::string("<Origin: ") + std::string(m_origin) +
+               ", Direction: " + std::string(m_direction) + ">";
+    }
+
     // Getters-Setters
     inline Vector3 getOrigin() const
     {

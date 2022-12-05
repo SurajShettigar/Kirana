@@ -4,6 +4,7 @@
 #include "math_utils.hpp"
 
 #include <iostream>
+#include <string>
 
 using kirana::math::Vector2;
 using kirana::math::Vector3;
@@ -55,6 +56,12 @@ Vector2::operator Vector3() const
 Vector2::operator Vector4() const
 {
     return Vector4(m_current[0], m_current[1], 0.0f, 0.0f);
+}
+
+Vector2::operator std::string() const
+{
+    return std::string("{") + std::to_string(m_current[0]) + ", " +
+           std::to_string(m_current[1]) + "}";
 }
 
 Vector2 Vector2::operator-() const

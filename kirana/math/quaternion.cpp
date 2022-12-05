@@ -34,6 +34,11 @@ bool kirana::math::Quaternion::operator!=(const Quaternion &rhs) const
     return !approximatelyEqual(m_w, rhs.m_w) || m_v != rhs.m_v;
 }
 
+kirana::math::Quaternion::operator std::string() const
+{
+    return std::string(getEulerAngles());
+}
+
 kirana::math::Vector3 kirana::math::operator*(const Quaternion &quaternion,
                                               const Vector3 &vector)
 {
@@ -126,19 +131,19 @@ kirana::math::Quaternion kirana::math::Quaternion::matrix(const Matrix4x4 &mat)
     // Taken from 3D Math Primer, by Fletcher Dunn and Ian Parbery
     // Refer: (Section 8.7.4)
     // https://gamemath.com/book/orient.html
-    float wComp = mat[0][0] + mat[1][1] + mat[2][2];
-    float xComp = mat[0][0] - mat[1][1] - mat[2][2];
-    float yComp = mat[1][1] - mat[0][0] - mat[2][2];
-    float zComp = mat[2][2] - mat[0][0] - mat[1][1];
+    const float wComp = mat[0][0] + mat[1][1] + mat[2][2];
+    const float xComp = mat[0][0] - mat[1][1] - mat[2][2];
+    const float yComp = mat[1][1] - mat[0][0] - mat[2][2];
+    const float zComp = mat[2][2] - mat[0][0] - mat[1][1];
 
     float biggestComp =
         std::fmaxf(wComp, std::fmaxf(xComp, std::fmaxf(yComp, zComp)));
-    int biggestIndex =
+    const int biggestIndex =
         biggestComp == wComp
             ? 0
             : (biggestComp == xComp ? 1 : (biggestComp == yComp ? 2 : 3));
     biggestComp = std::sqrtf(biggestComp + 1.0f) * 0.5f;
-    float multiplier = 0.25f / biggestComp;
+    const float multiplier = 0.25f / biggestComp;
 
     // | m00    m01     m02     m03 |
     // | m10    m11     m12     m13 |
@@ -189,14 +194,14 @@ kirana::math::Quaternion kirana::math::Quaternion::euler(const Vector3 &euler)
     // https://gamemath.com/book/orient.html
 
     // Pitch X-axis
-    float cosP = std::cosf(math::radians(euler[0] * 0.5f));
-    float sinP = std::sinf(math::radians(euler[0] * 0.5f));
+    const float cosP = std::cosf(math::radians(euler[0] * 0.5f));
+    const float sinP = std::sinf(math::radians(euler[0] * 0.5f));
     // Yaw / Heading Y-axis
-    float cosH = std::cosf(math::radians(euler[1] * 0.5f));
-    float sinH = std::sinf(math::radians(euler[1] * 0.5f));
+    const float cosH = std::cosf(math::radians(euler[1] * 0.5f));
+    const float sinH = std::sinf(math::radians(euler[1] * 0.5f));
     // Roll / Bank Z-axis
-    float cosB = std::cosf(math::radians(euler[2] * 0.5f));
-    float sinB = std::sinf(math::radians(euler[2] * 0.5f));
+    const float cosB = std::cosf(math::radians(euler[2] * 0.5f));
+    const float sinB = std::sinf(math::radians(euler[2] * 0.5f));
 
     // Perform Bank*Pitch*Heading fixed-axis rotation.
     return Quaternion(Vector3{cosH * sinP * cosB + sinH * cosP * sinB,
@@ -233,8 +238,8 @@ kirana::math::Quaternion kirana::math::Quaternion::exponent(
     if (!approximatelyEqual(std::fabsf(quaternion.m_w), 1.0f))
     {
         Quaternion q;
-        float alpha = std::acos(quaternion.m_w);
-        float newAlpha = alpha * exponent;
+        const float alpha = std::acos(quaternion.m_w);
+        const float newAlpha = alpha * exponent;
         q.m_w = std::cos(newAlpha);
         q.m_v = quaternion.m_v * std::sin(newAlpha) / std::cos(alpha);
         return q;
@@ -271,9 +276,9 @@ kirana::math::Quaternion kirana::math::Quaternion::slerp(const Quaternion &from,
     // parameters as initialized above.
     if (cosOmega <= 0.9999f)
     {
-        float sinOmega = std::sqrt(1.0f - cosOmega * cosOmega);
-        float omega = std::atan2(sinOmega, cosOmega);
-        float oneOverSinOmega = 1.0f / sinOmega;
+        const float sinOmega = std::sqrt(1.0f - cosOmega * cosOmega);
+        const float omega = std::atan2(sinOmega, cosOmega);
+        const float oneOverSinOmega = 1.0f / sinOmega;
         k0 = std::sinf((1.0f - t) * omega) * oneOverSinOmega;
         k1 = std::sinf(t * omega) * oneOverSinOmega;
     }
@@ -290,20 +295,11 @@ kirana::math::Quaternion kirana::math::Quaternion::lookAtDirection(
     else if (Vector3::dot(direction, Vector3::BACK) >= 0.9999f)
         return Quaternion::euler(Vector3::UP * 180.0f);
 
-    float angle =
+    const float angle =
         math::degrees(std::acos(Vector3::dot(Vector3::FORWARD, direction)));
     Vector3 axis = Vector3::cross(Vector3::FORWARD, direction);
     axis.normalize();
     return Quaternion::angleAxis(angle, axis);
-
-    //    Vector3 z = direction;
-    //    Vector3 x = Vector3::cross(Vector3::normalize(up), z);
-    //    Vector3 y = Vector3::cross(z, x);
-    //
-    //    Matrix4x4 mat = Matrix4x4(x[0], y[0], z[0], 0.0f, x[1], y[1], z[1], 0.0f,
-    //                              x[2], y[2], z[2], 0.0f, 0.0f, 0.0f, 0.0f, 1.0f);
-    //
-    //    return Quaternion::matrix(mat);
 }
 
 kirana::math::Quaternion kirana::math::Quaternion::rotationFromVectors(

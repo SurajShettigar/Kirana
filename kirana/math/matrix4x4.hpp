@@ -55,6 +55,8 @@ class Matrix4x4
     bool operator==(const Matrix4x4 &mat) const;
     bool operator!=(const Matrix4x4 &mat) const;
 
+    explicit operator std::string() const;
+
     Matrix4x4 &operator*=(const Matrix4x4 &rhs);
 
     friend Matrix4x4 operator*(const Matrix4x4 &mat1, const Matrix4x4 &mat2);
