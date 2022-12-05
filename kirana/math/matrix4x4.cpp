@@ -2,6 +2,7 @@
 #include "quaternion.hpp"
 
 #include <algorithm>
+#include <string>
 
 using kirana::math::Matrix4x4;
 using kirana::math::Vector3;
@@ -110,6 +111,26 @@ bool Matrix4x4::operator!=(const Matrix4x4 &mat) const
     return m_current[0] != mat.m_current[0] ||
            m_current[1] != mat.m_current[1] ||
            m_current[2] != mat.m_current[2] || m_current[3] != mat.m_current[3];
+}
+
+kirana::math::Matrix4x4::operator std::string() const
+{
+    return std::string("\n[") + std::to_string(m_current[0][0]) + ", " +
+           std::to_string(m_current[0][1]) + ", " +
+           std::to_string(m_current[0][2]) + ", " +
+           std::to_string(m_current[0][3]) + ", \n" +
+           std::to_string(m_current[1][0]) + ", " +
+           std::to_string(m_current[1][1]) + ", " +
+           std::to_string(m_current[1][2]) + ", " +
+           std::to_string(m_current[1][3]) + ", \n" +
+           std::to_string(m_current[2][0]) + ", " +
+           std::to_string(m_current[2][1]) + ", " +
+           std::to_string(m_current[2][2]) + ", " +
+           std::to_string(m_current[2][3]) + ", \n" +
+           std::to_string(m_current[3][0]) + ", " +
+           std::to_string(m_current[3][1]) + ", " +
+           std::to_string(m_current[3][2]) + ", " +
+           std::to_string(m_current[3][3]) + "]";
 }
 
 Matrix4x4 &Matrix4x4::operator*=(const Matrix4x4 &rhs)

@@ -2,6 +2,7 @@
 #include "ray.hpp"
 #include "math_utils.hpp"
 
+#include <string>
 #include <limits>
 #include <cmath>
 
@@ -47,6 +48,15 @@ kirana::math::Bounds2 &kirana::math::Bounds2::operator=(const Bounds2 &bounds)
         m_extent = bounds.m_extent;
     }
     return *this;
+}
+
+kirana::math::Bounds2::operator std::string() const
+{
+    return std::string("<Min: ") + std::string(m_min) +
+           ", Max: " + std::string(m_max) +
+           ", Center: " + std::string(m_center) +
+           ", Size: " + std::string(m_size) +
+           ", Extent: " + std::string(m_extent) + ">";
 }
 
 void kirana::math::Bounds2::encapsulate(const Vector2 &point)

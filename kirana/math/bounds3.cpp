@@ -4,6 +4,7 @@
 
 #include <limits>
 #include <cmath>
+#include <string>
 
 kirana::math::Bounds3::Bounds3()
     : m_min{Vector3::ONE * std::numeric_limits<float>::max()},
@@ -49,6 +50,15 @@ kirana::math::Bounds3 &kirana::math::Bounds3::operator=(const Bounds3 &bounds)
         m_extent = bounds.m_extent;
     }
     return *this;
+}
+
+kirana::math::Bounds3::operator std::string() const
+{
+    return std::string("<Min: ") + std::string(m_min) +
+           ", Max: " + std::string(m_max) +
+           ", Center: " + std::string(m_center) +
+           ", Size: " + std::string(m_size) +
+           ", Extent: " + std::string(m_extent) + ">";
 }
 
 void kirana::math::Bounds3::encapsulate(const Vector3 &point)

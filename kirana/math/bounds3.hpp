@@ -38,6 +38,8 @@ class Bounds3
         return (i == 0) ? m_min : m_max;
     }
 
+    explicit operator std::string() const;
+
     // Getters-Setters
     [[nodiscard]] inline Vector3 getMin() const
     {

@@ -39,13 +39,18 @@ class Vector2
     explicit operator Vector3() const;
     /// Cast to Vector4
     explicit operator Vector4() const;
+    explicit operator std::string() const;
 
-    inline float operator[](size_t i) const
+    inline float operator[](int i) const
     {
+        if(i < 0 || i > 1)
+            return m_current[1];
         return m_current[i];
     }
-    inline float &operator[](size_t i)
+    inline float &operator[](int i)
     {
+        if(i < 0 || i > 1)
+            return m_current[1];
         return m_current[i];
     }
 
