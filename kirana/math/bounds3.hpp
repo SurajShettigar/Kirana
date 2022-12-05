@@ -6,15 +6,14 @@
 namespace kirana::math
 {
 class Ray;
+class Transform;
 class Bounds3
 {
+    friend class Transform;
+
   private:
     Vector3 m_min;
     Vector3 m_max;
-    Vector3 m_center;
-    Vector3 m_size;
-    Vector3 m_extent;
-
   public:
     Bounds3();
     /**
@@ -51,23 +50,44 @@ class Bounds3
     }
     [[nodiscard]] inline Vector3 getCenter() const
     {
-        return m_center;
+        return (m_min + m_max) * 0.5f;
     }
     [[nodiscard]] inline Vector3 getSize() const
     {
-        return m_size;
+        return (m_max - m_min);
     }
     [[nodiscard]] inline Vector3 getExtent() const
     {
-        return m_extent;
+        return getSize() * 0.5f;
+    }
+
+    /**
+     * Returns the position of the corner of bounding-box.
+     * @param corner index of the corner.
+     *  <pre>
+     *  <br>  6________7
+     *  <br> /        /
+     *  <br>2________3
+     *  <br>
+     *  <br>  4________5
+     *  <br> /        /
+     *  <br>0________1</pre>
+     * @return The vertex position of the given corner.
+     */
+    [[nodiscard]] inline Vector3 getCorner(uint16_t corner) const
+    {
+        // Taken from PBRT, by Matt Pharr
+        // Refer: Section 2.6
+        return Vector3((*this)[corner & 1][0], (*this)[(corner & 2) ? 1 : 0][1],
+                       (*this)[(corner & 4) ? 1 : 0][2]);
     }
 
     void encapsulate(const Vector3 &point);
     void encapsulate(const Bounds3 &bounds);
     void expand(float delta);
-    bool contains(const Vector3 &point);
+    [[nodiscard]] bool contains(const Vector3 &point) const;
     bool intersectWithRay(const Ray &ray, Vector3 *enterPoint,
-                          Vector3 *exitPoint);
+                          Vector3 *exitPoint) const;
     /**
      * Faster version of ray-bounding-box intersection.
      * @param ray
@@ -75,11 +95,14 @@ class Bounds3
      * i.e. even if the bounding box is behind the ray direction, it returns
      * true.
      */
-    bool intersectWithRay(const Ray &ray);
-    Vector3 lerp(const Vector3 &t);
+    [[nodiscard]] bool intersectWithRay(const Ray &ray) const;
+    [[nodiscard]] Vector3 lerp(const Vector3 &t) const;
 
-    static Bounds3 createFromCenterSize(const Vector3 &center,
-                                        const Vector3 &size);
+    inline static Bounds3 createFromCenterSize(const Vector3 &center,
+                                               const Vector3 &size)
+    {
+        return Bounds3(center - size * 0.5, center + size * 0.5);
+    }
     static bool overlaps(const Bounds3 &lhs, const Bounds3 &rhs);
     static Bounds3 intersect(const Bounds3 &lhs, const Bounds3 &rhs);
 

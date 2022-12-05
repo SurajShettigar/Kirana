@@ -6,12 +6,13 @@
 
 namespace kirana::math
 {
+class Transform;
 class Ray
 {
+    friend class Transform;
   private:
     Vector3 m_origin;
     Vector3 m_direction;
-    Vector3 m_invDirection;
     mutable float m_tMax;
 
   public:

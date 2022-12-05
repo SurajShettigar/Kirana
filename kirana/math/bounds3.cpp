@@ -8,23 +8,16 @@
 
 kirana::math::Bounds3::Bounds3()
     : m_min{Vector3::ONE * std::numeric_limits<float>::max()},
-      m_max{Vector3::ONE * std::numeric_limits<float>::lowest()},
-      m_center{(m_max + m_min) * 0.5f}, m_size{m_max - m_min}, m_extent{
-                                                                   m_size *
-                                                                   0.5f} {};
+      m_max{Vector3::ONE * std::numeric_limits<float>::lowest()} {};
 
 kirana::math::Bounds3::Bounds3(const Vector3 &point)
-    : m_min{point}, m_max{point}, m_center{point}, m_size{Vector3::ZERO},
-      m_extent{Vector3::ZERO} {};
+    : m_min{point}, m_max{point} {};
 
 kirana::math::Bounds3::Bounds3(const Vector3 &min, const Vector3 &max)
     : m_min{Vector3{std::fmin(min[0], max[0]), std::fmin(min[1], max[1]),
                     std::fmin(min[2], max[2])}},
       m_max{Vector3{std::fmax(min[0], max[0]), std::fmax(min[1], max[1]),
-                    std::fmax(min[2], max[2])}},
-      m_center{(m_min + m_max) * 0.5f}, m_size{m_max - m_min}, m_extent{
-                                                                   m_size *
-                                                                   0.5f} {};
+                    std::fmax(min[2], max[2])}} {};
 
 
 kirana::math::Bounds3::Bounds3(const Bounds3 &bounds)
@@ -33,9 +26,6 @@ kirana::math::Bounds3::Bounds3(const Bounds3 &bounds)
     {
         m_min = bounds.m_min;
         m_max = bounds.m_max;
-        m_center = bounds.m_center;
-        m_size = bounds.m_size;
-        m_extent = bounds.m_extent;
     }
 }
 
@@ -45,9 +35,6 @@ kirana::math::Bounds3 &kirana::math::Bounds3::operator=(const Bounds3 &bounds)
     {
         m_min = bounds.m_min;
         m_max = bounds.m_max;
-        m_center = bounds.m_center;
-        m_size = bounds.m_size;
-        m_extent = bounds.m_extent;
     }
     return *this;
 }
@@ -55,10 +42,7 @@ kirana::math::Bounds3 &kirana::math::Bounds3::operator=(const Bounds3 &bounds)
 kirana::math::Bounds3::operator std::string() const
 {
     return std::string("<Min: ") + std::string(m_min) +
-           ", Max: " + std::string(m_max) +
-           ", Center: " + std::string(m_center) +
-           ", Size: " + std::string(m_size) +
-           ", Extent: " + std::string(m_extent) + ">";
+           ", Max: " + std::string(m_max) + ">";
 }
 
 void kirana::math::Bounds3::encapsulate(const Vector3 &point)
@@ -69,9 +53,6 @@ void kirana::math::Bounds3::encapsulate(const Vector3 &point)
     m_max =
         Vector3(std::fmax(m_max[0], point[0]), std::fmax(m_max[1], point[1]),
                 std::fmax(m_max[2], point[2]));
-    m_center = (m_max + m_min) * 0.5f;
-    m_size = m_max - m_min;
-    m_extent = m_size * 0.5f;
 }
 
 void kirana::math::Bounds3::encapsulate(const Bounds3 &bounds)
@@ -82,21 +63,15 @@ void kirana::math::Bounds3::encapsulate(const Bounds3 &bounds)
     m_max = Vector3(std::fmax(m_max[0], bounds.m_max[0]),
                     std::fmax(m_max[1], bounds.m_max[1]),
                     std::fmax(m_max[2], bounds.m_max[2]));
-    m_center = (m_max + m_min) * 0.5f;
-    m_size = m_max - m_min;
-    m_extent = m_size * 0.5f;
 }
 
 void kirana::math::Bounds3::expand(float delta)
 {
     m_min -= Vector3::ONE * delta;
     m_max += Vector3::ONE * delta;
-    m_center = (m_max + m_min) * 0.5f;
-    m_size = m_max - m_min;
-    m_extent = m_size * 0.5f;
 }
 
-bool kirana::math::Bounds3::contains(const Vector3 &point)
+bool kirana::math::Bounds3::contains(const Vector3 &point) const
 {
     const bool x = (point[0] >= m_min[0]) && (point[0] <= m_max[0]);
     const bool y = (point[1] >= m_min[1]) && (point[1] <= m_max[1]);
@@ -106,7 +81,7 @@ bool kirana::math::Bounds3::contains(const Vector3 &point)
 
 bool kirana::math::Bounds3::intersectWithRay(const Ray &ray,
                                              Vector3 *enterPoint,
-                                             Vector3 *exitPoint)
+                                             Vector3 *exitPoint) const
 {
     // Solved by intersecting ray with each plane-slabs. The plane equations
     // are used to solve the intersections.
@@ -140,7 +115,7 @@ bool kirana::math::Bounds3::intersectWithRay(const Ray &ray,
     return true;
 }
 
-bool kirana::math::Bounds3::intersectWithRay(const Ray &ray)
+bool kirana::math::Bounds3::intersectWithRay(const Ray &ray) const
 {
     // Faster version of ray-box intersection. Checks the entire ray
     // intersection, even in negative direction.
@@ -187,24 +162,11 @@ bool kirana::math::Bounds3::intersectWithRay(const Ray &ray)
 }
 
 
-kirana::math::Vector3 kirana::math::Bounds3::lerp(const Vector3 &t)
+kirana::math::Vector3 kirana::math::Bounds3::lerp(const Vector3 &t) const
 {
     return Vector3(math::lerp(m_min[0], m_max[0], t[0]),
                    math::lerp(m_min[1], m_max[1], t[1]),
                    math::lerp(m_min[2], m_max[2], t[2]));
-}
-
-kirana::math::Bounds3 kirana::math::Bounds3::createFromCenterSize(
-    const Vector3 &center, const Vector3 &size)
-{
-    Bounds3 bounds;
-    bounds.m_center = center;
-    bounds.m_size = size;
-    bounds.m_extent = bounds.m_size * 0.5;
-    bounds.m_max = bounds.m_center + bounds.m_extent;
-    bounds.m_min = bounds.m_center - bounds.m_extent;
-
-    return bounds;
 }
 
 bool kirana::math::Bounds3::overlaps(const Bounds3 &lhs, const Bounds3 &rhs)
@@ -231,7 +193,5 @@ kirana::math::Bounds3 kirana::math::Bounds3::intersect(const Bounds3 &lhs,
 
 std::ostream &kirana::math::operator<<(std::ostream &out, const Bounds3 &bounds)
 {
-    return out << "<Min: " << bounds.m_min << ", Max: " << bounds.m_max
-               << ", Center: " << bounds.m_center << ", Size: " << bounds.m_size
-               << ", Extent: " << bounds.m_extent << ">";
+    return out << "<Min: " << bounds.m_min << ", Max: " << bounds.m_max << ">";
 }
