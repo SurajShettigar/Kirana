@@ -133,7 +133,7 @@ void kirana::math::Transform::setForward(const Vector3 &forward, Space space)
     Vector3 up;
     if (space == Space::World)
     {
-        Vector3 fwd = inverseTransformVector(forward);
+        const Vector3 fwd = transformDirection(forward, Space::Local);
         right = Vector3::cross(Vector3::UP, fwd);
         up = Vector3::cross(fwd, right);
     }
@@ -248,50 +248,76 @@ void kirana::math::Transform::setLocalScale(const Vector3 &scale)
     calculateLocalMatrix();
 }
 
-
-kirana::math::Vector3 kirana::math::Transform::inverseTransformVector(
-    const Vector3 &vector)
-{
-    return static_cast<Vector3>(Matrix4x4::inverse(getWorldMatrix()) *
-                                Vector4(vector, 0.0f));
-}
-
-
-kirana::math::Vector3 kirana::math::Transform::inverseTransformPoint(
-    const Vector3 &point)
-{
-    return static_cast<Vector3>(Matrix4x4::inverse(getWorldMatrix()) *
-                                Vector4(point, 1.0f));
-}
-
-
-kirana::math::Vector3 kirana::math::Transform::inverseTransformDirection(
-    const Vector3 &direction)
-{
-    return static_cast<Vector3>(Matrix4x4::inverse(getWorldMatrix(false)) *
-                                Vector4(direction, 0.0f));
-}
-
-
 kirana::math::Vector3 kirana::math::Transform::transformVector(
-    const Vector3 &vector)
+    const Vector3 &vector, Space space) const
 {
-    return static_cast<Vector3>(getWorldMatrix() * Vector4(vector, 0.0f));
+    if (space == Space::World)
+        return static_cast<Vector3>(getWorldMatrix() * Vector4(vector, 0.0f));
+    else
+        return static_cast<Vector3>(Matrix4x4::inverse(getWorldMatrix()) *
+                                    Vector4(vector, 0.0f));
 }
 
 
-kirana::math::Vector3 kirana::math::Transform::transformPoint(
-    const Vector3 &point)
+kirana::math::Vector3 kirana::math::Transform::transformPosition(
+    const Vector3 &position, Space space) const
 {
-    return static_cast<Vector3>(getWorldMatrix() * Vector4(point, 1.0f));
+    if (space == Space::World)
+        return static_cast<Vector3>(getWorldMatrix() * Vector4(position, 1.0f));
+    else
+        return static_cast<Vector3>(Matrix4x4::inverse(getWorldMatrix()) *
+                                    Vector4(position, 1.0f));
 }
 
 
 kirana::math::Vector3 kirana::math::Transform::transformDirection(
-    const Vector3 &direction)
+    const Vector3 &direction, Space space) const
 {
-    return static_cast<Vector3>(getWorldMatrix(false) *
-                                Vector4(direction, 0.0f));
+    if (space == Space::World)
+        return static_cast<Vector3>(getWorldMatrix(false) *
+                                    Vector4(direction, 0.0f));
+    else
+        return static_cast<Vector3>(Matrix4x4::inverse(getWorldMatrix(false)) *
+                                    Vector4(direction, 0.0f));
+}
+
+kirana::math::Bounds3 kirana::math::Transform::transformBounds(
+    const Bounds3 &bounds, Space space) const
+{
+    // Algorithm taken from Graphic Gems: "Transforming Axis-Aligned Bounding
+    // Boxes", by James Arvo.
+
+    const Matrix4x4 &m = space == Space::World
+                             ? getWorldMatrix()
+                             : Matrix4x4::inverse(getWorldMatrix());
+    const Vector3 &translation = Vector3(m[0][3], m[1][3], m[2][3]);
+    Bounds3 tBounds(translation, translation);
+
+    float a = 0, b = 0;
+    for (int i = 0; i < 3; i++)
+    {
+        // x-axis
+        a = m[i][0] * bounds.m_min[i];
+        b = m[i][0] * bounds.m_max[i];
+
+        tBounds.m_min[0] += std::fminf(a, b);
+        tBounds.m_max[0] += std::fmaxf(a, b);
+
+        // y-axis
+        a = m[i][1] * bounds.m_min[i];
+        b = m[i][1] * bounds.m_max[i];
+
+        tBounds.m_min[1] += std::fminf(a, b);
+        tBounds.m_max[1] += std::fmaxf(a, b);
+
+        // z-axis
+        a = m[i][2] * bounds.m_min[i];
+        b = m[i][2] * bounds.m_max[i];
+
+        tBounds.m_min[2] += std::fminf(a, b);
+        tBounds.m_max[2] += std::fmaxf(a, b);
+    }
+    return tBounds;
 }
 
 

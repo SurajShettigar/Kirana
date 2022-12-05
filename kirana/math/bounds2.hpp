@@ -6,14 +6,14 @@
 namespace kirana::math
 {
 class Ray;
+class Transform;
 class Bounds2
 {
+    friend class Transform;
+
   private:
     Vector2 m_min;
     Vector2 m_max;
-    Vector2 m_center;
-    Vector2 m_size;
-    Vector2 m_extent;
 
   public:
     Bounds2();
@@ -51,25 +51,28 @@ class Bounds2
     }
     [[nodiscard]] inline Vector2 getCenter() const
     {
-        return m_center;
+        return (m_min + m_max) * 0.5f;
     }
     [[nodiscard]] inline Vector2 getSize() const
     {
-        return m_size;
+        return m_max - m_min;
     }
     [[nodiscard]] inline Vector2 getExtent() const
     {
-        return m_extent;
+        return getSize() * 0.5f;
     }
 
     void encapsulate(const Vector2 &point);
     void encapsulate(const Bounds2 &bounds);
     void expand(float delta);
-    bool contains(const Vector2 &point);
-    Vector2 lerp(const Vector2 &t);
+    [[nodiscard]] bool contains(const Vector2 &point) const;
+    [[nodiscard]] Vector2 lerp(const Vector2 &t) const;
 
-    static Bounds2 createFromCenterSize(const Vector2 &center,
-                                        const Vector2 &size);
+    inline static Bounds2 createFromCenterSize(const Vector2 &center,
+                                        const Vector2 &size)
+    {
+        return Bounds2(center - size * 0.5, center + size * 0.5);
+    }
     static bool overlaps(const Bounds2 &lhs, const Bounds2 &rhs);
     static Bounds2 intersect(const Bounds2 &lhs, const Bounds2 &rhs);
 

@@ -57,11 +57,22 @@ int main(int argc, char **argv)
     std::cout << "Matrix Inverse: " << Matrix4x4::inverse((mat1 * mat2))
               << std::endl;
 
-    Bounds3 bounds(Vector3{-0.5f, -0.5f, -0.5f}, Vector3{0.5f, 0.5f, 0.5f});
-    Bounds2 bounds2(Vector2{-0.5f, -0.5f}, Vector2{0.5f, 0.5f});
+    // Bounding Box related functions
+    Bounds3 bounds(Vector3{-0.5f, -0.5f, -0.6f}, Vector3{1.5f, 0.5f, 0.6f});
     std::cout << "Bounds: " << bounds << std::endl;
-    std::cout << "Bounds 2: " << bounds2 << std::endl;
+    std::cout << "Bounds Center: " << bounds.getCenter()
+              << " Size: " << bounds.getSize() << std::endl;
+    Transform transform;
+//    transform.setPosition(Vector3{0.5f, 2.0f, 0.0f});
+    transform.rotateY(90.0f);
+//    transform.setLocalScale(Vector3{1.0f, 2.0f, 1.5f});
+    bounds = transform.transformBounds(bounds);
+    std::cout << "Transformed Bounds: " << bounds << std::endl;
+    std::cout << "Transformed Bounds Center: " << bounds.getCenter()
+              << " Size: " << bounds.getSize() << std::endl;
 
+
+    // Ray-related functions
     Ray ray(Vector3{0.0f, 0.1f, 2.0f}, Vector3{0.0f, 0.1f, -1.0f});
 
     std::cout << "Ray: " << ray << std::endl;
