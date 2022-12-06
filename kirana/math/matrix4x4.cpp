@@ -222,6 +222,11 @@ Vector4 kirana::math::operator*(const Matrix4x4 &mat, const Vector4 &vec4)
                        mat[3][2] * vec4[2] + mat[3][3] * vec4[3]);
 }
 
+Vector3 kirana::math::operator*(const Matrix4x4 &mat, const Vector3 &vec3)
+{
+    return static_cast<Vector3>(mat * ::Vector4(vec3, 1.0f));
+}
+
 std::ostream &kirana::math::operator<<(std::ostream &out, const Matrix4x4 &mat)
 {
     return out << "\n[" << mat[0][0] << ", " << mat[0][1] << ", " << mat[0][2]
@@ -610,9 +615,9 @@ Matrix4x4 Matrix4x4::view(const Vector3 &position, const Vector3 &forward,
                           const Vector3 &right, const Vector3 &up)
 {
     return Matrix4x4(right[0], right[1], right[2],
-                     math::Vector3::dot(right, position), up[0], up[1], up[2],
-                     math::Vector3::dot(up, position), forward[0], forward[1],
-                     forward[2], -math::Vector3::dot(forward, position), 0.0f,
+                     math::Vector3::dot(right, -position), up[0], up[1], up[2],
+                     math::Vector3::dot(up, -position), forward[0], forward[1],
+                     forward[2], math::Vector3::dot(forward, -position), 0.0f,
                      0.0f, 0.0f, 1.0f);
 }
 

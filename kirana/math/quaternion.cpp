@@ -69,6 +69,15 @@ kirana::math::Quaternion &kirana::math::Quaternion::operator*=(
     return (*this = *this * rhs);
 }
 
+
+void kirana::math::Quaternion::normalize()
+{
+    float length = m_v.lengthSquared() + m_w * m_w;
+    length = std::sqrtf(length);
+    m_v /= length;
+    m_w /= length;
+}
+
 kirana::math::Vector3 kirana::math::Quaternion::rotateVector(
     const Vector3 &vector) const
 {
@@ -124,6 +133,15 @@ kirana::math::Vector3 kirana::math::Quaternion::getEulerAngles() const
     }
 
     return euler;
+}
+
+
+kirana::math::Quaternion kirana::math::Quaternion::normalize(
+    const Quaternion &quaternion)
+{
+    Quaternion q(quaternion);
+    q.normalize();
+    return q;
 }
 
 kirana::math::Quaternion kirana::math::Quaternion::matrix(const Matrix4x4 &mat)
@@ -184,6 +202,7 @@ kirana::math::Quaternion kirana::math::Quaternion::matrix(const Matrix4x4 &mat)
         break;
     }
 
+    q.normalize();
     return q;
 }
 
@@ -204,17 +223,21 @@ kirana::math::Quaternion kirana::math::Quaternion::euler(const Vector3 &euler)
     const float sinB = std::sinf(math::radians(euler[2] * 0.5f));
 
     // Perform Bank*Pitch*Heading fixed-axis rotation.
-    return Quaternion(Vector3{cosH * sinP * cosB + sinH * cosP * sinB,
-                              sinH * cosP * cosB - cosH * sinP * sinB,
-                              cosH * cosP * sinB - sinH * sinP * cosB},
-                      cosH * cosP * cosB + sinH * sinP * sinB);
+    Quaternion q(Vector3{cosH * sinP * cosB + sinH * cosP * sinB,
+                         sinH * cosP * cosB - cosH * sinP * sinB,
+                         cosH * cosP * sinB - sinH * sinP * cosB},
+                 cosH * cosP * cosB + sinH * sinP * sinB);
+    q.normalize();
+    return q;
 }
 
 kirana::math::Quaternion kirana::math::Quaternion::angleAxis(
     float angle, const Vector3 &axis)
 {
-    return Quaternion(axis * std::sinf(radians(angle * 0.5f)),
-                      std::cosf(radians(angle * 0.5f)));
+    Quaternion q(axis * std::sinf(radians(angle * 0.5f)),
+                 std::cosf(radians(angle * 0.5f)));
+    q.normalize();
+    return q;
 }
 
 kirana::math::Quaternion kirana::math::Quaternion::inverse(
@@ -295,11 +318,14 @@ kirana::math::Quaternion kirana::math::Quaternion::lookAtDirection(
     else if (Vector3::dot(direction, Vector3::BACK) >= 0.9999f)
         return Quaternion::euler(Vector3::UP * 180.0f);
 
-    const float angle =
-        math::degrees(std::acos(Vector3::dot(Vector3::FORWARD, direction)));
-    Vector3 axis = Vector3::cross(Vector3::FORWARD, direction);
-    axis.normalize();
-    return Quaternion::angleAxis(angle, axis);
+    const Vector3 z = Vector3::normalize(direction);
+    const Vector3 x =
+        Vector3::normalize(Vector3::cross(Vector3::normalize(up), z));
+    const Vector3 y = Vector3::normalize(Vector3::cross(z, x));
+
+    return Quaternion::matrix(Matrix4x4(x[0], y[0], z[0], 0.0f, x[1], y[1],
+                                        z[1], 0.0f, x[2], y[2], z[2], 0.0f,
+                                        0.0f, 0.0f, 0.0f, 1.0f));
 }
 
 kirana::math::Quaternion kirana::math::Quaternion::rotationFromVectors(
