@@ -1,5 +1,7 @@
 #include "perspective_camera.hpp"
 
+#include <math_utils.hpp>
+
 kirana::scene::PerspectiveCamera::PerspectiveCamera(
     std::array<uint32_t, 2> windowResolution, float fov, float nearPlane,
     float farPlane, bool graphicsAPI, bool flipY)
@@ -32,6 +34,16 @@ kirana::scene::PerspectiveCamera &kirana::scene::PerspectiveCamera::operator=(
         m_flipY = camera.m_flipY;
     }
     return *this;
+}
+
+void kirana::scene::PerspectiveCamera::fitBoundsToView(
+    const math::Vector3 &lookAtPosition, const math::Bounds3 &bounds,
+    const math::Vector3 &offset)
+{
+    const float extent = bounds.getExtent().length();
+    const float distance = extent / std::sinf(math::radians(m_fov * 0.5f));
+    m_transform.setPosition(math::Vector3::FORWARD * distance + offset);
+    lookAt(lookAtPosition);
 }
 
 void kirana::scene::PerspectiveCamera::setResolution(

@@ -83,8 +83,11 @@ class Camera
     [[nodiscard]] math::Vector3 worldToScreenPosition(
         const math::Vector3 &worldPos) const;
     [[nodiscard]] math::Ray screenPositionToRay(
-        const math::Vector3 &screenPos) const;
+        const math::Vector2 &screenPos) const;
 
+    virtual void fitBoundsToView(const math::Vector3 &lookAtPosition,
+                                 const math::Bounds3 &bounds,
+                                 const math::Vector3 &offset) = 0;
     virtual void setResolution(std::array<uint32_t, 2> resolution);
 };
 } // namespace kirana::scene

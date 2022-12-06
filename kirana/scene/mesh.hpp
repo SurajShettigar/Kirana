@@ -44,6 +44,7 @@ class Mesh
     {
         return m_indices;
     }
+    /// Returns local bounding-box of the mesh
     [[nodiscard]] inline const math::Bounds3 &getBounds() const
     {
         return m_bounds;

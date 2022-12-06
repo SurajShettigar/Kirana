@@ -18,41 +18,24 @@ class SceneManager
         math::Vector2 prevMousePos;
         math::Vector2 mousePos;
         math::Vector2 mouseDelta;
-        bool firstClick = true;
         utils::input::MouseButton currentButton;
-
-        [[nodiscard]] math::Vector2 normalizedPrevMousePos(
-            const std::array<uint32_t, 2> windowSize) const
-        {
-            math::Vector2 pos = math::Vector2::normalize(math::Vector2(
-                prevMousePos[0] / static_cast<float>(windowSize[0]),
-                prevMousePos[1] / static_cast<float>(windowSize[0])));
-            pos[0] = pos[0] * 2.0f - 1.0f;
-            pos[1] = pos[1] * 2.0f - 1.0f;
-            return pos;
-        }
-
-        [[nodiscard]] math::Vector2 normalizedMousePos(
-            const std::array<uint32_t, 2> windowSize) const
-        {
-            math::Vector2 pos = math::Vector2::normalize(
-                math::Vector2(mousePos[0] / static_cast<float>(windowSize[0]),
-                              mousePos[1] / static_cast<float>(windowSize[0])));
-            pos[0] = pos[0] * 2.0f - 1.0f;
-            pos[1] = pos[1] * 2.0f - 1.0f;
-            return pos;
-        }
+        bool firstClick = true;
     };
-
-    Scene m_currentScene;
-    Camera *m_viewportCamera;
 
     utils::input::InputManager &m_inputManager;
     utils::Time &m_time;
 
-    ViewportCameraData m_viewportCamData;
 
-    void handleViewportCameraInput();
+    Scene m_currentScene;
+    Camera *m_viewportCamera;
+    ViewportCameraData m_viewportCamData;
+    Object *m_activeSelection;
+
+    void resetViewportCamera();
+    void handleViewportCameraMovement();
+    void checkForObjectSelection();
+    void onKeyboardInput(const utils::input::KeyboardInput &input);
+    void onMouseInput(const utils::input::MouseInput &input);
     SceneManager();
     ~SceneManager() = default;
 

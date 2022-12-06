@@ -1,6 +1,8 @@
 #ifndef CONSTANTS_H
 #define CONSTANTS_H
 
+#include <array>
+
 namespace kirana::utils::constants
 {
 
@@ -20,7 +22,8 @@ static const bool VULKAN_USE_VALIDATION_LAYERS = true;
 static const bool VULKAN_USE_VALIDATION_LAYERS = false;
 #endif
 static const uint64_t VULKAN_FRAME_SYNC_TIMEOUT = 1000000000; // 1 second
-static const uint64_t VULKAN_COPY_BUFFER_WAIT_TIMEOUT = 10000000000; // 10 seconds
+static const uint64_t VULKAN_COPY_BUFFER_WAIT_TIMEOUT =
+    10000000000; // 10 seconds
 static const uint16_t VULKAN_FRAME_OVERLAP_COUNT = 2;
 static const uint16_t VULKAN_DESCRIPTOR_SET_MAX_COUNT = 10;
 static const uint16_t VULKAN_DESCRIPTOR_DEFAULT_POOL_SIZE = 10;
@@ -44,13 +47,16 @@ static const char *DEFAULT_MATERIAL_LIGHT_NAME = "Default_Light_Mat";
 
 static const char *DEFAULT_SCENE_NAME = "Scene";
 static const char *DEFAULT_SCENE_MATERIAL_NAME = "Material";
-static const char *DEFAULT_SCENE_MATERIAL_SHADER_NAME = VULKAN_SHADER_DEFAULT_NAME;
+static const char *DEFAULT_SCENE_MATERIAL_SHADER_NAME =
+    VULKAN_SHADER_DEFAULT_NAME;
 
 static const char *DATA_DIR_PATH = DATA_DIR;
 static const char *DEFAULT_MODEL_NAME = "Quad_Model.fbx";
-//static const char *DEFAULT_MODEL_NAME = "Large_Model.fbx";
+// static const char *DEFAULT_MODEL_NAME = "Large_Model.fbx";
 
 static const float VIEWPORT_CAMERA_MOUSE_SENSITIVITY = 6.0f;
+static const std::array<float, 3> VIEWPORT_CAMERA_DEFAULT_OFFSET{0.0f, 5.0f,
+                                                                 3.0f};
 
 } // namespace kirana::utils::constants
 

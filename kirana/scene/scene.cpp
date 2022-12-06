@@ -14,23 +14,44 @@ typedef kirana::utils::LogSeverity LogSeverity;
 namespace constants = kirana::utils::constants;
 
 void kirana::scene::Scene::getMeshesFromNode(
-    const aiNode *node, std::vector<std::shared_ptr<Mesh>> *nodeMeshes)
+    const aiNode *node, std::vector<std::shared_ptr<Mesh>> *nodeMeshes,
+    math::Bounds3 *bounds)
 {
     nodeMeshes->clear();
-    nodeMeshes->resize(node->mNumMeshes);
-    for (size_t i = 0; i < node->mNumMeshes; i++)
-        (*nodeMeshes)[i] = m_meshes[node->mMeshes[i]];
+    if (node->mNumMeshes > 0)
+    {
+        nodeMeshes->resize(node->mNumMeshes);
+        for (size_t i = 0; i < node->mNumMeshes; i++)
+        {
+            (*nodeMeshes)[i] = m_meshes[node->mMeshes[i]];
+            bounds->encapsulate((*nodeMeshes)[i]->getBounds());
+        }
+    }
+    else
+    {
+        // When node has no meshes, it's an empty node with just a position.
+        const auto &t = node->mTransformation;
+        bounds->encapsulate(math::Vector3(t.a4, t.b4, t.c4));
+    }
 }
 
 void kirana::scene::Scene::initializeChildObjects(
     std::shared_ptr<Object> parent, uint32_t childCount, aiNode **children)
 {
+
     for (size_t i = 0; i < childCount; i++)
     {
         std::vector<std::shared_ptr<Mesh>> meshes;
-        getMeshesFromNode(children[i], &meshes);
+        math::Bounds3 objectBounds;
+        getMeshesFromNode(children[i], &meshes, &objectBounds);
+
         m_objects.emplace_back(std::make_shared<Object>(
-            children[i], meshes, parent->m_transform.get()));
+            children[i], meshes, objectBounds,
+            parent != nullptr ? parent->m_transform.get() : nullptr));
+
+        if(parent != nullptr)
+            parent->m_addHierarchyBounds(objectBounds);
+
         if (children[i]->mNumChildren > 0)
             initializeChildObjects(m_objects.back(), children[i]->mNumChildren,
                                    children[i]->mChildren);
@@ -72,18 +93,11 @@ void kirana::scene::Scene::initFromAiScene(const aiScene *scene)
     Logger::get().log(constants::LOG_CHANNEL_SCENE, LogSeverity::debug,
                       "Scene Mesh count: " + std::to_string(scene->mNumMeshes));
 
-    // Initialize root Object of the scene. First finds all the meshes belonging
-    // to the root object.
-    std::vector<std::shared_ptr<Mesh>> nodeMeshes;
-    getMeshesFromNode(scene->mRootNode, &nodeMeshes);
-    m_rootObject = std::make_shared<Object>(scene->mRootNode,
-                                            std::move(nodeMeshes), nullptr);
-
-    // Recursively initialize child objects of the scene.
+    // Recursively initialize child objects of the scene, starting with the root
+    // node.
     m_objects.clear();
-    m_objects.emplace_back(m_rootObject);
-    initializeChildObjects(m_rootObject, scene->mRootNode->mNumChildren,
-                           scene->mRootNode->mChildren);
+    aiNode *nodes[1] = {scene->mRootNode};
+    initializeChildObjects(nullptr, 1, nodes);
 
     Logger::get().log(constants::LOG_CHANNEL_SCENE, LogSeverity::debug,
                       "Object count: " + std::to_string(m_objects.size()));

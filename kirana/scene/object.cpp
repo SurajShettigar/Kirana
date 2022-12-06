@@ -19,27 +19,22 @@ Matrix4x4 kirana::scene::Object::getMatrixFromNode(const aiNode *node)
 
 
 kirana::scene::Object::Object(std::string name, std::shared_ptr<Mesh> mesh,
-                              const Transform &m_transform)
+                              const Transform &m_transform,
+                              const math::Bounds3 &meshBounds)
     : m_name{std::move(name)}, m_meshes{std::move(mesh)},
       m_transform{std::make_unique<Transform>(m_transform)},
-      m_bounds{mesh->getBounds()}
+      m_objectBounds{meshBounds}, m_hierarchyBounds{m_objectBounds}
 {
 }
 
 kirana::scene::Object::Object(const aiNode *node,
                               std::vector<std::shared_ptr<Mesh>> meshes,
+                              const math::Bounds3 &objectBounds,
                               math::Transform *parent)
     : m_name{node->mName.C_Str()}, m_meshes{std::move(meshes)},
+      m_objectBounds{objectBounds}, m_hierarchyBounds{m_objectBounds},
       m_transform{std::make_unique<Transform>(getMatrixFromNode(node), parent)}
 {
-    if (m_meshes.empty())
-        m_bounds = math::Bounds3(m_transform->getPosition());
-    else
-    {
-        m_bounds = math::Bounds3(m_meshes[0]->getBounds());
-        for (size_t i = 1; i < m_meshes.size(); i++)
-            m_bounds.encapsulate(m_meshes[i]->getBounds());
-    }
 }
 
 bool kirana::scene::Object::hasMesh(const Mesh *const mesh) const

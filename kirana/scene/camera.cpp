@@ -1,5 +1,7 @@
 #include "camera.hpp"
 
+
+#include <vector2.hpp>
 #include <math_utils.hpp>
 
 
@@ -91,10 +93,14 @@ kirana::math::Vector3 kirana::scene::Camera::worldToScreenPosition(
 
 
 kirana::math::Ray kirana::scene::Camera::screenPositionToRay(
-    const math::Vector3 &screenPos) const
+    const math::Vector2 &screenPos) const
 {
-    return {m_transform.getPosition(),
-            math::Vector3::normalize(screenToWorldPosition(screenPos))};
+    const math::Vector3 origin{m_transform.getPosition()};
+    math::Vector3 direction{
+        screenToWorldPosition(math::Vector3(screenPos[0], screenPos[1], 1.0f)) -
+        origin};
+    direction.normalize();
+    return {origin, direction};
 }
 
 void kirana::scene::Camera::setResolution(std::array<uint32_t, 2> resolution)

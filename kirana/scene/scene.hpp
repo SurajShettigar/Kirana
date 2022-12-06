@@ -37,9 +37,8 @@ class Scene
     // Scene data
     std::string m_name = "Scene";
     std::vector<std::shared_ptr<Mesh>> m_meshes;
-    std::shared_ptr<Object> m_rootObject = nullptr;
     std::vector<std::shared_ptr<Object>>
-        m_objects; // Also contains m_rootObject.
+        m_objects; // Also contains root object.
     std::vector<std::shared_ptr<Material>> m_materials;
     std::vector<Camera> m_cameras;
     WorldData m_worldData;
@@ -47,10 +46,10 @@ class Scene
     // Active scene properties
     std::unique_ptr<Camera> m_viewportCamera;
     std::unique_ptr<primitives::Plane> m_grid;
-    std::vector<const Object *> m_activeSelection;
 
     void getMeshesFromNode(const aiNode *node,
-                           std::vector<std::shared_ptr<Mesh>> *nodeMeshes);
+                           std::vector<std::shared_ptr<Mesh>> *nodeMeshes,
+                           math::Bounds3 *bounds);
     void initializeChildObjects(std::shared_ptr<Object> parent,
                                 uint32_t childCount, aiNode **children);
     void initFromAiScene(const aiScene *scene);
@@ -71,16 +70,15 @@ class Scene
         m_onWorldChange.removeListener(callbackID);
     }
 
+    // Getters-Setters
     [[nodiscard]] inline bool isInitialized() const
     {
         return m_isInitialized;
     }
-
     [[nodiscard]] inline const std::string &getName() const
     {
         return m_name;
     }
-
     [[nodiscard]] inline const std::vector<std::shared_ptr<Mesh>> &getMeshes()
         const
     {
@@ -88,7 +86,7 @@ class Scene
     }
     [[nodiscard]] inline const std::shared_ptr<Object> &getRoot() const
     {
-        return m_rootObject;
+        return m_objects[0];
     }
     [[nodiscard]] inline const std::vector<std::shared_ptr<Object>>
         &getObjects() const
@@ -113,13 +111,9 @@ class Scene
     [[nodiscard]] std::vector<const kirana::scene::Object *>
     getViewportObjects();
 
+    // Helper-Functions
     [[nodiscard]] std::vector<math::Transform *> getTransformsForMesh(
         const Mesh *mesh) const;
-
-    [[nodiscard]] inline std::vector<const Object *> getActiveSelection() const
-    {
-        return m_activeSelection;
-    }
 };
 } // namespace kirana::scene
 #endif
