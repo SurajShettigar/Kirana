@@ -113,17 +113,18 @@ kirana::math::Matrix4x4 kirana::math::Transform::getMatrix(Space space) const
 
 kirana::math::Vector3 kirana::math::Transform::getRight(Space space) const
 {
-    return getRotation(space).rotateVector(Vector3::RIGHT);
+    return Vector3::normalize(getRotation(space).rotateVector(Vector3::RIGHT));
 }
 
 kirana::math::Vector3 kirana::math::Transform::getUp(Space space) const
 {
-    return getRotation(space).rotateVector(Vector3::UP);
+    return Vector3::normalize(getRotation(space).rotateVector(Vector3::UP));
 }
 
 kirana::math::Vector3 kirana::math::Transform::getForward(Space space) const
 {
-    return getRotation(space).rotateVector(Vector3::FORWARD);
+    return Vector3::normalize(
+        getRotation(space).rotateVector(Vector3::FORWARD));
 }
 
 
@@ -133,7 +134,8 @@ void kirana::math::Transform::setForward(const Vector3 &forward, Space space)
     Vector3 up;
     if (space == Space::World)
     {
-        const Vector3 fwd = transformDirection(forward, Space::Local);
+        const Vector3 fwd =
+            transformDirection(Vector3::normalize(forward), Space::Local);
         right = Vector3::cross(Vector3::UP, fwd);
         up = Vector3::cross(fwd, right);
     }
@@ -201,9 +203,7 @@ void kirana::math::Transform::setPosition(const Vector3 &position, Space space)
     {
         if (m_parent != nullptr && m_parent != this)
         {
-            m_localPosition =
-                static_cast<Vector3>(Matrix4x4::inverse(getParentMatrix()) *
-                                     Vector4(position, 1.0f));
+            m_localPosition = Matrix4x4::inverse(getParentMatrix()) * position;
         }
         else
             m_localPosition = position;
@@ -328,10 +328,9 @@ void kirana::math::Transform::translate(
     {
         if (m_parent != nullptr && m_parent != this)
         {
-            m_localPosition = static_cast<Vector3>(
+            m_localPosition =
                 Matrix4x4::inverse(getParentMatrix()) *
-                (Vector4(translation, 1.0f) +
-                 getParentMatrix() * Vector4(m_localPosition, 1.0f)));
+                (translation + getParentMatrix() * m_localPosition);
         }
         else
         {
@@ -479,8 +478,8 @@ void kirana::math::Transform::lookAt(const Vector3 &direction,
 {
     // TODO: Implement World space lookAt.
     Vector3 z = Vector3::normalize(direction);
-    Vector3 x = Vector3::cross(Vector3::normalize(up), z);
-    Vector3 y = Vector3::cross(z, x);
+    Vector3 x = Vector3::normalize(Vector3::cross(Vector3::normalize(up), z));
+    Vector3 y = Vector3::normalize(Vector3::cross(z, x));
 
     m_localMatrix = Matrix4x4(x[0], y[0], z[0], m_localPosition[0], x[1], y[1],
                               z[1], m_localPosition[1], x[2], y[2], z[2],

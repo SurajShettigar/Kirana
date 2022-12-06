@@ -61,6 +61,7 @@ class Matrix4x4
 
     friend Matrix4x4 operator*(const Matrix4x4 &mat1, const Matrix4x4 &mat2);
     friend Vector4 operator*(const Matrix4x4 &mat, const Vector4 &vec4);
+    friend Vector3 operator*(const Matrix4x4 &mat, const Vector3 &vec3);
     friend std::ostream &operator<<(std::ostream &out, const Matrix4x4 &mat);
 
     [[nodiscard]] float determinant() const;
