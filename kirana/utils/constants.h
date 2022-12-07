@@ -38,12 +38,14 @@ static const char *VULKAN_SHADER_DEFAULT_NAME = "Principled";
 static const char *VULKAN_SHADER_MAT_CAP_NAME = "MatCap";
 static const char *VULKAN_SHADER_WIREFRAME_NAME = "Wireframe";
 static const char *VULKAN_SHADER_GRID_NAME = "Grid";
+static const char *VULKAN_SHADER_OUTLINE_NAME = "Outline";
 
 static const char *DEFAULT_MATERIAL_MAT_CAP_NAME = "Default_MatCap_Mat";
 static const char *DEFAULT_MATERIAL_WIREFRAME_NAME = "Default_Wireframe_Mat";
 static const char *DEFAULT_MATERIAL_GRID_NAME = "Default_Grid_Mat";
 static const char *DEFAULT_MATERIAL_CAMERA_NAME = "Default_Camera_Mat";
 static const char *DEFAULT_MATERIAL_LIGHT_NAME = "Default_Light_Mat";
+static const char *DEFAULT_MATERIAL_OUTLINE_NAME = "Default_Outline_Mat";
 
 static const char *DEFAULT_SCENE_NAME = "Scene";
 static const char *DEFAULT_SCENE_MATERIAL_NAME = "Material";

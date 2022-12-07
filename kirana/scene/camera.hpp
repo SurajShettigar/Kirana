@@ -19,7 +19,7 @@ class Camera
     friend class SceneImporter;
 
   protected:
-    utils::Event<> m_onCameraChange;
+    mutable utils::Event<> m_onCameraChange;
 
     std::array<uint32_t, 2> m_windowResolution{1280, 720};
     float m_nearPlane = 0.1f;
@@ -49,11 +49,11 @@ class Camera
     const float &aspectRatio = m_aspectRatio;
 
     inline uint32_t addOnCameraChangeEventListener(
-        const std::function<void()> &callback)
+        const std::function<void()> &callback) const
     {
         return m_onCameraChange.addListener(callback);
     }
-    inline void removeOnCameraChangeEventListener(uint32_t callbackID)
+    inline void removeOnCameraChangeEventListener(uint32_t callbackID) const
     {
         m_onCameraChange.removeListener(callbackID);
     }

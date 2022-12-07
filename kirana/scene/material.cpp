@@ -4,6 +4,17 @@
 
 namespace constants = kirana::utils::constants;
 
+const kirana::scene::Material::StencilProperties
+    kirana::scene::Material::STENCIL_PROPERTIES_WRITE{true};
+const kirana::scene::Material::StencilProperties
+    kirana::scene::Material::STENCIL_PROPERTIES_READ{
+        true,
+        CompareOperation::NOT_EQUAL,
+        StencilOperation::KEEP,
+        StencilOperation::KEEP,
+        StencilOperation::REPLACE,
+    };
+
 const kirana::scene::Material kirana::scene::Material::DEFAULT_MATERIAL_MAT_CAP{
     constants::DEFAULT_MATERIAL_MAT_CAP_NAME,
     constants::VULKAN_SHADER_MAT_CAP_NAME, MaterialProperties{}};
@@ -11,19 +22,29 @@ const kirana::scene::Material kirana::scene::Material::DEFAULT_MATERIAL_MAT_CAP{
 const kirana::scene::Material
     kirana::scene::Material::DEFAULT_MATERIAL_WIREFRAME{
         constants::DEFAULT_MATERIAL_WIREFRAME_NAME,
-        constants::VULKAN_SHADER_WIREFRAME_NAME, MaterialProperties{true, 1.0}};
+        constants::VULKAN_SHADER_WIREFRAME_NAME,
+        MaterialProperties{true, 1.0f}};
 
 const kirana::scene::Material kirana::scene::Material::DEFAULT_MATERIAL_GRID{
     constants::DEFAULT_MATERIAL_GRID_NAME, constants::VULKAN_SHADER_GRID_NAME,
-    MaterialProperties{false, 1.0, CullMode::None, SurfaceType::Transparent}};
+    MaterialProperties{false, 1.0, CullMode::NONE, SurfaceType::TRANSPARENT,
+                       true, false}};
 
 const kirana::scene::Material kirana::scene::Material::DEFAULT_MATERIAL_CAMERA{
     constants::DEFAULT_MATERIAL_CAMERA_NAME,
-    constants::VULKAN_SHADER_WIREFRAME_NAME, MaterialProperties{true, 1.0}};
+    constants::VULKAN_SHADER_WIREFRAME_NAME, MaterialProperties{true, 1.0f}};
 
 const kirana::scene::Material kirana::scene::Material::DEFAULT_MATERIAL_LIGHT{
     constants::DEFAULT_MATERIAL_LIGHT_NAME,
-    constants::VULKAN_SHADER_WIREFRAME_NAME, MaterialProperties{true, 1.0}};
+    constants::VULKAN_SHADER_WIREFRAME_NAME, MaterialProperties{true, 1.0f}};
+
+
+const kirana::scene::Material kirana::scene::Material::DEFAULT_MATERIAL_OUTLINE{
+    constants::DEFAULT_MATERIAL_OUTLINE_NAME,
+    constants::VULKAN_SHADER_OUTLINE_NAME,
+    MaterialProperties{false, 1.0f, CullMode::NONE, SurfaceType::OPAQUE, false,
+                       true, CompareOperation::LESS_OR_EQUAL,
+                       STENCIL_PROPERTIES_READ}};
 
 const kirana::scene::Material kirana::scene::Material::DEFAULT_MATERIAL_SCENE{
     constants::DEFAULT_SCENE_MATERIAL_NAME,

@@ -1,11 +1,12 @@
 #ifndef SCENE_UTILS_HPP
 #define SCENE_UTILS_HPP
 
-#include <vector3.hpp>
-#include <vector4.hpp>
+#include <transform.hpp>
 
 namespace kirana::scene
 {
+class Object;
+class Material;
 struct Vertex
 {
     math::Vector3 position;
@@ -32,6 +33,15 @@ struct SceneImportSettings
     bool optimizeMesh = true;
     bool preTransformVertices = false;
     bool generateBoundingBoxes = true;
+};
+
+struct Renderable
+{
+    const Object *object = nullptr;
+    bool overrideMaterial = false;
+    const Material *overriddenMaterial = nullptr;
+    bool overrideTransform = false;
+    const math::Transform overriddenTransform{};
 };
 
 static const SceneImportSettings DEFAULT_SCENE_IMPORT_SETTINGS{

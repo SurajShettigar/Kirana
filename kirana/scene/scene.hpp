@@ -4,23 +4,18 @@
 #include "object.hpp"
 #include "mesh.hpp"
 #include "material.hpp"
-#include "perspective_camera.hpp"
+#include "camera.hpp"
 #include "scene_utils.hpp"
 
 #include <memory>
 #include <vector>
 #include <string>
-#include <event.hpp>
 
 struct aiScene;
 struct aiNode;
 
 namespace kirana::scene
 {
-namespace primitives
-{
-class Plane;
-}
 class SceneImporter;
 class SceneManager;
 class Scene
@@ -29,9 +24,6 @@ class Scene
     friend class SceneManager;
 
   private:
-    utils::Event<> m_onWorldChange;
-    utils::Event<Object> m_onActiveSelectionChange;
-
     bool m_isInitialized = false;
 
     // Scene data
@@ -41,11 +33,6 @@ class Scene
         m_objects; // Also contains root object.
     std::vector<std::shared_ptr<Material>> m_materials;
     std::vector<Camera> m_cameras;
-    WorldData m_worldData;
-
-    // Active scene properties
-    std::unique_ptr<Camera> m_viewportCamera;
-    std::unique_ptr<primitives::Plane> m_grid;
 
     void getMeshesFromNode(const aiNode *node,
                            std::vector<std::shared_ptr<Mesh>> *nodeMeshes,
@@ -55,20 +42,10 @@ class Scene
     void initFromAiScene(const aiScene *scene);
 
   public:
-    Scene();
-    ~Scene();
+    Scene() = default;
+    ~Scene() = default;
 
     Scene(const Scene &scene) = delete;
-
-    inline uint32_t addOnWorldChangeEventListener(
-        const std::function<void()> &callback)
-    {
-        return m_onWorldChange.addListener(callback);
-    }
-    inline void removeOnWorldChangeEventListener(uint32_t callbackID)
-    {
-        m_onWorldChange.removeListener(callbackID);
-    }
 
     // Getters-Setters
     [[nodiscard]] inline bool isInitialized() const
@@ -98,18 +75,11 @@ class Scene
     {
         return m_materials;
     }
-    [[nodiscard]] inline WorldData &getWorldData()
-    {
-        return m_worldData;
-    }
-    [[nodiscard]] inline Camera *getActiveCamera()
+    [[nodiscard]] inline const Camera &getActiveCamera() const
     {
         // TODO: Replace with current active camera.
-        return m_viewportCamera.get();
+        return m_cameras[0];
     }
-
-    [[nodiscard]] std::vector<const kirana::scene::Object *>
-    getViewportObjects();
 
     // Helper-Functions
     [[nodiscard]] std::vector<math::Transform *> getTransformsForMesh(

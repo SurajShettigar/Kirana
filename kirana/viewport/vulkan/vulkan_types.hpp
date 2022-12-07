@@ -145,7 +145,7 @@ struct MaterialData
 
 struct InstanceData
 {
-    math::Transform *transform;
+    const math::Transform *transform;
 };
 
 /**
@@ -155,7 +155,6 @@ struct MeshData
 {
     AllocatedBuffer vertexBuffer;
     AllocatedBuffer indexBuffer;
-    vk::DeviceSize vertexOffset = 0;
     size_t vertexCount;
     size_t indexCount;
     std::vector<InstanceData> instances;

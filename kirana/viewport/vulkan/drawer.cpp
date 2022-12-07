@@ -149,7 +149,7 @@ void kirana::viewport::vulkan::Drawer::draw()
 
     vk::ClearValue clearDepth;
     clearDepth.setDepthStencil(vk::ClearDepthStencilValue(1.0f));
-    
+
     frame.commandBuffers->reset();
     frame.commandBuffers->begin();
     frame.commandBuffers->beginRenderPass(
@@ -162,33 +162,32 @@ void kirana::viewport::vulkan::Drawer::draw()
         MeshPushConstants meshConstants;
         const MaterialData *lastMatData = nullptr;
         // TODO: Bind Vertex Buffers together and draw them at once.
-        for (size_t i = 0; i < m_scene->meshes.size(); i++)
+        for (const auto &m : m_scene->meshes)
         {
-            if (lastMatData != m_scene->meshes[i].material)
+            if (lastMatData != m.second.material)
             {
                 frame.commandBuffers->bindPipeline(
-                    m_scene->meshes[i].material->pipeline->current);
+                    m.second.material->pipeline->current);
                 frame.commandBuffers->bindDescriptorSets(
-                    m_scene->meshes[i].material->layout->current,
+                    m.second.material->layout->current,
                     {frame.globalDescriptorSet->current},
                     {m_scene->getCameraBufferOffset(frameIndex),
                      m_scene->getWorldDataBufferOffset(frameIndex)});
-                lastMatData = m_scene->meshes[i].material;
+                lastMatData = m.second.material;
             }
             meshConstants.renderMatrix =
-                m_scene->meshes[i].instances[0].transform->getMatrix();
+                m.second.instances[0].transform->getMatrix();
 
             frame.commandBuffers->pushConstants(
-                m_scene->meshes[i].material->layout->current,
+                m.second.material->layout->current,
                 vk::ShaderStageFlagBits::eVertex, 0, meshConstants);
 
             frame.commandBuffers->bindVertexBuffer(
-                *(m_scene->meshes[i].vertexBuffer.buffer), 0);
+                *(m.second.vertexBuffer.buffer), 0);
             frame.commandBuffers->bindIndexBuffer(
-                *(m_scene->meshes[i].indexBuffer.buffer), 0);
+                *(m.second.indexBuffer.buffer), 0);
             frame.commandBuffers->drawIndexed(
-                static_cast<uint32_t>(m_scene->meshes[i].indexCount), 1, 0, 0,
-                0);
+                static_cast<uint32_t>(m.second.indexCount), 1, 0, 0, 0);
         }
     }
 

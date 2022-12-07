@@ -3,7 +3,7 @@
 #include <math_utils.hpp>
 
 kirana::scene::PerspectiveCamera::PerspectiveCamera(
-    std::array<uint32_t, 2> windowResolution, float fov, float nearPlane,
+    const std::array<uint32_t, 2> &windowResolution, float fov, float nearPlane,
     float farPlane, bool graphicsAPI, bool flipY)
     : Camera{windowResolution, nearPlane, farPlane}, m_fov{fov},
       m_graphicsAPI{graphicsAPI}, m_flipY{flipY}

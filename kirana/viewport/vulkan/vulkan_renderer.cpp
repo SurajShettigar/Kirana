@@ -14,12 +14,11 @@
 #include "scene_data.hpp"
 #include "drawer.hpp"
 
-#include <scene.hpp>
 #include <logger.hpp>
 #include <constants.h>
 
 void kirana::viewport::vulkan::VulkanRenderer::init(
-    const window::Window *const window, scene::Scene &scene,
+    const window::Window *const window, const scene::ViewportScene &scene,
     uint16_t shadingIndex)
 {
     m_window = window;
@@ -44,11 +43,11 @@ void kirana::viewport::vulkan::VulkanRenderer::init(
         m_descriptorPool = new DescriptorPool(m_device);
         m_globalDescSetLayout = new DescriptorSetLayout(m_device);
     }
-    if (scene.isInitialized() && m_globalDescSetLayout &&
-        m_globalDescSetLayout->isInitialized)
+    if (m_globalDescSetLayout && m_globalDescSetLayout->isInitialized)
     {
-        m_currentScene = new SceneData(m_device, m_allocator, m_renderpass,
-                                       m_globalDescSetLayout, scene);
+        m_currentScene =
+            new SceneData(m_device, m_allocator, m_renderpass,
+                          m_globalDescSetLayout, scene, shadingIndex);
     }
     if (m_descriptorPool && m_descriptorPool->isInitialized &&
         m_globalDescSetLayout && m_globalDescSetLayout->isInitialized)

@@ -105,29 +105,6 @@ void kirana::scene::Scene::initFromAiScene(const aiScene *scene)
     m_isInitialized = true;
 }
 
-kirana::scene::Scene::Scene()
-    : m_viewportCamera{std::make_unique<kirana::scene::PerspectiveCamera>(
-          std::array<uint32_t, 2>({1280, 702}), 50.0f, 0.1f, 1000.0f, true,
-          true)},
-      m_grid{std::make_unique<primitives::Plane>(
-          std::make_shared<Material>(Material::DEFAULT_MATERIAL_GRID))}
-{
-}
-
-kirana::scene::Scene::~Scene()
-{
-
-    m_onWorldChange.removeAllListeners();
-    m_onActiveSelectionChange.removeAllListeners();
-}
-
-std::vector<const kirana::scene::Object *> kirana::scene::Scene::
-    getViewportObjects()
-{
-    // TODO: Return viewport objects for Cameras, Lights
-    return {m_grid.get()};
-}
-
 
 std::vector<kirana::math::Transform *> kirana::scene::Scene::
     getTransformsForMesh(const Mesh *const mesh) const

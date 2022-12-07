@@ -1,7 +1,7 @@
 #ifndef SCENE_MANAGER_HPP
 #define SCENE_MANAGER_HPP
 
-#include "scene.hpp"
+#include "viewport_scene.hpp"
 
 #include <input_manager.hpp>
 #include <time.hpp>
@@ -26,14 +26,13 @@ class SceneManager
     utils::Time &m_time;
 
 
-    Scene m_currentScene;
-    Camera *m_viewportCamera;
+    ViewportScene &m_viewportScene;
+    Camera &m_viewportCamera;
     ViewportCameraData m_viewportCamData;
-    Object *m_activeSelection;
 
     void resetViewportCamera();
     void handleViewportCameraMovement();
-    void checkForObjectSelection();
+    void checkForObjectSelection(bool multiSelect = false);
     void onKeyboardInput(const utils::input::KeyboardInput &input);
     void onMouseInput(const utils::input::MouseInput &input);
     SceneManager();
@@ -48,12 +47,13 @@ class SceneManager
         return instance;
     }
 
-    Scene &loadScene(std::string path = "",
-                     const SceneImportSettings &importSettings =
-                         DEFAULT_SCENE_IMPORT_SETTINGS);
-    inline Scene &getCurrentScene()
+    bool loadScene(std::string path = "",
+                           const SceneImportSettings &importSettings =
+                               DEFAULT_SCENE_IMPORT_SETTINGS);
+
+    inline ViewportScene &getViewportScene()
     {
-        return m_currentScene;
+        return m_viewportScene;
     }
 
     void init();
