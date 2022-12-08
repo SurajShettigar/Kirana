@@ -293,26 +293,26 @@ kirana::math::Bounds3 kirana::math::Transform::transformBounds(
     const Vector3 &translation = Vector3(m[0][3], m[1][3], m[2][3]);
     Bounds3 tBounds(translation, translation);
 
-    float a = 0, b = 0;
+    float a = 0.0f, b = 0.0f;
     for (int i = 0; i < 3; i++)
     {
         // x-axis
-        a = m[i][0] * bounds.m_min[i];
-        b = m[i][0] * bounds.m_max[i];
+        a = m[0][i] * bounds.m_min[i];
+        b = m[0][i] * bounds.m_max[i];
 
         tBounds.m_min[0] += std::fminf(a, b);
         tBounds.m_max[0] += std::fmaxf(a, b);
 
         // y-axis
-        a = m[i][1] * bounds.m_min[i];
-        b = m[i][1] * bounds.m_max[i];
+        a = m[1][i] * bounds.m_min[i];
+        b = m[1][i] * bounds.m_max[i];
 
         tBounds.m_min[1] += std::fminf(a, b);
         tBounds.m_max[1] += std::fmaxf(a, b);
 
         // z-axis
-        a = m[i][2] * bounds.m_min[i];
-        b = m[i][2] * bounds.m_max[i];
+        a = m[2][i] * bounds.m_min[i];
+        b = m[2][i] * bounds.m_max[i];
 
         tBounds.m_min[2] += std::fminf(a, b);
         tBounds.m_max[2] += std::fmaxf(a, b);
