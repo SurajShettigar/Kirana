@@ -39,9 +39,7 @@ struct Renderable
 {
     const Object *object = nullptr;
     bool overrideMaterial = false;
-    const Material *overriddenMaterial = nullptr;
-    bool overrideTransform = false;
-    const math::Transform overriddenTransform{};
+    bool selected = false;
 };
 
 static const SceneImportSettings DEFAULT_SCENE_IMPORT_SETTINGS{

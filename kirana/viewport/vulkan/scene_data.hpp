@@ -26,9 +26,9 @@ class SceneData
     uint16_t m_currentShading = 0;
     VertexInputDescription m_vertexDesc;
     std::unordered_map<std::string, std::unique_ptr<Shader>> m_shaders;
-    std::unordered_map<std::string, MaterialData> m_materials;
+    mutable std::unordered_map<std::string, MaterialData> m_materials;
     std::unordered_map<std::string, MeshData> m_meshes;
-    mutable CameraData m_cameraData;
+    CameraData m_cameraData;
     AllocatedBuffer m_cameraBuffer;
     AllocatedBuffer m_worldDataBuffer;
 
@@ -67,7 +67,18 @@ class SceneData
     SceneData(const SceneData &sceneData) = delete;
 
     const bool &isInitialized = m_isInitialized;
-    std::unordered_map<std::string, MeshData> &meshes = m_meshes;
+
+    [[nodiscard]] inline const std::unordered_map<std::string, MeshData>
+        &getMeshData() const
+    {
+        return m_meshes;
+    }
+
+    inline bool shouldRenderOutline() const
+    {
+        return m_currentShading == 0;
+    }
+    [[nodiscard]] const MaterialData &getOutlineMaterial() const;
 
     void setShading(uint16_t shadingIndex);
     void rebuildPipeline(const RenderPass *renderPass);

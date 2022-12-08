@@ -148,7 +148,7 @@ void kirana::viewport::vulkan::Drawer::draw()
     clearColor.setColor(vk::ClearColorValue(color));
 
     vk::ClearValue clearDepth;
-    clearDepth.setDepthStencil(vk::ClearDepthStencilValue(1.0f));
+    clearDepth.setDepthStencil(vk::ClearDepthStencilValue(1.0f, 0));
 
     frame.commandBuffers->reset();
     frame.commandBuffers->begin();
@@ -160,11 +160,11 @@ void kirana::viewport::vulkan::Drawer::draw()
     if (m_scene)
     {
         MeshPushConstants meshConstants;
-        const MaterialData *lastMatData = nullptr;
+        std::string lastMaterial;
         // TODO: Bind Vertex Buffers together and draw them at once.
-        for (const auto &m : m_scene->meshes)
+        for (const auto &m : m_scene->getMeshData())
         {
-            if (lastMatData != m.second.material)
+            if (lastMaterial != m.second.material->name)
             {
                 frame.commandBuffers->bindPipeline(
                     m.second.material->pipeline->current);
@@ -173,8 +173,9 @@ void kirana::viewport::vulkan::Drawer::draw()
                     {frame.globalDescriptorSet->current},
                     {m_scene->getCameraBufferOffset(frameIndex),
                      m_scene->getWorldDataBufferOffset(frameIndex)});
-                lastMatData = m.second.material;
+                lastMaterial = m.second.material->name;
             }
+            // TODO: Draw instances.
             meshConstants.renderMatrix =
                 m.second.instances[0].transform->getMatrix();
 
@@ -186,8 +187,26 @@ void kirana::viewport::vulkan::Drawer::draw()
                 *(m.second.vertexBuffer.buffer), 0);
             frame.commandBuffers->bindIndexBuffer(
                 *(m.second.indexBuffer.buffer), 0);
+
             frame.commandBuffers->drawIndexed(
                 static_cast<uint32_t>(m.second.indexCount), 1, 0, 0, 0);
+
+            // TODO: Find better way to render outline
+            if (*m.second.instances[0].selected &&
+                m_scene->shouldRenderOutline())
+            {
+                const MaterialData &outline = m_scene->getOutlineMaterial();
+                frame.commandBuffers->bindPipeline(outline.pipeline->current);
+                frame.commandBuffers->bindDescriptorSets(
+                    outline.layout->current,
+                    {frame.globalDescriptorSet->current},
+                    {m_scene->getCameraBufferOffset(frameIndex),
+                     m_scene->getWorldDataBufferOffset(frameIndex)});
+                lastMaterial = outline.name;
+
+                frame.commandBuffers->drawIndexed(
+                    static_cast<uint32_t>(m.second.indexCount), 1, 0, 0, 0);
+            }
         }
     }
 

@@ -7,7 +7,7 @@
 kirana::viewport::vulkan::DepthBuffer::DepthBuffer(
     const Device *const device, const Allocator *const allocator,
     const std::array<uint32_t, 2> &windowResolution)
-    : m_isInitialized{false}, m_format{vk::Format::eD32Sfloat},
+    : m_isInitialized{false}, m_format{vk::Format::eD32SfloatS8Uint},
       m_device{device}, m_allocator{allocator}
 {
     vk::Extent3D extent(windowResolution[0], windowResolution[1], 1);
@@ -21,8 +21,9 @@ kirana::viewport::vulkan::DepthBuffer::DepthBuffer(
                                    vk::MemoryPropertyFlagBits::eDeviceLocal,
                                    &m_image))
     {
-        vk::ImageSubresourceRange subRR(vk::ImageAspectFlagBits::eDepth, 0, 1,
-                                        0, 1);
+        vk::ImageSubresourceRange subRR(vk::ImageAspectFlagBits::eDepth |
+                                            vk::ImageAspectFlagBits::eStencil,
+                                        0, 1, 0, 1);
         vk::ImageViewCreateInfo imgViewCreateInfo(
             {}, *(m_image.image), vk::ImageViewType::e2D, m_format,
             vk::ComponentMapping(), subRR);

@@ -27,10 +27,17 @@ class ViewportScene
     std::unique_ptr<primitives::Plane> m_grid;
     Scene m_currentScene;
 
-    std::vector<size_t> m_selectedObjects;
+    std::unordered_map<std::string, size_t> m_sceneObjectIndexTable;
+    std::unordered_map<std::string, bool> m_sceneObjectSelectionTable;
+
+    std::vector<std::shared_ptr<Material>> m_materials;
     std::vector<Renderable> m_renderables;
 
+    void addDefaultMaterials();
+    void addDefaultRenderables();
     void onSceneLoaded();
+    void toggleObjectSelection(const std::string &objectName = "",
+                               bool multiSelect = false);
     ViewportScene();
     ~ViewportScene();
 
@@ -88,9 +95,25 @@ class ViewportScene
         return m_currentScene;
     }
 
+    [[nodiscard]] inline const std::vector<std::shared_ptr<Material>>
+        &getRenderableMaterials() const
+    {
+        return m_materials;
+    }
+
     [[nodiscard]] inline const std::vector<Renderable> &getRenderables() const
     {
         return m_renderables;
+    }
+
+    [[nodiscard]] std::vector<Renderable> getSelectedRenderables() const
+    {
+        // TODO: Find a faster way to filter selected renderables.
+        std::vector<Renderable> selectedRenderables;
+        for (const auto &r : m_renderables)
+            if (r.selected)
+                selectedRenderables.push_back(r);
+        return selectedRenderables;
     }
 
     void setCameraResolution(const std::array<uint32_t, 2> &resolution)

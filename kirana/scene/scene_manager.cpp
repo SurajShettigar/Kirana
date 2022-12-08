@@ -1,6 +1,7 @@
 #include "scene_manager.hpp"
 
 #include "scene_importer.hpp"
+#include "scene_utils.hpp"
 #include <file_system.hpp>
 #include <logger.hpp>
 #include <constants.h>
@@ -24,18 +25,20 @@ void kirana::scene::SceneManager::resetViewportCamera()
     const math::Vector3 offset{constants::VIEWPORT_CAMERA_DEFAULT_OFFSET[0],
                                constants::VIEWPORT_CAMERA_DEFAULT_OFFSET[1],
                                constants::VIEWPORT_CAMERA_DEFAULT_OFFSET[2]};
-    if (!m_viewportScene.m_selectedObjects.empty())
+
+    const std::vector<Renderable> &renderables =
+        m_viewportScene.getSelectedRenderables();
+    if (!renderables.empty())
     {
         math::Vector3 pivotPos;
         math::Bounds3 pivotBounds;
-        for (const auto &i : m_viewportScene.m_selectedObjects)
+        for (const auto &r : renderables)
         {
-            const auto &o = m_viewportScene.m_currentScene.m_objects[i];
-            pivotPos += o->transform->getPosition();
-            pivotBounds.encapsulate(o->getHierarchyBounds());
+            pivotPos += r.object->transform->getPosition();
+            pivotBounds.encapsulate(r.object->getHierarchyBounds());
         }
         pivotPos /=
-            static_cast<float>(m_viewportScene.m_selectedObjects.size());
+            static_cast<float>(m_viewportScene.getSelectedRenderables().size());
         m_viewportCamera.fitBoundsToView(pivotPos, pivotBounds, offset);
     }
     else
@@ -156,10 +159,6 @@ void kirana::scene::SceneManager::checkForObjectSelection(bool multiSelect)
 {
     if (!m_viewportScene.m_currentScene.isInitialized())
         return;
-
-    if (!multiSelect)
-        m_viewportScene.m_selectedObjects.clear();
-
     const math::Ray &ray =
         m_viewportCamera.screenPositionToRay(m_inputManager.getMousePosition());
 
@@ -169,13 +168,16 @@ void kirana::scene::SceneManager::checkForObjectSelection(bool multiSelect)
         const auto &o = m_viewportScene.m_currentScene.m_objects[i];
         if (o->getObjectBounds().intersectWithRay(ray))
         {
-            m_viewportScene.m_selectedObjects.push_back(i);
+            m_viewportScene.toggleObjectSelection(o->getName(), multiSelect);
             Logger::get().log(constants::LOG_CHANNEL_VIEWPORT,
                               LogSeverity::trace,
                               "Object Selected: " + o->getName());
             return;
         }
     }
+
+    if (!multiSelect)
+        m_viewportScene.toggleObjectSelection();
 }
 
 void kirana::scene::SceneManager::onKeyboardInput(
@@ -191,7 +193,7 @@ void kirana::scene::SceneManager::onKeyboardInput(
 void kirana::scene::SceneManager::onMouseInput(
     const utils::input::MouseInput &input)
 {
-    if (input.action == KeyAction::DOWN)
+    if (input.action == KeyAction::DOWN && input.modifier != ModifierKey::ALT)
     {
         if (input.button == MouseButton::LEFT)
             checkForObjectSelection((input.modifier & ModifierKey::SHIFT) ==

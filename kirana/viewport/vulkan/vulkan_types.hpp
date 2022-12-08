@@ -108,6 +108,15 @@ struct PipelineProperties
     float lineWidth = 1.0f;
     vk::SampleCountFlagBits msaaLevel = vk::SampleCountFlagBits::e1;
     bool alphaBlending = false;
+    bool enableDepth = true;
+    bool writeDepth = true;
+    vk::CompareOp depthCompareOp = vk::CompareOp::eLessOrEqual;
+    bool stencilTest = false;
+    vk::CompareOp stencilCompareOp = vk::CompareOp::eAlways;
+    vk::StencilOp stencilFailOp = vk::StencilOp::eReplace;
+    vk::StencilOp stencilDepthFailOp = vk::StencilOp::eReplace;
+    vk::StencilOp stencilPassOp = vk::StencilOp::eReplace;
+    uint32_t stencilReference = 1;
 };
 
 // TODO: Remove it once descriptor set is implemented.
@@ -146,6 +155,7 @@ struct MaterialData
 struct InstanceData
 {
     const math::Transform *transform;
+    const bool *selected;
 };
 
 /**

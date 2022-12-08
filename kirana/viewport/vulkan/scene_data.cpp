@@ -123,7 +123,18 @@ kirana::viewport::vulkan::MaterialData kirana::viewport::vulkan::SceneData::
         vk::CullModeFlags(static_cast<VkCullModeFlagBits>(prop.cullMode)),
         prop.wireframeWidth,
         vk::SampleCountFlagBits::e1,
-        prop.surfaceType == scene::Material::SurfaceType::TRANSPARENT};
+        prop.surfaceType == scene::Material::SurfaceType::TRANSPARENT,
+        prop.enableDepth,
+        prop.writeDepth,
+        static_cast<vk::CompareOp>(prop.depthCompareOp),
+        prop.stencil.enableTest,
+        static_cast<vk::CompareOp>(prop.stencil.compareOp),
+        static_cast<vk::StencilOp>(prop.stencil.failOp),
+        static_cast<vk::StencilOp>(prop.stencil.depthFailOp),
+        static_cast<vk::StencilOp>(prop.stencil.passOp),
+        prop.stencil.reference
+
+    };
 
     matData.name = material.getName();
     matData.shaderName = material.getShader();
@@ -138,12 +149,8 @@ kirana::viewport::vulkan::MaterialData kirana::viewport::vulkan::SceneData::
 
 void kirana::viewport::vulkan::SceneData::createMaterials()
 {
-    // Create internal viewport materials (MatCap, grid, etc.)
-    const auto &mats = scene::Material::getDefaultMaterials();
-    for (const auto &m : mats)
-        m_materials[m.getName()] = std::move(getMaterialData(m));
-    for (const auto &m : m_scene.getCurrentScene().getMaterials())
-        m_materials[m->getName()] = std::move(getMaterialData(*m.get()));
+    for (const auto &m : m_scene.getRenderableMaterials())
+        m_materials[m->getName()] = std::move(getMaterialData(*m));
 }
 
 kirana::viewport::vulkan::MaterialData &kirana::viewport::vulkan::SceneData::
@@ -172,8 +179,7 @@ bool kirana::viewport::vulkan::SceneData::createMeshes()
     bool initialized = true;
     for (const auto &r : m_scene.getRenderables())
     {
-        const InstanceData instance{r.overrideTransform ? &r.overriddenTransform
-                                                        : r.object->transform};
+        const InstanceData instance{r.object->transform, &r.selected};
         for (const auto &m : r.object->getMeshes())
         {
             const auto &meshName = m->getName();
@@ -181,12 +187,12 @@ bool kirana::viewport::vulkan::SceneData::createMeshes()
                 m_meshes[meshName].instances.emplace_back(instance);
             else
             {
+                // Create Mesh Data
                 const auto &vertices = m->getVertices();
                 const auto &indices = m->getIndices();
                 const auto &material = m->getMaterial();
 
                 MeshData &meshData = m_meshes[meshName];
-                // TODO: Create overridden material
                 // Assign material
                 meshData.material =
                     &findMaterial(material->getName(), r.overrideMaterial);
@@ -202,7 +208,8 @@ bool kirana::viewport::vulkan::SceneData::createMeshes()
                     initialized = false;
                 // Create index buffer
                 meshData.indexCount = indices.size();
-                const size_t indicesSize = meshData.indexCount * sizeof(uint32_t);
+                const size_t indicesSize =
+                    meshData.indexCount * sizeof(uint32_t);
                 if (!m_allocator->allocateBufferToGPU(
                         indicesSize, vk::BufferUsageFlagBits::eIndexBuffer,
                         &meshData.indexBuffer, indices.data()))
@@ -278,6 +285,12 @@ kirana::viewport::vulkan::SceneData::~SceneData()
         Logger::get().log(constants::LOG_CHANNEL_VULKAN, LogSeverity::trace,
                           "Scene data destroyed");
     }
+}
+
+const kirana::viewport::vulkan::MaterialData &kirana::viewport::vulkan::
+    SceneData::getOutlineMaterial() const
+{
+    return m_materials[std::string(constants::DEFAULT_MATERIAL_OUTLINE_NAME)];
 }
 
 void kirana::viewport::vulkan::SceneData::setShading(uint16_t shadingIndex)

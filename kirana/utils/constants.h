@@ -56,8 +56,11 @@ static const char *DATA_DIR_PATH = DATA_DIR;
 static const char *DEFAULT_MODEL_NAME = "Quad_Model.fbx";
 // static const char *DEFAULT_MODEL_NAME = "Large_Model.fbx";
 
+static const float VIEWPORT_SELECTED_OBJECT_OUTLINE_WIDTH = 0.025f;
+static const std::array<float, 3> VIEWPORT_SELECTED_OBJECT_OUTLINE_COLOR = {
+    1.0f, 1.0f, 1.0f};
 static const float VIEWPORT_CAMERA_MOUSE_SENSITIVITY = 6.0f;
-static const std::array<float, 3> VIEWPORT_CAMERA_DEFAULT_OFFSET{0.0f, 5.0f,
+static const std::array<float, 3> VIEWPORT_CAMERA_DEFAULT_OFFSET{0.0f, 0.0f,
                                                                  3.0f};
 
 } // namespace kirana::utils::constants
