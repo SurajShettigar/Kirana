@@ -87,7 +87,7 @@ class Camera
 
     virtual void fitBoundsToView(const math::Vector3 &lookAtPosition,
                                  const math::Bounds3 &bounds,
-                                 const math::Vector3 &offset) = 0;
+                                 float distanceOffset = 0.0f) = 0;
     virtual void setResolution(std::array<uint32_t, 2> resolution);
 };
 } // namespace kirana::scene

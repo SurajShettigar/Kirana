@@ -22,29 +22,43 @@ using kirana::utils::input::MouseInput;
 
 void kirana::scene::SceneManager::resetViewportCamera()
 {
-    const math::Vector3 offset{constants::VIEWPORT_CAMERA_DEFAULT_OFFSET[0],
-                               constants::VIEWPORT_CAMERA_DEFAULT_OFFSET[1],
-                               constants::VIEWPORT_CAMERA_DEFAULT_OFFSET[2]};
-
     const std::vector<Renderable> &renderables =
         m_viewportScene.getSelectedRenderables();
     if (!renderables.empty())
     {
         math::Vector3 pivotPos;
         math::Bounds3 pivotBounds;
-        for (const auto &r : renderables)
+
+        const std::vector<Renderable> &selected =
+            m_viewportScene.getSelectedRenderables();
+        if (!selected.empty())
         {
-            pivotPos += r.object->transform->getPosition();
-            pivotBounds.encapsulate(r.object->getHierarchyBounds());
+            for (const auto &r : selected)
+            {
+                pivotPos += r.object->transform->getPosition();
+                pivotBounds.encapsulate(r.object->getHierarchyBounds());
+            }
+            pivotPos /= static_cast<float>(selected.size());
         }
-        pivotPos /=
-            static_cast<float>(m_viewportScene.getSelectedRenderables().size());
-        m_viewportCamera.fitBoundsToView(pivotPos, pivotBounds, offset);
+        else
+        {
+            pivotPos = m_viewportScene.m_currentScene.getRoot()
+                           ->transform->getPosition();
+            pivotBounds =
+                m_viewportScene.m_currentScene.getRoot()->getHierarchyBounds();
+        }
+        m_viewportCamData.pivot.setPosition(pivotPos);
+        m_viewportCamera.fitBoundsToView(
+            pivotPos, pivotBounds, constants::VIEWPORT_CAMERA_DEFAULT_Z_OFFSET);
     }
     else
     {
+        const math::Vector3 camPos{
+            constants::VIEWPORT_CAMERA_DEFAULT_POSITION[0],
+            constants::VIEWPORT_CAMERA_DEFAULT_POSITION[1],
+            constants::VIEWPORT_CAMERA_DEFAULT_POSITION[2]};
+        m_viewportCamera.transform.setPosition(camPos);
         m_viewportCamData.pivot.setPosition(math::Vector3::ZERO);
-        m_viewportCamera.transform.translate(offset);
         m_viewportCamera.lookAt(math::Vector3::ZERO);
     }
     Logger::get().log(constants::LOG_CHANNEL_VIEWPORT, LogSeverity::trace,
@@ -121,10 +135,8 @@ void kirana::scene::SceneManager::handleViewportCameraMovement()
                                       m_viewportCamData.mouseDelta[1], 0.0f);
             translation *= constants::VIEWPORT_CAMERA_MOUSE_SENSITIVITY *
                            m_time.getDeltaTime();
-            m_viewportCamera.transform.translate(translation,
-                                                 Transform::Space::Local);
-            m_viewportCamData.pivot.translate(translation,
-                                              Transform::Space::Local);
+            m_viewportCamera.transform.translateInLocalAxis(translation);
+            m_viewportCamData.pivot.translateInLocalAxis(translation);
         }
         break;
         case MouseButton::RIGHT: {
@@ -213,6 +225,8 @@ kirana::scene::SceneManager::SceneManager()
         });
     m_inputManager.addMouseInputListener(
         [&](const utils::input::MouseInput &input) { onMouseInput(input); });
+
+    resetViewportCamera();
 }
 
 bool kirana::scene::SceneManager::loadScene(

@@ -37,7 +37,7 @@ kirana::scene::OrthographicCamera &kirana::scene::OrthographicCamera::operator=(
 
 void kirana::scene::OrthographicCamera::fitBoundsToView(
     const math::Vector3 &lookAtPosition, const math::Bounds3 &bounds,
-    const math::Vector3 &offset)
+    float distanceOffset)
 {
     // TODO: Fit bounds to view for orthographic camera.
 }

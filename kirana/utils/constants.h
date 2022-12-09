@@ -60,8 +60,9 @@ static const float VIEWPORT_SELECTED_OBJECT_OUTLINE_WIDTH = 0.025f;
 static const std::array<float, 3> VIEWPORT_SELECTED_OBJECT_OUTLINE_COLOR = {
     1.0f, 1.0f, 1.0f};
 static const float VIEWPORT_CAMERA_MOUSE_SENSITIVITY = 6.0f;
-static const std::array<float, 3> VIEWPORT_CAMERA_DEFAULT_OFFSET{0.0f, 0.0f,
-                                                                 3.0f};
+static const std::array<float, 3> VIEWPORT_CAMERA_DEFAULT_POSITION{0.0f, 4.0f,
+                                                                   3.0f};
+static const float VIEWPORT_CAMERA_DEFAULT_Z_OFFSET{3.0f};
 
 } // namespace kirana::utils::constants
 

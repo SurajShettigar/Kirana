@@ -26,7 +26,7 @@ class PerspectiveCamera : public Camera
 
     void fitBoundsToView(const math::Vector3 &lookAtPosition,
                          const math::Bounds3 &bounds,
-                         const math::Vector3 &offset) override;
+                         float distanceOffset = 0.0f) override;
     void setResolution(std::array<uint32_t, 2> resolution) override;
 };
 } // namespace kirana::scene

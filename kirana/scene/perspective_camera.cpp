@@ -38,11 +38,17 @@ kirana::scene::PerspectiveCamera &kirana::scene::PerspectiveCamera::operator=(
 
 void kirana::scene::PerspectiveCamera::fitBoundsToView(
     const math::Vector3 &lookAtPosition, const math::Bounds3 &bounds,
-    const math::Vector3 &offset)
+    float distanceOffset)
 {
     const float extent = bounds.getExtent().length();
-    const float distance = extent / std::sinf(math::radians(m_fov * 0.5f));
-    m_transform.setPosition(math::Vector3::FORWARD * distance + offset);
+    float distance = extent / std::sinf(math::radians(m_fov * 0.5f));
+    distance += distanceOffset;
+
+    math::Vector3 camPos = m_transform.getPosition();
+    const float distBetweenCamObject = (bounds.getCenter() - camPos).length();
+
+    camPos += m_transform.getForward() * (distance - distBetweenCamObject);
+    m_transform.setPosition(camPos);
     lookAt(lookAtPosition);
 }
 
