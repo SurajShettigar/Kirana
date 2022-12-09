@@ -161,7 +161,7 @@ static const std::unordered_map<WPARAM, Key> KEY_MAPPING{
     {VK_APPS, Key::MENU}};
 
 kirana::utils::input::ModifierKey kirana::window::PlatformWindow::
-    getMouseModifierKey(WPARAM wParam)
+    getMouseModifierKey(WPARAM wParam) const
 {
     ModifierKey key = ModifierKey::NONE;
     if ((wParam & MK_SHIFT) == MK_SHIFT)
@@ -174,6 +174,32 @@ kirana::utils::input::ModifierKey kirana::window::PlatformWindow::
     // https://learn.microsoft.com/en-us/windows/win32/learnwin32/keyboard-input
     if (GetKeyState(VK_MENU) & 0x8000)
         key = key | ModifierKey::ALT;
+    return key;
+}
+
+kirana::utils::input::Key kirana::window::PlatformWindow::findKeyMapping(
+    WPARAM wParam, LPARAM lParam) const
+{
+    Key key;
+    // To differentiate between left and right keys, we have to go through this
+    // hacky code.
+    // Refer:
+    // https://stackoverflow.com/questions/5681284/how-do-i-distinguish-between-left-and-right-keys-ctrl-and-alt
+    UINT scancode = (lParam & 0x00ff0000) >> 16;
+    bool extended = (lParam & 0x01000000) != 0;
+    if (wParam == VK_SHIFT)
+        key = MapVirtualKey(scancode, MAPVK_VSC_TO_VK_EX) == VK_RSHIFT
+                  ? Key::RIGHT_SHIFT
+                  : Key::LEFT_SHIFT;
+    else if (wParam == VK_CONTROL)
+        key = extended ? Key::RIGHT_CONTROL : Key::LEFT_CONTROL;
+    else if (wParam == VK_MENU)
+        key = extended ? Key::RIGHT_ALT : Key::LEFT_ALT;
+    else if (KEY_MAPPING.find(wParam) != KEY_MAPPING.end())
+        key = KEY_MAPPING.at(wParam);
+    else
+        key = Key::UNKNOWN;
+
     return key;
 }
 
@@ -205,22 +231,15 @@ void kirana::window::PlatformWindow::handleMouseInput(UINT uMsg, WPARAM wParam,
                                                       LPARAM lParam)
 {
     if (uMsg == WM_MOUSEMOVE)
-    {
         m_isCursorInside = true;
-        if (!m_isFocused)
-            setFocus(true);
-    }
     else if (uMsg == WM_MOUSELEAVE)
-    {
         m_isCursorInside = false;
-        if (m_isFocused)
-            setFocus(false);
-    }
-//    if (uMsg == WM_MOUSEMOVE || uMsg == WM_MOUSELEAVE || uMsg)
-//    {
-//        m_cursorPosition[0] = GET_X_LPARAM(lParam);
-//        m_cursorPosition[1] = GET_Y_LPARAM(lParam);
-//    }
+
+    //    if (uMsg == WM_MOUSEMOVE || uMsg == WM_MOUSELEAVE || uMsg)
+    //    {
+    //        m_cursorPosition[0] = GET_X_LPARAM(lParam);
+    //        m_cursorPosition[1] = GET_Y_LPARAM(lParam);
+    //    }
     // Raw mouse input.
     /*if (uMsg == WM_INPUT)
     {
@@ -277,11 +296,11 @@ void kirana::window::PlatformWindow::handleKeyboardInput(UINT uMsg,
                                                          WPARAM wParam,
                                                          LPARAM lParam)
 {
-    if (uMsg == WM_KEYDOWN || uMsg == WM_KEYUP)
+    if (uMsg == WM_KEYDOWN || uMsg == WM_KEYUP || uMsg == WM_SYSKEYDOWN ||
+        uMsg == WM_SYSKEYUP)
     {
         kirana::utils::input::KeyboardInput input{};
-        if (KEY_MAPPING.find(wParam) != KEY_MAPPING.end())
-            input.key = KEY_MAPPING.at(wParam);
+        input.key = findKeyMapping(wParam, lParam);
 
         if ((HIWORD(lParam) & KF_UP) == KF_UP)
             input.action = KeyAction::UP;
@@ -303,6 +322,7 @@ LRESULT CALLBACK kirana::window::PlatformWindow::WindowProc(HWND hwnd,
 {
     auto window = reinterpret_cast<kirana::window::PlatformWindow *>(
         GetWindowLongPtr(hwnd, GWLP_USERDATA));
+    window->setFocus(true);
     window->handleWindowEvents(uMsg, wParam, lParam);
     window->handleMouseInput(uMsg, wParam, lParam);
     window->handleKeyboardInput(uMsg, wParam, lParam);
@@ -345,13 +365,14 @@ kirana::window::PlatformWindow::PlatformWindow(long windowPointer, string name,
     m_resolution[1] = static_cast<uint32_t>(height);
 }
 
-POINT  point;
+POINT point;
 RECT rect;
+MSG msg;
 void kirana::window::PlatformWindow::update()
 {
-    if(GetCursorPos(&point))
+    if (GetCursorPos(&point))
     {
-        if(GetWindowRect(m_hwndWindowPointer, &rect))
+        if (GetWindowRect(m_hwndWindowPointer, &rect))
         {
             m_cursorPosition[0] = static_cast<int>(point.x - rect.left);
             m_cursorPosition[1] = static_cast<int>(point.y - rect.top);
@@ -367,6 +388,8 @@ void kirana::window::PlatformWindow::close()
 
 void kirana::window::PlatformWindow::setFocus(bool value)
 {
+    if ((GetFocus() == m_hwndWindowPointer) == value)
+        return;
     Window::setFocus(value);
     if (value)
         SetFocus(m_hwndWindowPointer);
