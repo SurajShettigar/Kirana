@@ -33,7 +33,8 @@ class PlatformWindow : public Window
     HWND m_hwndWindowPointer = nullptr;
     WNDPROC m_prevWindowProc = nullptr;
 
-    utils::input::ModifierKey getMouseModifierKey(WPARAM wParam);
+    [[nodiscard]] utils::input::ModifierKey getMouseModifierKey(WPARAM wParam) const;
+    [[nodiscard]] utils::input::Key findKeyMapping(WPARAM wParam, LPARAM lParam) const;
 
     void handleWindowEvents(UINT uMsg, WPARAM wParam, LPARAM lParam);
     void handleMouseInput(UINT uMsg, WPARAM wParam, LPARAM lParam);
