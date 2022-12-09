@@ -69,6 +69,9 @@ kirana::math::Transform::Transform(const Transform &transform)
         m_localPosition = transform.m_localPosition;
         m_localRotation = transform.m_localRotation;
         m_localScale = transform.m_localScale;
+
+        m_enableEvents = transform.m_enableEvents;
+        m_onChangeEvent = transform.m_onChangeEvent;
     }
 }
 
@@ -82,6 +85,9 @@ kirana::math::Transform &kirana::math::Transform::operator=(
         m_localPosition = transform.m_localPosition;
         m_localRotation = transform.m_localRotation;
         m_localScale = transform.m_localScale;
+
+        m_enableEvents = transform.m_enableEvents;
+        m_onChangeEvent = transform.m_onChangeEvent;
     }
     return *this;
 }
@@ -107,17 +113,18 @@ kirana::math::Matrix4x4 kirana::math::Transform::getMatrix(Space space) const
 
 kirana::math::Vector3 kirana::math::Transform::getRight(Space space) const
 {
-    return getRotation(space).rotateVector(Vector3::RIGHT);
+    return Vector3::normalize(getRotation(space).rotateVector(Vector3::RIGHT));
 }
 
 kirana::math::Vector3 kirana::math::Transform::getUp(Space space) const
 {
-    return getRotation(space).rotateVector(Vector3::UP);
+    return Vector3::normalize(getRotation(space).rotateVector(Vector3::UP));
 }
 
 kirana::math::Vector3 kirana::math::Transform::getForward(Space space) const
 {
-    return getRotation(space).rotateVector(Vector3::FORWARD);
+    return Vector3::normalize(
+        getRotation(space).rotateVector(Vector3::FORWARD));
 }
 
 
@@ -127,7 +134,8 @@ void kirana::math::Transform::setForward(const Vector3 &forward, Space space)
     Vector3 up;
     if (space == Space::World)
     {
-        Vector3 fwd = inverseTransformVector(forward);
+        const Vector3 fwd =
+            transformDirection(Vector3::normalize(forward), Space::Local);
         right = Vector3::cross(Vector3::UP, fwd);
         up = Vector3::cross(fwd, right);
     }
@@ -195,19 +203,23 @@ void kirana::math::Transform::setPosition(const Vector3 &position, Space space)
     {
         if (m_parent != nullptr && m_parent != this)
         {
-            m_localPosition =
-                static_cast<Vector3>(Matrix4x4::inverse(getParentMatrix()) *
-                                     Vector4(position, 1.0f));
+            m_localPosition = Matrix4x4::inverse(getParentMatrix()) * position;
         }
         else
             m_localPosition = position;
     }
     else
     {
-        m_localPosition = getRight() * position[0];
-        m_localPosition = getUp() * position[1];
-        m_localPosition = getForward() * position[2];
+        m_localPosition = position;
     }
+    calculateLocalMatrix();
+}
+
+void kirana::math::Transform::setPositionInLocalAxis(const Vector3 &position)
+{
+    m_localPosition = getForward() * position[2];
+    m_localPosition = getUp() * position[1];
+    m_localPosition = getRight() * position[0];
     calculateLocalMatrix();
 }
 
@@ -242,50 +254,76 @@ void kirana::math::Transform::setLocalScale(const Vector3 &scale)
     calculateLocalMatrix();
 }
 
-
-kirana::math::Vector3 kirana::math::Transform::inverseTransformVector(
-    const Vector3 &vector)
-{
-    return static_cast<Vector3>(Matrix4x4::inverse(getWorldMatrix()) *
-                                Vector4(vector, 0.0f));
-}
-
-
-kirana::math::Vector3 kirana::math::Transform::inverseTransformPoint(
-    const Vector3 &point)
-{
-    return static_cast<Vector3>(Matrix4x4::inverse(getWorldMatrix()) *
-                                Vector4(point, 1.0f));
-}
-
-
-kirana::math::Vector3 kirana::math::Transform::inverseTransformDirection(
-    const Vector3 &direction)
-{
-    return static_cast<Vector3>(Matrix4x4::inverse(getWorldMatrix(false)) *
-                                Vector4(direction, 0.0f));
-}
-
-
 kirana::math::Vector3 kirana::math::Transform::transformVector(
-    const Vector3 &vector)
+    const Vector3 &vector, Space space) const
 {
-    return static_cast<Vector3>(getWorldMatrix() * Vector4(vector, 0.0f));
+    if (space == Space::World)
+        return static_cast<Vector3>(getWorldMatrix() * Vector4(vector, 0.0f));
+    else
+        return static_cast<Vector3>(Matrix4x4::inverse(getWorldMatrix()) *
+                                    Vector4(vector, 0.0f));
 }
 
 
-kirana::math::Vector3 kirana::math::Transform::transformPoint(
-    const Vector3 &point)
+kirana::math::Vector3 kirana::math::Transform::transformPosition(
+    const Vector3 &position, Space space) const
 {
-    return static_cast<Vector3>(getWorldMatrix() * Vector4(point, 1.0f));
+    if (space == Space::World)
+        return static_cast<Vector3>(getWorldMatrix() * Vector4(position, 1.0f));
+    else
+        return static_cast<Vector3>(Matrix4x4::inverse(getWorldMatrix()) *
+                                    Vector4(position, 1.0f));
 }
 
 
 kirana::math::Vector3 kirana::math::Transform::transformDirection(
-    const Vector3 &direction)
+    const Vector3 &direction, Space space) const
 {
-    return static_cast<Vector3>(getWorldMatrix(false) *
-                                Vector4(direction, 0.0f));
+    if (space == Space::World)
+        return static_cast<Vector3>(getWorldMatrix(false) *
+                                    Vector4(direction, 0.0f));
+    else
+        return static_cast<Vector3>(Matrix4x4::inverse(getWorldMatrix(false)) *
+                                    Vector4(direction, 0.0f));
+}
+
+kirana::math::Bounds3 kirana::math::Transform::transformBounds(
+    const Bounds3 &bounds, Space space) const
+{
+    // Algorithm taken from Graphic Gems: "Transforming Axis-Aligned Bounding
+    // Boxes", by James Arvo.
+
+    const Matrix4x4 &m = space == Space::World
+                             ? getWorldMatrix()
+                             : Matrix4x4::inverse(getWorldMatrix());
+    const Vector3 &translation = Vector3(m[0][3], m[1][3], m[2][3]);
+    Bounds3 tBounds(translation, translation);
+
+    float a = 0.0f, b = 0.0f;
+    for (int i = 0; i < 3; i++)
+    {
+        // x-axis
+        a = m[0][i] * bounds.m_min[i];
+        b = m[0][i] * bounds.m_max[i];
+
+        tBounds.m_min[0] += std::fminf(a, b);
+        tBounds.m_max[0] += std::fmaxf(a, b);
+
+        // y-axis
+        a = m[1][i] * bounds.m_min[i];
+        b = m[1][i] * bounds.m_max[i];
+
+        tBounds.m_min[1] += std::fminf(a, b);
+        tBounds.m_max[1] += std::fmaxf(a, b);
+
+        // z-axis
+        a = m[2][i] * bounds.m_min[i];
+        b = m[2][i] * bounds.m_max[i];
+
+        tBounds.m_min[2] += std::fminf(a, b);
+        tBounds.m_max[2] += std::fmaxf(a, b);
+    }
+    return tBounds;
 }
 
 
@@ -296,10 +334,9 @@ void kirana::math::Transform::translate(
     {
         if (m_parent != nullptr && m_parent != this)
         {
-            m_localPosition = static_cast<Vector3>(
+            m_localPosition =
                 Matrix4x4::inverse(getParentMatrix()) *
-                (Vector4(translation, 1.0f) +
-                 getParentMatrix() * Vector4(m_localPosition, 1.0f)));
+                (translation + getParentMatrix() * m_localPosition);
         }
         else
         {
@@ -308,11 +345,17 @@ void kirana::math::Transform::translate(
     }
     else
     {
-        m_localPosition += getRight() * translation[0];
-        m_localPosition += getUp() * translation[1];
-        m_localPosition += getForward() * translation[2];
+        m_localPosition += translation;
     }
 
+    calculateLocalMatrix();
+}
+
+void kirana::math::Transform::translateInLocalAxis(const Vector3 &translation)
+{
+    m_localPosition += getForward() * translation[2];
+    m_localPosition += getUp() * translation[1];
+    m_localPosition += getRight() * translation[0];
     calculateLocalMatrix();
 }
 
@@ -443,29 +486,21 @@ void kirana::math::Transform::rotateAround(float angle, const Vector3 &axis,
 }
 
 void kirana::math::Transform::lookAt(const Vector3 &direction,
-                                     const Vector3 &up, Space space)
+                                     const Vector3 &up)
 {
-    // TODO: Implement World space lookAt.
     Vector3 z = Vector3::normalize(direction);
-    Vector3 x = Vector3::cross(Vector3::normalize(up), z);
-    Vector3 y = Vector3::cross(z, x);
+    Vector3 x = Vector3::normalize(Vector3::cross(Vector3::normalize(up), z));
+    Vector3 y = Vector3::normalize(Vector3::cross(z, x));
 
-    // The above calculated basis vectors are camera's basis in world space
-    // (Camera's transform matrix). In order to get view matrix, we just invert
-    // the matrix one would obtain from the above basis vectors. Look at
-    // https://www.3dgep.com/understanding-the-view-matrix/ for a detailed
-    // explanation.
+    Vector3 eyePos = getPosition();
+    const Matrix4x4 &worldMat =
+        Matrix4x4(x[0], y[0], z[0], eyePos[0], x[1], y[1], z[1], eyePos[1],
+                  x[2], y[2], z[2], eyePos[2], 0.0f, 0.0f, 0.0f, 1.0f);
 
-    // m_localMatrix is now a view-matrix.
-    //        m_localMatrix = Matrix4x4(
-    //            x[0], x[1], x[2], Vector3::dot(x, m_localPosition), y[0],
-    //            y[1], y[2], Vector3::dot(y, m_localPosition), z[0], z[1],
-    //            z[2], -Vector3::dot(z, m_localPosition), 0.0f, 0.0f,
-    //            0.0f, 1.0f);
+    Vector3 worldPos;
+    Quaternion worldRot;
+    Matrix4x4::decompose(worldMat, &worldPos, &worldRot);
 
-    m_localMatrix = Matrix4x4(x[0], y[0], z[0], 0.0f, x[1], y[1], z[1], 0.0f,
-                              x[2], y[2], z[2], 0.0f, 0.0f, 0.0f, 0.0f, 1.0f);
-
-    Matrix4x4::decompose(m_localMatrix, nullptr, &m_localRotation);
-    calculateLocalMatrix();
+    setRotation(worldRot);
+    setPosition(worldPos);
 }

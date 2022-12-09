@@ -1,5 +1,3 @@
-
-
 #include "viewport.hpp"
 #include <iostream>
 #include <vulkan/vulkan_renderer.hpp>
@@ -16,7 +14,7 @@ kirana::viewport::Viewport::Viewport()
 }
 
 void kirana::viewport::Viewport::init(const window::Window *window,
-                                      scene::Scene &scene,
+                                      const scene::ViewportScene &scene,
                                       Shading shading)
 {
     m_window = window;

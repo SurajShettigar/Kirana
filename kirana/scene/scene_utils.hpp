@@ -1,11 +1,12 @@
 #ifndef SCENE_UTILS_HPP
 #define SCENE_UTILS_HPP
 
-#include <vector3.hpp>
-#include <perspective_camera.hpp>
+#include <transform.hpp>
 
 namespace kirana::scene
 {
+class Object;
+class Material;
 struct Vertex
 {
     math::Vector3 position;
@@ -31,10 +32,18 @@ struct SceneImportSettings
     bool improveCacheLocality = true;
     bool optimizeMesh = true;
     bool preTransformVertices = false;
+    bool generateBoundingBoxes = true;
+};
+
+struct Renderable
+{
+    const Object *object = nullptr;
+    bool overrideMaterial = false;
+    bool selected = false;
 };
 
 static const SceneImportSettings DEFAULT_SCENE_IMPORT_SETTINGS{
-    false, false, true, false, false, true, true, false};
+    false, false, true, false, false, true, true, false, true};
 
 } // namespace kirana::scene
 

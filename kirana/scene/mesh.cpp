@@ -11,8 +11,24 @@ typedef kirana::utils::Logger Logger;
 typedef kirana::utils::LogSeverity LogSeverity;
 namespace constants = kirana::utils::constants;
 
-kirana::scene::Mesh::Mesh(const aiMesh *mesh, std::shared_ptr<Material> material)
-    : m_name{mesh->mName.C_Str()}, m_material {std::move(material)}
+kirana::scene::Mesh::Mesh(const std::string &name, const math::Bounds3 &bounds,
+                          const std::vector<Vertex> &vertices,
+                          const std::vector<uint32_t> &indices,
+                          const std::shared_ptr<Material> &material)
+    : m_name{name}, m_bounds{bounds}, m_vertices{vertices}, m_indices{indices},
+      m_material{material}
+{
+}
+
+kirana::scene::Mesh::Mesh(const aiMesh *mesh,
+                          std::shared_ptr<Material> material)
+    : m_name{mesh->mName.C_Str()}, m_bounds{math::Vector3{mesh->mAABB.mMin.x,
+                                                          mesh->mAABB.mMin.y,
+                                                          mesh->mAABB.mMin.z},
+                                            math::Vector3{mesh->mAABB.mMax.x,
+                                                          mesh->mAABB.mMax.y,
+                                                          mesh->mAABB.mMax.z}},
+      m_material{std::move(material)}
 {
     if ((mesh->mPrimitiveTypes & aiPrimitiveType::aiPrimitiveType_TRIANGLE) ==
         aiPrimitiveType::aiPrimitiveType_TRIANGLE)

@@ -107,11 +107,17 @@ struct PipelineProperties
     vk::CullModeFlags cullMode = vk::CullModeFlagBits::eBack;
     float lineWidth = 1.0f;
     vk::SampleCountFlagBits msaaLevel = vk::SampleCountFlagBits::e1;
+    bool alphaBlending = false;
+    bool enableDepth = true;
+    bool writeDepth = true;
+    vk::CompareOp depthCompareOp = vk::CompareOp::eLessOrEqual;
+    bool stencilTest = false;
+    vk::CompareOp stencilCompareOp = vk::CompareOp::eAlways;
+    vk::StencilOp stencilFailOp = vk::StencilOp::eReplace;
+    vk::StencilOp stencilDepthFailOp = vk::StencilOp::eReplace;
+    vk::StencilOp stencilPassOp = vk::StencilOp::eReplace;
+    uint32_t stencilReference = 1;
 };
-
-static const PipelineProperties PIPELINE_PROPERTIES_BASIC;
-static const PipelineProperties PIPELINE_PROPERTIES_WIREFRAME{
-    vk::PrimitiveTopology::eTriangleList, vk::PolygonMode::eLine};
 
 // TODO: Remove it once descriptor set is implemented.
 struct MeshPushConstants
@@ -126,6 +132,11 @@ struct CameraData
 {
     math::Matrix4x4 viewMatrix;
     math::Matrix4x4 projectionMatrix;
+    math::Matrix4x4 viewProjectionMatrix;
+    math::Vector3 position;
+    alignas(16) math::Vector3 direction;
+    float nearPlane;
+    alignas(4) float farPlane;
 };
 
 /**
@@ -136,13 +147,15 @@ struct MaterialData
 {
     std::string name;
     std::string shaderName;
+    PipelineProperties properties;
     std::unique_ptr<PipelineLayout> layout;
     std::unique_ptr<Pipeline> pipeline;
 };
 
 struct InstanceData
 {
-    math::Transform *transform;
+    const math::Transform *transform;
+    const bool *selected;
 };
 
 /**
@@ -152,7 +165,6 @@ struct MeshData
 {
     AllocatedBuffer vertexBuffer;
     AllocatedBuffer indexBuffer;
-    vk::DeviceSize vertexOffset = 0;
     size_t vertexCount;
     size_t indexCount;
     std::vector<InstanceData> instances;

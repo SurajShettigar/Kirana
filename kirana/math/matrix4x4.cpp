@@ -2,6 +2,7 @@
 #include "quaternion.hpp"
 
 #include <algorithm>
+#include <string>
 
 using kirana::math::Matrix4x4;
 using kirana::math::Vector3;
@@ -53,7 +54,8 @@ Matrix4x4::Matrix4x4(Vector4 rows[4])
 {
 }
 
-Matrix4x4::Matrix4x4(Vector4 row0, Vector4 row1, Vector4 row2, Vector4 row3)
+Matrix4x4::Matrix4x4(const Vector4 &row0, const Vector4 &row1,
+                     const Vector4 &row2, const Vector4 &row3)
     : m_current{
           row0,
           row1,
@@ -109,6 +111,26 @@ bool Matrix4x4::operator!=(const Matrix4x4 &mat) const
     return m_current[0] != mat.m_current[0] ||
            m_current[1] != mat.m_current[1] ||
            m_current[2] != mat.m_current[2] || m_current[3] != mat.m_current[3];
+}
+
+kirana::math::Matrix4x4::operator std::string() const
+{
+    return std::string("\n[") + std::to_string(m_current[0][0]) + ", " +
+           std::to_string(m_current[0][1]) + ", " +
+           std::to_string(m_current[0][2]) + ", " +
+           std::to_string(m_current[0][3]) + ", \n" +
+           std::to_string(m_current[1][0]) + ", " +
+           std::to_string(m_current[1][1]) + ", " +
+           std::to_string(m_current[1][2]) + ", " +
+           std::to_string(m_current[1][3]) + ", \n" +
+           std::to_string(m_current[2][0]) + ", " +
+           std::to_string(m_current[2][1]) + ", " +
+           std::to_string(m_current[2][2]) + ", " +
+           std::to_string(m_current[2][3]) + ", \n" +
+           std::to_string(m_current[3][0]) + ", " +
+           std::to_string(m_current[3][1]) + ", " +
+           std::to_string(m_current[3][2]) + ", " +
+           std::to_string(m_current[3][3]) + "]";
 }
 
 Matrix4x4 &Matrix4x4::operator*=(const Matrix4x4 &rhs)
@@ -198,6 +220,11 @@ Vector4 kirana::math::operator*(const Matrix4x4 &mat, const Vector4 &vec4)
                        mat[2][2] * vec4[2] + mat[2][3] * vec4[3],
                    mat[3][0] * vec4[0] + mat[3][1] * vec4[1] +
                        mat[3][2] * vec4[2] + mat[3][3] * vec4[3]);
+}
+
+Vector3 kirana::math::operator*(const Matrix4x4 &mat, const Vector3 &vec3)
+{
+    return static_cast<Vector3>(mat * ::Vector4(vec3, 1.0f));
 }
 
 std::ostream &kirana::math::operator<<(std::ostream &out, const Matrix4x4 &mat)
@@ -580,10 +607,18 @@ Matrix4x4 Matrix4x4::view(const Vector3 &eyePosition,
     // https://www.3dgep.com/understanding-the-view-matrix/ for a detailed
     // explanation.
 
-    return Matrix4x4(x[0], x[1], x[2], math::Vector3::dot(x, eyePosition), y[0],
-                     y[1], y[2], math::Vector3::dot(y, eyePosition), z[0], z[1],
-                     z[2], -math::Vector3::dot(z, eyePosition), 0.0f, 0.0f,
-                     0.0f, 1.0f);
+    return view(eyePosition, z, x, y);
+}
+
+
+Matrix4x4 Matrix4x4::view(const Vector3 &position, const Vector3 &forward,
+                          const Vector3 &right, const Vector3 &up)
+{
+    return Matrix4x4(right[0], right[1], right[2],
+                     math::Vector3::dot(right, -position), up[0], up[1], up[2],
+                     math::Vector3::dot(up, -position), forward[0], forward[1],
+                     forward[2], math::Vector3::dot(forward, -position), 0.0f,
+                     0.0f, 0.0f, 1.0f);
 }
 
 Matrix4x4 Matrix4x4::orthographicProjection(float left, float right,

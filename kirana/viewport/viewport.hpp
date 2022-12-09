@@ -11,7 +11,7 @@ namespace kirana
 {
 namespace scene
 {
-class Scene;
+class ViewportScene;
 }
 namespace window
 {
@@ -25,10 +25,7 @@ class VulkanRenderer;
 
 namespace kirana::viewport
 {
-using std::shared_ptr;
 using vulkan::VulkanRenderer;
-using window::Window;
-
 class Viewport
 {
   private:
@@ -42,7 +39,7 @@ class Viewport
     ~Viewport() = default;
 
     /// Initializes the viewport by binding the window to the renderer (Vulkan).
-    void init(const window::Window *window, scene::Scene &scene,
+    void init(const window::Window *window, const scene::ViewportScene &scene,
               Shading shading = Shading::BASIC);
     /// Calls the update function of the renderer.
     void update();

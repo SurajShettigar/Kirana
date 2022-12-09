@@ -1,21 +1,22 @@
 #include "camera.hpp"
 
-#include "vector3.hpp"
+
+#include <vector2.hpp>
+#include <math_utils.hpp>
 
 
 void kirana::scene::Camera::onTransformChanged()
 {
-    m_view = math::Matrix4x4::view(m_transform.getPosition(), m_pivot,
-                                   math::Vector3::UP);
     m_onCameraChange();
 }
 
 kirana::scene::Camera::Camera(std::array<uint32_t, 2> windowResolution,
                               float nearPlane, float farPlane)
     : m_windowResolution{windowResolution}, m_nearPlane{nearPlane},
-      m_farPlane{farPlane}, m_aspectRatio{
-                                static_cast<float>(m_windowResolution[0]) /
-                                static_cast<float>(m_windowResolution[1])}
+      m_farPlane{farPlane},
+      m_aspectRatio{static_cast<float>(m_windowResolution[0]) /
+                    static_cast<float>(m_windowResolution[1])},
+      m_transform{nullptr, true}
 {
     m_transformChangeListener =
         m_transform.addOnChangeListener([&]() { onTransformChanged(); });
@@ -36,6 +37,8 @@ kirana::scene::Camera::Camera(const Camera &camera)
         m_aspectRatio = camera.m_aspectRatio;
         m_transform = camera.m_transform;
         m_projection = camera.m_projection;
+        m_transformChangeListener =
+            m_transform.addOnChangeListener([&]() { onTransformChanged(); });
     }
 }
 kirana::scene::Camera &kirana::scene::Camera::operator=(const Camera &camera)
@@ -48,6 +51,8 @@ kirana::scene::Camera &kirana::scene::Camera::operator=(const Camera &camera)
         m_aspectRatio = camera.m_aspectRatio;
         m_transform = camera.m_transform;
         m_projection = camera.m_projection;
+        m_transformChangeListener =
+            m_transform.addOnChangeListener([&]() { onTransformChanged(); });
     }
     return *this;
 }
@@ -55,12 +60,47 @@ kirana::scene::Camera &kirana::scene::Camera::operator=(const Camera &camera)
 void kirana::scene::Camera::lookAt(const math::Vector3 &position,
                                    const math::Vector3 &up)
 {
-    m_pivot = position;
-    m_view = math::Matrix4x4::view(m_transform.getPosition(), m_pivot, up);
-    math::Quaternion rot;
-    math::Matrix4x4::decompose(math::Matrix4x4::inverse(m_view), nullptr, &rot);
-    m_transform.setRotation(rot);
+    m_transform.lookAt(m_transform.getPosition() - position, up);
     m_onCameraChange();
+}
+
+kirana::math::Vector3 kirana::scene::Camera::screenToWorldPosition(
+    const math::Vector3 &screenPos) const
+{
+    math::Vector4 pos(screenPos, 1.0f);
+    pos[0] = (pos[0] / static_cast<float>(m_windowResolution[0])) * 2.0f - 1.0f;
+    pos[1] = (pos[1] / static_cast<float>(m_windowResolution[1])) * 2.0f - 1.0f;
+    pos[2] = math::clampf(pos[2], 0.0f, 1.0f);
+
+    pos = Matrix4x4::inverse(getViewProjectionMatrix()) * pos;
+    pos /= pos[3];
+    return static_cast<math::Vector3>(pos);
+}
+
+kirana::math::Vector3 kirana::scene::Camera::worldToScreenPosition(
+    const math::Vector3 &worldPos) const
+{
+    math::Vector4 pos =
+        getViewProjectionMatrix() * math::Vector4(worldPos, 1.0f);
+
+    pos /= pos[3];
+
+    pos[0] = (pos[0] * 0.5f + 0.5f) * static_cast<float>(m_windowResolution[0]);
+    pos[1] = (pos[1] * 0.5f + 0.5f) * static_cast<float>(m_windowResolution[1]);
+    pos[2] = math::map(pos[2], 0.0f, 1.0f, m_nearPlane, m_farPlane);
+    return static_cast<math::Vector3>(pos);
+}
+
+
+kirana::math::Ray kirana::scene::Camera::screenPositionToRay(
+    const math::Vector2 &screenPos) const
+{
+    const math::Vector3 origin{m_transform.getPosition()};
+    math::Vector3 direction{
+        screenToWorldPosition(math::Vector3(screenPos[0], screenPos[1], 1.0f)) -
+        origin};
+    direction.normalize();
+    return {origin, direction};
 }
 
 void kirana::scene::Camera::setResolution(std::array<uint32_t, 2> resolution)

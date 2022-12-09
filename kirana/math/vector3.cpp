@@ -4,6 +4,7 @@
 #include "math_utils.hpp"
 
 #include <iostream>
+#include <string>
 
 using kirana::math::Vector2;
 using kirana::math::Vector3;
@@ -59,6 +60,13 @@ Vector3::operator Vector2() const
 Vector3::operator Vector4() const
 {
     return Vector4(m_current[0], m_current[1], m_current[2], 0.0f);
+}
+
+Vector3::operator std::string() const
+{
+    return std::string("{") + std::to_string(m_current[0]) + ", " +
+           std::to_string(m_current[1]) + ", " + std::to_string(m_current[2]) +
+           "}";
 }
 
 Vector3 Vector3::operator-() const
@@ -170,7 +178,7 @@ Vector3 Vector3::spherical(const Vector3 &direction, float radius)
 
     if (newVec[2] > 1.0f)
     {
-        float s = 1.0f / std::sqrt(newVec[2]);
+        const float s = 1.0f / std::sqrt(newVec[2]);
         newVec[0] *= s;
         newVec[1] *= s;
         newVec[2] = 0.0f;
@@ -188,7 +196,7 @@ void Vector3::coordinateFrame(const Vector3 &w, Vector3 *u, Vector3 *v)
     /// (JCGT), vol. 6, no. 1, 1-8, 2017
     /// @link {http://jcgt.org/published/0006/01/01/}
 
-    float sign = std::copysignf(1.0f, w[2]);
+    const float sign = std::copysignf(1.0f, w[2]);
     const float a = -1.0f / (sign + w[2]);
     const float b = w[0] * w[1] * a;
 
@@ -224,6 +232,11 @@ Vector3 kirana::math::operator*(const Vector3 &lhs, float rhs)
 Vector3 kirana::math::operator/(const Vector3 &lhs, float rhs)
 {
     return (1 / rhs) * lhs;
+}
+
+Vector3 kirana::math::operator/(float lhs, const Vector3 &rhs)
+{
+    return Vector3(lhs / rhs[0], lhs / rhs[1], lhs / rhs[2]);
 }
 
 std::ostream &kirana::math::operator<<(std::ostream &out, const Vector3 &vec3)

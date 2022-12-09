@@ -1,8 +1,8 @@
 #include "orthographic_camera.hpp"
 
 kirana::scene::OrthographicCamera::OrthographicCamera(
-    std::array<uint32_t, 2> windowResolution, float size, float nearPlane,
-    float farPlane, bool graphicsAPI, bool flipY)
+    const std::array<uint32_t, 2> &windowResolution, float size,
+    float nearPlane, float farPlane, bool graphicsAPI, bool flipY)
     : Camera{windowResolution, nearPlane, farPlane}, m_size{size},
       m_graphicsAPI{graphicsAPI}, m_flipY{flipY}
 {
@@ -33,6 +33,13 @@ kirana::scene::OrthographicCamera &kirana::scene::OrthographicCamera::operator=(
         m_flipY = camera.m_flipY;
     }
     return *this;
+}
+
+void kirana::scene::OrthographicCamera::fitBoundsToView(
+    const math::Vector3 &lookAtPosition, const math::Bounds3 &bounds,
+    float distanceOffset)
+{
+    // TODO: Fit bounds to view for orthographic camera.
 }
 
 void kirana::scene::OrthographicCamera::setResolution(

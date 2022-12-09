@@ -4,12 +4,12 @@
 #include "object.hpp"
 #include "mesh.hpp"
 #include "material.hpp"
+#include "camera.hpp"
 #include "scene_utils.hpp"
 
 #include <memory>
 #include <vector>
 #include <string>
-#include <event.hpp>
 
 struct aiScene;
 struct aiNode;
@@ -24,22 +24,19 @@ class Scene
     friend class SceneManager;
 
   private:
-    utils::Event<> m_onWorldChange;
-
     bool m_isInitialized = false;
+
+    // Scene data
     std::string m_name = "Scene";
     std::vector<std::shared_ptr<Mesh>> m_meshes;
-    std::shared_ptr<Object> m_rootObject = nullptr;
     std::vector<std::shared_ptr<Object>>
-        m_objects; // Also contains m_rootObject.
+        m_objects; // Also contains root object.
     std::vector<std::shared_ptr<Material>> m_materials;
-    WorldData m_worldData;
+    std::vector<Camera> m_cameras;
 
-    PerspectiveCamera m_camera{{1280, 720}, 60.0f, 0.1f, 1000.0f, true, true};
-
-    const Object *findObject(const aiNode *node) const;
     void getMeshesFromNode(const aiNode *node,
-                           std::vector<std::shared_ptr<Mesh>> *nodeMeshes);
+                           std::vector<std::shared_ptr<Mesh>> *nodeMeshes,
+                           math::Bounds3 *bounds);
     void initializeChildObjects(std::shared_ptr<Object> parent,
                                 uint32_t childCount, aiNode **children);
     void initFromAiScene(const aiScene *scene);
@@ -50,11 +47,11 @@ class Scene
 
     Scene(const Scene &scene) = delete;
 
+    // Getters-Setters
     [[nodiscard]] inline bool isInitialized() const
     {
         return m_isInitialized;
     }
-
     [[nodiscard]] inline const std::string &getName() const
     {
         return m_name;
@@ -66,7 +63,7 @@ class Scene
     }
     [[nodiscard]] inline const std::shared_ptr<Object> &getRoot() const
     {
-        return m_rootObject;
+        return m_objects[0];
     }
     [[nodiscard]] inline const std::vector<std::shared_ptr<Object>>
         &getObjects() const
@@ -78,25 +75,13 @@ class Scene
     {
         return m_materials;
     }
-    [[nodiscard]] inline WorldData &getWorldData()
+    [[nodiscard]] inline const Camera &getActiveCamera() const
     {
-        return m_worldData;
-    }
-    [[nodiscard]] inline PerspectiveCamera &getCamera()
-    {
-        return m_camera;
+        // TODO: Replace with current active camera.
+        return m_cameras[0];
     }
 
-    inline uint32_t addOnWorldChangeEventListener(
-        const std::function<void()> &callback)
-    {
-        return m_onWorldChange.addListener(callback);
-    }
-    inline void removeOnWorldChangeEventListener(uint32_t callbackID)
-    {
-        m_onWorldChange.removeListener(callbackID);
-    }
-
+    // Helper-Functions
     [[nodiscard]] std::vector<math::Transform *> getTransformsForMesh(
         const Mesh *mesh) const;
 };

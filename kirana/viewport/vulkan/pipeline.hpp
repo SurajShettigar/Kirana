@@ -33,8 +33,7 @@ class Pipeline
                       const Shader *shader,
                       const PipelineLayout *pipelineLayout,
                       const VertexInputDescription &vertexInputDesc,
-                      const PipelineProperties &pipelineProperties =
-                          PIPELINE_PROPERTIES_BASIC);
+                      const PipelineProperties &pipelineProperties);
     ~Pipeline();
     Pipeline(const Pipeline &pipeline) = delete;
     Pipeline &operator=(const Pipeline &pipeline) = delete;

@@ -32,12 +32,14 @@ class Quaternion
     bool operator==(const Quaternion &rhs) const;
     bool operator!=(const Quaternion &rhs) const;
 
+    explicit operator std::string() const;
 
     friend Vector3 operator*(const Quaternion &quaternion,
                              const Vector3 &vector);
     friend Quaternion operator*(const Quaternion &lhs, const Quaternion &rhs);
     Quaternion &operator*=(const Quaternion &rhs);
 
+    void normalize();
     /// Rotates the given vector by the current rotation.
     [[nodiscard]] Vector3 rotateVector(const Vector3 &vector) const;
     /// Returns rotation as a rotation matrix.
@@ -46,6 +48,7 @@ class Quaternion
     [[nodiscard]] Vector3 getEulerAngles() const;
 
     // Quaternion construction functions
+    static Quaternion normalize(const Quaternion &quaternion);
     static Quaternion matrix(const Matrix4x4 &mat);
     /**
      * Construct a quaternion from the euler angles.

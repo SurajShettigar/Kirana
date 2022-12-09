@@ -41,13 +41,19 @@ class Vector3
     explicit operator Vector2() const;
     /// Cast to Vector4
     explicit operator Vector4() const;
+    /// Cast to string
+    explicit operator std::string() const;
 
-    inline float operator[](size_t i) const
+    inline float operator[](int i) const
     {
+        if(i < 0 || i > 2)
+            return m_current[2];
         return m_current[i];
     }
-    inline float &operator[](size_t i)
+    inline float &operator[](int i)
     {
+        if(i < 0 || i > 2)
+            return m_current[2];
         return m_current[i];
     }
 
@@ -94,6 +100,7 @@ class Vector3
     friend Vector3 operator*(const Vector3 &lhs, float rhs);
     friend Vector3 operator*(float lhs, const Vector3 &rhs);
     friend Vector3 operator/(const Vector3 &lhs, float rhs);
+    friend Vector3 operator/(float lhs, const Vector3 &rhs);
 
     // Other operations
     friend std::ostream &operator<<(std::ostream &out, const Vector3 &vec3);

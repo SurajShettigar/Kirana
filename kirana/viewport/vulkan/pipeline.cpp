@@ -79,11 +79,28 @@ bool kirana::viewport::vulkan::Pipeline::build(
     vk::PipelineMultisampleStateCreateInfo msaa({}, properties.msaaLevel, false,
                                                 1.0f, nullptr, false, false);
 
-    vk::PipelineDepthStencilStateCreateInfo depthStencil(
-        {}, true, true, vk::CompareOp::eLessOrEqual, false, false, {}, {}, 0.0f,
-        1.0f);
+    vk::StencilOpState stencilState{properties.stencilFailOp,
+                                    properties.stencilPassOp,
+                                    properties.stencilDepthFailOp,
+                                    properties.stencilCompareOp,
+                                    0xFF,
+                                    0xFF,
+                                    properties.stencilReference};
 
-    vk::PipelineColorBlendAttachmentState attachment(false);
+    vk::PipelineDepthStencilStateCreateInfo depthStencil(
+        {}, properties.enableDepth, properties.writeDepth,
+        properties.depthCompareOp, false, properties.stencilTest, stencilState,
+        stencilState, 0.0f, 1.0f);
+
+    vk::PipelineColorBlendAttachmentState attachment{
+        properties.alphaBlending,
+        vk::BlendFactor::eSrcAlpha,
+        vk::BlendFactor::eOneMinusSrcAlpha,
+        vk::BlendOp::eAdd,
+        vk::BlendFactor::eOne,
+        vk::BlendFactor::eZero,
+        vk::BlendOp::eAdd};
+
     attachment.setColorWriteMask(
         vk::ColorComponentFlagBits::eR | vk::ColorComponentFlagBits::eG |
         vk::ColorComponentFlagBits::eB | vk::ColorComponentFlagBits::eA);

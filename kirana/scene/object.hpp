@@ -6,6 +6,7 @@
 #include <string>
 
 #include <transform.hpp>
+#include <bounds3.hpp>
 
 struct aiNode;
 
@@ -17,19 +18,37 @@ class Object
 {
     friend class Scene;
 
-  private:
+  protected:
     std::string m_name;
     std::vector<std::shared_ptr<Mesh>> m_meshes;
-    math::Transform *m_transform = nullptr;
+    math::Bounds3 m_objectBounds;
+    math::Bounds3 m_hierarchyBounds;
+    std::unique_ptr<math::Transform> m_transform = nullptr;
 
-    math::Matrix4x4 getMatrixFromNode(const aiNode *node) const;
+    static math::Matrix4x4 getMatrixFromNode(const aiNode *node);
+
+    void m_addHierarchyBounds(const math::Bounds3 &bounds)
+    {
+        m_hierarchyBounds.encapsulate(bounds);
+    }
 
   public:
-    Object(const aiNode *node, std::vector<std::shared_ptr<Mesh>> meshes,
-           math::Transform *parent = nullptr);
-    ~Object();
+    Object()
+        : m_name{"Object"}, m_meshes{},
+          m_transform{std::make_unique<math::Transform>()}, m_objectBounds{},
+          m_hierarchyBounds{} {};
+    explicit Object(std::string name, std::shared_ptr<Mesh> mesh,
+                    const math::Transform &m_transform,
+                    const math::Bounds3 &meshBounds);
+    explicit Object(const aiNode *node,
+                    std::vector<std::shared_ptr<Mesh>> meshes,
+                    const math::Bounds3 &objectBounds,
+                    math::Transform *parent = nullptr);
+    virtual ~Object() = default;
 
-    math::Transform *const transform = m_transform;
+    Object(const Object &object) = delete;
+
+    math::Transform *const transform = m_transform.get();
 
     [[nodiscard]] inline const std::string &getName() const
     {
@@ -40,6 +59,20 @@ class Object
     {
         return m_meshes;
     }
+    /// Returns the world-space bounding-box of the object. If the object has
+    /// mesh objects, it'll encapsulate that. If it's empty, it'll just enclose
+    /// the object's position.
+    [[nodiscard]] inline math::Bounds3 getObjectBounds() const
+    {
+        return m_transform->transformBounds(m_objectBounds);
+    }
+    /// Returns the world-space bounding-box of the entire hierarchy of this
+    /// object.
+    [[nodiscard]] inline math::Bounds3 getHierarchyBounds() const
+    {
+        return m_transform->transformBounds(m_hierarchyBounds);
+    }
+
 
     bool hasMesh(const Mesh *mesh) const;
 };
