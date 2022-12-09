@@ -210,10 +210,16 @@ void kirana::math::Transform::setPosition(const Vector3 &position, Space space)
     }
     else
     {
-        m_localPosition = getRight() * position[0];
-        m_localPosition = getUp() * position[1];
-        m_localPosition = getForward() * position[2];
+        m_localPosition = position;
     }
+    calculateLocalMatrix();
+}
+
+void kirana::math::Transform::setPositionInLocalAxis(const Vector3 &position)
+{
+    m_localPosition = getForward() * position[2];
+    m_localPosition = getUp() * position[1];
+    m_localPosition = getRight() * position[0];
     calculateLocalMatrix();
 }
 
@@ -339,11 +345,17 @@ void kirana::math::Transform::translate(
     }
     else
     {
-        m_localPosition += getRight() * translation[0];
-        m_localPosition += getUp() * translation[1];
-        m_localPosition += getForward() * translation[2];
+        m_localPosition += translation;
     }
 
+    calculateLocalMatrix();
+}
+
+void kirana::math::Transform::translateInLocalAxis(const Vector3 &translation)
+{
+    m_localPosition += getForward() * translation[2];
+    m_localPosition += getUp() * translation[1];
+    m_localPosition += getRight() * translation[0];
     calculateLocalMatrix();
 }
 
@@ -474,17 +486,21 @@ void kirana::math::Transform::rotateAround(float angle, const Vector3 &axis,
 }
 
 void kirana::math::Transform::lookAt(const Vector3 &direction,
-                                     const Vector3 &up, Space space)
+                                     const Vector3 &up)
 {
-    // TODO: Implement World space lookAt.
     Vector3 z = Vector3::normalize(direction);
     Vector3 x = Vector3::normalize(Vector3::cross(Vector3::normalize(up), z));
     Vector3 y = Vector3::normalize(Vector3::cross(z, x));
 
-    m_localMatrix = Matrix4x4(x[0], y[0], z[0], m_localPosition[0], x[1], y[1],
-                              z[1], m_localPosition[1], x[2], y[2], z[2],
-                              m_localPosition[2], 0.0f, 0.0f, 0.0f, 1.0f);
+    Vector3 eyePos = getPosition();
+    const Matrix4x4 &worldMat =
+        Matrix4x4(x[0], y[0], z[0], eyePos[0], x[1], y[1], z[1], eyePos[1],
+                  x[2], y[2], z[2], eyePos[2], 0.0f, 0.0f, 0.0f, 1.0f);
 
-    Matrix4x4::decompose(m_localMatrix, &m_localPosition, &m_localRotation);
-    calculateLocalMatrix();
+    Vector3 worldPos;
+    Quaternion worldRot;
+    Matrix4x4::decompose(worldMat, &worldPos, &worldRot);
+
+    setRotation(worldRot);
+    setPosition(worldPos);
 }
