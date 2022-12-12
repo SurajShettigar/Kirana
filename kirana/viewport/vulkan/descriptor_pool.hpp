@@ -28,8 +28,8 @@ class DescriptorPool
     bool allocateDescriptorSet(const DescriptorSet *&descriptorSet,
                                const DescriptorSetLayout *layout) const;
     bool allocateDescriptorSets(
-        const DescriptorSet **descriptorSets,
-        const std::vector<DescriptorSetLayout *> &layouts) const;
+        std::vector<const DescriptorSet **> sets,
+        const std::vector<const DescriptorSetLayout *> &layouts) const;
 };
 } // namespace kirana::viewport::vulkan
 

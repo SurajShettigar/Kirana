@@ -13,8 +13,12 @@ kirana::viewport::vulkan::DescriptorPool::DescriptorPool(const Device *device)
         vk::DescriptorPoolSize(vk::DescriptorType::eUniformBuffer,
                                constants::VULKAN_DESCRIPTOR_DEFAULT_POOL_SIZE),
         vk::DescriptorPoolSize(vk::DescriptorType::eUniformBufferDynamic,
+                               constants::VULKAN_DESCRIPTOR_DEFAULT_POOL_SIZE),
+        vk::DescriptorPoolSize(vk::DescriptorType::eStorageBuffer,
+                               constants::VULKAN_DESCRIPTOR_DEFAULT_POOL_SIZE),
+        vk::DescriptorPoolSize(vk::DescriptorType::eStorageBufferDynamic,
                                constants::VULKAN_DESCRIPTOR_DEFAULT_POOL_SIZE)};
-    vk::DescriptorPoolCreateInfo createInfo(
+    const vk::DescriptorPoolCreateInfo createInfo(
         {}, constants::VULKAN_DESCRIPTOR_SET_MAX_COUNT, poolSizes);
 
     try
@@ -49,8 +53,9 @@ bool kirana::viewport::vulkan::DescriptorPool::allocateDescriptorSet(
 {
     try
     {
-        descriptorSet =
-            new DescriptorSet(m_device, m_device->current.allocateDescriptorSets(
+        descriptorSet = new DescriptorSet(
+            m_device,
+            m_device->current.allocateDescriptorSets(
                 vk::DescriptorSetAllocateInfo(m_current, layout->current))[0]);
         Logger::get().log(constants::LOG_CHANNEL_VULKAN, LogSeverity::trace,
                           "Descriptor Set allocated");
@@ -64,21 +69,21 @@ bool kirana::viewport::vulkan::DescriptorPool::allocateDescriptorSet(
 }
 
 bool kirana::viewport::vulkan::DescriptorPool::allocateDescriptorSets(
-    const DescriptorSet **descriptorSets,
-    const std::vector<DescriptorSetLayout *> &layouts) const
+    std::vector<const DescriptorSet **> sets,
+    const std::vector<const DescriptorSetLayout *> &layouts) const
 {
     std::vector<vk::DescriptorSetLayout> dLayouts(layouts.size());
     for (size_t i = 0; i < dLayouts.size(); i++)
         dLayouts[i] = layouts[i]->current;
     try
     {
-        const std::vector<vk::DescriptorSet> sets =
+        const std::vector<vk::DescriptorSet> tempSets =
             m_device->current.allocateDescriptorSets(
                 vk::DescriptorSetAllocateInfo(m_current, dLayouts));
 
         for (size_t i = 0; i < layouts.size(); i++)
         {
-            descriptorSets[i] = new DescriptorSet(m_device, sets[i]);
+            *sets[i] = new DescriptorSet(m_device, tempSets[i]);
         }
         Logger::get().log(constants::LOG_CHANNEL_VULKAN, LogSeverity::trace,
                           "Descriptor Set allocated");

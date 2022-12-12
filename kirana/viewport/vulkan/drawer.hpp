@@ -9,7 +9,6 @@ namespace kirana::viewport::vulkan
 class Device;
 class Allocator;
 class DescriptorPool;
-class DescriptorSetLayout;
 class Swapchain;
 class RenderPass;
 class SceneData;
@@ -38,7 +37,6 @@ class Drawer
   public:
     explicit Drawer(const Device *device, const Allocator *allocator,
                     const DescriptorPool *descriptorPool,
-                    const DescriptorSetLayout *globalDescriptorSetLayout,
                     const Swapchain *swapchain, const RenderPass *renderPass,
                     const SceneData *scene);
     ~Drawer();

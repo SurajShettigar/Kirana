@@ -69,16 +69,21 @@ kirana::viewport::vulkan::Allocator::~Allocator()
 
 bool kirana::viewport::vulkan::Allocator::allocateBuffer(
     vk::DeviceSize size, vk::BufferUsageFlags usageFlags,
-    vma::MemoryUsage memoryUsage, AllocatedBuffer *buffer) const
+    vma::MemoryUsage memoryUsage, AllocatedBuffer *buffer,
+    bool mapMemoryPointer) const
 {
-    vk::BufferCreateInfo createInfo({}, size, usageFlags);
-    vma::AllocationCreateInfo allocCreateInfo({}, memoryUsage);
+    const vk::BufferCreateInfo createInfo({}, size, usageFlags);
+    const vma::AllocationCreateInfo allocCreateInfo({}, memoryUsage);
     try
     {
-        std::pair<vk::Buffer, vma::Allocation> data =
+        const std::pair<vk::Buffer, vma::Allocation> data =
             m_current->createBuffer(createInfo, allocCreateInfo);
         buffer->buffer = std::make_unique<vk::Buffer>(data.first);
         buffer->allocation = std::make_unique<vma::Allocation>(data.second);
+        if (mapMemoryPointer)
+            return m_current->mapMemory(*buffer->allocation,
+                                        &buffer->memoryPointer) ==
+                   vk::Result::eSuccess;
         return true;
     }
     catch (...)
@@ -96,13 +101,13 @@ bool kirana::viewport::vulkan::Allocator::allocateBufferToGPU(
     AllocatedBuffer stagingBuffer;
     status =
         allocateBuffer(size, usageFlags | vk::BufferUsageFlagBits::eTransferSrc,
-                       vma::MemoryUsage::eCpuToGpu, &stagingBuffer);
+                       vma::MemoryUsage::eCpuToGpu, &stagingBuffer, false);
     if (status)
-        status = mapToMemory(stagingBuffer, size, 0, data);
+        status = copyDataToMemory(stagingBuffer, size, 0, data);
     if (status)
         status = allocateBuffer(
             size, usageFlags | vk::BufferUsageFlagBits::eTransferDst,
-            vma::MemoryUsage::eGpuOnly, buffer);
+            vma::MemoryUsage::eGpuOnly, buffer, false);
     if (status)
         status = copyBuffer(stagingBuffer, *buffer, size);
     free(stagingBuffer);
@@ -129,24 +134,34 @@ bool kirana::viewport::vulkan::Allocator::allocateImage(
     return false;
 }
 
+void kirana::viewport::vulkan::Allocator::unMapMemory(
+    const AllocatedBuffer &buffer) const
+{
+    m_current->unmapMemory(*buffer.allocation);
+}
 
-bool kirana::viewport::vulkan::Allocator::mapToMemory(
-    const AllocatedBuffer &buffer, size_t size, uint32_t offset,
+bool kirana::viewport::vulkan::Allocator::copyDataToMemory(
+    AllocatedBuffer &buffer, size_t size, uint32_t offset,
     const void *data) const
 {
     try
     {
-        char *temp;
-        if (m_current->mapMemory(*buffer.allocation, (void **)&temp) !=
-            vk::Result::eSuccess)
+        if (buffer.memoryPointer == nullptr)
         {
-            Logger::get().log(constants::LOG_CHANNEL_VULKAN, LogSeverity::error,
-                              "Failed to map memory");
-            return false;
+            if (m_current->mapMemory(*buffer.allocation,
+                                     &buffer.memoryPointer) !=
+                vk::Result::eSuccess)
+            {
+                Logger::get().log(constants::LOG_CHANNEL_VULKAN,
+                                  LogSeverity::error, "Failed to map memory");
+                return false;
+            }
         }
-        temp += offset;
-        memcpy(temp, data, size);
-        m_current->unmapMemory(*buffer.allocation);
+        // We cast it to char pointer so that we can increment the pointer by
+        // offset and then copy value to that offset memory location.
+        memcpy(reinterpret_cast<void *>(
+                   reinterpret_cast<char *>(buffer.memoryPointer) + offset),
+               data, size);
         return true;
     }
     catch (...)
@@ -162,8 +177,8 @@ bool kirana::viewport::vulkan::Allocator::copyBuffer(
     vk::DeviceSize dstOffset) const
 {
     VK_HANDLE_RESULT(
-        m_device->current.waitForFences(m_copyFence, true,
-                                        constants::VULKAN_COPY_BUFFER_WAIT_TIMEOUT),
+        m_device->current.waitForFences(
+            m_copyFence, true, constants::VULKAN_COPY_BUFFER_WAIT_TIMEOUT),
         "Failed to wait for copy fence")
     m_device->current.resetFences(m_copyFence);
     m_commandPool->reset();
@@ -175,8 +190,8 @@ bool kirana::viewport::vulkan::Allocator::copyBuffer(
     m_device->graphicsSubmit(m_commandBuffers->current[0], m_copyFence);
 
     VK_HANDLE_RESULT(
-        m_device->current.waitForFences(m_copyFence, true,
-                                        constants::VULKAN_COPY_BUFFER_WAIT_TIMEOUT),
+        m_device->current.waitForFences(
+            m_copyFence, true, constants::VULKAN_COPY_BUFFER_WAIT_TIMEOUT),
         "Failed to wait for copy fence")
     return true;
 }
@@ -184,6 +199,8 @@ bool kirana::viewport::vulkan::Allocator::copyBuffer(
 void kirana::viewport::vulkan::Allocator::free(
     const AllocatedBuffer &buffer) const
 {
+    if (buffer.memoryPointer != nullptr)
+        unMapMemory(buffer);
     if (buffer.buffer)
         m_current->destroyBuffer(*buffer.buffer, *buffer.allocation);
 }

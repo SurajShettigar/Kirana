@@ -3,6 +3,7 @@
 
 #include <vector>
 #include <unordered_map>
+#include <execution>
 #include "vulkan_types.hpp"
 
 namespace kirana::scene
@@ -28,14 +29,17 @@ class SceneData
     std::unordered_map<std::string, std::unique_ptr<Shader>> m_shaders;
     mutable std::unordered_map<std::string, MaterialData> m_materials;
     std::unordered_map<std::string, MeshData> m_meshes;
+    size_t m_totalInstanceCount;
     CameraData m_cameraData;
     AllocatedBuffer m_cameraBuffer;
     AllocatedBuffer m_worldDataBuffer;
+    AllocatedBuffer m_objectBuffer;
 
     const Device *const m_device;
     const Allocator *const m_allocator;
     const RenderPass *m_renderPass;
-    const DescriptorSetLayout *const m_globalDescSetLayout;
+    const DescriptorSetLayout *m_globalDescSetLayout;
+    const DescriptorSetLayout *m_objectDescSetLayout;
 
     const scene::ViewportScene &m_scene;
     uint32_t m_cameraChangeListener;
@@ -45,6 +49,7 @@ class SceneData
 
     void onWorldChanged();
     void onCameraChanged();
+    void onObjectChanged();
 
     void createWorldDataBuffer();
     void createCameraBuffer();
@@ -56,17 +61,29 @@ class SceneData
                                bool overrideShading = false);
 
     bool createMeshes();
+    bool createObjectBuffer();
 
   public:
     SceneData(const Device *device, const Allocator *allocator,
-              const RenderPass *renderPass,
-              const DescriptorSetLayout *globalDescSetLayout,
-              const scene::ViewportScene &scene, uint16_t shadingIndex = 0);
+              const RenderPass *renderPass, const scene::ViewportScene &scene,
+              uint16_t shadingIndex = 0);
     ~SceneData();
 
     SceneData(const SceneData &sceneData) = delete;
 
     const bool &isInitialized = m_isInitialized;
+
+    [[nodiscard]] inline const DescriptorSetLayout *
+    getGlobalDescriptorSetLayout() const
+    {
+        return m_globalDescSetLayout;
+    }
+
+    [[nodiscard]] inline const DescriptorSetLayout *
+    getObjectDescriptorSetLayout() const
+    {
+        return m_objectDescSetLayout;
+    }
 
     [[nodiscard]] inline const std::unordered_map<std::string, MeshData>
         &getMeshData() const
@@ -88,6 +105,9 @@ class SceneData
 
     [[nodiscard]] const AllocatedBuffer &getWorldDataBuffer() const;
     [[nodiscard]] uint32_t getWorldDataBufferOffset(uint32_t offsetIndex) const;
+
+    [[nodiscard]] const AllocatedBuffer &getObjectBuffer() const;
+    [[nodiscard]] uint32_t getObjectBufferOffset(uint32_t offsetIndex) const;
 };
 } // namespace kirana::viewport::vulkan
 #endif

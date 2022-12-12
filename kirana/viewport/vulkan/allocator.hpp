@@ -44,20 +44,20 @@ class Allocator
     const bool &isInitialized = m_isInitialized;
     const vma::Allocator &current = *m_current;
 
+    void unMapMemory(const AllocatedBuffer &buffer) const;
     bool allocateBuffer(vk::DeviceSize size, vk::BufferUsageFlags usageFlags,
-                        vma::MemoryUsage memoryUsage,
-                        AllocatedBuffer *buffer) const;
+                        vma::MemoryUsage memoryUsage, AllocatedBuffer *buffer,
+                        bool mapMemoryPointer = true) const;
     bool allocateBufferToGPU(vk::DeviceSize size,
                              vk::BufferUsageFlags usageFlags,
-                             AllocatedBuffer *buffer,
-                             const void *data) const;
+                             AllocatedBuffer *buffer, const void *data) const;
     bool allocateImage(const vk::ImageCreateInfo &imageCreateInfo,
                        vma::MemoryUsage memoryUsage,
                        vk::MemoryPropertyFlags requiredFlags,
                        AllocateImage *image) const;
-    bool mapToMemory(const AllocatedBuffer &buffer, size_t size,
+    bool copyDataToMemory(AllocatedBuffer &buffer, size_t size,
                      uint32_t offset, const void *data) const;
-    bool copyBuffer(const AllocatedBuffer &stagingBuffer,
+    [[nodiscard]] bool copyBuffer(const AllocatedBuffer &stagingBuffer,
                     const AllocatedBuffer &destBuffer, vk::DeviceSize size,
                     vk::DeviceSize srcOffset = 0,
                     vk::DeviceSize dstOffset = 0) const;

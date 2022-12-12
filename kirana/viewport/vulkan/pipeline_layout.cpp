@@ -5,9 +5,9 @@
 #include "vulkan_types.hpp"
 
 kirana::viewport::vulkan::PipelineLayout::PipelineLayout(
-    const Device *const device, const DescriptorSetLayout *globalDescSetLayout)
-    : m_isInitialized{false}, m_device{device}, m_globalDescSetLayout{
-                                                    globalDescSetLayout}
+    const Device *const device,
+    const std::vector<const DescriptorSetLayout *> &descriptorSetLayouts)
+    : m_isInitialized{false}, m_device{device}
 {
     try
     {
@@ -15,9 +15,11 @@ kirana::viewport::vulkan::PipelineLayout::PipelineLayout(
         vk::PushConstantRange meshPushConstants(
             vk::ShaderStageFlagBits::eVertex, 0, sizeof(MeshPushConstants));
 
-        m_current =
-            m_device->current.createPipelineLayout(vk::PipelineLayoutCreateInfo(
-                {}, m_globalDescSetLayout->current, meshPushConstants));
+        std::vector<vk::DescriptorSetLayout> layouts;
+        for (const auto &l : descriptorSetLayouts)
+            layouts.emplace_back(l->current);
+        m_current = m_device->current.createPipelineLayout(
+            vk::PipelineLayoutCreateInfo({}, layouts, meshPushConstants));
         Logger::get().log(constants::LOG_CHANNEL_VULKAN, LogSeverity::trace,
                           "Pipeline layout created");
         m_isInitialized = true;

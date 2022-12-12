@@ -77,6 +77,7 @@ struct AllocatedBuffer
 {
     std::unique_ptr<vk::Buffer> buffer;
     std::unique_ptr<vma::Allocation> allocation;
+    void *memoryPointer = nullptr;
     vk::DescriptorBufferInfo descInfo;
 };
 
@@ -152,6 +153,10 @@ struct MaterialData
     std::unique_ptr<Pipeline> pipeline;
 };
 
+struct ObjectData {
+    math::Matrix4x4 modelMatrix;
+};
+
 struct InstanceData
 {
     const math::Transform *transform;
@@ -177,6 +182,7 @@ struct MeshData
 struct FrameData
 {
     const DescriptorSet *globalDescriptorSet = nullptr;
+    const DescriptorSet *objectDescriptorSet = nullptr;
     vk::Fence renderFence;
     vk::Semaphore renderSemaphore;
     vk::Semaphore presentSemaphore;

@@ -10,7 +10,6 @@
 #include "depth_buffer.hpp"
 #include "renderpass.hpp"
 #include "descriptor_pool.hpp"
-#include "descriptor_set_layout.hpp"
 #include "scene_data.hpp"
 #include "drawer.hpp"
 
@@ -41,19 +40,15 @@ void kirana::viewport::vulkan::VulkanRenderer::init(
     if (m_renderpass && m_renderpass->isInitialized)
     {
         m_descriptorPool = new DescriptorPool(m_device);
-        m_globalDescSetLayout = new DescriptorSetLayout(m_device);
     }
-    if (m_globalDescSetLayout && m_globalDescSetLayout->isInitialized)
+    if (m_descriptorPool && m_descriptorPool->isInitialized)
     {
         m_currentScene =
-            new SceneData(m_device, m_allocator, m_renderpass,
-                          m_globalDescSetLayout, scene, shadingIndex);
+            new SceneData(m_device, m_allocator, m_renderpass, scene, shadingIndex);
     }
-    if (m_descriptorPool && m_descriptorPool->isInitialized &&
-        m_globalDescSetLayout && m_globalDescSetLayout->isInitialized)
+    if (m_descriptorPool && m_descriptorPool->isInitialized)
     {
-        m_drawer = new Drawer(m_device, m_allocator, m_descriptorPool,
-                              m_globalDescSetLayout, m_swapchain, m_renderpass,
+        m_drawer = new Drawer(m_device, m_allocator, m_descriptorPool, m_swapchain, m_renderpass,
                               m_currentScene);
         m_swapchainOutOfDateListener =
             m_drawer->addOnSwapchainOutOfDateListener(
@@ -63,6 +58,7 @@ void kirana::viewport::vulkan::VulkanRenderer::init(
 
 void kirana::viewport::vulkan::VulkanRenderer::update()
 {
+
 }
 
 void kirana::viewport::vulkan::VulkanRenderer::render()
@@ -86,11 +82,6 @@ void kirana::viewport::vulkan::VulkanRenderer::clean()
     {
         delete m_currentScene;
         m_currentScene = nullptr;
-    }
-    if (m_globalDescSetLayout)
-    {
-        delete m_globalDescSetLayout;
-        m_globalDescSetLayout = nullptr;
     }
     if (m_descriptorPool)
     {

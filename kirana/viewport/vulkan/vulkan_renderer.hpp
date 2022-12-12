@@ -41,7 +41,6 @@ class VulkanRenderer
     DepthBuffer *m_depthBuffer = nullptr;
     RenderPass *m_renderpass = nullptr;
     DescriptorPool *m_descriptorPool = nullptr;
-    DescriptorSetLayout *m_globalDescSetLayout = nullptr;
     Drawer *m_drawer = nullptr;
     uint32_t m_swapchainOutOfDateListener =
         std::numeric_limits<unsigned int>::max();

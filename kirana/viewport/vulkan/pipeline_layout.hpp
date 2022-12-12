@@ -15,11 +15,11 @@ class PipelineLayout
     vk::PipelineLayout m_current;
 
     const Device *const m_device;
-    const DescriptorSetLayout *const m_globalDescSetLayout;
 
   public:
-    explicit PipelineLayout(const Device *device,
-                            const DescriptorSetLayout *globalDescSetLayout);
+    explicit PipelineLayout(
+        const Device *device,
+        const std::vector<const DescriptorSetLayout *> &descriptorSetLayouts);
     ~PipelineLayout();
     PipelineLayout(const PipelineLayout &pipelineLayout) = delete;
     PipelineLayout &operator=(const PipelineLayout &pipelineLayout) = delete;
