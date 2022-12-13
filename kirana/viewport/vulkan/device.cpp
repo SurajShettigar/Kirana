@@ -41,6 +41,18 @@ kirana::viewport::vulkan::SwapchainSupportInfo kirana::viewport::vulkan::
     return supportInfo;
 }
 
+
+vk::PhysicalDeviceRayTracingPipelinePropertiesKHR kirana::viewport::vulkan::
+    Device::getRaytracingProperties(const vk::PhysicalDevice &gpu)
+{
+    vk::PhysicalDeviceRayTracingPipelinePropertiesKHR raytraceProps;
+    vk::PhysicalDeviceProperties2 props;
+    props.pNext = &raytraceProps;
+    gpu.getProperties2(&props);
+    return *reinterpret_cast<
+        vk::PhysicalDeviceRayTracingPipelinePropertiesKHR *>(props.pNext);
+}
+
 bool kirana::viewport::vulkan::Device::selectIdealGPU()
 {
     std::vector<vk::PhysicalDevice> devices =
@@ -88,19 +100,6 @@ bool kirana::viewport::vulkan::Device::selectIdealGPU()
         return false;
     }
 
-    // Check if the device supports necessary features.
-    vk::PhysicalDeviceShaderDrawParametersFeatures shaderDrawFeature{};
-    vk::PhysicalDeviceFeatures2 features{};
-    features.pNext = &shaderDrawFeature;
-    m_gpu.getFeatures2(&features);
-    if (!features.features.fillModeNonSolid || !features.features.wideLines ||
-        !features.features.logicOp || !shaderDrawFeature.shaderDrawParameters)
-    {
-        Logger::get().log(constants::LOG_CHANNEL_VULKAN, LogSeverity::error,
-                          "Failed to find GPU with necessary features");
-        return false;
-    }
-
     // Check if the device has the necessary queue families.
     m_queueFamilyIndices = getQueueFamilyIndices(m_gpu, m_surface->current);
     if (!(m_queueFamilyIndices.isGraphicsSupported() &&
@@ -113,7 +112,7 @@ bool kirana::viewport::vulkan::Device::selectIdealGPU()
 
     // Check if device has the required extensions.
     if (!hasRequiredExtensions(m_gpu.enumerateDeviceExtensionProperties(),
-                               DEVICE_EXTENSIONS))
+                               REQUIRED_DEVICE_EXTENSIONS))
     {
         Logger::get().log(constants::LOG_CHANNEL_VULKAN, LogSeverity::error,
                           "Failed to find GPU with required device extensions");
@@ -129,6 +128,20 @@ bool kirana::viewport::vulkan::Device::selectIdealGPU()
         return false;
     }
 
+    // Check if the device supports necessary features.
+    vk::PhysicalDeviceFeatures2 features = vulkan::getRequiredDeviceFeatures();
+    m_gpu.getFeatures2(&features);
+    if (!vulkan::hasRequiredDeviceFeatures(features))
+    {
+        Logger::get().log(constants::LOG_CHANNEL_VULKAN, LogSeverity::error,
+                          "Failed to find GPU with the necessary feature set");
+        return false;
+    }
+
+    // Set Extension properties.
+    // Set raytracing properties
+    m_raytracingProperties = getRaytracingProperties(m_gpu);
+
     Logger::get().log(constants::LOG_CHANNEL_VULKAN, LogSeverity::debug,
                       "Selected GPU: " +
                           std::string(m_gpu.getProperties().deviceName.data()));
@@ -137,25 +150,22 @@ bool kirana::viewport::vulkan::Device::selectIdealGPU()
 
 bool kirana::viewport::vulkan::Device::createLogicalDevice()
 {
-    std::set<uint32_t> indices = m_queueFamilyIndices.getIndices();
+    const std::set<uint32_t> indices = m_queueFamilyIndices.getIndices();
 
     std::vector<vk::DeviceQueueCreateInfo> queueCreateInfos;
-    float priority = 1.0f;
+    const float priority = 1.0f;
     for (auto i : indices)
     {
-        vk::DeviceQueueCreateInfo createInfo(vk::DeviceQueueCreateFlags(), i, 1,
-                                             &priority);
+        const vk::DeviceQueueCreateInfo createInfo(vk::DeviceQueueCreateFlags(),
+                                                   i, 1, &priority);
         queueCreateInfos.push_back(createInfo);
     }
 
-    vk::PhysicalDeviceShaderDrawParametersFeatures shaderDrawFeature{true};
-    vk::PhysicalDeviceFeatures deviceFeatures{};
-    deviceFeatures.fillModeNonSolid = true;
-    deviceFeatures.wideLines = true;
-    deviceFeatures.logicOp = true;
-    vk::DeviceCreateInfo createInfo({}, queueCreateInfos, VALIDATION_LAYERS,
-                                    DEVICE_EXTENSIONS, &deviceFeatures,
-                                    &shaderDrawFeature);
+    const vk::PhysicalDeviceFeatures2 reqFeatures =
+        vulkan::getRequiredDeviceFeatures();
+    const vk::DeviceCreateInfo createInfo(
+        {}, queueCreateInfos, REQUIRED_VALIDATION_LAYERS,
+        REQUIRED_DEVICE_EXTENSIONS, &reqFeatures.features, reqFeatures.pNext);
 
     try
     {
@@ -210,6 +220,13 @@ kirana::viewport::vulkan::Device::~Device()
 void kirana::viewport::vulkan::Device::reinitializeSwapchainInfo()
 {
     m_swapchainSupportInfo = getSwapchainSupportInfo(m_gpu, m_surface->current);
+}
+
+
+vk::DeviceAddress kirana::viewport::vulkan::Device::getBufferAddress(
+    const vk::Buffer &buffer) const
+{
+    return m_current.getBufferAddress(vk::BufferDeviceAddressInfo(buffer));
 }
 
 void kirana::viewport::vulkan::Device::waitUntilIdle() const

@@ -9,7 +9,7 @@
 
 #include <constants.h>
 #include <logger.hpp>
-
+#include <iostream>
 namespace kirana::viewport::vulkan
 {
 namespace constants = kirana::utils::constants;
@@ -17,12 +17,22 @@ using kirana::utils::Logger;
 using kirana::utils::LogSeverity;
 
 /// Vector of necessary device extensions when selecting device.
-static const std::vector<const char *> DEVICE_EXTENSIONS{
-    VK_KHR_SWAPCHAIN_EXTENSION_NAME};
+static const std::vector<const char *> REQUIRED_DEVICE_EXTENSIONS{
+    VK_KHR_SWAPCHAIN_EXTENSION_NAME,
+    VK_KHR_ACCELERATION_STRUCTURE_EXTENSION_NAME,
+    VK_KHR_RAY_TRACING_PIPELINE_EXTENSION_NAME, VK_KHR_RAY_QUERY_EXTENSION_NAME,
+    VK_KHR_DEFERRED_HOST_OPERATIONS_EXTENSION_NAME};
 /// Vector of necessary validation layers for debugging.
-static const std::vector<const char *> VALIDATION_LAYERS{
+static const std::vector<const char *> REQUIRED_VALIDATION_LAYERS{
     "VK_LAYER_KHRONOS_validation"};
 
+static vk::PhysicalDeviceRayQueryFeaturesKHR DEVICE_RAY_QUERY_FEATURES{true};
+static vk::PhysicalDeviceRayTracingPipelineFeaturesKHR
+    DEVICE_RAYTRACE_PIPELINE_FEATURES{true, false, false, true, true};
+static vk::PhysicalDeviceAccelerationStructureFeaturesKHR
+    DEVICE_ACCEL_STRUCT_FEATURES{true, false, false, false, true};
+static vk::PhysicalDeviceShaderDrawParametersFeatures
+    DEVICE_SHADER_DRAW_PARAMS_FEATURES{true};
 
 #define VK_HANDLE_RESULT(f, err)                                               \
     {                                                                          \
@@ -132,6 +142,96 @@ static bool hasRequiredExtensions(
     return missingExtensions == reqExtensions.end();
 }
 
+static inline vk::PhysicalDeviceFeatures2 getRequiredDeviceFeatures()
+{
+    vk::PhysicalDeviceFeatures2 features;
+    features.features.fillModeNonSolid = true;
+    features.features.wideLines = true;
+    features.features.logicOp = true;
+    features.features.drawIndirectFirstInstance = true;
+    features.features.tessellationShader = true;
+
+    DEVICE_RAYTRACE_PIPELINE_FEATURES.pNext = &DEVICE_RAY_QUERY_FEATURES;
+    DEVICE_ACCEL_STRUCT_FEATURES.pNext = &DEVICE_RAYTRACE_PIPELINE_FEATURES;
+    DEVICE_SHADER_DRAW_PARAMS_FEATURES.pNext = &DEVICE_ACCEL_STRUCT_FEATURES;
+    features.pNext = &DEVICE_SHADER_DRAW_PARAMS_FEATURES;
+
+    return features;
+}
+
+static bool hasRequiredDeviceFeatures(
+    const vk::PhysicalDeviceFeatures2 &reqFeatures)
+{
+    if (!reqFeatures.features.fillModeNonSolid ||
+        !reqFeatures.features.wideLines || !reqFeatures.features.logicOp ||
+        !reqFeatures.features.drawIndirectFirstInstance ||
+        !reqFeatures.features.tessellationShader)
+        return false;
+
+    auto *shaderDraw =
+        reinterpret_cast<vk::PhysicalDeviceShaderDrawParametersFeatures *>(
+            reqFeatures.pNext);
+
+    Logger::get().log(constants::LOG_CHANNEL_VULKAN, LogSeverity::trace,
+                      "Shader Draw Feature: " +
+                          std::to_string(shaderDraw->shaderDrawParameters));
+
+    if (!shaderDraw->shaderDrawParameters)
+        return false;
+
+    auto *accelStruct =
+        reinterpret_cast<vk::PhysicalDeviceAccelerationStructureFeaturesKHR *>(
+            shaderDraw->pNext);
+
+    Logger::get().log(
+        constants::LOG_CHANNEL_VULKAN, LogSeverity::trace,
+        "Acceleration Structure Feature: " +
+            std::to_string(accelStruct->accelerationStructure) +
+            ", Host Commands: " +
+            std::to_string(accelStruct->accelerationStructureHostCommands) +
+            ", Indirect Build: " +
+            std::to_string(accelStruct->accelerationStructureIndirectBuild) +
+            ", Update After Bind: " +
+            std::to_string(
+                accelStruct
+                    ->descriptorBindingAccelerationStructureUpdateAfterBind));
+
+    if (!accelStruct->accelerationStructure ||
+        !accelStruct->descriptorBindingAccelerationStructureUpdateAfterBind)
+        return false;
+
+    auto *rayTracePipeline =
+        reinterpret_cast<vk::PhysicalDeviceRayTracingPipelineFeaturesKHR *>(
+            accelStruct->pNext);
+
+    Logger::get().log(
+        constants::LOG_CHANNEL_VULKAN, LogSeverity::trace,
+        "Raytrace Pipeline Feature: " +
+            std::to_string(rayTracePipeline->rayTracingPipeline) +
+            ", Indirect Rays: " +
+            std::to_string(
+                rayTracePipeline->rayTracingPipelineTraceRaysIndirect) +
+            ", Primitive Culling: " +
+            std::to_string(rayTracePipeline->rayTraversalPrimitiveCulling));
+
+    if (!rayTracePipeline->rayTracingPipeline ||
+        !rayTracePipeline->rayTracingPipelineTraceRaysIndirect ||
+        !rayTracePipeline->rayTraversalPrimitiveCulling)
+        return false;
+
+    auto *rayQuery = reinterpret_cast<vk::PhysicalDeviceRayQueryFeaturesKHR *>(
+        rayTracePipeline->pNext);
+
+    Logger::get().log(constants::LOG_CHANNEL_VULKAN, LogSeverity::trace,
+                      "Ray Query Feature: " +
+                          std::to_string(rayQuery->rayQuery));
+
+    if (!rayQuery->rayQuery)
+        return false;
+
+    return true;
+}
+
 /**
  * @brief Find if vulkan supports the required validation layers.
  *
@@ -144,7 +244,7 @@ static bool hasRequiredValidationLayers()
         vk::enumerateInstanceLayerProperties();
 
     auto missingLayers = std::find_if(
-        VALIDATION_LAYERS.begin(), VALIDATION_LAYERS.end(),
+        REQUIRED_VALIDATION_LAYERS.begin(), REQUIRED_VALIDATION_LAYERS.end(),
         [&layerProps](const char *vLayer) {
             return std::find_if(layerProps.begin(), layerProps.end(),
                                 [&vLayer](const vk::LayerProperties &l) {
@@ -152,7 +252,7 @@ static bool hasRequiredValidationLayers()
                                 }) == layerProps.end();
         });
 
-    return missingLayers == VALIDATION_LAYERS.end();
+    return missingLayers == REQUIRED_VALIDATION_LAYERS.end();
 }
 
 static vk::DeviceSize padUniformBufferSize(const vk::PhysicalDevice &device,

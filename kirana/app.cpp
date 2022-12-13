@@ -59,7 +59,7 @@ kirana::Application::Application()
       m_sceneManager{kirana::scene::SceneManager::get()}
 {
 #if DEBUG
-    m_logger.setMinSeverity(utils::LogSeverity::debug);
+    m_logger.setMinSeverity(utils::LogSeverity::trace);
 #else
     m_logger.setMinSeverity(utils::LogSeverity::info);
 #endif

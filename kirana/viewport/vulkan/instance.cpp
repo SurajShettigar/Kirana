@@ -53,7 +53,7 @@ kirana::viewport::vulkan::Instance::Instance(
         "Vulkan", VK_MAKE_VERSION(1, 0, 0), VK_API_VERSION_1_3);
 
     // Create Vulkan Instance
-    vk::InstanceCreateInfo createInfo({}, &appInfo, VALIDATION_LAYERS,
+    vk::InstanceCreateInfo createInfo({}, &appInfo, REQUIRED_VALIDATION_LAYERS,
                                       extensions);
     try
     {

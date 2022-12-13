@@ -43,26 +43,28 @@ void kirana::viewport::vulkan::VulkanRenderer::init(
     }
     if (m_descriptorPool && m_descriptorPool->isInitialized)
     {
-        m_currentScene =
-            new SceneData(m_device, m_allocator, m_renderpass, scene, shadingIndex);
+        m_currentScene = new SceneData(m_device, m_allocator, m_renderpass,
+                                       scene, shadingIndex);
     }
     if (m_descriptorPool && m_descriptorPool->isInitialized)
     {
-        m_drawer = new Drawer(m_device, m_allocator, m_descriptorPool, m_swapchain, m_renderpass,
-                              m_currentScene);
+        m_drawer = new Drawer(m_device, m_allocator, m_descriptorPool,
+                              m_swapchain, m_renderpass, m_currentScene);
         m_swapchainOutOfDateListener =
             m_drawer->addOnSwapchainOutOfDateListener(
                 [&]() { this->rebuildSwapchain(); });
     }
+    m_isInitialized = m_drawer->isInitialized;
 }
 
 void kirana::viewport::vulkan::VulkanRenderer::update()
 {
-
 }
 
 void kirana::viewport::vulkan::VulkanRenderer::render()
 {
+    if (!m_isInitialized)
+        return;
     if (!m_isMinimized)
         m_drawer->draw();
     else if (m_window->resolution[0] != 0 && m_window->resolution[1] != 0)

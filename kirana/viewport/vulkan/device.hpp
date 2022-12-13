@@ -18,6 +18,7 @@ class Device
     SwapchainSupportInfo m_swapchainSupportInfo;
     vk::Queue m_graphicsQueue;
     vk::Queue m_presentationQueue;
+    vk::PhysicalDeviceRayTracingPipelinePropertiesKHR m_raytracingProperties;
 
     const Instance *const m_instance;
     const Surface *const m_surface;
@@ -26,6 +27,8 @@ class Device
         const vk::PhysicalDevice &gpu, const vk::SurfaceKHR &surface);
     static SwapchainSupportInfo getSwapchainSupportInfo(
         const vk::PhysicalDevice &gpu, const vk::SurfaceKHR &surface);
+    static vk::PhysicalDeviceRayTracingPipelinePropertiesKHR
+    getRaytracingProperties(const vk::PhysicalDevice &gpu);
     /**
      * Selects a GPU based on its capabilities. GPU with the most features is
      * selected.
@@ -52,8 +55,13 @@ class Device
     const SwapchainSupportInfo &swapchainSupportInfo = m_swapchainSupportInfo;
     const vk::Queue &graphicsQueue = m_graphicsQueue;
     const vk::Queue &presentationQueue = m_presentationQueue;
+    const vk::PhysicalDeviceRayTracingPipelinePropertiesKHR
+        &raytracingProperties = m_raytracingProperties;
+
 
     void reinitializeSwapchainInfo();
+
+    [[nodiscard]] vk::DeviceAddress getBufferAddress(const vk::Buffer &buffer)const;
 
     void waitUntilIdle() const;
     void graphicsSubmit(const vk::Semaphore &waitSemaphore,

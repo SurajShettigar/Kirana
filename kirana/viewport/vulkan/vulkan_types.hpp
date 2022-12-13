@@ -153,7 +153,8 @@ struct MaterialData
     std::unique_ptr<Pipeline> pipeline;
 };
 
-struct ObjectData {
+struct ObjectData
+{
     math::Matrix4x4 modelMatrix;
 };
 
@@ -188,6 +189,23 @@ struct FrameData
     vk::Semaphore presentSemaphore;
     const CommandPool *commandPool = nullptr;
     const CommandBuffers *commandBuffers = nullptr;
+};
+
+/**
+ * Raytracing Bottom-Level Acceleration Structure
+ */
+struct BLASData
+{
+    std::vector<vk::AccelerationStructureGeometryKHR> geometries;
+    std::vector<vk::AccelerationStructureBuildRangeInfoKHR> offsets;
+    vk::BuildAccelerationStructureFlagsKHR flags;
+};
+
+/**
+ * Raytracing Top-Level Acceleration Structure
+ */
+struct TLASData
+{
 };
 
 } // namespace kirana::viewport::vulkan
