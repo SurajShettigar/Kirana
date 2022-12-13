@@ -14,25 +14,24 @@ layout (set = 0, binding = 0) uniform CameraBuffer {
     float farPlane;
 } camData;
 
-layout (set = 0, binding = 1) uniform ModelBuffer {
+struct ObjectData {
     mat4 modelMatrix; // Row-major
-} modelData;
+};
 
-// Push Constant input
-layout (push_constant) uniform constants
-{
-    mat4 modelMatrix; // Row-major
-} pushConstants;
+layout(std140,set = 1, binding = 0) readonly buffer ObjectBuffer{
+    ObjectData objects[];
+} objectBuffer;
+
 
 vec4 getVertexPosition()
 {
-    return transpose(pushConstants.modelMatrix * camData.viewProj)
+    return transpose(objectBuffer.objects[gl_BaseInstance].modelMatrix * camData.viewProj)
     * vec4(vPosition, 1.0f);
 }
 
 vec3 getWorldNormal()
 {
-    mat4 m = transpose(pushConstants.modelMatrix);
+    mat4 m = transpose(objectBuffer.objects[gl_BaseInstance].modelMatrix);
     return mat3(m[1][1] * m[2][2] - m[1][2] * m[2][1],
                 m[1][2] * m[2][0] - m[1][0] * m[2][2],
                 m[1][0] * m[2][1] - m[1][1] * m[2][0],
