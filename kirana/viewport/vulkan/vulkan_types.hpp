@@ -208,6 +208,27 @@ struct TLASData
 {
 };
 
+/**
+ * Raytracing Acceleration Structure
+ */
+struct ASData
+{
+    vk::AccelerationStructureKHR accelStruct;
+    AllocatedBuffer buffer;
+};
+
+/**
+ * Raytracing Acceleration Structure build data which will be submitted to
+ * command buffers.
+ */
+struct BuildASData
+{
+    vk::AccelerationStructureBuildGeometryInfoKHR buildInfo;
+    vk::AccelerationStructureBuildSizesInfoKHR sizeInfo;
+    const std::vector<vk::AccelerationStructureBuildRangeInfoKHR> *rangeInfo;
+    ASData accelStruct;
+};
+
 } // namespace kirana::viewport::vulkan
 
 #endif

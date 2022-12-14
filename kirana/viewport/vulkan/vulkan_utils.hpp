@@ -33,6 +33,8 @@ static vk::PhysicalDeviceAccelerationStructureFeaturesKHR
     DEVICE_ACCEL_STRUCT_FEATURES{true, false, false, false, true};
 static vk::PhysicalDeviceShaderDrawParametersFeatures
     DEVICE_SHADER_DRAW_PARAMS_FEATURES{true};
+static vk::PhysicalDeviceBufferDeviceAddressFeatures
+    DEVICE_BUFFER_DEVICE_ADDRESS_FEATURES{true};
 
 #define VK_HANDLE_RESULT(f, err)                                               \
     {                                                                          \
@@ -154,7 +156,9 @@ static inline vk::PhysicalDeviceFeatures2 getRequiredDeviceFeatures()
     DEVICE_RAYTRACE_PIPELINE_FEATURES.pNext = &DEVICE_RAY_QUERY_FEATURES;
     DEVICE_ACCEL_STRUCT_FEATURES.pNext = &DEVICE_RAYTRACE_PIPELINE_FEATURES;
     DEVICE_SHADER_DRAW_PARAMS_FEATURES.pNext = &DEVICE_ACCEL_STRUCT_FEATURES;
-    features.pNext = &DEVICE_SHADER_DRAW_PARAMS_FEATURES;
+    DEVICE_BUFFER_DEVICE_ADDRESS_FEATURES.pNext =
+        &DEVICE_SHADER_DRAW_PARAMS_FEATURES;
+    features.pNext = &DEVICE_BUFFER_DEVICE_ADDRESS_FEATURES;
 
     return features;
 }
@@ -168,9 +172,21 @@ static bool hasRequiredDeviceFeatures(
         !reqFeatures.features.tessellationShader)
         return false;
 
+    auto *bufferDeviceAddress =
+        reinterpret_cast<vk::PhysicalDeviceBufferDeviceAddressFeatures *>(
+            reqFeatures.pNext);
+
+    Logger::get().log(
+        constants::LOG_CHANNEL_VULKAN, LogSeverity::trace,
+        "Buffer Device Address Feature: " +
+            std::to_string(bufferDeviceAddress->bufferDeviceAddress));
+
+    if (!bufferDeviceAddress->bufferDeviceAddress)
+        return false;
+
     auto *shaderDraw =
         reinterpret_cast<vk::PhysicalDeviceShaderDrawParametersFeatures *>(
-            reqFeatures.pNext);
+            bufferDeviceAddress->pNext);
 
     Logger::get().log(constants::LOG_CHANNEL_VULKAN, LogSeverity::trace,
                       "Shader Draw Feature: " +

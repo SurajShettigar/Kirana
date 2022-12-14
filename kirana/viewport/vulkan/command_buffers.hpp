@@ -62,6 +62,13 @@ class CommandBuffers
                     uint32_t index = 0) const;
     void endRenderPass(uint32_t index = 0) const;
     void end(uint32_t index = 0) const;
+
+    // Raytracing functions
+    void buildAccelerationStructure(
+        const vk::AccelerationStructureBuildGeometryInfoKHR &geoInfo,
+        const vk::AccelerationStructureBuildRangeInfoKHR *rangeInfo,
+        vk::QueryPool &compactionPool, size_t firstCompaction,
+        bool addMemoryBarrier = true, uint32_t index = 0) const;
 };
 } // namespace kirana::viewport::vulkan
 

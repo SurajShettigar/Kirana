@@ -20,8 +20,9 @@ kirana::viewport::vulkan::Allocator::Allocator(const Instance *instance,
 {
     try
     {
-        vma::AllocatorCreateInfo createInfo({}, m_device->gpu,
-                                            m_device->current);
+        vma::AllocatorCreateInfo createInfo(
+            {vma::AllocatorCreateFlagBits::eBufferDeviceAddress}, m_device->gpu,
+            m_device->current);
         createInfo.setInstance(m_instance->current);
         m_current =
             std::make_unique<vma::Allocator>(vma::createAllocator(createInfo));

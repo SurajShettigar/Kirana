@@ -20,6 +20,7 @@ class Device;
 class RenderPass;
 class Allocator;
 class DescriptorSetLayout;
+class AccelerationStructure;
 class SceneData
 {
   private:
@@ -34,6 +35,7 @@ class SceneData
     AllocatedBuffer m_cameraBuffer;
     AllocatedBuffer m_worldDataBuffer;
     AllocatedBuffer m_objectBuffer;
+    AccelerationStructure *m_accelStructure;
 
     const Device *const m_device;
     const Allocator *const m_allocator;

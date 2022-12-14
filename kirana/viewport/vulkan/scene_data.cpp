@@ -8,6 +8,7 @@
 #include "descriptor_set_layout.hpp"
 #include "pipeline_layout.hpp"
 #include "pipeline.hpp"
+#include "acceleration_structure.hpp"
 
 #include <algorithm>
 #include <viewport_scene.hpp>
@@ -227,7 +228,11 @@ bool kirana::viewport::vulkan::SceneData::createMeshes()
                 const size_t verticesSize =
                     meshData.vertexCount * sizeof(scene::Vertex);
                 if (!m_allocator->allocateBufferToGPU(
-                        verticesSize, vk::BufferUsageFlagBits::eVertexBuffer,
+                        verticesSize,
+                        vk::BufferUsageFlagBits::eVertexBuffer |
+                            vk::BufferUsageFlagBits::eShaderDeviceAddress |
+                            vk::BufferUsageFlagBits::
+                                eAccelerationStructureBuildInputReadOnlyKHR,
                         &meshData.vertexBuffer, vertices.data()))
                     initialized = false;
                 // Create index buffer
@@ -235,7 +240,11 @@ bool kirana::viewport::vulkan::SceneData::createMeshes()
                 const size_t indicesSize =
                     meshData.indexCount * sizeof(uint32_t);
                 if (!m_allocator->allocateBufferToGPU(
-                        indicesSize, vk::BufferUsageFlagBits::eIndexBuffer,
+                        indicesSize,
+                        vk::BufferUsageFlagBits::eIndexBuffer |
+                            vk::BufferUsageFlagBits::eShaderDeviceAddress |
+                            vk::BufferUsageFlagBits::
+                                eAccelerationStructureBuildInputReadOnlyKHR,
                         &meshData.indexBuffer, indices.data()))
                     initialized = false;
             }
@@ -300,6 +309,8 @@ kirana::viewport::vulkan::SceneData::SceneData(
     m_isInitialized = createObjectBuffer();
     if (m_isInitialized)
     {
+        m_accelStructure =
+            new AccelerationStructure(m_device, m_allocator, m_meshes);
 
         Logger::get().log(constants::LOG_CHANNEL_VULKAN, LogSeverity::trace,
                           "Generated scene data for viewport");
@@ -316,6 +327,12 @@ kirana::viewport::vulkan::SceneData::~SceneData()
 {
     m_scene.removeOnWorldChangeEventListener(m_worldChangeListener);
     m_scene.removeOnCameraChangeEventListener(m_cameraChangeListener);
+
+    if (m_accelStructure)
+    {
+        delete m_accelStructure;
+        m_accelStructure = nullptr;
+    }
 
     if (m_objectBuffer.buffer)
     {

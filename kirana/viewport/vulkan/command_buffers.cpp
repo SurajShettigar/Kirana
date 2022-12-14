@@ -104,3 +104,30 @@ void kirana::viewport::vulkan::CommandBuffers::end(uint32_t index) const
 {
     m_current[index].end();
 }
+
+void kirana::viewport::vulkan::CommandBuffers::buildAccelerationStructure(
+    const vk::AccelerationStructureBuildGeometryInfoKHR &geoInfo,
+    const vk::AccelerationStructureBuildRangeInfoKHR *rangeInfo,
+    vk::QueryPool &compactionPool, size_t firstCompaction,
+    bool addMemoryBarrier, uint32_t index) const
+{
+    m_current[index].buildAccelerationStructuresKHR(geoInfo, rangeInfo);
+    if (addMemoryBarrier)
+    {
+        m_current[index].pipelineBarrier(
+            vk::PipelineStageFlagBits::eAccelerationStructureBuildKHR,
+            vk::PipelineStageFlagBits::eAccelerationStructureBuildKHR,
+            vk::DependencyFlags(),
+            vk::MemoryBarrier(
+                vk::AccessFlagBits::eAccelerationStructureWriteKHR,
+                vk::AccessFlagBits::eAccelerationStructureReadKHR),
+            nullptr, nullptr);
+    }
+    if (compactionPool)
+    {
+        m_current[index].writeAccelerationStructuresPropertiesKHR(
+            geoInfo.dstAccelerationStructure,
+            vk::QueryType::eAccelerationStructureCompactedSizeKHR,
+            compactionPool, firstCompaction);
+    }
+}

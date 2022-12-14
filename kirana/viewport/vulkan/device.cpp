@@ -222,13 +222,6 @@ void kirana::viewport::vulkan::Device::reinitializeSwapchainInfo()
     m_swapchainSupportInfo = getSwapchainSupportInfo(m_gpu, m_surface->current);
 }
 
-
-vk::DeviceAddress kirana::viewport::vulkan::Device::getBufferAddress(
-    const vk::Buffer &buffer) const
-{
-    return m_current.getBufferAddress(vk::BufferDeviceAddressInfo(buffer));
-}
-
 void kirana::viewport::vulkan::Device::waitUntilIdle() const
 {
     m_current.waitIdle();
@@ -250,6 +243,17 @@ void kirana::viewport::vulkan::Device::graphicsSubmit(
     m_graphicsQueue.submit(vk::SubmitInfo({}, {}, commandBuffer, {}), fence);
 }
 
+void kirana::viewport::vulkan::Device::graphicsSubmit(
+    const std::vector<vk::CommandBuffer> &commandBuffers) const
+{
+    m_graphicsQueue.submit(vk::SubmitInfo({}, {}, commandBuffers));
+}
+
+void kirana::viewport::vulkan::Device::graphicsWait() const
+{
+    m_graphicsQueue.waitIdle();
+}
+
 vk::Result kirana::viewport::vulkan::Device::present(
     const vk::Semaphore &semaphore, const vk::SwapchainKHR &swapchain,
     uint32_t imageIndex) const
@@ -269,4 +273,10 @@ vk::Result kirana::viewport::vulkan::Device::present(
         static_cast<VkQueue>(m_presentationQueue), &presentInfo);
 
     return vk::Result(result);
+}
+
+vk::DeviceAddress kirana::viewport::vulkan::Device::getBufferAddress(
+    const vk::Buffer &buffer) const
+{
+    return m_current.getBufferAddress(vk::BufferDeviceAddressInfo(buffer));
 }

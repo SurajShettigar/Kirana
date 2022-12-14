@@ -61,8 +61,6 @@ class Device
 
     void reinitializeSwapchainInfo();
 
-    [[nodiscard]] vk::DeviceAddress getBufferAddress(const vk::Buffer &buffer)const;
-
     void waitUntilIdle() const;
     void graphicsSubmit(const vk::Semaphore &waitSemaphore,
                         vk::PipelineStageFlags stageFlags,
@@ -71,9 +69,14 @@ class Device
                         const vk::Fence &fence) const;
     void graphicsSubmit(const vk::CommandBuffer &commandBuffer,
                         const vk::Fence &fence) const;
+    void graphicsSubmit(
+        const std::vector<vk::CommandBuffer> &commandBuffers) const;
+    void graphicsWait() const;
     [[nodiscard]] vk::Result present(const vk::Semaphore &semaphore,
                                      const vk::SwapchainKHR &swapchain,
                                      uint32_t imageIndex) const;
+    [[nodiscard]] vk::DeviceAddress getBufferAddress(
+        const vk::Buffer &buffer) const;
 };
 } // namespace kirana::viewport::vulkan
 

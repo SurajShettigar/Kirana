@@ -27,6 +27,8 @@ static const uint64_t VULKAN_COPY_BUFFER_WAIT_TIMEOUT =
 static const uint16_t VULKAN_FRAME_OVERLAP_COUNT = 2;
 static const uint16_t VULKAN_DESCRIPTOR_SET_MAX_COUNT = 10;
 static const uint16_t VULKAN_DESCRIPTOR_DEFAULT_POOL_SIZE = 10;
+static const uint64_t VULKAN_ACCELERATION_STRUCTURE_BATCH_SIZE_LIMIT =
+    268435456; // 256 MB
 
 static const char *VULKAN_SHADER_VERTEX_EXTENSION = ".vert.spv";
 static const char *VULKAN_SHADER_FRAGMENT_EXTENSION = ".frag.spv";
