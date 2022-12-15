@@ -105,6 +105,16 @@ void kirana::viewport::vulkan::CommandBuffers::end(uint32_t index) const
     m_current[index].end();
 }
 
+
+void kirana::viewport::vulkan::CommandBuffers::createMemoryBarrier(
+    vk::PipelineStageFlags srcStageMask, vk::PipelineStageFlags dstStageMask,
+    vk::DependencyFlags dependencyFlags, const vk::MemoryBarrier &barrier,
+    uint32_t index) const
+{
+    m_current[index].pipelineBarrier(
+        srcStageMask, dstStageMask, dependencyFlags, barrier, nullptr, nullptr);
+}
+
 void kirana::viewport::vulkan::CommandBuffers::buildAccelerationStructure(
     const vk::AccelerationStructureBuildGeometryInfoKHR &geoInfo,
     const vk::AccelerationStructureBuildRangeInfoKHR *rangeInfo,
@@ -114,14 +124,14 @@ void kirana::viewport::vulkan::CommandBuffers::buildAccelerationStructure(
     m_current[index].buildAccelerationStructuresKHR(geoInfo, rangeInfo);
     if (addMemoryBarrier)
     {
-        m_current[index].pipelineBarrier(
+        createMemoryBarrier(
             vk::PipelineStageFlagBits::eAccelerationStructureBuildKHR,
             vk::PipelineStageFlagBits::eAccelerationStructureBuildKHR,
             vk::DependencyFlags(),
             vk::MemoryBarrier(
                 vk::AccessFlagBits::eAccelerationStructureWriteKHR,
                 vk::AccessFlagBits::eAccelerationStructureReadKHR),
-            nullptr, nullptr);
+            index);
     }
     if (compactionPool)
     {

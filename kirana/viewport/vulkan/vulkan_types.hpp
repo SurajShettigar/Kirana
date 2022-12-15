@@ -160,6 +160,7 @@ struct ObjectData
 
 struct InstanceData
 {
+    uint32_t index;
     const math::Transform *transform;
     const bool *selected;
 };
@@ -169,6 +170,7 @@ struct InstanceData
  */
 struct MeshData
 {
+    uint32_t index;
     AllocatedBuffer vertexBuffer;
     AllocatedBuffer indexBuffer;
     size_t vertexCount;
@@ -192,6 +194,15 @@ struct FrameData
 };
 
 /**
+ * Raytracing Acceleration Structure
+ */
+struct ASData
+{
+    vk::AccelerationStructureKHR as;
+    AllocatedBuffer buffer;
+};
+
+/**
  * Raytracing Bottom-Level Acceleration Structure
  */
 struct BLASData
@@ -199,33 +210,8 @@ struct BLASData
     std::vector<vk::AccelerationStructureGeometryKHR> geometries;
     std::vector<vk::AccelerationStructureBuildRangeInfoKHR> offsets;
     vk::BuildAccelerationStructureFlagsKHR flags;
-};
-
-/**
- * Raytracing Top-Level Acceleration Structure
- */
-struct TLASData
-{
-};
-
-/**
- * Raytracing Acceleration Structure
- */
-struct ASData
-{
-    vk::AccelerationStructureKHR accelStruct;
-    AllocatedBuffer buffer;
-};
-
-/**
- * Raytracing Acceleration Structure build data which will be submitted to
- * command buffers.
- */
-struct BuildASData
-{
     vk::AccelerationStructureBuildGeometryInfoKHR buildInfo;
     vk::AccelerationStructureBuildSizesInfoKHR sizeInfo;
-    const std::vector<vk::AccelerationStructureBuildRangeInfoKHR> *rangeInfo;
     ASData accelStruct;
 };
 

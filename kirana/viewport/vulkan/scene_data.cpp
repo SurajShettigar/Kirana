@@ -202,9 +202,12 @@ bool kirana::viewport::vulkan::SceneData::createMeshes()
 {
     bool initialized = true;
     m_totalInstanceCount = 0;
+    uint32_t meshIndex = 0;
+    uint32_t instanceIndex = 0;
     for (const auto &r : m_scene.getRenderables())
     {
-        const InstanceData instance{r.object->transform, &r.selected};
+        InstanceData instance{instanceIndex++, r.object->transform,
+                              &r.selected};
         for (const auto &m : r.object->getMeshes())
         {
             const auto &meshName = m->getName();
@@ -212,12 +215,20 @@ bool kirana::viewport::vulkan::SceneData::createMeshes()
                 m_meshes[meshName].instances.emplace_back(instance);
             else
             {
+                // Mesh was found for the first time.
+
+                // Reset instance Index
+                instanceIndex = 0;
+                instance.index = instanceIndex;
+
                 // Create Mesh Data
                 const auto &vertices = m->getVertices();
                 const auto &indices = m->getIndices();
                 const auto &material = m->getMaterial();
 
                 MeshData &meshData = m_meshes[meshName];
+                // Assign index
+                meshData.index = meshIndex++;
                 // Assign material
                 meshData.material =
                     &findMaterial(material->getName(), r.overrideMaterial);

@@ -63,6 +63,12 @@ class CommandBuffers
     void endRenderPass(uint32_t index = 0) const;
     void end(uint32_t index = 0) const;
 
+    void createMemoryBarrier(vk::PipelineStageFlags srcStageMask,
+                             vk::PipelineStageFlags dstStageMask,
+                             vk::DependencyFlags dependencyFlags,
+                             const vk::MemoryBarrier &barrier,
+                             uint32_t index = 0) const;
+
     // Raytracing functions
     void buildAccelerationStructure(
         const vk::AccelerationStructureBuildGeometryInfoKHR &geoInfo,
