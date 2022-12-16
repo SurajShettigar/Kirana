@@ -7,7 +7,7 @@
 #include "device.hpp"
 #include "allocator.hpp"
 #include "swapchain.hpp"
-#include "depth_buffer.hpp"
+#include "texture.hpp"
 #include "renderpass.hpp"
 #include "descriptor_pool.hpp"
 #include "scene_data.hpp"
@@ -32,10 +32,10 @@ void kirana::viewport::vulkan::VulkanRenderer::init(
         m_swapchain = new Swapchain(m_device, m_surface);
     }
     if (m_swapchain && m_swapchain->isInitialized)
-        m_depthBuffer =
-            new DepthBuffer(m_device, m_allocator, m_window->resolution);
-    if (m_depthBuffer && m_depthBuffer->isInitialized)
-        m_renderpass = new RenderPass(m_device, m_swapchain, m_depthBuffer);
+        Texture::createDepthTexture(m_device, m_allocator, m_window->resolution,
+                                    m_depthTexture);
+    if (m_depthTexture && m_depthTexture->isInitialized)
+        m_renderpass = new RenderPass(m_device, m_swapchain, m_depthTexture);
 
     if (m_renderpass && m_renderpass->isInitialized)
     {
@@ -95,10 +95,10 @@ void kirana::viewport::vulkan::VulkanRenderer::clean()
         delete m_renderpass;
         m_renderpass = nullptr;
     }
-    if (m_depthBuffer)
+    if (m_depthTexture)
     {
-        delete m_depthBuffer;
-        m_depthBuffer = nullptr;
+        delete m_depthTexture;
+        m_depthTexture = nullptr;
     }
     if (m_swapchain)
     {
@@ -141,10 +141,10 @@ void kirana::viewport::vulkan::VulkanRenderer::rebuildSwapchain()
         delete m_renderpass;
         m_renderpass = nullptr;
     }
-    if (m_depthBuffer)
+    if (m_depthTexture)
     {
-        delete m_depthBuffer;
-        m_depthBuffer = nullptr;
+        delete m_depthTexture;
+        m_depthTexture = nullptr;
     }
     if (m_swapchain)
     {
@@ -155,10 +155,10 @@ void kirana::viewport::vulkan::VulkanRenderer::rebuildSwapchain()
     if (m_surface && m_surface->isInitialized)
         m_swapchain = new Swapchain(m_device, m_surface);
     if (m_swapchain && m_swapchain->isInitialized)
-        m_depthBuffer =
-            new DepthBuffer(m_device, m_allocator, m_window->resolution);
-    if (m_depthBuffer && m_depthBuffer->isInitialized)
-        m_renderpass = new RenderPass(m_device, m_swapchain, m_depthBuffer);
+        Texture::createDepthTexture(m_device, m_allocator, m_window->resolution,
+                                    m_depthTexture);
+    if (m_depthTexture && m_depthTexture->isInitialized)
+        m_renderpass = new RenderPass(m_device, m_swapchain, m_depthTexture);
     if (m_renderpass && m_renderpass->isInitialized)
         m_currentScene->rebuildPipeline(m_renderpass);
     m_drawer->reinitialize(m_swapchain, m_renderpass);

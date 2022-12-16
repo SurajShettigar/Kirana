@@ -287,11 +287,14 @@ kirana::viewport::vulkan::SceneData::SceneData(
     const Device *device, const Allocator *allocator,
     const RenderPass *renderPass, const scene::ViewportScene &scene,
     uint16_t shadingIndex)
-    : m_isInitialized{false}, m_currentShading{shadingIndex}, m_device{device},
-      m_allocator{allocator}, m_renderPass{renderPass},
-      m_globalDescSetLayout{new DescriptorSetLayout(m_device)},
+    : m_isInitialized{false}, m_currentShading{shadingIndex},
+      m_totalInstanceCount{0}, m_device{device}, m_allocator{allocator},
+      m_renderPass{renderPass}, m_globalDescSetLayout{new DescriptorSetLayout(
+                                    m_device)},
       m_objectDescSetLayout{new DescriptorSetLayout(
           m_device, DescriptorSetLayout::LayoutType::OBJECT)},
+      m_raytraceDescSetLayout{new DescriptorSetLayout(
+          m_device, DescriptorSetLayout::LayoutType::RAYTRACE)},
       m_scene{scene}
 {
     // Set the vulkan description of vertex buffers.
@@ -367,6 +370,11 @@ kirana::viewport::vulkan::SceneData::~SceneData()
         Logger::get().log(constants::LOG_CHANNEL_VULKAN, LogSeverity::trace,
                           "Scene data destroyed");
     }
+    if (m_raytraceDescSetLayout)
+    {
+        delete m_raytraceDescSetLayout;
+        m_raytraceDescSetLayout = nullptr;
+    }
     if (m_objectDescSetLayout)
     {
         delete m_objectDescSetLayout;
@@ -377,6 +385,12 @@ kirana::viewport::vulkan::SceneData::~SceneData()
         delete m_globalDescSetLayout;
         m_globalDescSetLayout = nullptr;
     }
+}
+
+const vk::AccelerationStructureKHR &kirana::viewport::vulkan::SceneData::
+    getAccelerationStructure() const
+{
+    return m_accelStructure->getAccelerationStructure();
 }
 
 const kirana::viewport::vulkan::MaterialData &kirana::viewport::vulkan::

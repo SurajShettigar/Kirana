@@ -54,6 +54,12 @@ class AccelerationStructure
     AccelerationStructure &operator=(const AccelerationStructure &as) = delete;
 
     const bool &isInitialized = m_isInitialized;
+
+    [[nodiscard]] inline const vk::AccelerationStructureKHR &
+    getAccelerationStructure() const
+    {
+        return m_TLASData.as;
+    }
 };
 } // namespace kirana::viewport::vulkan
 #endif

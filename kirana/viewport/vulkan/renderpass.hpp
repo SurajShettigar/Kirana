@@ -7,7 +7,7 @@ namespace kirana::viewport::vulkan
 {
 class Device;
 class Swapchain;
-class DepthBuffer;
+class Texture;
 
 class RenderPass
 {
@@ -18,11 +18,11 @@ class RenderPass
 
     const Device *const m_device;
     const Swapchain *const m_swapchain;
-    const DepthBuffer *const m_depthBuffer;
+    const Texture *const m_depthTexture;
 
   public:
     explicit RenderPass(const Device *device, const Swapchain *swapchain,
-                        const DepthBuffer *depthBuffer);
+                        const Texture *depthTexture);
     ~RenderPass();
     RenderPass(const RenderPass &renderpass) = delete;
     RenderPass &operator=(const RenderPass &renderpass) = delete;

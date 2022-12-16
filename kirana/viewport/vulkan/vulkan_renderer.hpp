@@ -20,7 +20,7 @@ class Surface;
 class Device;
 class Allocator;
 class Swapchain;
-class DepthBuffer;
+class Texture;
 class RenderPass;
 class DescriptorSetLayout;
 class DescriptorPool;
@@ -39,7 +39,7 @@ class VulkanRenderer
     Surface *m_surface = nullptr;
     Device *m_device = nullptr;
     Swapchain *m_swapchain = nullptr;
-    DepthBuffer *m_depthBuffer = nullptr;
+    const Texture *m_depthTexture = nullptr;
     RenderPass *m_renderpass = nullptr;
     DescriptorPool *m_descriptorPool = nullptr;
     Drawer *m_drawer = nullptr;

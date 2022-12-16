@@ -12,7 +12,8 @@ class DescriptorSetLayout
     enum class LayoutType
     {
         GLOBAL = 0,
-        OBJECT = 1
+        OBJECT = 1,
+        RAYTRACE = 2,
     };
 
   private:

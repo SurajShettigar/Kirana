@@ -22,7 +22,7 @@ static const std::vector<const char *> REQUIRED_DEVICE_EXTENSIONS{
     VK_KHR_ACCELERATION_STRUCTURE_EXTENSION_NAME,
     VK_KHR_RAY_TRACING_PIPELINE_EXTENSION_NAME, VK_KHR_RAY_QUERY_EXTENSION_NAME,
     VK_KHR_DEFERRED_HOST_OPERATIONS_EXTENSION_NAME};
-/// Vector of necessary validation layers for debugging.
+/// Vector of necessary validation numLayers for debugging.
 static const std::vector<const char *> REQUIRED_VALIDATION_LAYERS{
     "VK_LAYER_KHRONOS_validation"};
 
@@ -249,10 +249,10 @@ static bool hasRequiredDeviceFeatures(
 }
 
 /**
- * @brief Find if vulkan supports the required validation layers.
+ * @brief Find if vulkan supports the required validation numLayers.
  *
- * @return true if all required layers are present.
- * @return false if some or none of the layers are present.
+ * @return true if all required numLayers are present.
+ * @return false if some or none of the numLayers are present.
  */
 static bool hasRequiredValidationLayers()
 {

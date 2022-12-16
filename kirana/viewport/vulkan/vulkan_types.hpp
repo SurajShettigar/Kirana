@@ -186,6 +186,7 @@ struct FrameData
 {
     const DescriptorSet *globalDescriptorSet = nullptr;
     const DescriptorSet *objectDescriptorSet = nullptr;
+    const DescriptorSet *raytraceDescriptorSet = nullptr;
     vk::Fence renderFence;
     vk::Semaphore renderSemaphore;
     vk::Semaphore presentSemaphore;

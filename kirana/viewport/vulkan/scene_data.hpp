@@ -42,6 +42,7 @@ class SceneData
     const RenderPass *m_renderPass;
     const DescriptorSetLayout *m_globalDescSetLayout;
     const DescriptorSetLayout *m_objectDescSetLayout;
+    const DescriptorSetLayout *m_raytraceDescSetLayout;
 
     const scene::ViewportScene &m_scene;
     uint32_t m_cameraChangeListener;
@@ -86,6 +87,15 @@ class SceneData
     {
         return m_objectDescSetLayout;
     }
+
+    [[nodiscard]] inline const DescriptorSetLayout *
+    getRaytraceDescriptorSetLayout() const
+    {
+        return m_raytraceDescSetLayout;
+    }
+
+    [[nodiscard]] const vk::AccelerationStructureKHR &
+    getAccelerationStructure() const;
 
     [[nodiscard]] inline const std::unordered_map<std::string, MeshData>
         &getMeshData() const

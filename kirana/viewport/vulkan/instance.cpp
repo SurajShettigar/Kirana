@@ -36,11 +36,11 @@ kirana::viewport::vulkan::Instance::Instance(
 
     if (constants::VULKAN_USE_VALIDATION_LAYERS)
     {
-        if (!hasRequiredValidationLayers()) // Check for validation layers.
+        if (!hasRequiredValidationLayers()) // Check for validation numLayers.
         {
             Logger::get().log(
                 constants::LOG_CHANNEL_VULKAN, LogSeverity::error,
-                "Vulkan does not have the required validation layers");
+                "Vulkan does not have the required validation numLayers");
             m_isInitialized = false;
             return;
         }

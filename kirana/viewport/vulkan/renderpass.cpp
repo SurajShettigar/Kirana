@@ -1,14 +1,14 @@
 #include "renderpass.hpp"
 #include "device.hpp"
 #include "swapchain.hpp"
-#include "depth_buffer.hpp"
+#include "texture.hpp"
 #include "vulkan_utils.hpp"
 
 kirana::viewport::vulkan::RenderPass::RenderPass(
     const Device *const device, const Swapchain *const swapchain,
-    const DepthBuffer *const depthBuffer)
+    const Texture *const depthTexture)
     : m_isInitialized{false}, m_device{device}, m_swapchain{swapchain},
-      m_depthBuffer{depthBuffer}
+      m_depthTexture{depthTexture}
 {
     std::vector<vk::AttachmentDescription> attachments;
 
@@ -22,10 +22,11 @@ kirana::viewport::vulkan::RenderPass::RenderPass(
 
     // Description of the depth buffer image for z-testing.
     vk::AttachmentDescription depthAttachmentDesc(
-        vk::AttachmentDescriptionFlags(), m_depthBuffer->format,
-        vk::SampleCountFlagBits::e1, vk::AttachmentLoadOp::eClear,
-        vk::AttachmentStoreOp::eStore, vk::AttachmentLoadOp::eClear,
-        vk::AttachmentStoreOp::eDontCare, vk::ImageLayout::eUndefined,
+        vk::AttachmentDescriptionFlags(),
+        m_depthTexture->getProperties().format, vk::SampleCountFlagBits::e1,
+        vk::AttachmentLoadOp::eClear, vk::AttachmentStoreOp::eStore,
+        vk::AttachmentLoadOp::eClear, vk::AttachmentStoreOp::eDontCare,
+        vk::ImageLayout::eUndefined,
         vk::ImageLayout::eDepthStencilAttachmentOptimal);
 
     attachments.push_back(colorAttachmentDesc);
@@ -80,7 +81,7 @@ kirana::viewport::vulkan::RenderPass::RenderPass(
         for (const auto &i : m_swapchain->imageViews)
         {
             std::vector<vk::ImageView> framebufferAttachments{
-                i, m_depthBuffer->imageView};
+                i, m_depthTexture->getImageView()};
             frameBufferInfo.setAttachments(framebufferAttachments);
             m_framebuffers.emplace_back(
                 device->current.createFramebuffer(frameBufferInfo));

@@ -13,12 +13,12 @@ kirana::viewport::vulkan::DescriptorSetLayout::DescriptorSetLayout(
     case LayoutType::GLOBAL: {
         const vk::DescriptorSetLayoutBinding camBuffer(
             0, vk::DescriptorType::eUniformBufferDynamic, 1,
-            vk::ShaderStageFlagBits::eVertex);
+            vk::ShaderStageFlagBits::eVertex | vk::ShaderStageFlagBits::eRaygenKHR);
 
         const vk::DescriptorSetLayoutBinding worldDataBuffer(
             1, vk::DescriptorType::eUniformBufferDynamic, 1,
             vk::ShaderStageFlagBits::eVertex |
-                vk::ShaderStageFlagBits::eFragment);
+                vk::ShaderStageFlagBits::eFragment | vk::ShaderStageFlagBits::eClosestHitKHR);
 
         bindings.clear();
         bindings.emplace_back(camBuffer);
@@ -31,6 +31,18 @@ kirana::viewport::vulkan::DescriptorSetLayout::DescriptorSetLayout(
             vk::ShaderStageFlagBits::eVertex);
         bindings.clear();
         bindings.emplace_back(objectBuffer);
+    }
+    break;
+    case LayoutType::RAYTRACE: {
+        const vk::DescriptorSetLayoutBinding accelerationStructure(
+            0, vk::DescriptorType::eAccelerationStructureKHR, 1,
+            vk::ShaderStageFlagBits::eRaygenKHR);
+        const vk::DescriptorSetLayoutBinding outputImage(
+            1, vk::DescriptorType::eStorageImage, 1,
+            vk::ShaderStageFlagBits::eRaygenKHR);
+        bindings.clear();
+        bindings.emplace_back(accelerationStructure);
+        bindings.emplace_back(outputImage);
     }
     break;
     }

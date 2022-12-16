@@ -24,7 +24,10 @@ class DescriptorSet
     const vk::DescriptorSet &current = m_current;
 
     void writeBuffer(const vk::DescriptorBufferInfo &bufferInfo,
-                            vk::DescriptorType type, uint32_t binding) const;
+                     vk::DescriptorType type, uint32_t binding) const;
+    void writeAccelerationStructure(
+        const vk::AccelerationStructureKHR &accelStruct,
+        uint32_t binding) const;
 };
 } // namespace kirana::viewport::vulkan
 

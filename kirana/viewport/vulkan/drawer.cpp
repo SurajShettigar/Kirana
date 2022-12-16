@@ -45,9 +45,11 @@ kirana::viewport::vulkan::Drawer::Drawer(
         {
             bool setAllocated = m_descriptorPool->allocateDescriptorSets(
                 {&m_frames[i].globalDescriptorSet,
-                 &m_frames[i].objectDescriptorSet},
+                 &m_frames[i].objectDescriptorSet,
+                 &m_frames[i].raytraceDescriptorSet},
                 {m_scene->getGlobalDescriptorSetLayout(),
-                 m_scene->getObjectDescriptorSetLayout()});
+                 m_scene->getObjectDescriptorSetLayout(),
+                 m_scene->getRaytraceDescriptorSetLayout()});
 
             if (setAllocated)
             {
@@ -61,6 +63,9 @@ kirana::viewport::vulkan::Drawer::Drawer(
                 m_frames[i].objectDescriptorSet->writeBuffer(
                     m_scene->getObjectBuffer().descInfo,
                     vk::DescriptorType::eStorageBufferDynamic, 0);
+
+                m_frames[i].raytraceDescriptorSet->writeAccelerationStructure(
+                    m_scene->getAccelerationStructure(), 0);
             }
 
             m_frames[i].renderFence = m_device->current.createFence(
