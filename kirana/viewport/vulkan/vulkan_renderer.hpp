@@ -13,6 +13,11 @@ namespace kirana::window
 class Window;
 }
 
+namespace kirana::viewport
+{
+enum class Shading;
+}
+
 namespace kirana::viewport::vulkan
 {
 class Instance;
@@ -64,7 +69,7 @@ class VulkanRenderer
 
     /// Initializes vulkan.
     void init(const window::Window *window, const scene::ViewportScene &scene,
-              uint16_t shadingIndex);
+              viewport::Shading shading);
     /// Updates the transforms.
     void update();
     /// Executes vulkan draw calls.
@@ -73,7 +78,7 @@ class VulkanRenderer
     void clean();
 
     /// Switches the current pipeline to support the required shading.
-    void setShading(uint16_t shadingIndex);
+    void setShading(viewport::Shading shading);
     /**
      * Convert Scene object into vulkan SceneData object.
      * @param scene The Scene object to be converted.

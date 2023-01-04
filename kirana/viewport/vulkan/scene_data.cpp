@@ -185,14 +185,14 @@ kirana::viewport::vulkan::MaterialData &kirana::viewport::vulkan::SceneData::
 
     switch (m_currentShading)
     {
-    case 0:
+    case viewport::Shading::BASIC:
         return m_materials[constants::DEFAULT_MATERIAL_MAT_CAP_NAME];
-    case 1:
+    case viewport::Shading::WIREFRAME:
         return m_materials[constants::DEFAULT_MATERIAL_WIREFRAME_NAME];
     default:
-    case 2:
+    case viewport::Shading::REALTIME_PBR:
         // TODO: Add PBR Pipeline
-    case 3:
+    case viewport::Shading::RAYTRACE_PBR:
         // TODO: Add Raytrace PBR Pipeline
         return m_materials[materialName];
     }
@@ -206,8 +206,8 @@ bool kirana::viewport::vulkan::SceneData::createMeshes()
     uint32_t instanceIndex = 0;
     for (const auto &r : m_scene.getRenderables())
     {
-        InstanceData instance{instanceIndex++, r.object->transform,
-                              &r.selected};
+        InstanceData instance{instanceIndex++, r.object->transform, &r.selected,
+                              &r.renderVisible};
         for (const auto &m : r.object->getMeshes())
         {
             const auto &meshName = m->getName();
@@ -227,6 +227,8 @@ bool kirana::viewport::vulkan::SceneData::createMeshes()
                 const auto &material = m->getMaterial();
 
                 MeshData &meshData = m_meshes[meshName];
+                // Make it non-renderable at first
+                meshData.render = false;
                 // Assign index
                 meshData.index = meshIndex++;
                 // Assign material
@@ -243,7 +245,8 @@ bool kirana::viewport::vulkan::SceneData::createMeshes()
                         vk::BufferUsageFlagBits::eVertexBuffer |
                             vk::BufferUsageFlagBits::eShaderDeviceAddress |
                             vk::BufferUsageFlagBits::
-                                eAccelerationStructureBuildInputReadOnlyKHR,
+                                eAccelerationStructureBuildInputReadOnlyKHR |
+                            vk::BufferUsageFlagBits::eStorageBuffer,
                         &meshData.vertexBuffer, vertices.data()))
                     initialized = false;
                 // Create index buffer
@@ -255,10 +258,15 @@ bool kirana::viewport::vulkan::SceneData::createMeshes()
                         vk::BufferUsageFlagBits::eIndexBuffer |
                             vk::BufferUsageFlagBits::eShaderDeviceAddress |
                             vk::BufferUsageFlagBits::
-                                eAccelerationStructureBuildInputReadOnlyKHR,
+                                eAccelerationStructureBuildInputReadOnlyKHR |
+                            vk::BufferUsageFlagBits::eStorageBuffer,
                         &meshData.indexBuffer, indices.data()))
                     initialized = false;
             }
+            // If any one of the instance is visible, render it.
+            if (r.renderVisible)
+                m_meshes[meshName].render = true;
+
             ++m_totalInstanceCount;
         }
     }
@@ -286,8 +294,8 @@ bool kirana::viewport::vulkan::SceneData::createObjectBuffer()
 kirana::viewport::vulkan::SceneData::SceneData(
     const Device *device, const Allocator *allocator,
     const RenderPass *renderPass, const scene::ViewportScene &scene,
-    uint16_t shadingIndex)
-    : m_isInitialized{false}, m_currentShading{shadingIndex},
+    viewport::Shading shading)
+    : m_isInitialized{false}, m_currentShading{shading},
       m_totalInstanceCount{0}, m_device{device}, m_allocator{allocator},
       m_renderPass{renderPass}, m_globalDescSetLayout{new DescriptorSetLayout(
                                     m_device)},
@@ -399,9 +407,9 @@ const kirana::viewport::vulkan::MaterialData &kirana::viewport::vulkan::
     return m_materials[std::string(constants::DEFAULT_MATERIAL_OUTLINE_NAME)];
 }
 
-void kirana::viewport::vulkan::SceneData::setShading(uint16_t shadingIndex)
+void kirana::viewport::vulkan::SceneData::setShading(viewport::Shading shading)
 {
-    m_currentShading = shadingIndex;
+    m_currentShading = shading;
     rebuildPipeline(m_renderPass);
 }
 
@@ -456,5 +464,6 @@ const kirana::viewport::vulkan::AllocatedBuffer &kirana::viewport::vulkan::
 uint32_t kirana::viewport::vulkan::SceneData::getObjectBufferOffset(
     uint32_t offsetIndex) const
 {
-    return sizeof(vulkan::ObjectData) * m_totalInstanceCount * offsetIndex;
+    return static_cast<uint32_t>(sizeof(vulkan::ObjectData) *
+                                 m_totalInstanceCount * offsetIndex);
 }

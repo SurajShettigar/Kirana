@@ -50,7 +50,7 @@ vk::DeviceAddress kirana::viewport::vulkan::AccelerationStructure::
 {
     return m_device->current.getAccelerationStructureAddressKHR(
         vk::AccelerationStructureDeviceAddressInfoKHR(
-            m_BLASData[meshIndex].accelStruct.as));
+            m_BLASData[m_meshIndexTable.at(meshIndex)].accelStruct.as));
 }
 
 void kirana::viewport::vulkan::AccelerationStructure::createBLAS(
@@ -58,6 +58,8 @@ void kirana::viewport::vulkan::AccelerationStructure::createBLAS(
 {
     for (const auto &m : meshes)
     {
+        if (!m.second.render)
+            continue;
         const vk::DeviceAddress &vertexBufferAdd =
             m_device->getBufferAddress(*m.second.vertexBuffer.buffer);
         const vk::DeviceAddress &indexBufferAdd =
@@ -85,6 +87,8 @@ void kirana::viewport::vulkan::AccelerationStructure::createBLAS(
         blasData.geometries.emplace_back(geo);
         blasData.offsets.emplace_back(offset);
 
+        m_meshIndexTable[m.second.index] =
+            static_cast<uint32_t>(m_BLASData.size());
         m_BLASData.emplace_back(std::move(blasData));
     }
 }
@@ -96,10 +100,10 @@ bool kirana::viewport::vulkan::AccelerationStructure::buildBLAS(
     vk::DeviceSize maxScratchBufferSize = 0;
     uint32_t numCompactions = 0;
     vk::DeviceSize batchAccelStructSize = 0;
-    std::vector<std::vector<size_t>> batchBuildDataIndices;
+    std::vector<std::vector<uint32_t>> batchBuildDataIndices;
 
-    size_t batchIndex = 0;
-    size_t blasIndex = 0;
+    uint32_t batchIndex = 0;
+    uint32_t blasIndex = 0;
     for (auto &b : m_BLASData)
     {
         b.buildInfo = vk::AccelerationStructureBuildGeometryInfoKHR{
@@ -186,16 +190,16 @@ bool kirana::viewport::vulkan::AccelerationStructure::buildBLAS(
         return false;
     }
     bool commandBuffersBuilt = true;
-    for (size_t bIdx = 0; bIdx < batchBuildDataIndices.size(); bIdx++)
+    for (uint32_t bIdx = 0; bIdx < batchBuildDataIndices.size(); bIdx++)
     {
-        const size_t buildDataFirstIndex = batchBuildDataIndices[bIdx][0];
-        const size_t buildDataCount = batchBuildDataIndices[bIdx].size();
+        const uint32_t buildDataFirstIndex = batchBuildDataIndices[bIdx][0];
+        const uint32_t buildDataCount = batchBuildDataIndices[bIdx].size();
         if (compactionQueryPool)
             m_device->current.resetQueryPool(compactionQueryPool, 0,
                                              buildDataCount);
 
-        size_t compactionIndex = 0;
-        for (size_t i = buildDataFirstIndex;
+        uint32_t compactionIndex = 0;
+        for (uint32_t i = buildDataFirstIndex;
              i < buildDataFirstIndex + buildDataCount; i++)
         {
             if (createAccelerationStructure(
@@ -254,14 +258,16 @@ void kirana::viewport::vulkan::AccelerationStructure::createTLAS(
 {
     for (const auto &m : meshes)
     {
+        if (!m.second.render)
+            continue;
         for (const auto &i : m.second.instances)
         {
             m_TLASInstanceData.emplace_back(
-                std::move(vk::AccelerationStructureInstanceKHR{
+                vk::AccelerationStructureInstanceKHR{
                     getVulkanTransformMatrix(i.transform->getMatrix()),
                     m.second.index + i.index, 0xFF, 0,
                     vk::GeometryInstanceFlagBitsKHR::eTriangleCullDisable,
-                    getBLASAddress(m.second.index)}));
+                    getBLASAddress(m.second.index)});
         }
     }
 }

@@ -20,8 +20,7 @@ void kirana::viewport::Viewport::init(const window::Window *window,
     m_window = window;
     m_prevShading = m_currentShading;
     m_currentShading = shading;
-    m_renderer.init(m_window, scene,
-                    static_cast<uint16_t>(m_currentShading));
+    m_renderer.init(m_window, scene,m_currentShading);
 }
 
 void kirana::viewport::Viewport::update()
@@ -43,7 +42,7 @@ void kirana::viewport::Viewport::setShading(Shading shading)
 {
     m_prevShading = m_currentShading;
     m_currentShading = shading;
-    m_renderer.setShading(static_cast<uint16_t>(m_currentShading));
+    m_renderer.setShading(m_currentShading);
 }
 
 void kirana::viewport::Viewport::toggleWireframe()

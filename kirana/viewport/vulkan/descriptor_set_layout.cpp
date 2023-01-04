@@ -13,12 +13,14 @@ kirana::viewport::vulkan::DescriptorSetLayout::DescriptorSetLayout(
     case LayoutType::GLOBAL: {
         const vk::DescriptorSetLayoutBinding camBuffer(
             0, vk::DescriptorType::eUniformBufferDynamic, 1,
-            vk::ShaderStageFlagBits::eVertex | vk::ShaderStageFlagBits::eRaygenKHR);
+            vk::ShaderStageFlagBits::eVertex |
+                vk::ShaderStageFlagBits::eRaygenKHR);
 
         const vk::DescriptorSetLayoutBinding worldDataBuffer(
             1, vk::DescriptorType::eUniformBufferDynamic, 1,
             vk::ShaderStageFlagBits::eVertex |
-                vk::ShaderStageFlagBits::eFragment | vk::ShaderStageFlagBits::eClosestHitKHR);
+                vk::ShaderStageFlagBits::eFragment |
+                vk::ShaderStageFlagBits::eClosestHitKHR);
 
         bindings.clear();
         bindings.emplace_back(camBuffer);
@@ -28,7 +30,8 @@ kirana::viewport::vulkan::DescriptorSetLayout::DescriptorSetLayout(
     case LayoutType::OBJECT: {
         const vk::DescriptorSetLayoutBinding objectBuffer(
             0, vk::DescriptorType::eStorageBufferDynamic, 1,
-            vk::ShaderStageFlagBits::eVertex);
+            vk::ShaderStageFlagBits::eVertex |
+                vk::ShaderStageFlagBits::eClosestHitKHR);
         bindings.clear();
         bindings.emplace_back(objectBuffer);
     }

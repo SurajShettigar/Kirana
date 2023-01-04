@@ -40,6 +40,7 @@ struct Renderable
     const Object *object = nullptr;
     bool overrideMaterial = false;
     bool selected = false;
+    bool renderVisible = true;
 };
 
 static const SceneImportSettings DEFAULT_SCENE_IMPORT_SETTINGS{

@@ -13,6 +13,7 @@
 #include "pipeline_layout.hpp"
 #include "pipeline.hpp"
 #include "scene_data.hpp"
+#include "texture.hpp"
 #include "vulkan_utils.hpp"
 
 #include <constants.h>
@@ -29,6 +30,26 @@ uint32_t kirana::viewport::vulkan::Drawer::getCurrentFrameIndex() const
     return m_currentFrameNumber % utils::constants::VULKAN_FRAME_OVERLAP_COUNT;
 }
 
+void kirana::viewport::vulkan::Drawer::createRaytracedImageTexture()
+{
+    if (m_raytracedImage != nullptr)
+    {
+        delete m_raytracedImage;
+        m_raytracedImage = nullptr;
+    }
+    m_raytracedImage = new Texture(
+        m_device, m_allocator,
+        Texture::Properties{{m_swapchain->getSurfaceResolution()[0],
+                             m_swapchain->getSurfaceResolution()[1], 1},
+                            vk::Format::eR32G32B32A32Sfloat,
+                            vk::ImageUsageFlagBits::eColorAttachment |
+                                vk::ImageUsageFlagBits::eSampled |
+                                vk::ImageUsageFlagBits::eStorage,
+                            vk::ImageAspectFlagBits::eColor,
+                            true,
+                            vk::ImageLayout::eGeneral});
+}
+
 kirana::viewport::vulkan::Drawer::Drawer(
     const Device *const device, const Allocator *const allocator,
     const DescriptorPool *const descriptorPool,
@@ -38,6 +59,7 @@ kirana::viewport::vulkan::Drawer::Drawer(
       m_allocator{allocator}, m_descriptorPool{descriptorPool},
       m_swapchain{swapchain}, m_renderPass{renderPass}, m_scene{scene}
 {
+    createRaytracedImageTexture();
     m_frames.resize(utils::constants::VULKAN_FRAME_OVERLAP_COUNT);
     for (size_t i = 0; i < utils::constants::VULKAN_FRAME_OVERLAP_COUNT; i++)
     {
@@ -66,6 +88,9 @@ kirana::viewport::vulkan::Drawer::Drawer(
 
                 m_frames[i].raytraceDescriptorSet->writeAccelerationStructure(
                     m_scene->getAccelerationStructure(), 0);
+                m_frames[i].raytraceDescriptorSet->writeImage(
+                    m_raytracedImage->getDescriptorImageInfo(),
+                    vk::DescriptorType::eStorageImage, 1);
             }
 
             m_frames[i].renderFence = m_device->current.createFence(
@@ -129,6 +154,11 @@ kirana::viewport::vulkan::Drawer::~Drawer()
             }
         }
     }
+    if (m_raytracedImage != nullptr)
+    {
+        delete m_raytracedImage;
+        m_raytracedImage = nullptr;
+    }
 }
 
 void kirana::viewport::vulkan::Drawer::draw()
@@ -170,12 +200,16 @@ void kirana::viewport::vulkan::Drawer::draw()
 
     if (m_scene)
     {
+        bool renderVisible = m_scene->shouldRenderOnlyVisible();
         MeshPushConstants meshConstants;
         std::string lastMaterial;
         // TODO: Bind Vertex Buffers together and draw them at once.
         size_t meshIndex = 0;
         for (const auto &m : m_scene->getMeshData())
         {
+            if (renderVisible && !m.second.render)
+                continue;
+
             if (lastMaterial != m.second.material->name)
             {
                 frame.commandBuffers->bindPipeline(
@@ -248,6 +282,14 @@ void kirana::viewport::vulkan::Drawer::reinitialize(
 {
     m_swapchain = swapchain;
     m_renderPass = renderPass;
+    createRaytracedImageTexture();
+
+    for (size_t i = 0; i < utils::constants::VULKAN_FRAME_OVERLAP_COUNT; i++)
+    {
+        m_frames[i].raytraceDescriptorSet->writeImage(
+            m_raytracedImage->getDescriptorImageInfo(),
+            vk::DescriptorType::eStorageImage, 1);
+    }
 }
 
 /*void kirana::viewport::vulkan::Drawer::loadScene(SceneData *scene)

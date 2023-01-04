@@ -30,9 +30,12 @@ static const uint16_t VULKAN_DESCRIPTOR_DEFAULT_POOL_SIZE = 10;
 static const uint64_t VULKAN_ACCELERATION_STRUCTURE_BATCH_SIZE_LIMIT =
     268435456; // 256 MB
 
+static const char *VULKAN_SHADER_COMPUTE_EXTENSION = ".comp.spv";
 static const char *VULKAN_SHADER_VERTEX_EXTENSION = ".vert.spv";
 static const char *VULKAN_SHADER_FRAGMENT_EXTENSION = ".frag.spv";
-static const char *VULKAN_SHADER_COMPUTE_EXTENSION = ".comp.spv";
+static const char *VULKAN_SHADER_RAYTRACE_RAY_GEN_EXTENSION = ".rgen.spv";
+static const char *VULKAN_SHADER_RAYTRACE_MISS_EXTENSION = ".rmiss.spv";
+static const char *VULKAN_SHADER_RAYTRACE_CLOSEST_HIT_EXTENSION = ".rchit.spv";
 static const char *VULKAN_SHADER_MAIN_FUNC_NAME = "main";
 static const char *VULKAN_SHADER_DIR_PATH = SHADER_DIR;
 

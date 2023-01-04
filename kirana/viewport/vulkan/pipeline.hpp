@@ -13,7 +13,7 @@ struct VertexInputDescription;
 
 class Pipeline
 {
-  private:
+  protected:
     bool m_isInitialized = false;
     vk::Pipeline m_current;
 
@@ -22,26 +22,22 @@ class Pipeline
     const Shader *const m_shader;
     const PipelineLayout *const m_pipelineLayout;
 
-    bool build(
-        const std::vector<vk::VertexInputBindingDescription> &vertexBindings,
-        const std::vector<vk::VertexInputAttributeDescription>
-            &vertexAttributes,
-        const PipelineProperties &properties);
+    const VertexInputDescription m_vertexInputDesc;
+    const PipelineProperties m_properties;
 
+    virtual bool build();
   public:
     explicit Pipeline(const Device *device, const RenderPass *renderPass,
                       const Shader *shader,
                       const PipelineLayout *pipelineLayout,
                       const VertexInputDescription &vertexInputDesc,
                       const PipelineProperties &pipelineProperties);
-    ~Pipeline();
+    virtual ~Pipeline();
     Pipeline(const Pipeline &pipeline) = delete;
     Pipeline &operator=(const Pipeline &pipeline) = delete;
 
     const bool &isInitialized = m_isInitialized;
     const vk::Pipeline &current = m_current;
-
-    //    bool rebuild(const VertexInputDescription &vertexInputDesc);
 };
 } // namespace kirana::viewport::vulkan
 #endif

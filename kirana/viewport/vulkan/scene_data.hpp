@@ -5,6 +5,7 @@
 #include <unordered_map>
 #include <execution>
 #include "vulkan_types.hpp"
+#include "../viewport_types.hpp"
 
 namespace kirana::scene
 {
@@ -25,7 +26,7 @@ class SceneData
 {
   private:
     bool m_isInitialized = false;
-    uint16_t m_currentShading = 0;
+    viewport::Shading m_currentShading = viewport::Shading::BASIC;
     VertexInputDescription m_vertexDesc;
     std::unordered_map<std::string, std::unique_ptr<Shader>> m_shaders;
     mutable std::unordered_map<std::string, MaterialData> m_materials;
@@ -69,7 +70,7 @@ class SceneData
   public:
     SceneData(const Device *device, const Allocator *allocator,
               const RenderPass *renderPass, const scene::ViewportScene &scene,
-              uint16_t shadingIndex = 0);
+              viewport::Shading shading = viewport::Shading::BASIC);
     ~SceneData();
 
     SceneData(const SceneData &sceneData) = delete;
@@ -105,11 +106,15 @@ class SceneData
 
     inline bool shouldRenderOutline() const
     {
-        return m_currentShading == 0;
+        return m_currentShading == viewport::Shading::BASIC;
+    }
+    inline bool shouldRenderOnlyVisible() const
+    {
+        return m_currentShading == viewport::Shading::RAYTRACE_PBR;
     }
     [[nodiscard]] const MaterialData &getOutlineMaterial() const;
 
-    void setShading(uint16_t shadingIndex);
+    void setShading(viewport::Shading shading);
     void rebuildPipeline(const RenderPass *renderPass);
 
     [[nodiscard]] const AllocatedBuffer &getCameraBuffer() const;

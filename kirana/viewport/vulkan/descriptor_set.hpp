@@ -28,6 +28,8 @@ class DescriptorSet
     void writeAccelerationStructure(
         const vk::AccelerationStructureKHR &accelStruct,
         uint32_t binding) const;
+    void writeImage(const vk::DescriptorImageInfo &imageInfo,
+                    vk::DescriptorType type, uint32_t binding) const;
 };
 } // namespace kirana::viewport::vulkan
 

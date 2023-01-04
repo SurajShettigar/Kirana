@@ -101,6 +101,16 @@ struct VertexInputDescription
     std::vector<vk::VertexInputAttributeDescription> attributes;
 };
 
+enum class ShaderStage {
+    COMPUTE = 0,
+    VERTEX = 1,
+    FRAGMENT = 2,
+    RAYTRACE_RAY_GEN = 3,
+    RAYTRACE_MISS = 4,
+    RAYTRACE_CLOSEST_HIT = 5,
+    SHADER_STAGE_MAX = 6
+};
+
 struct PipelineProperties
 {
     vk::PrimitiveTopology primitiveType = vk::PrimitiveTopology::eTriangleList;
@@ -163,6 +173,7 @@ struct InstanceData
     uint32_t index;
     const math::Transform *transform;
     const bool *selected;
+    const bool *renderVisible;
 };
 
 /**
@@ -177,6 +188,7 @@ struct MeshData
     size_t indexCount;
     std::vector<InstanceData> instances;
     MaterialData *material;
+    bool render = false;
 };
 
 /**

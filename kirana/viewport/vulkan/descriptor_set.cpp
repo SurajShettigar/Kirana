@@ -14,10 +14,17 @@ void kirana::viewport::vulkan::DescriptorSet::writeBuffer(
 void kirana::viewport::vulkan::DescriptorSet::writeAccelerationStructure(
     const vk::AccelerationStructureKHR &accelStruct, uint32_t binding) const
 {
-    const vk::WriteDescriptorSetAccelerationStructureKHR writeInfo{accelStruct};
-    vk::WriteDescriptorSet write(m_current, binding, 0,
-                                 vk::DescriptorType::eAccelerationStructureKHR,
-                                 nullptr);
+    vk::WriteDescriptorSetAccelerationStructureKHR writeInfo{accelStruct};
+    vk::WriteDescriptorSet write(m_current, binding, 0, 1,
+                                 vk::DescriptorType::eAccelerationStructureKHR);
     write.pNext = &writeInfo;
+    m_device->current.updateDescriptorSets(write, {});
+}
+
+void kirana::viewport::vulkan::DescriptorSet::writeImage(
+    const vk::DescriptorImageInfo &imageInfo, vk::DescriptorType type,
+    uint32_t binding) const
+{
+    vk::WriteDescriptorSet write(m_current, binding, 0, type, imageInfo);
     m_device->current.updateDescriptorSets(write, {});
 }

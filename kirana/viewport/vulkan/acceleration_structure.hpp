@@ -1,6 +1,7 @@
 #ifndef ACCELERATION_STRUCTURE_HPP
 #define ACCELERATION_STRUCTURE_HPP
 
+#include <unordered_map>
 #include "vulkan_types.hpp"
 
 namespace kirana::viewport::vulkan
@@ -14,6 +15,7 @@ class AccelerationStructure
   private:
     bool m_isInitialized = false;
 
+    std::unordered_map<uint32_t , uint32_t> m_meshIndexTable;
     std::vector<BLASData> m_BLASData;
     std::vector<vk::AccelerationStructureInstanceKHR> m_TLASInstanceData;
     ASData m_TLASData;

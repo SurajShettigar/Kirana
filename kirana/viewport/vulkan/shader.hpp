@@ -1,7 +1,8 @@
 #ifndef SHADER_HPP
 #define SHADER_HPP
 
-#include <vulkan/vulkan.hpp>
+#include <unordered_map>
+#include "vulkan_types.hpp"
 
 namespace kirana::viewport::vulkan
 {
@@ -9,14 +10,13 @@ class Device;
 class Shader
 {
   private:
-    bool m_isInitialized = false;
     std::string m_name = "MatCap";
-    vk::ShaderModule m_compute = nullptr;
-    vk::ShaderModule m_vertex = nullptr;
-    vk::ShaderModule m_fragment = nullptr;
+    std::unordered_map<ShaderStage, vk::ShaderModule> m_stages;
 
     const Device *const m_device;
 
+    static std::string getPathForShaderStage(const std::string &name,
+                                             ShaderStage stage);
     static bool readShaderFile(const char *path, std::vector<uint32_t> *buffer);
 
   public:
@@ -25,11 +25,24 @@ class Shader
     Shader(const Shader &shader) = delete;
     Shader &operator=(const Shader &shader) = delete;
 
-    const bool &isInitialized = m_isInitialized;
     const std::string &name = m_name;
-    const vk::ShaderModule &compute = m_compute;
-    const vk::ShaderModule &vertex = m_vertex;
-    const vk::ShaderModule &fragment = m_fragment;
+
+    inline bool hasShaderStage(ShaderStage stage) const
+    {
+        return m_stages.find(stage) != m_stages.end();
+    }
+
+    [[nodiscard]] inline const std::unordered_map<ShaderStage, vk::ShaderModule>
+        &getAllModules() const
+    {
+        return m_stages;
+    }
+
+    [[nodiscard]] inline const vk::ShaderModule &getShaderModule(
+        ShaderStage stage) const
+    {
+        return m_stages.at(stage);
+    }
 };
 } // namespace kirana::viewport::vulkan
 

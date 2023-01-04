@@ -17,11 +17,11 @@ class Texture
         vk::ImageUsageFlags usage;
         vk::ImageAspectFlags aspect;
         bool generateDescriptorInfo = true;
+        vk::ImageLayout layout = vk::ImageLayout::eShaderReadOnlyOptimal;
         vk::ImageType imageType = vk::ImageType::e2D;
         vk::ImageViewType imageViewType = vk::ImageViewType::e2D;
         vk::SampleCountFlags sampleCount = vk::SampleCountFlagBits::e1;
         vk::ImageTiling tiling = vk::ImageTiling::eOptimal;
-        vk::ImageLayout layout = vk::ImageLayout::eShaderReadOnlyOptimal;
         uint32_t numMipLevels = 1;
         uint32_t numLayers = 1;
     };
@@ -56,6 +56,11 @@ class Texture
     [[nodiscard]] inline const vk::ImageView &getImageView() const
     {
         return m_imageView;
+    }
+
+    [[nodiscard]] inline const vk::DescriptorImageInfo &getDescriptorImageInfo() const
+    {
+        return m_image.descInfo;
     }
 
     static bool createDepthTexture(

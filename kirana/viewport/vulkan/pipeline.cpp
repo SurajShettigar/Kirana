@@ -4,18 +4,17 @@
 #include "shader.hpp"
 #include "pipeline_layout.hpp"
 #include "vulkan_utils.hpp"
-#include "vulkan_types.hpp"
 
 kirana::viewport::vulkan::Pipeline::Pipeline(
     const Device *const device, const RenderPass *const renderPass,
     const Shader *const shader, const PipelineLayout *const pipelineLayout,
     const VertexInputDescription &vertexInputDesc,
-    const PipelineProperties &pipelineProperties)
+    const PipelineProperties &properties)
     : m_isInitialized{false}, m_device{device}, m_renderPass{renderPass},
-      m_shader{shader}, m_pipelineLayout{pipelineLayout}
+      m_shader{shader}, m_pipelineLayout{pipelineLayout},
+      m_vertexInputDesc{vertexInputDesc}, m_properties{properties}
 {
-    build(vertexInputDesc.bindings, vertexInputDesc.attributes,
-          pipelineProperties);
+    m_isInitialized = build();
 }
 
 kirana::viewport::vulkan::Pipeline::~Pipeline()
@@ -31,39 +30,44 @@ kirana::viewport::vulkan::Pipeline::~Pipeline()
     }
 }
 
-bool kirana::viewport::vulkan::Pipeline::build(
-    const std::vector<vk::VertexInputBindingDescription> &vertexBindings,
-    const std::vector<vk::VertexInputAttributeDescription> &vertexAttributes,
-    const PipelineProperties &properties)
+bool kirana::viewport::vulkan::Pipeline::build()
 {
     std::vector<vk::PipelineShaderStageCreateInfo> shaderStages;
-    if (m_shader->compute)
+    for (const auto &m : m_shader->getAllModules())
     {
-        vk::PipelineShaderStageCreateInfo compute(
-            {}, vk::ShaderStageFlagBits::eCompute, m_shader->compute,
-            constants::VULKAN_SHADER_MAIN_FUNC_NAME);
-        shaderStages.push_back(compute);
-    }
-    if (m_shader->vertex)
-    {
-        vk::PipelineShaderStageCreateInfo vertex(
-            {}, vk::ShaderStageFlagBits::eVertex, m_shader->vertex,
-            constants::VULKAN_SHADER_MAIN_FUNC_NAME);
-        shaderStages.push_back(vertex);
-    }
-    if (m_shader->fragment)
-    {
-        vk::PipelineShaderStageCreateInfo fragment(
-            {}, vk::ShaderStageFlagBits::eFragment, m_shader->fragment,
-            constants::VULKAN_SHADER_MAIN_FUNC_NAME);
-        shaderStages.push_back(fragment);
+        vk::ShaderStageFlagBits stageFlag = vk::ShaderStageFlagBits::eVertex;
+        switch (m.first)
+        {
+        case ShaderStage::COMPUTE:
+            stageFlag = vk::ShaderStageFlagBits::eCompute;
+            break;
+        case ShaderStage::VERTEX:
+            stageFlag = vk::ShaderStageFlagBits::eVertex;
+            break;
+        case ShaderStage::FRAGMENT:
+            stageFlag = vk::ShaderStageFlagBits::eFragment;
+            break;
+        case ShaderStage::RAYTRACE_RAY_GEN:
+            stageFlag = vk::ShaderStageFlagBits::eRaygenKHR;
+            break;
+        case ShaderStage::RAYTRACE_MISS:
+            stageFlag = vk::ShaderStageFlagBits::eMissKHR;
+            break;
+        case ShaderStage::RAYTRACE_CLOSEST_HIT:
+            stageFlag = vk::ShaderStageFlagBits::eClosestHitKHR;
+            break;
+        default:
+            break;
+        }
+        shaderStages.emplace_back(vk::PipelineShaderStageCreateInfo(
+            {}, stageFlag, m.second, constants::VULKAN_SHADER_MAIN_FUNC_NAME));
     }
 
-    vk::PipelineVertexInputStateCreateInfo vertexInput({}, vertexBindings,
-                                                       vertexAttributes);
+    vk::PipelineVertexInputStateCreateInfo vertexInput(
+        {}, m_vertexInputDesc.bindings, m_vertexInputDesc.attributes);
 
     vk::PipelineInputAssemblyStateCreateInfo inputAssembly(
-        {}, properties.primitiveType, false);
+        {}, m_properties.primitiveType, false);
 
     const std::array<uint32_t, 2> &res = m_renderPass->getSurfaceResolution();
     vk::Viewport vp(0.0f, 0.0f, static_cast<float>(res[0]),
@@ -72,28 +76,28 @@ bool kirana::viewport::vulkan::Pipeline::build(
     vk::PipelineViewportStateCreateInfo viewport({}, vp, scissor);
 
     vk::PipelineRasterizationStateCreateInfo rasterizer(
-        {}, false, false, properties.polygonMode, properties.cullMode,
+        {}, false, false, m_properties.polygonMode, m_properties.cullMode,
         vk::FrontFace::eCounterClockwise, false, 0.0f, 0.0f, 0.0f,
-        properties.lineWidth);
+        m_properties.lineWidth);
 
-    vk::PipelineMultisampleStateCreateInfo msaa({}, properties.msaaLevel, false,
+    vk::PipelineMultisampleStateCreateInfo msaa({}, m_properties.msaaLevel, false,
                                                 1.0f, nullptr, false, false);
 
-    vk::StencilOpState stencilState{properties.stencilFailOp,
-                                    properties.stencilPassOp,
-                                    properties.stencilDepthFailOp,
-                                    properties.stencilCompareOp,
+    vk::StencilOpState stencilState{m_properties.stencilFailOp,
+                                    m_properties.stencilPassOp,
+                                    m_properties.stencilDepthFailOp,
+                                    m_properties.stencilCompareOp,
                                     0xFF,
                                     0xFF,
-                                    properties.stencilReference};
+                                    m_properties.stencilReference};
 
     vk::PipelineDepthStencilStateCreateInfo depthStencil(
-        {}, properties.enableDepth, properties.writeDepth,
-        properties.depthCompareOp, false, properties.stencilTest, stencilState,
+        {}, m_properties.enableDepth, m_properties.writeDepth,
+        m_properties.depthCompareOp, false, m_properties.stencilTest, stencilState,
         stencilState, 0.0f, 1.0f);
 
     vk::PipelineColorBlendAttachmentState attachment{
-        properties.alphaBlending,
+        m_properties.alphaBlending,
         vk::BlendFactor::eSrcAlpha,
         vk::BlendFactor::eOneMinusSrcAlpha,
         vk::BlendOp::eAdd,
@@ -128,12 +132,3 @@ bool kirana::viewport::vulkan::Pipeline::build(
     }
     return false;
 }
-
-/*
-bool kirana::viewport::vulkan::Pipeline::rebuild(
-    const VertexInputDescription &vertexDesc)
-{
-    if (m_current)
-        m_device->current.destroyPipeline(m_current);
-    return build(vertexDesc.bindings, vertexDesc.attributes);
-}*/

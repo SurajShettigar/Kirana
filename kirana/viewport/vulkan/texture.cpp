@@ -82,6 +82,8 @@ kirana::viewport::vulkan::Texture::~Texture()
 {
     if (m_device)
     {
+        if (m_image.descInfo.sampler)
+            m_device->current.destroySampler(m_image.descInfo.sampler);
         if (m_imageView)
             m_device->current.destroyImageView(m_imageView);
         if (m_image.image)

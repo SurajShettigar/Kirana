@@ -15,7 +15,7 @@ void kirana::scene::ViewportScene::addDefaultMaterials()
 void kirana::scene::ViewportScene::addDefaultRenderables()
 {
     // TODO: Add renderables for camera, lights, gizmos, axis
-    m_renderables.emplace_back(Renderable{m_grid.get(), true, false});
+    m_renderables.emplace_back(Renderable{m_grid.get(), true, false, false});
 }
 
 void kirana::scene::ViewportScene::onSceneLoaded()
@@ -32,7 +32,7 @@ void kirana::scene::ViewportScene::onSceneLoaded()
             m_sceneObjectIndexTable[name] = m_renderables.size();
             m_sceneObjectSelectionTable[name] = false;
             m_renderables.emplace_back(
-                Renderable{sceneObjects[i].get(), false, false});
+                Renderable{sceneObjects[i].get(), false, false, true});
         }
         toggleObjectSelection(m_currentScene.getRoot()->getName());
     }

@@ -6,6 +6,7 @@
 
 namespace kirana::viewport::vulkan
 {
+class Texture;
 class Device;
 class Allocator;
 class DescriptorPool;
@@ -21,6 +22,7 @@ class Drawer
     bool m_isInitialized = false;
     uint64_t m_currentFrameNumber = 0;
 
+    const Texture *m_raytracedImage = nullptr;
     std::vector<FrameData> m_frames;
 
     const Device *const m_device;
@@ -33,6 +35,7 @@ class Drawer
 
     [[nodiscard]] const FrameData &getCurrentFrame() const;
     [[nodiscard]] uint32_t getCurrentFrameIndex() const;
+    void createRaytracedImageTexture();
 
   public:
     explicit Drawer(const Device *device, const Allocator *allocator,
