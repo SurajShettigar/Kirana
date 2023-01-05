@@ -119,28 +119,13 @@ void kirana::viewport::vulkan::SceneData::createCameraBuffer()
     }
 }
 
-const kirana::viewport::vulkan::Shader *kirana::viewport::vulkan::SceneData::
-    createShader(const std::string &shaderName)
-{
-    if (m_shaders.find(shaderName) != m_shaders.end())
-        return m_shaders.at(shaderName).get();
-    else
-    {
-        std::unique_ptr<Shader> &val = m_shaders[shaderName];
-        val = std::make_unique<Shader>(m_device, shaderName);
-        return m_shaders[shaderName].get();
-    }
-}
-
 kirana::viewport::vulkan::MaterialData kirana::viewport::vulkan::SceneData::
     getMaterialData(const scene::Material &material)
 {
     MaterialData matData;
-    const Shader *shader = createShader(material.getShader());
-
     const scene::Material::MaterialProperties &prop = material.getProperties();
 
-    matData.properties = {
+    const Pipeline::Properties properties = {
         vk::PrimitiveTopology::eTriangleList,
         prop.renderWireframe ? vk::PolygonMode::eLine : vk::PolygonMode::eFill,
         vk::CullModeFlags(static_cast<VkCullModeFlagBits>(prop.cullMode)),
@@ -155,18 +140,15 @@ kirana::viewport::vulkan::MaterialData kirana::viewport::vulkan::SceneData::
         static_cast<vk::StencilOp>(prop.stencil.failOp),
         static_cast<vk::StencilOp>(prop.stencil.depthFailOp),
         static_cast<vk::StencilOp>(prop.stencil.passOp),
-        prop.stencil.reference
-
-    };
+        prop.stencil.reference};
 
     matData.name = material.getName();
     matData.shaderName = material.getShader();
     const std::vector<const DescriptorSetLayout *> descLayouts{
         m_globalDescSetLayout, m_objectDescSetLayout};
-    matData.layout = std::make_unique<PipelineLayout>(m_device, descLayouts);
     matData.pipeline = std::make_unique<Pipeline>(
-        m_device, m_renderPass, shader, matData.layout.get(), m_vertexDesc,
-        matData.properties);
+        m_device, m_renderPass, descLayouts, matData.name, matData.shaderName,
+        m_vertexDesc, properties);
 
     return matData;
 }
@@ -322,7 +304,6 @@ kirana::viewport::vulkan::SceneData::SceneData(
     // Create shaders, pipeline layouts and pipelines for all the materials in
     // the scene.
     m_materials.clear();
-    m_shaders.clear();
     createMaterials();
 
     // Create vertex buffers and map it to memory for each mesh of the scene.
@@ -417,11 +398,14 @@ void kirana::viewport::vulkan::SceneData::rebuildPipeline(
     const RenderPass *renderPass)
 {
     m_renderPass = renderPass;
+    const std::vector<const DescriptorSetLayout *> descLayouts{
+        m_globalDescSetLayout, m_objectDescSetLayout};
     for (auto &m : m_materials)
     {
         m.second.pipeline = std::make_unique<Pipeline>(
-            m_device, m_renderPass, m_shaders[m.second.shaderName].get(),
-            m.second.layout.get(), m_vertexDesc, m.second.properties);
+            m_device, m_renderPass, descLayouts, m.second.name,
+            m.second.shaderName, m_vertexDesc,
+            m.second.pipeline->getProperties());
     }
 }
 

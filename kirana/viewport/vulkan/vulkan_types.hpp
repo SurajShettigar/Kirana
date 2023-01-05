@@ -111,25 +111,6 @@ enum class ShaderStage {
     SHADER_STAGE_MAX = 6
 };
 
-struct PipelineProperties
-{
-    vk::PrimitiveTopology primitiveType = vk::PrimitiveTopology::eTriangleList;
-    vk::PolygonMode polygonMode = vk::PolygonMode::eFill;
-    vk::CullModeFlags cullMode = vk::CullModeFlagBits::eBack;
-    float lineWidth = 1.0f;
-    vk::SampleCountFlagBits msaaLevel = vk::SampleCountFlagBits::e1;
-    bool alphaBlending = false;
-    bool enableDepth = true;
-    bool writeDepth = true;
-    vk::CompareOp depthCompareOp = vk::CompareOp::eLessOrEqual;
-    bool stencilTest = false;
-    vk::CompareOp stencilCompareOp = vk::CompareOp::eAlways;
-    vk::StencilOp stencilFailOp = vk::StencilOp::eReplace;
-    vk::StencilOp stencilDepthFailOp = vk::StencilOp::eReplace;
-    vk::StencilOp stencilPassOp = vk::StencilOp::eReplace;
-    uint32_t stencilReference = 1;
-};
-
 // TODO: Remove it once descriptor set is implemented.
 struct MeshPushConstants
 {
@@ -158,8 +139,6 @@ struct MaterialData
 {
     std::string name;
     std::string shaderName;
-    PipelineProperties properties;
-    std::unique_ptr<PipelineLayout> layout;
     std::unique_ptr<Pipeline> pipeline;
 };
 

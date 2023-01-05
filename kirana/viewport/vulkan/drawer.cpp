@@ -201,7 +201,6 @@ void kirana::viewport::vulkan::Drawer::draw()
     if (m_scene)
     {
         bool renderVisible = m_scene->shouldRenderOnlyVisible();
-        MeshPushConstants meshConstants;
         std::string lastMaterial;
         // TODO: Bind Vertex Buffers together and draw them at once.
         size_t meshIndex = 0;
@@ -215,7 +214,7 @@ void kirana::viewport::vulkan::Drawer::draw()
                 frame.commandBuffers->bindPipeline(
                     m.second.material->pipeline->current);
                 frame.commandBuffers->bindDescriptorSets(
-                    m.second.material->layout->current,
+                    m.second.material->pipeline->getLayout().current,
                     {frame.globalDescriptorSet->current,
                      frame.objectDescriptorSet->current},
                     {m_scene->getCameraBufferOffset(frameIndex),

@@ -8,15 +8,12 @@ namespace kirana::viewport::vulkan
 class RaytracePipeline : public Pipeline
 {
   protected:
-    std::vector<vk::RayTracingShaderGroupCreateInfoKHR> m_shaderGroups;
-
     bool build() override;
 
   public:
-    explicit RaytracePipeline(const Device *device,
-                              const RenderPass *renderPass,
-                              const Shader *shader,
-                              const PipelineLayout *pipelineLayout);
+    explicit RaytracePipeline(const Device *device, const RenderPass *renderPass,
+                              const std::vector<const DescriptorSetLayout *> &descriptorSetLayouts,
+                              std::string name, std::string shaderName);
     ~RaytracePipeline() override;
 
     RaytracePipeline(const RaytracePipeline &pipeline) = delete;

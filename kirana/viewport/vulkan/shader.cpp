@@ -59,7 +59,8 @@ bool kirana::viewport::vulkan::Shader::readShaderFile(
 
 kirana::viewport::vulkan::Shader::Shader(const Device *const device,
                                          const std::string &name)
-    : m_name{name.empty() ? utils::constants::VULKAN_SHADER_DEFAULT_NAME
+    : m_isInitialized{false},
+      m_name{name.empty() ? utils::constants::VULKAN_SHADER_DEFAULT_NAME
                           : name},
       m_device{device}
 {
@@ -88,9 +89,15 @@ kirana::viewport::vulkan::Shader::Shader(const Device *const device,
             catch (...)
             {
                 handleVulkanException();
+                return;
             }
         }
     }
+    // TODO: Add a way to differentiate different shaders (raster, compute,
+    // raytrace).
+    // TODO: Add a robust way to check if all stages of a shader are
+    // initialized.
+    m_isInitialized = true;
 }
 
 kirana::viewport::vulkan::Shader::~Shader()

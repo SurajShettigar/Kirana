@@ -7,8 +7,13 @@
 
 bool kirana::viewport::vulkan::RaytracePipeline::build()
 {
+    const Shader shader(m_device, m_shaderName);
+
+    if (!shader.isInitialized)
+        return false;
+
     std::vector<vk::PipelineShaderStageCreateInfo> shaderStages;
-    for (const auto &m : m_shader->getAllModules())
+    for (const auto &m : shader.getAllModules())
     {
         vk::ShaderStageFlagBits stageFlag = vk::ShaderStageFlagBits::eVertex;
         switch (m.first)
@@ -38,21 +43,57 @@ bool kirana::viewport::vulkan::RaytracePipeline::build()
             {}, stageFlag, m.second, constants::VULKAN_SHADER_MAIN_FUNC_NAME));
     }
 
-    vk::RayTracingShaderGroupCreateInfoKHR shaderGroup {};
+    std::vector<vk::RayTracingShaderGroupCreateInfoKHR> shaderGroups;
+
+    vk::RayTracingShaderGroupCreateInfoKHR shaderGroup{};
     shaderGroup.anyHitShader = VK_SHADER_UNUSED_KHR;
     shaderGroup.closestHitShader = VK_SHADER_UNUSED_KHR;
     shaderGroup.generalShader = VK_SHADER_UNUSED_KHR;
     shaderGroup.intersectionShader = VK_SHADER_UNUSED_KHR;
 
-    // TODO: Create Raytrace pipeline
+    // Ray-Gen Shader
+    shaderGroup.type = vk::RayTracingShaderGroupTypeKHR::eGeneral;
+    shaderGroup.generalShader = 0; // Index/Order of shader stage
+    shaderGroups.push_back(shaderGroup);
+
+    // Miss Shader
+    shaderGroup.type = vk::RayTracingShaderGroupTypeKHR::eGeneral;
+    shaderGroup.generalShader = 1;
+    shaderGroups.push_back(shaderGroup);
+
+    // Hit group
+    shaderGroup.type = vk::RayTracingShaderGroupTypeKHR::eTrianglesHitGroup;
+    shaderGroup.closestHitShader = 2;
+    shaderGroup.generalShader = VK_SHADER_UNUSED_KHR;
+    shaderGroups.push_back(shaderGroup);
+
+    vk::RayTracingPipelineCreateInfoKHR createInfo({}, shaderStages,
+                                                   shaderGroups, 1);
+    createInfo.layout = m_pipelineLayout->current;
+
+    auto result =
+        m_device->current.createRayTracingPipelineKHR({}, {}, createInfo);
+    if (result.result != vk::Result::eSuccess)
+    {
+        Logger::get().log(constants::LOG_CHANNEL_VULKAN, LogSeverity::error,
+                          "Failed to create Raytrace Pipeline");
+        return false;
+    }
+    m_current = result.value;
+    Logger::get().log(constants::LOG_CHANNEL_VULKAN, LogSeverity::trace,
+                      "Raytrace Pipeline created");
+    return true;
 }
 
 kirana::viewport::vulkan::RaytracePipeline::RaytracePipeline(
-    const Device *device, const RenderPass *renderPass, const Shader *shader,
-    const PipelineLayout *pipelineLayout)
-    : Pipeline(device, renderPass, shader, pipelineLayout, {}, {})
+    const Device *const device, const RenderPass *const renderPass,
+    const std::vector<const DescriptorSetLayout *> &descriptorSetLayouts,
+    std::string name, std::string shaderName)
+    : Pipeline(device, renderPass, descriptorSetLayouts, std::move(name),
+               std::move(shaderName), {}, {})
 {
 }
+
 kirana::viewport::vulkan::RaytracePipeline::~RaytracePipeline()
 {
 }

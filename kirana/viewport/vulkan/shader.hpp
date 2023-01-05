@@ -10,6 +10,7 @@ class Device;
 class Shader
 {
   private:
+    bool m_isInitialized = false;
     std::string m_name = "MatCap";
     std::unordered_map<ShaderStage, vk::ShaderModule> m_stages;
 
@@ -25,6 +26,7 @@ class Shader
     Shader(const Shader &shader) = delete;
     Shader &operator=(const Shader &shader) = delete;
 
+    const bool &isInitialized = m_isInitialized;
     const std::string &name = m_name;
 
     inline bool hasShaderStage(ShaderStage stage) const

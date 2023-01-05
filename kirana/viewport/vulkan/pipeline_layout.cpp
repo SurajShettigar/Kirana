@@ -11,15 +11,11 @@ kirana::viewport::vulkan::PipelineLayout::PipelineLayout(
 {
     try
     {
-        // TODO: Temporary solution for push constants.
-        vk::PushConstantRange meshPushConstants(
-            vk::ShaderStageFlagBits::eVertex, 0, sizeof(MeshPushConstants));
-
         std::vector<vk::DescriptorSetLayout> layouts;
         for (const auto &l : descriptorSetLayouts)
             layouts.emplace_back(l->current);
         m_current = m_device->current.createPipelineLayout(
-            vk::PipelineLayoutCreateInfo({}, layouts, meshPushConstants));
+            vk::PipelineLayoutCreateInfo({}, layouts));
         Logger::get().log(constants::LOG_CHANNEL_VULKAN, LogSeverity::trace,
                           "Pipeline layout created");
         m_isInitialized = true;

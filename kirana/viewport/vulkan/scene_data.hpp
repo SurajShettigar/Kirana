@@ -28,7 +28,6 @@ class SceneData
     bool m_isInitialized = false;
     viewport::Shading m_currentShading = viewport::Shading::BASIC;
     VertexInputDescription m_vertexDesc;
-    std::unordered_map<std::string, std::unique_ptr<Shader>> m_shaders;
     mutable std::unordered_map<std::string, MaterialData> m_materials;
     std::unordered_map<std::string, MeshData> m_meshes;
     size_t m_totalInstanceCount;
@@ -58,7 +57,6 @@ class SceneData
     void createWorldDataBuffer();
     void createCameraBuffer();
 
-    const Shader *createShader(const std::string &shaderName);
     MaterialData getMaterialData(const scene::Material &material);
     void createMaterials();
     MaterialData &findMaterial(const std::string &materialName,
