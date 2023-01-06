@@ -7,8 +7,10 @@
 #include "shader.hpp"
 #include "descriptor_set_layout.hpp"
 #include "pipeline_layout.hpp"
-#include "pipeline.hpp"
+#include "raster_pipeline.hpp"
 #include "acceleration_structure.hpp"
+#include "raytrace_pipeline.hpp"
+#include "shader_binding_table.hpp"
 
 #include <algorithm>
 #include <viewport_scene.hpp>
@@ -34,7 +36,7 @@ void kirana::viewport::vulkan::SceneData::setVertexDescription()
 void kirana::viewport::vulkan::SceneData::onWorldChanged()
 {
     const vk::DeviceSize paddedSize =
-        vulkan::padUniformBufferSize(m_device->gpu, sizeof(scene::WorldData));
+        m_device->alignUniformBufferSize(sizeof(scene::WorldData));
 
     for (size_t i = 0; i < constants::VULKAN_FRAME_OVERLAP_COUNT; i++)
     {
@@ -57,7 +59,7 @@ void kirana::viewport::vulkan::SceneData::onCameraChanged()
     m_cameraData.farPlane = camera.farPlane;
 
     const vk::DeviceSize paddedSize =
-        vulkan::padUniformBufferSize(m_device->gpu, sizeof(vulkan::CameraData));
+        m_device->alignUniformBufferSize(sizeof(vulkan::CameraData));
     for (size_t i = 0; i < constants::VULKAN_FRAME_OVERLAP_COUNT; i++)
     {
         m_allocator->copyDataToMemory(
@@ -90,7 +92,7 @@ void kirana::viewport::vulkan::SceneData::onObjectChanged()
 void kirana::viewport::vulkan::SceneData::createWorldDataBuffer()
 {
     const vk::DeviceSize paddedSize =
-        vulkan::padUniformBufferSize(m_device->gpu, sizeof(scene::WorldData));
+        m_device->alignUniformBufferSize(sizeof(scene::WorldData));
     const vk::DeviceSize bufferSize =
         constants::VULKAN_FRAME_OVERLAP_COUNT * paddedSize;
     if (m_allocator->allocateBuffer(
@@ -106,7 +108,7 @@ void kirana::viewport::vulkan::SceneData::createWorldDataBuffer()
 void kirana::viewport::vulkan::SceneData::createCameraBuffer()
 {
     const vk::DeviceSize paddedSize =
-        vulkan::padUniformBufferSize(m_device->gpu, sizeof(vulkan::CameraData));
+        m_device->alignUniformBufferSize(sizeof(vulkan::CameraData));
     const vk::DeviceSize bufferSize =
         constants::VULKAN_FRAME_OVERLAP_COUNT * paddedSize;
     if (m_allocator->allocateBuffer(
@@ -119,13 +121,12 @@ void kirana::viewport::vulkan::SceneData::createCameraBuffer()
     }
 }
 
-kirana::viewport::vulkan::MaterialData kirana::viewport::vulkan::SceneData::
-    getMaterialData(const scene::Material &material)
+std::unique_ptr<kirana::viewport::vulkan::Pipeline> kirana::viewport::vulkan::
+    SceneData::getPipelineForMaterial(const scene::Material &material)
 {
-    MaterialData matData;
+    // TODO: Add support for raytrace materials / pipeline.
     const scene::Material::MaterialProperties &prop = material.getProperties();
-
-    const Pipeline::Properties properties = {
+    const RasterPipeline::Properties properties = {
         vk::PrimitiveTopology::eTriangleList,
         prop.renderWireframe ? vk::PolygonMode::eLine : vk::PolygonMode::eFill,
         vk::CullModeFlags(static_cast<VkCullModeFlagBits>(prop.cullMode)),
@@ -142,25 +143,23 @@ kirana::viewport::vulkan::MaterialData kirana::viewport::vulkan::SceneData::
         static_cast<vk::StencilOp>(prop.stencil.passOp),
         prop.stencil.reference};
 
-    matData.name = material.getName();
-    matData.shaderName = material.getShader();
     const std::vector<const DescriptorSetLayout *> descLayouts{
         m_globalDescSetLayout, m_objectDescSetLayout};
-    matData.pipeline = std::make_unique<Pipeline>(
-        m_device, m_renderPass, descLayouts, matData.name, matData.shaderName,
-        m_vertexDesc, properties);
 
-    return matData;
+    return std::make_unique<RasterPipeline>(
+        m_device, m_renderPass, descLayouts, material.getName(),
+        material.getShader(), m_vertexDesc, properties);
 }
 
 void kirana::viewport::vulkan::SceneData::createMaterials()
 {
     for (const auto &m : m_scene.getRenderableMaterials())
-        m_materials[m->getName()] = std::move(getMaterialData(*m));
+        m_materials[m->getName()] = std::move(getPipelineForMaterial(*m));
 }
 
-kirana::viewport::vulkan::MaterialData &kirana::viewport::vulkan::SceneData::
-    findMaterial(const std::string &materialName, bool overrideShading)
+const std::unique_ptr<kirana::viewport::vulkan::Pipeline>
+    &kirana::viewport::vulkan::SceneData::findMaterial(
+        const std::string &materialName, bool overrideShading)
 {
     if (overrideShading)
         return m_materials[materialName];
@@ -215,7 +214,7 @@ bool kirana::viewport::vulkan::SceneData::createMeshes()
                 meshData.index = meshIndex++;
                 // Assign material
                 meshData.material =
-                    &findMaterial(material->getName(), r.overrideMaterial);
+                    findMaterial(material->getName(), r.overrideMaterial).get();
                 // Assign instance data
                 meshData.instances.emplace_back(instance);
                 // Create vertex buffer
@@ -273,6 +272,29 @@ bool kirana::viewport::vulkan::SceneData::createObjectBuffer()
     return false;
 }
 
+
+bool kirana::viewport::vulkan::SceneData::initializeRaytracing()
+{
+    m_accelStructure =
+        new AccelerationStructure(m_device, m_allocator, m_meshes);
+
+    if (m_accelStructure->isInitialized)
+    {
+        const std::vector<const DescriptorSetLayout *> descLayouts{
+            m_globalDescSetLayout, m_raytraceDescSetLayout};
+        m_raytracePipeline =
+            new RaytracePipeline(m_device, m_renderPass, descLayouts,
+                                 constants::DEFAULT_MATERIAL_RAYTRACE_NAME,
+                                 constants::VULKAN_SHADER_RAYTRACE_NAME);
+    }
+    if (m_raytracePipeline && m_raytracePipeline->isInitialized)
+        m_shaderBindingTable =
+            new ShaderBindingTable(m_device, m_allocator, m_raytracePipeline);
+
+    return m_shaderBindingTable != nullptr &&
+           m_shaderBindingTable->isInitialized;
+}
+
 kirana::viewport::vulkan::SceneData::SceneData(
     const Device *device, const Allocator *allocator,
     const RenderPass *renderPass, const scene::ViewportScene &scene,
@@ -310,11 +332,9 @@ kirana::viewport::vulkan::SceneData::SceneData(
     m_meshes.clear();
     m_isInitialized = createMeshes();
     m_isInitialized = createObjectBuffer();
+    m_isInitialized = initializeRaytracing();
     if (m_isInitialized)
     {
-        m_accelStructure =
-            new AccelerationStructure(m_device, m_allocator, m_meshes);
-
         Logger::get().log(constants::LOG_CHANNEL_VULKAN, LogSeverity::trace,
                           "Generated scene data for viewport");
     }
@@ -330,6 +350,18 @@ kirana::viewport::vulkan::SceneData::~SceneData()
 {
     m_scene.removeOnWorldChangeEventListener(m_worldChangeListener);
     m_scene.removeOnCameraChangeEventListener(m_cameraChangeListener);
+
+    if (m_shaderBindingTable)
+    {
+        delete m_shaderBindingTable;
+        m_shaderBindingTable = nullptr;
+    }
+
+    if (m_raytracePipeline)
+    {
+        delete m_raytracePipeline;
+        m_raytracePipeline = nullptr;
+    }
 
     if (m_accelStructure)
     {
@@ -382,16 +414,17 @@ const vk::AccelerationStructureKHR &kirana::viewport::vulkan::SceneData::
     return m_accelStructure->getAccelerationStructure();
 }
 
-const kirana::viewport::vulkan::MaterialData &kirana::viewport::vulkan::
-    SceneData::getOutlineMaterial() const
+const kirana::viewport::vulkan::Pipeline *kirana::viewport::vulkan::SceneData::
+    getOutlineMaterial() const
 {
-    return m_materials[std::string(constants::DEFAULT_MATERIAL_OUTLINE_NAME)];
+    return m_materials[std::string(constants::DEFAULT_MATERIAL_OUTLINE_NAME)]
+        .get();
 }
 
-void kirana::viewport::vulkan::SceneData::setShading(viewport::Shading shading)
+const kirana::scene::WorldData &kirana::viewport::vulkan::SceneData::
+    getWorldData() const
 {
-    m_currentShading = shading;
-    rebuildPipeline(m_renderPass);
+    return m_scene.getWorldData();
 }
 
 void kirana::viewport::vulkan::SceneData::rebuildPipeline(
@@ -400,13 +433,20 @@ void kirana::viewport::vulkan::SceneData::rebuildPipeline(
     m_renderPass = renderPass;
     const std::vector<const DescriptorSetLayout *> descLayouts{
         m_globalDescSetLayout, m_objectDescSetLayout};
+    // TODO: Add support for raytrace materials / pipeline.
     for (auto &m : m_materials)
     {
-        m.second.pipeline = std::make_unique<Pipeline>(
-            m_device, m_renderPass, descLayouts, m.second.name,
-            m.second.shaderName, m_vertexDesc,
-            m.second.pipeline->getProperties());
+        m.second = std::make_unique<RasterPipeline>(
+            m_device, m_renderPass, descLayouts, m.second->name,
+            m.second->shaderName, m_vertexDesc,
+            reinterpret_cast<RasterPipeline *>(m.second.get())
+                ->getProperties());
     }
+    delete m_raytracePipeline;
+    m_raytracePipeline =
+        new RaytracePipeline(m_device, m_renderPass, descLayouts,
+                             constants::DEFAULT_MATERIAL_RAYTRACE_NAME,
+                             constants::VULKAN_SHADER_RAYTRACE_NAME);
 }
 
 const kirana::viewport::vulkan::AllocatedBuffer &kirana::viewport::vulkan::
@@ -418,10 +458,8 @@ const kirana::viewport::vulkan::AllocatedBuffer &kirana::viewport::vulkan::
 uint32_t kirana::viewport::vulkan::SceneData::getCameraBufferOffset(
     uint32_t offsetIndex) const
 {
-    return static_cast<uint32_t>(
-        vulkan::padUniformBufferSize(m_device->gpu,
-                                     sizeof(vulkan::CameraData)) *
-        offsetIndex);
+    return static_cast<uint32_t>(m_device->alignUniformBufferSize(
+        sizeof(vulkan::CameraData) * offsetIndex));
 }
 
 const kirana::viewport::vulkan::AllocatedBuffer &kirana::viewport::vulkan::
@@ -433,9 +471,8 @@ const kirana::viewport::vulkan::AllocatedBuffer &kirana::viewport::vulkan::
 uint32_t kirana::viewport::vulkan::SceneData::getWorldDataBufferOffset(
     uint32_t offsetIndex) const
 {
-    return static_cast<uint32_t>(
-        vulkan::padUniformBufferSize(m_device->gpu, sizeof(scene::WorldData)) *
-        offsetIndex);
+    return static_cast<uint32_t>(m_device->alignUniformBufferSize(
+        sizeof(scene::WorldData) * offsetIndex));
 }
 
 

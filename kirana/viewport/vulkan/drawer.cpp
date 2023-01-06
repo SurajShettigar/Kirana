@@ -13,6 +13,7 @@
 #include "pipeline_layout.hpp"
 #include "pipeline.hpp"
 #include "scene_data.hpp"
+#include <scene.hpp>
 #include "texture.hpp"
 #include "vulkan_utils.hpp"
 
@@ -47,7 +48,8 @@ void kirana::viewport::vulkan::Drawer::createRaytracedImageTexture()
                                 vk::ImageUsageFlagBits::eStorage,
                             vk::ImageAspectFlagBits::eColor,
                             true,
-                            vk::ImageLayout::eGeneral});
+                            vk::ImageLayout::eGeneral},
+        "Raytrace_Target");
 }
 
 kirana::viewport::vulkan::Drawer::Drawer(
@@ -163,15 +165,22 @@ kirana::viewport::vulkan::Drawer::~Drawer()
 
 void kirana::viewport::vulkan::Drawer::draw()
 {
-    const FrameData &frame = getCurrentFrame();
-    const uint32_t frameIndex = getCurrentFrameIndex();
+    if (!m_scene || !m_scene->isInitialized)
+        return;
+
+    const bool isRaytracing =
+        m_scene->getCurrentShading() == viewport::Shading::RAYTRACE_PBR;
+
+    const FrameData &frame = isRaytracing ? m_frames[0] : getCurrentFrame();
+    const uint32_t frameIndex = isRaytracing ? 0 : getCurrentFrameIndex();
+
     VK_HANDLE_RESULT(
         m_device->current.waitForFences(frame.renderFence, true,
                                         constants::VULKAN_FRAME_SYNC_TIMEOUT),
         "Failed to wait for render fence")
     m_device->current.resetFences(frame.renderFence);
 
-    vk::ResultValue<uint32_t> imgValue = m_swapchain->acquireNextImage(
+    const vk::ResultValue<uint32_t> imgValue = m_swapchain->acquireNextImage(
         constants::VULKAN_FRAME_SYNC_TIMEOUT, frame.presentSemaphore, nullptr);
     if (imgValue.result == vk::Result::eErrorOutOfDateKHR)
     {
@@ -185,7 +194,9 @@ void kirana::viewport::vulkan::Drawer::draw()
     const uint32_t imgIndex = imgValue.value;
 
     vk::ClearValue clearColor;
-    std::array<float, 4> color = {{0.05f, 0.05f, 0.05f, 1.0f}};
+    const math::Vector4 ambientColor = m_scene->getWorldData().ambientColor;
+    std::array<float, 4> color = {ambientColor[0], ambientColor[1],
+                                  ambientColor[2], ambientColor[3]};
     clearColor.setColor(vk::ClearColorValue(color));
 
     vk::ClearValue clearDepth;
@@ -193,64 +204,61 @@ void kirana::viewport::vulkan::Drawer::draw()
 
     frame.commandBuffers->reset();
     frame.commandBuffers->begin();
-    frame.commandBuffers->beginRenderPass(
-        m_renderPass->current, m_renderPass->framebuffers[imgIndex],
-        m_swapchain->imageExtent,
-        std::vector<vk::ClearValue>{clearColor, clearDepth});
 
-    if (m_scene)
+    if (!isRaytracing)
+        frame.commandBuffers->beginRenderPass(
+            m_renderPass->current, m_renderPass->framebuffers[imgIndex],
+            m_swapchain->imageExtent,
+            std::vector<vk::ClearValue>{clearColor, clearDepth});
+
+
+    std::string lastMaterial;
+    // TODO: Bind Vertex Buffers together and draw them at once.
+    size_t meshIndex = 0;
+    for (const auto &m : m_scene->getMeshData())
     {
-        bool renderVisible = m_scene->shouldRenderOnlyVisible();
-        std::string lastMaterial;
-        // TODO: Bind Vertex Buffers together and draw them at once.
-        size_t meshIndex = 0;
-        for (const auto &m : m_scene->getMeshData())
+        if (isRaytracing && !m.second.render)
+            continue;
+
+        if (lastMaterial != m.second.material->name)
         {
-            if (renderVisible && !m.second.render)
-                continue;
+            frame.commandBuffers->bindPipeline(m.second.material->current);
+            frame.commandBuffers->bindDescriptorSets(
+                m.second.material->getLayout().current,
+                {frame.globalDescriptorSet->current,
+                 frame.objectDescriptorSet->current},
+                {m_scene->getCameraBufferOffset(frameIndex),
+                 m_scene->getWorldDataBufferOffset(frameIndex),
+                 m_scene->getObjectBufferOffset(frameIndex)});
+            lastMaterial = m.second.material->name;
+        }
 
-            if (lastMaterial != m.second.material->name)
+        frame.commandBuffers->bindVertexBuffer(*(m.second.vertexBuffer.buffer),
+                                               0);
+        frame.commandBuffers->bindIndexBuffer(*(m.second.indexBuffer.buffer),
+                                              0);
+
+        // TODO: Implement instancing
+        for (size_t i = 0; i < m.second.instances.size(); i++)
+        {
+            frame.commandBuffers->drawIndexed(
+                static_cast<uint32_t>(m.second.indexCount), 1, 0, 0,
+                i + meshIndex);
+
+            // TODO: Find better way to render outline
+            if (*m.second.instances[0].selected &&
+                m_scene->shouldRenderOutline())
             {
-                frame.commandBuffers->bindPipeline(
-                    m.second.material->pipeline->current);
-                frame.commandBuffers->bindDescriptorSets(
-                    m.second.material->pipeline->getLayout().current,
-                    {frame.globalDescriptorSet->current,
-                     frame.objectDescriptorSet->current},
-                    {m_scene->getCameraBufferOffset(frameIndex),
-                     m_scene->getWorldDataBufferOffset(frameIndex),
-                     m_scene->getObjectBufferOffset(frameIndex)});
-                lastMaterial = m.second.material->name;
-            }
+                const auto outline = m_scene->getOutlineMaterial();
+                frame.commandBuffers->bindPipeline(outline->current);
+                lastMaterial = outline->name;
 
-            frame.commandBuffers->bindVertexBuffer(
-                *(m.second.vertexBuffer.buffer), 0);
-            frame.commandBuffers->bindIndexBuffer(
-                *(m.second.indexBuffer.buffer), 0);
-
-            // TODO: Implement instancing
-            for (size_t i = 0; i < m.second.instances.size(); i++)
-            {
                 frame.commandBuffers->drawIndexed(
                     static_cast<uint32_t>(m.second.indexCount), 1, 0, 0,
                     i + meshIndex);
-
-                // TODO: Find better way to render outline
-                if (*m.second.instances[0].selected &&
-                    m_scene->shouldRenderOutline())
-                {
-                    const MaterialData &outline = m_scene->getOutlineMaterial();
-                    frame.commandBuffers->bindPipeline(
-                        outline.pipeline->current);
-                    lastMaterial = outline.name;
-
-                    frame.commandBuffers->drawIndexed(
-                        static_cast<uint32_t>(m.second.indexCount), 1, 0, 0,
-                        i + meshIndex);
-                }
             }
-            meshIndex++;
         }
+        meshIndex++;
     }
 
     frame.commandBuffers->endRenderPass();

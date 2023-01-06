@@ -14,27 +14,6 @@ struct VertexInputDescription;
 
 class Pipeline
 {
-  public:
-    struct Properties
-    {
-        vk::PrimitiveTopology primitiveType =
-            vk::PrimitiveTopology::eTriangleList;
-        vk::PolygonMode polygonMode = vk::PolygonMode::eFill;
-        vk::CullModeFlags cullMode = vk::CullModeFlagBits::eBack;
-        float lineWidth = 1.0f;
-        vk::SampleCountFlagBits msaaLevel = vk::SampleCountFlagBits::e1;
-        bool alphaBlending = false;
-        bool enableDepth = true;
-        bool writeDepth = true;
-        vk::CompareOp depthCompareOp = vk::CompareOp::eLessOrEqual;
-        bool stencilTest = false;
-        vk::CompareOp stencilCompareOp = vk::CompareOp::eAlways;
-        vk::StencilOp stencilFailOp = vk::StencilOp::eReplace;
-        vk::StencilOp stencilDepthFailOp = vk::StencilOp::eReplace;
-        vk::StencilOp stencilPassOp = vk::StencilOp::eReplace;
-        uint32_t stencilReference = 1;
-    };
-
   protected:
     bool m_isInitialized = false;
 
@@ -47,28 +26,22 @@ class Pipeline
 
     vk::Pipeline m_current;
 
-    const VertexInputDescription m_vertexInputDesc;
-    const Properties m_properties;
-
-    virtual bool build();
+    virtual bool build() = 0;
 
   public:
     explicit Pipeline(
         const Device *device, const RenderPass *renderPass,
         const std::vector<const DescriptorSetLayout *> &descriptorSetLayouts,
-        std::string name, std::string shaderName,
-        VertexInputDescription vertexInputDesc, Properties properties);
+        std::string name, std::string shaderName);
     virtual ~Pipeline();
     Pipeline(const Pipeline &pipeline) = delete;
     Pipeline &operator=(const Pipeline &pipeline) = delete;
 
     const bool &isInitialized = m_isInitialized;
-    const vk::Pipeline &current = m_current;
+    const std::string &name = m_name;
+    const std::string &shaderName = m_shaderName;
 
-    [[nodiscard]] inline const Properties &getProperties() const
-    {
-        return m_properties;
-    }
+    const vk::Pipeline &current = m_current;
 
     [[nodiscard]] inline const PipelineLayout &getLayout() const
     {

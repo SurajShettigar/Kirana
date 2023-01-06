@@ -387,6 +387,13 @@ kirana::viewport::vulkan::AccelerationStructure::AccelerationStructure(
         createTLAS(meshes);
         m_isInitialized = buildTLAS();
     }
+
+    if (m_isInitialized)
+        Logger::get().log(constants::LOG_CHANNEL_VULKAN, LogSeverity::trace,
+                          "Raytrace Acceleration Structure created");
+    else
+        Logger::get().log(constants::LOG_CHANNEL_VULKAN, LogSeverity::error,
+                          "Failed to create Raytrace Acceleration Structure");
 }
 
 kirana::viewport::vulkan::AccelerationStructure::~AccelerationStructure()
@@ -408,4 +415,6 @@ kirana::viewport::vulkan::AccelerationStructure::~AccelerationStructure()
         m_allocator->free(b.accelStruct.buffer);
         m_device->current.destroyAccelerationStructureKHR(b.accelStruct.as);
     }
+    Logger::get().log(constants::LOG_CHANNEL_VULKAN, LogSeverity::trace,
+                      "Raytrace Acceleration Structure destroyed");
 }

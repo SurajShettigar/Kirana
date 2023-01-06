@@ -58,9 +58,25 @@ class Device
     const vk::PhysicalDeviceRayTracingPipelinePropertiesKHR
         &raytracingProperties = m_raytracingProperties;
 
+    inline vk::DeviceSize alignSize(vk::DeviceSize size,
+                                    vk::DeviceSize alignment) const
+    {
+        return alignment > 0 ? (size + alignment - 1) & ~(alignment - 1) : size;
+    }
+
+    inline uint32_t alignSize(uint32_t size,
+                                    uint32_t alignment) const
+    {
+        return alignment > 0 ? (size + alignment - 1) & ~(alignment - 1) : size;
+    }
+
+    inline vk::DeviceSize alignUniformBufferSize(vk::DeviceSize size) const
+    {
+        return alignSize(
+            size, m_gpu.getProperties().limits.minUniformBufferOffsetAlignment);
+    }
 
     void reinitializeSwapchainInfo();
-
     void waitUntilIdle() const;
     void graphicsSubmit(const vk::Semaphore &waitSemaphore,
                         vk::PipelineStageFlags stageFlags,

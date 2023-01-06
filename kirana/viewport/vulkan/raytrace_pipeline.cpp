@@ -76,12 +76,13 @@ bool kirana::viewport::vulkan::RaytracePipeline::build()
     if (result.result != vk::Result::eSuccess)
     {
         Logger::get().log(constants::LOG_CHANNEL_VULKAN, LogSeverity::error,
-                          "Failed to create Raytrace Pipeline");
+                          "Failed to create Raytrace Pipeline for material: " +
+                              m_name);
         return false;
     }
     m_current = result.value;
     Logger::get().log(constants::LOG_CHANNEL_VULKAN, LogSeverity::trace,
-                      "Raytrace Pipeline created");
+                      "Raytrace Pipeline created for material: " + m_name);
     return true;
 }
 
@@ -90,10 +91,14 @@ kirana::viewport::vulkan::RaytracePipeline::RaytracePipeline(
     const std::vector<const DescriptorSetLayout *> &descriptorSetLayouts,
     std::string name, std::string shaderName)
     : Pipeline(device, renderPass, descriptorSetLayouts, std::move(name),
-               std::move(shaderName), {}, {})
+               std::move(shaderName))
 {
+    if (m_pipelineLayout->isInitialized)
+        m_isInitialized = build();
 }
 
 kirana::viewport::vulkan::RaytracePipeline::~RaytracePipeline()
 {
+    Logger::get().log(constants::LOG_CHANNEL_VULKAN, LogSeverity::trace,
+                      "Raytrace Pipeline destroyed for material: " + m_name);
 }

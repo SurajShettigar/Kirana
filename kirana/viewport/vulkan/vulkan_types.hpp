@@ -131,17 +131,6 @@ struct CameraData
     alignas(4) float farPlane;
 };
 
-/**
- * Holds the mesh material data such as shader, pipeline layout and pipeline
- * for each mesh.
- */
-struct MaterialData
-{
-    std::string name;
-    std::string shaderName;
-    std::unique_ptr<Pipeline> pipeline;
-};
-
 struct ObjectData
 {
     math::Matrix4x4 modelMatrix;
@@ -166,7 +155,7 @@ struct MeshData
     size_t vertexCount;
     size_t indexCount;
     std::vector<InstanceData> instances;
-    MaterialData *material;
+    const Pipeline *material;
     bool render = false;
 };
 

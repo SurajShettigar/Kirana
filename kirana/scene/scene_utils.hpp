@@ -16,9 +16,9 @@ struct Vertex
 
 struct WorldData
 {
-    math::Vector4 ambientColor{0.5f, 0.5f, 0.5f, 1.0f};
+    math::Vector4 ambientColor{0.05f, 0.05f, 0.05f, 1.0f};
     math::Vector3 sunDirection{0.25f, -0.75f, -0.25f};
-    alignas(4) float sunIntensity{2.0f};
+    alignas(4) float sunIntensity{10.0f};
     alignas(16) math::Vector4 sunColor{1.0f, 1.0f, 1.0f, 1.0f};
 };
 

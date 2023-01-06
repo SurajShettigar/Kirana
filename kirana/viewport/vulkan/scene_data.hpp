@@ -9,6 +9,7 @@
 
 namespace kirana::scene
 {
+struct WorldData;
 class ViewportScene;
 class Material;
 struct Renderable;
@@ -22,20 +23,26 @@ class RenderPass;
 class Allocator;
 class DescriptorSetLayout;
 class AccelerationStructure;
+class RaytracePipeline;
+class ShaderBindingTable;
 class SceneData
 {
   private:
     bool m_isInitialized = false;
     viewport::Shading m_currentShading = viewport::Shading::BASIC;
     VertexInputDescription m_vertexDesc;
-    mutable std::unordered_map<std::string, MaterialData> m_materials;
+    mutable std::unordered_map<std::string, std::unique_ptr<Pipeline>>
+        m_materials;
     std::unordered_map<std::string, MeshData> m_meshes;
     size_t m_totalInstanceCount;
     CameraData m_cameraData;
     AllocatedBuffer m_cameraBuffer;
     AllocatedBuffer m_worldDataBuffer;
     AllocatedBuffer m_objectBuffer;
-    AccelerationStructure *m_accelStructure;
+    // Raytracing data
+    AccelerationStructure *m_accelStructure = nullptr;
+    RaytracePipeline *m_raytracePipeline = nullptr;
+    ShaderBindingTable *m_shaderBindingTable = nullptr;
 
     const Device *const m_device;
     const Allocator *const m_allocator;
@@ -57,13 +64,15 @@ class SceneData
     void createWorldDataBuffer();
     void createCameraBuffer();
 
-    MaterialData getMaterialData(const scene::Material &material);
+    std::unique_ptr<Pipeline> getPipelineForMaterial(
+        const scene::Material &material);
     void createMaterials();
-    MaterialData &findMaterial(const std::string &materialName,
-                               bool overrideShading = false);
+    const std::unique_ptr<Pipeline> &findMaterial(
+        const std::string &materialName, bool overrideShading = false);
 
     bool createMeshes();
     bool createObjectBuffer();
+    bool initializeRaytracing();
 
   public:
     SceneData(const Device *device, const Allocator *allocator,
@@ -93,8 +102,8 @@ class SceneData
         return m_raytraceDescSetLayout;
     }
 
-    [[nodiscard]] const vk::AccelerationStructureKHR &
-    getAccelerationStructure() const;
+    [[nodiscard]] const vk::AccelerationStructureKHR &getAccelerationStructure()
+        const;
 
     [[nodiscard]] inline const std::unordered_map<std::string, MeshData>
         &getMeshData() const
@@ -106,13 +115,20 @@ class SceneData
     {
         return m_currentShading == viewport::Shading::BASIC;
     }
-    inline bool shouldRenderOnlyVisible() const
-    {
-        return m_currentShading == viewport::Shading::RAYTRACE_PBR;
-    }
-    [[nodiscard]] const MaterialData &getOutlineMaterial() const;
 
-    void setShading(viewport::Shading shading);
+    [[nodiscard]] const Pipeline *getOutlineMaterial() const;
+
+    inline void setShading(viewport::Shading shading)
+    {
+        m_currentShading = shading;
+    };
+    inline viewport::Shading getCurrentShading() const
+    {
+        return m_currentShading;
+    }
+
+    [[nodiscard]] const scene::WorldData &getWorldData() const;
+
     void rebuildPipeline(const RenderPass *renderPass);
 
     [[nodiscard]] const AllocatedBuffer &getCameraBuffer() const;
