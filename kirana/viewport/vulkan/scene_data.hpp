@@ -30,6 +30,14 @@ class SceneData
   private:
     bool m_isInitialized = false;
     viewport::Shading m_currentShading = viewport::Shading::BASIC;
+
+    const Device *const m_device;
+    const Allocator *const m_allocator;
+    const RenderPass *m_renderPass;
+    const DescriptorSetLayout *m_globalDescSetLayout;
+    const DescriptorSetLayout *m_objectDescSetLayout;
+    const DescriptorSetLayout *m_raytraceDescSetLayout;
+
     VertexInputDescription m_vertexDesc;
     mutable std::unordered_map<std::string, std::unique_ptr<Pipeline>>
         m_materials;
@@ -43,13 +51,6 @@ class SceneData
     AccelerationStructure *m_accelStructure = nullptr;
     RaytracePipeline *m_raytracePipeline = nullptr;
     ShaderBindingTable *m_shaderBindingTable = nullptr;
-
-    const Device *const m_device;
-    const Allocator *const m_allocator;
-    const RenderPass *m_renderPass;
-    const DescriptorSetLayout *m_globalDescSetLayout;
-    const DescriptorSetLayout *m_objectDescSetLayout;
-    const DescriptorSetLayout *m_raytraceDescSetLayout;
 
     const scene::ViewportScene &m_scene;
     uint32_t m_cameraChangeListener;
@@ -84,6 +85,20 @@ class SceneData
 
     const bool &isInitialized = m_isInitialized;
 
+    inline bool shouldRenderOutline() const
+    {
+        return m_currentShading == viewport::Shading::BASIC;
+    }
+
+    inline void setShading(viewport::Shading shading)
+    {
+        m_currentShading = shading;
+    };
+    inline viewport::Shading getCurrentShading() const
+    {
+        return m_currentShading;
+    }
+
     [[nodiscard]] inline const DescriptorSetLayout *
     getGlobalDescriptorSetLayout() const
     {
@@ -102,34 +117,15 @@ class SceneData
         return m_raytraceDescSetLayout;
     }
 
-    [[nodiscard]] const vk::AccelerationStructureKHR &getAccelerationStructure()
-        const;
-
     [[nodiscard]] inline const std::unordered_map<std::string, MeshData>
         &getMeshData() const
     {
         return m_meshes;
     }
 
-    inline bool shouldRenderOutline() const
-    {
-        return m_currentShading == viewport::Shading::BASIC;
-    }
-
     [[nodiscard]] const Pipeline *getOutlineMaterial() const;
 
-    inline void setShading(viewport::Shading shading)
-    {
-        m_currentShading = shading;
-    };
-    inline viewport::Shading getCurrentShading() const
-    {
-        return m_currentShading;
-    }
-
     [[nodiscard]] const scene::WorldData &getWorldData() const;
-
-    void rebuildPipeline(const RenderPass *renderPass);
 
     [[nodiscard]] const AllocatedBuffer &getCameraBuffer() const;
     [[nodiscard]] uint32_t getCameraBufferOffset(uint32_t offsetIndex) const;
@@ -139,6 +135,19 @@ class SceneData
 
     [[nodiscard]] const AllocatedBuffer &getObjectBuffer() const;
     [[nodiscard]] uint32_t getObjectBufferOffset(uint32_t offsetIndex) const;
+
+    [[nodiscard]] const vk::AccelerationStructureKHR &getAccelerationStructure()
+        const;
+
+    [[nodiscard]] inline const RaytracePipeline &getRaytracePipeline() const
+    {
+        return *m_raytracePipeline;
+    }
+
+    [[nodiscard]] inline const ShaderBindingTable &getShaderBindingTable() const
+    {
+        return *m_shaderBindingTable;
+    }
 };
 } // namespace kirana::viewport::vulkan
 #endif

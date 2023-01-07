@@ -159,8 +159,6 @@ void kirana::viewport::vulkan::VulkanRenderer::rebuildSwapchain()
                                     m_depthTexture);
     if (m_depthTexture && m_depthTexture->isInitialized)
         m_renderpass = new RenderPass(m_device, m_swapchain, m_depthTexture);
-    if (m_renderpass && m_renderpass->isInitialized)
-        m_currentScene->rebuildPipeline(m_renderpass);
     m_drawer->reinitialize(m_swapchain, m_renderpass);
     utils::Logger::get().log(utils::constants::LOG_CHANNEL_VULKAN,
                              utils::LogSeverity::trace, "Swapchain rebuilt");

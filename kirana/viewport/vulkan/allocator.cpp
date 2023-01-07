@@ -27,7 +27,7 @@ kirana::viewport::vulkan::Allocator::Allocator(const Instance *instance,
         m_current =
             std::make_unique<vma::Allocator>(vma::createAllocator(createInfo));
 
-        m_copyFence = m_device->current.createFence(
+        m_commandFence = m_device->current.createFence(
             vk::FenceCreateInfo(vk::FenceCreateFlagBits::eSignaled));
         m_commandPool =
             new CommandPool(m_device, m_device->queueFamilyIndices.graphics);
@@ -45,7 +45,7 @@ kirana::viewport::vulkan::Allocator::Allocator(const Instance *instance,
 kirana::viewport::vulkan::Allocator::~Allocator()
 {
     VK_HANDLE_RESULT(
-        m_device->current.waitForFences(m_copyFence, true,
+        m_device->current.waitForFences(m_commandFence, true,
                                         constants::VULKAN_FRAME_SYNC_TIMEOUT),
         "Failed to wait for copy fence")
 
@@ -59,13 +59,19 @@ kirana::viewport::vulkan::Allocator::~Allocator()
         delete m_commandBuffers;
         m_commandBuffers = nullptr;
     }
-    if (m_device && m_copyFence)
-        m_device->current.destroyFence(m_copyFence);
+    if (m_device && m_commandFence)
+        m_device->current.destroyFence(m_commandFence);
     if (m_current)
         m_current->destroy();
 
     Logger::get().log(constants::LOG_CHANNEL_VULKAN, LogSeverity::trace,
                       "Allocator destroyed");
+}
+
+void kirana::viewport::vulkan::Allocator::unMapMemory(
+    const AllocatedBuffer &buffer) const
+{
+    m_current->unmapMemory(*buffer.allocation);
 }
 
 bool kirana::viewport::vulkan::Allocator::allocateBuffer(
@@ -116,7 +122,8 @@ bool kirana::viewport::vulkan::Allocator::allocateBufferToGPU(
 }
 
 bool kirana::viewport::vulkan::Allocator::allocateImage(
-    const vk::ImageCreateInfo &imageCreateInfo, vma::MemoryUsage memoryUsage,
+    const vk::ImageCreateInfo &imageCreateInfo, vk::ImageLayout layout,
+    vk::ImageSubresourceRange subresourceRange, vma::MemoryUsage memoryUsage,
     vk::MemoryPropertyFlags requiredFlags, AllocateImage *image) const
 {
     vma::AllocationCreateInfo allocCreateInfo({}, memoryUsage, requiredFlags);
@@ -126,6 +133,26 @@ bool kirana::viewport::vulkan::Allocator::allocateImage(
             m_current->createImage(imageCreateInfo, allocCreateInfo);
         image->image = std::make_unique<vk::Image>(data.first);
         image->allocation = std::make_unique<vma::Allocation>(data.second);
+
+        // Transition the image layout from undefined.
+        VK_HANDLE_RESULT(m_device->current.waitForFences(
+                             m_commandFence, true,
+                             constants::VULKAN_COPY_BUFFER_WAIT_TIMEOUT),
+                         "Failed to wait for copy fence")
+        m_device->current.resetFences(m_commandFence);
+        m_commandPool->reset();
+        m_commandBuffers->begin();
+        m_commandBuffers->createImageMemoryBarrier(
+            vk::PipelineStageFlagBits::eAllCommands,
+            vk::PipelineStageFlagBits::eAllCommands, {},
+            vk::ImageLayout::eUndefined, layout, *image->image,
+            subresourceRange);
+        m_commandBuffers->end();
+        m_device->graphicsSubmit(m_commandBuffers->current[0], m_commandFence);
+        VK_HANDLE_RESULT(m_device->current.waitForFences(
+                             m_commandFence, true,
+                             constants::VULKAN_COPY_BUFFER_WAIT_TIMEOUT),
+                         "Failed to wait for copy fence")
         return true;
     }
     catch (...)
@@ -133,12 +160,6 @@ bool kirana::viewport::vulkan::Allocator::allocateImage(
         handleVulkanException();
     }
     return false;
-}
-
-void kirana::viewport::vulkan::Allocator::unMapMemory(
-    const AllocatedBuffer &buffer) const
-{
-    m_current->unmapMemory(*buffer.allocation);
 }
 
 bool kirana::viewport::vulkan::Allocator::copyDataToMemory(
@@ -179,20 +200,20 @@ bool kirana::viewport::vulkan::Allocator::copyBuffer(
 {
     VK_HANDLE_RESULT(
         m_device->current.waitForFences(
-            m_copyFence, true, constants::VULKAN_COPY_BUFFER_WAIT_TIMEOUT),
+            m_commandFence, true, constants::VULKAN_COPY_BUFFER_WAIT_TIMEOUT),
         "Failed to wait for copy fence")
-    m_device->current.resetFences(m_copyFence);
+    m_device->current.resetFences(m_commandFence);
     m_commandPool->reset();
     m_commandBuffers->begin();
     vk::BufferCopy region(srcOffset, dstOffset, size);
     m_commandBuffers->copyBuffer(*stagingBuffer.buffer, *destBuffer.buffer,
                                  {region});
     m_commandBuffers->end();
-    m_device->graphicsSubmit(m_commandBuffers->current[0], m_copyFence);
+    m_device->graphicsSubmit(m_commandBuffers->current[0], m_commandFence);
 
     VK_HANDLE_RESULT(
         m_device->current.waitForFences(
-            m_copyFence, true, constants::VULKAN_COPY_BUFFER_WAIT_TIMEOUT),
+            m_commandFence, true, constants::VULKAN_COPY_BUFFER_WAIT_TIMEOUT),
         "Failed to wait for copy fence")
     return true;
 }

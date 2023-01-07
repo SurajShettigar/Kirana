@@ -31,6 +31,12 @@ class ShaderBindingTable
     ShaderBindingTable &operator=(const ShaderBindingTable &table) = delete;
 
     const bool &isInitialized = m_isInitialized;
+
+    const vk::StridedDeviceAddressRegionKHR &rayGenRegion = m_rayGenRegion;
+    const vk::StridedDeviceAddressRegionKHR &missRegion = m_missRegion;
+    const vk::StridedDeviceAddressRegionKHR &hitRegion = m_hitRegion;
+    const vk::StridedDeviceAddressRegionKHR &callableRegion = m_callableRegion;
+
 };
 } // namespace kirana::viewport::vulkan
 #endif

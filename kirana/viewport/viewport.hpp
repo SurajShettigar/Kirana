@@ -54,6 +54,8 @@ class Viewport
     void toggleWireframe();
     /// Toggles realtime PBR shading.
     void togglePBR();
+    /// Toggles raytraced PBR shading.
+    void toggleRaytracePBR();
     /**
      * Loads the scene into viewport.
      * @param scene The Scene object to be loaded.

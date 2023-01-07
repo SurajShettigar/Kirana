@@ -28,20 +28,27 @@ class Texture
 
   private:
     bool m_isInitialized = false;
-    Properties m_properties;
-    std::string m_name = "Texture";
-    AllocateImage m_image;
-    vk::ImageView m_imageView;
-
     const Device *const m_device;
     const Allocator *const m_allocator;
 
+    Properties m_properties;
+    std::string m_name = "Texture";
+    AllocateImage m_allocatedImage;
+    vk::Image m_image;
+    vk::ImageSubresourceRange m_subresourceRange;
+    vk::ImageView m_imageView;
+    vk::DescriptorImageInfo m_descInfo;
+
     vk::Sampler getSampler() const;
+    bool createImageView();
 
   public:
     explicit Texture(const Device *device, const Allocator *allocator,
                      const Properties &properties, std::string name = "Texture",
                      const void *pixelData = nullptr);
+    explicit Texture(const Device *device, const vk::Image &image,
+                     const Properties &properties,
+                     std::string name = "Texture");
     ~Texture();
     Texture(const Texture &texture) = delete;
     Texture &operator=(const Texture &texture) = delete;
@@ -53,14 +60,25 @@ class Texture
         return m_properties;
     }
 
+    [[nodiscard]] inline const vk::Image &getImage() const
+    {
+        return m_image;
+    }
+
     [[nodiscard]] inline const vk::ImageView &getImageView() const
     {
         return m_imageView;
     }
 
-    [[nodiscard]] inline const vk::DescriptorImageInfo &getDescriptorImageInfo() const
+    [[nodiscard]] inline const vk::ImageSubresourceRange &getImageSubresourceRange() const
     {
-        return m_image.descInfo;
+        return m_subresourceRange;
+    }
+
+    [[nodiscard]] inline const vk::DescriptorImageInfo &getDescriptorImageInfo()
+        const
+    {
+        return m_descInfo;
     }
 
     static bool createDepthTexture(

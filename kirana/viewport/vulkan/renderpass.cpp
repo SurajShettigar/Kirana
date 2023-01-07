@@ -78,10 +78,10 @@ kirana::viewport::vulkan::RenderPass::RenderPass(
 
         m_framebuffers.clear();
 
-        for (const auto &i : m_swapchain->imageViews)
+        for (const auto &i : m_swapchain->getImages())
         {
             std::vector<vk::ImageView> framebufferAttachments{
-                i, m_depthTexture->getImageView()};
+                i->getImageView(), m_depthTexture->getImageView()};
             frameBufferInfo.setAttachments(framebufferAttachments);
             m_framebuffers.emplace_back(
                 device->current.createFramebuffer(frameBufferInfo));

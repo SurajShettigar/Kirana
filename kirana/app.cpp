@@ -39,6 +39,8 @@ void kirana::Application::onKeyboardInput(KeyboardInput input)
                 m_windowManager.closeAllWindows();
         if (input.key == Key::W)
             m_viewport.toggleWireframe();
+        if (input.key == Key::R)
+            m_viewport.toggleRaytracePBR();
     }
 }
 

@@ -92,10 +92,16 @@ bool kirana::viewport::vulkan::RasterPipeline::build()
     const vk::PipelineColorBlendStateCreateInfo colorBlend(
         {}, false, vk::LogicOp::eCopy, attachment);
 
+    const std::vector<vk::DynamicState> dynamicStates{
+        vk::DynamicState::eViewport, vk::DynamicState::eScissor};
+    const vk::PipelineDynamicStateCreateInfo dynamicStateCreateInfo(
+        {}, dynamicStates);
+
     const vk::GraphicsPipelineCreateInfo graphicsPipelineCreateInfo(
         vk::PipelineCreateFlags(), shaderStages, &vertexInput, &inputAssembly,
         nullptr, &viewport, &rasterizer, &msaa, &depthStencil, &colorBlend,
-        nullptr, m_pipelineLayout->current, m_renderPass->current, 0);
+        &dynamicStateCreateInfo, m_pipelineLayout->current,
+        m_renderPass->current, 0);
 
     auto result = m_device->current.createGraphicsPipeline(
         nullptr, graphicsPipelineCreateInfo);

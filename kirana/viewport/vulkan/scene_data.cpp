@@ -281,7 +281,7 @@ bool kirana::viewport::vulkan::SceneData::initializeRaytracing()
     if (m_accelStructure->isInitialized)
     {
         const std::vector<const DescriptorSetLayout *> descLayouts{
-            m_globalDescSetLayout, m_raytraceDescSetLayout};
+            m_raytraceDescSetLayout};
         m_raytracePipeline =
             new RaytracePipeline(m_device, m_renderPass, descLayouts,
                                  constants::DEFAULT_MATERIAL_RAYTRACE_NAME,
@@ -408,12 +408,6 @@ kirana::viewport::vulkan::SceneData::~SceneData()
     }
 }
 
-const vk::AccelerationStructureKHR &kirana::viewport::vulkan::SceneData::
-    getAccelerationStructure() const
-{
-    return m_accelStructure->getAccelerationStructure();
-}
-
 const kirana::viewport::vulkan::Pipeline *kirana::viewport::vulkan::SceneData::
     getOutlineMaterial() const
 {
@@ -425,28 +419,6 @@ const kirana::scene::WorldData &kirana::viewport::vulkan::SceneData::
     getWorldData() const
 {
     return m_scene.getWorldData();
-}
-
-void kirana::viewport::vulkan::SceneData::rebuildPipeline(
-    const RenderPass *renderPass)
-{
-    m_renderPass = renderPass;
-    const std::vector<const DescriptorSetLayout *> descLayouts{
-        m_globalDescSetLayout, m_objectDescSetLayout};
-    // TODO: Add support for raytrace materials / pipeline.
-    for (auto &m : m_materials)
-    {
-        m.second = std::make_unique<RasterPipeline>(
-            m_device, m_renderPass, descLayouts, m.second->name,
-            m.second->shaderName, m_vertexDesc,
-            reinterpret_cast<RasterPipeline *>(m.second.get())
-                ->getProperties());
-    }
-    delete m_raytracePipeline;
-    m_raytracePipeline =
-        new RaytracePipeline(m_device, m_renderPass, descLayouts,
-                             constants::DEFAULT_MATERIAL_RAYTRACE_NAME,
-                             constants::VULKAN_SHADER_RAYTRACE_NAME);
 }
 
 const kirana::viewport::vulkan::AllocatedBuffer &kirana::viewport::vulkan::
@@ -487,4 +459,10 @@ uint32_t kirana::viewport::vulkan::SceneData::getObjectBufferOffset(
 {
     return static_cast<uint32_t>(sizeof(vulkan::ObjectData) *
                                  m_totalInstanceCount * offsetIndex);
+}
+
+const vk::AccelerationStructureKHR &kirana::viewport::vulkan::SceneData::
+    getAccelerationStructure() const
+{
+    return m_accelStructure->getAccelerationStructure();
 }

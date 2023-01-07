@@ -88,7 +88,6 @@ struct AllocateImage
 {
     std::unique_ptr<vk::Image> image;
     std::unique_ptr<vma::Allocation> allocation;
-    vk::DescriptorImageInfo descInfo;
 };
 
 /**

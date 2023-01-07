@@ -7,6 +7,7 @@ namespace kirana::viewport::vulkan
 {
 class Device;
 class Surface;
+class Texture;
 
 class Swapchain
 {
@@ -22,8 +23,7 @@ class Swapchain
 
     vk::SwapchainKHR m_prevSwapchain = nullptr;
     vk::SwapchainKHR m_current;
-    std::vector<vk::Image> m_images;
-    std::vector<vk::ImageView> m_imageViews;
+    std::vector<std::unique_ptr<Texture>> m_images;
 
     const Device *const m_device;
     const Surface *const m_surface;
@@ -43,12 +43,21 @@ class Swapchain
     const vk::SwapchainKHR &current = m_current;
     const vk::Format &imageFormat = m_surfaceFormat.format;
     const vk::Extent2D &imageExtent = m_extent;
-    const std::vector<vk::ImageView> &imageViews = m_imageViews;
 
     [[nodiscard]] vk::ResultValue<uint32_t> acquireNextImage(
         uint64_t timeout = 1000000000, const vk::Semaphore &semaphore = {},
         const vk::Fence &fence = {}) const;
     [[nodiscard]] std::array<uint32_t, 2> getSurfaceResolution() const;
+
+    inline const std::vector<std::unique_ptr<Texture>> &getImages() const
+    {
+        return m_images;
+    }
+
+    [[nodiscard]] inline const Texture &getImage(uint32_t index) const
+    {
+        return *m_images[index];
+    }
 };
 } // namespace kirana::viewport::vulkan
 

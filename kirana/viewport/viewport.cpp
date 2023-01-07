@@ -61,6 +61,14 @@ void kirana::viewport::Viewport::togglePBR()
         setShading(m_prevShading);
 }
 
+void kirana::viewport::Viewport::toggleRaytracePBR()
+{
+    if (m_currentShading != Shading::RAYTRACE_PBR)
+        setShading(Shading::RAYTRACE_PBR);
+    else
+        setShading(m_prevShading);
+}
+
 /*void kirana::viewport::Viewport::loadScene(const scene::Scene &scene)
 {
     m_renderer.loadScene(scene);

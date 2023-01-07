@@ -1,9 +1,11 @@
 #include "swapchain.hpp"
 #include "device.hpp"
 #include "surface.hpp"
+#include "texture.hpp"
 #include "vulkan_utils.hpp"
 
 #include <algorithm>
+#include <string>
 
 void kirana::viewport::vulkan::Swapchain::initializeSwapchainData()
 {
@@ -41,7 +43,7 @@ void kirana::viewport::vulkan::Swapchain::initializeSwapchainData()
     auto format = std::find_if(
         m_supportInfo.surfaceFormats.begin(),
         m_supportInfo.surfaceFormats.end(), [](const vk::SurfaceFormatKHR &f) {
-            return f.format == vk::Format::eB8G8R8A8Srgb &&
+            return f.format == vk::Format::eR32G32B32A32Sfloat &&
                    f.colorSpace == vk::ColorSpaceKHR::eSrgbNonlinear;
         });
     if (format != m_supportInfo.surfaceFormats.end())
@@ -71,9 +73,10 @@ bool kirana::viewport::vulkan::Swapchain::createSwapchain()
     vk::SwapchainCreateInfoKHR createInfo(
         vk::SwapchainCreateFlagsKHR(), m_surface->current, m_imageCount,
         m_surfaceFormat.format, m_surfaceFormat.colorSpace, m_extent, 1,
-        vk::ImageUsageFlagBits::eColorAttachment, sharingMode, {}, m_transform,
-        vk::CompositeAlphaFlagBitsKHR::eOpaque, m_presentMode, true,
-        m_prevSwapchain);
+        vk::ImageUsageFlagBits::eColorAttachment |
+            vk::ImageUsageFlagBits::eTransferDst,
+        sharingMode, {}, m_transform, vk::CompositeAlphaFlagBitsKHR::eOpaque,
+        m_presentMode, true, m_prevSwapchain);
 
     if (sharingMode == vk::SharingMode::eConcurrent)
     {
@@ -92,19 +95,23 @@ bool kirana::viewport::vulkan::Swapchain::createSwapchain()
         return false;
     }
 
-    m_images = m_device->current.getSwapchainImagesKHR(m_current);
+    std::vector<vk::Image> swapchainImages =
+        m_device->current.getSwapchainImagesKHR(m_current);
 
-    m_imageViews.clear();
-    vk::ComponentMapping cmpMap;
-    vk::ImageSubresourceRange subRR(vk::ImageAspectFlagBits::eColor, 0, 1, 0,
-                                    1);
-    for (const vk::Image &i : m_images)
+    m_images.clear();
+    for (uint32_t i = 0; i < swapchainImages.size(); i++)
     {
-        vk::ImageViewCreateInfo createInfo(
-            vk::ImageViewCreateFlags(), i, vk::ImageViewType::e2D,
-            m_surfaceFormat.format, cmpMap, subRR);
-        vk::ImageView imageView = m_device->current.createImageView(createInfo);
-        m_imageViews.push_back(imageView);
+        const Texture::Properties properties{
+            {m_extent.width, m_extent.height, 1},
+            m_surfaceFormat.format,
+            vk::ImageUsageFlagBits::eColorAttachment |
+                vk::ImageUsageFlagBits::eTransferDst,
+            vk::ImageAspectFlagBits::eColor,
+            false,
+            vk::ImageLayout::ePresentSrcKHR};
+        m_images.emplace_back(std::move(
+            std::make_unique<Texture>(m_device, swapchainImages[i], properties,
+                                      "Swapchain_" + std::to_string(i))));
     }
     return true;
 }
@@ -132,15 +139,6 @@ kirana::viewport::vulkan::Swapchain::~Swapchain()
             m_device->current.destroySwapchainKHR(m_current);
             Logger::get().log(constants::LOG_CHANNEL_VULKAN, LogSeverity::trace,
                               "Swapchain destroyed");
-        }
-        if (m_imageViews.size() > 0)
-        {
-            for (const vk::ImageView &i : m_imageViews)
-                m_device->current.destroyImageView(i);
-            m_imageViews.clear();
-            m_images.clear();
-            Logger::get().log(constants::LOG_CHANNEL_VULKAN, LogSeverity::trace,
-                              "Image-views destroyed");
         }
     }
 }

@@ -28,7 +28,7 @@ class Allocator
     bool m_isInitialized = false;
     std::unique_ptr<vma::Allocator> m_current;
 
-    vk::Fence m_copyFence;
+    vk::Fence m_commandFence;
     const CommandPool *m_commandPool;
     const CommandBuffers *m_commandBuffers;
 
@@ -52,15 +52,18 @@ class Allocator
                              vk::BufferUsageFlags usageFlags,
                              AllocatedBuffer *buffer, const void *data) const;
     bool allocateImage(const vk::ImageCreateInfo &imageCreateInfo,
+                       vk::ImageLayout layout,
+                       vk::ImageSubresourceRange subresourceRange,
                        vma::MemoryUsage memoryUsage,
                        vk::MemoryPropertyFlags requiredFlags,
                        AllocateImage *image) const;
-    bool copyDataToMemory(AllocatedBuffer &buffer, size_t size,
-                     uint32_t offset, const void *data) const;
+    bool copyDataToMemory(AllocatedBuffer &buffer, size_t size, uint32_t offset,
+                          const void *data) const;
     [[nodiscard]] bool copyBuffer(const AllocatedBuffer &stagingBuffer,
-                    const AllocatedBuffer &destBuffer, vk::DeviceSize size,
-                    vk::DeviceSize srcOffset = 0,
-                    vk::DeviceSize dstOffset = 0) const;
+                                  const AllocatedBuffer &destBuffer,
+                                  vk::DeviceSize size,
+                                  vk::DeviceSize srcOffset = 0,
+                                  vk::DeviceSize dstOffset = 0) const;
     void free(const AllocatedBuffer &buffer) const;
     void free(const AllocateImage &image) const;
 };
