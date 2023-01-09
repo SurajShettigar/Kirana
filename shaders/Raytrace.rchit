@@ -1,32 +1,19 @@
 #version 460
-#extension GL_GOOGLE_include_directive: enable
 #extension GL_EXT_ray_tracing : require
 #extension GL_EXT_nonuniform_qualifier : enable
+#extension GL_EXT_scalar_block_layout : enable
+#extension GL_GOOGLE_include_directive : enable
+
 #extension GL_EXT_shader_explicit_arithmetic_types_int32 : require
 #extension GL_EXT_shader_explicit_arithmetic_types_int64 : require
 #extension GL_EXT_buffer_reference2 : require
-#extension GL_EXT_scalar_block_layout : enable
 
 #include "base_raytrace.glsl"
 
-struct ObjectData {
-    mat4 modelMatrix; // Row-major
-    uint64_t vertexBufferAddress;
-    uint64_t indexBufferAddress;
-    vec3 color;
-};
-
 struct Vertex {
-    vec3 position;
-    vec3 normal;
-    vec3 color;
-};
-
-layout (buffer_reference) buffer VertexBuffer {
-    Vertex vertices[];
-};
-layout (buffer_reference) buffer IndexBuffer {
-    uint32_t indices[];
+    vec4 position;
+    vec4 normal;
+    vec4 color;
 };
 
 layout (set = 0, binding = 1) uniform WorldData
@@ -37,39 +24,53 @@ layout (set = 0, binding = 1) uniform WorldData
     vec4 sunColor;
 } worldData;
 
-layout (set = 1, binding = 0) readonly buffer ObjectBuffer {
-    ObjectData objects[];
-} objectBuffer;
+struct ObjectData {
+    mat4 localMat;
+    uint firstIndex;
+    uint vertexOffset;
+    uint padding1;
+    uint padding2;
+};
 
+layout (set = 1, binding = 3) readonly buffer ObjectBuffer {
+    ObjectData objects[];
+} objBuffer;
+
+layout (set = 1, binding = 4) readonly buffer VertexBuffer {
+    Vertex v[];
+} vBuffer;
+layout (set = 1, binding = 5) readonly buffer IndexBuffer {
+    uint32_t i[];
+} iBuffer;
 
 layout (location = 0) rayPayloadInEXT HitInfo payload;
-hitAttributeEXT vec3 attribs;
+hitAttributeEXT vec2 attribs;
 
 void main()
 {
-    ObjectData o = objectBuffer.objects[gl_InstanceCustomIndexEXT];
-    VertexBuffer vb = VertexBuffer(o.vertexBufferAddress);
-    IndexBuffer ib = IndexBuffer(o.indexBufferAddress);
+    ObjectData obj = objBuffer.objects[gl_InstanceCustomIndexEXT];
+    uint indexOffset = obj.firstIndex + (3 * gl_PrimitiveID);
+    uint vertexOffset = obj.vertexOffset;
 
-    uint32_t i01 = ib.indices[gl_PrimitiveID * 3];
-    uint32_t i02 = ib.indices[gl_PrimitiveID * 3 + 1];
-    uint32_t i03 = ib.indices[gl_PrimitiveID * 3 + 2];
+    u32vec3 index = u32vec3(iBuffer.i[indexOffset], iBuffer.i[indexOffset + 1], iBuffer.i[indexOffset + 2]);
+    index += u32vec3(vertexOffset);
 
-    const Vertex v0 = vb.vertices[i01];
-    const Vertex v1 = vb.vertices[i02];
-    const Vertex v2 = vb.vertices[i03];
+    Vertex v0 = vBuffer.v[index.x];
+    Vertex v1 = vBuffer.v[index.y];
+    Vertex v2 = vBuffer.v[index.z];
 
     const vec3 barycentrics = vec3(1.0 - attribs.x - attribs.y, attribs.x, attribs.y);
 
-    const vec3 pos = v0.position.xyz * barycentrics.x + v1.position.xyz * barycentrics.y + v2.position.xyz * barycentrics.z;
-    const vec3 worldPos = vec3(gl_ObjectToWorldEXT * vec4(pos, 1.0));
+    const vec4 pos = v0.position * barycentrics.x + v1.position * barycentrics.y + v2.position * barycentrics.z;
+    const vec3 worldPos = vec3(gl_ObjectToWorldEXT * vec4(pos.xyz, 1.0));
 
-    const vec3 normal = v0.normal.xyz * barycentrics.x + v1.normal.xyz * barycentrics.y + v2.normal.xyz * barycentrics.z;
-    const vec3 worldNormal = vec3(normalize(normal * gl_WorldToObjectEXT));
+    vec3 normal = v0.normal.xyz * barycentrics.x + v1.normal.xyz * barycentrics.y + v2.normal.xyz * barycentrics.z;
+    normal = normalize(normal);
+    vec3 worldNormal = vec3(normalize(normal * gl_WorldToObjectEXT));
 
     vec3 color = vec3(0.65, 0.65, 0.65);
-//    color *= worldData.ambientColor.rbg;
-//    color *= dot(worldNormal, normalize(- worldData.sunDirection)) * worldData.sunColor.rgb * worldData.sunIntensity;
+    color += worldData.ambientColor.rbg;
+    color *= worldData.sunColor.rgb * max(dot(worldNormal, normalize(-worldData.sunDirection)), 0.0);
 
-    payload.color = color;
+    payload.color = worldPos.rgb;
 }

@@ -9,9 +9,9 @@ class Object;
 class Material;
 struct Vertex
 {
-    math::Vector3 position;
-    alignas(16) math::Vector3 normal;
-    alignas(16) math::Vector3 color;
+    math::Vector4 position;
+    math::Vector4 normal;
+    math::Vector4 color;
 };
 
 struct WorldData

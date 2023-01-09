@@ -9,6 +9,7 @@
 
 namespace kirana::scene
 {
+struct Vertex;
 struct WorldData;
 class ViewportScene;
 class Material;
@@ -46,11 +47,17 @@ class SceneData
     CameraData m_cameraData;
     AllocatedBuffer m_cameraBuffer;
     AllocatedBuffer m_worldDataBuffer;
+    AllocatedBuffer m_vertexBuffer;
+    AllocatedBuffer m_indexBuffer;
     AllocatedBuffer m_objectBuffer;
     // Raytracing data
     AccelerationStructure *m_accelStructure = nullptr;
     RaytracePipeline *m_raytracePipeline = nullptr;
     ShaderBindingTable *m_shaderBindingTable = nullptr;
+    RaytracedGlobalData m_raytracedGlobalData;
+    AllocatedBuffer m_raytracedGlobalBuffer;
+    std::vector<RaytracedObjectData> m_raytracedObjectData;
+    AllocatedBuffer m_raytracedObjectBuffer;
 
     const scene::ViewportScene &m_scene;
     uint32_t m_cameraChangeListener;
@@ -64,6 +71,8 @@ class SceneData
 
     void createWorldDataBuffer();
     void createCameraBuffer();
+    bool createVertexAndIndexBuffer(const std::vector<scene::Vertex> &vertices,
+                                    const std::vector<uint32_t> &indices);
 
     std::unique_ptr<Pipeline> getPipelineForMaterial(
         const scene::Material &material);
@@ -127,13 +136,31 @@ class SceneData
 
     [[nodiscard]] const scene::WorldData &getWorldData() const;
 
-    [[nodiscard]] const AllocatedBuffer &getCameraBuffer() const;
+    [[nodiscard]] inline const AllocatedBuffer &getCameraBuffer() const
+    {
+        return m_cameraBuffer;
+    }
     [[nodiscard]] uint32_t getCameraBufferOffset(uint32_t offsetIndex) const;
 
-    [[nodiscard]] const AllocatedBuffer &getWorldDataBuffer() const;
+    [[nodiscard]] inline const AllocatedBuffer &getWorldDataBuffer() const
+    {
+        return m_worldDataBuffer;
+    }
     [[nodiscard]] uint32_t getWorldDataBufferOffset(uint32_t offsetIndex) const;
 
-    [[nodiscard]] const AllocatedBuffer &getObjectBuffer() const;
+    [[nodiscard]] inline const AllocatedBuffer &getVertexBuffer() const
+    {
+        return m_vertexBuffer;
+    }
+    [[nodiscard]] inline const AllocatedBuffer &getIndexBuffer() const
+    {
+        return m_indexBuffer;
+    }
+
+    [[nodiscard]] inline const AllocatedBuffer &getObjectBuffer() const
+    {
+        return m_objectBuffer;
+    }
     [[nodiscard]] uint32_t getObjectBufferOffset(uint32_t offsetIndex) const;
 
     [[nodiscard]] const vk::AccelerationStructureKHR &getAccelerationStructure()
@@ -147,6 +174,16 @@ class SceneData
     [[nodiscard]] inline const ShaderBindingTable &getShaderBindingTable() const
     {
         return *m_shaderBindingTable;
+    }
+
+    [[nodiscard]] inline const AllocatedBuffer &getRaytracedGlobalBuffer() const
+    {
+        return m_raytracedGlobalBuffer;
+    }
+
+    [[nodiscard]] inline const AllocatedBuffer &getRaytracedObjectBuffer() const
+    {
+        return m_raytracedObjectBuffer;
     }
 };
 } // namespace kirana::viewport::vulkan

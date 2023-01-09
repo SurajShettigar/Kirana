@@ -31,8 +31,7 @@ kirana::viewport::vulkan::DescriptorSetLayout::DescriptorSetLayout(
     case LayoutType::OBJECT: {
         const vk::DescriptorSetLayoutBinding objectBuffer(
             0, vk::DescriptorType::eStorageBufferDynamic, 1,
-            vk::ShaderStageFlagBits::eVertex |
-                vk::ShaderStageFlagBits::eClosestHitKHR);
+            vk::ShaderStageFlagBits::eVertex);
         bindings.clear();
         bindings.emplace_back(objectBuffer);
     }
@@ -44,9 +43,25 @@ kirana::viewport::vulkan::DescriptorSetLayout::DescriptorSetLayout(
         const vk::DescriptorSetLayoutBinding outputImage(
             1, vk::DescriptorType::eStorageImage, 1,
             vk::ShaderStageFlagBits::eRaygenKHR);
+        const vk::DescriptorSetLayoutBinding globalData(
+            2, vk::DescriptorType::eUniformBuffer, 1,
+            vk::ShaderStageFlagBits::eClosestHitKHR);
+        const vk::DescriptorSetLayoutBinding objData(
+            3, vk::DescriptorType::eStorageBuffer, 1,
+            vk::ShaderStageFlagBits::eClosestHitKHR);
+        const vk::DescriptorSetLayoutBinding vertexBuffer(
+            4, vk::DescriptorType::eStorageBuffer, 1,
+            vk::ShaderStageFlagBits::eClosestHitKHR);
+        const vk::DescriptorSetLayoutBinding indexBuffer(
+            5, vk::DescriptorType::eStorageBuffer, 1,
+            vk::ShaderStageFlagBits::eClosestHitKHR);
         bindings.clear();
         bindings.emplace_back(accelerationStructure);
         bindings.emplace_back(outputImage);
+        bindings.emplace_back(globalData);
+        bindings.emplace_back(objData);
+        bindings.emplace_back(vertexBuffer);
+        bindings.emplace_back(indexBuffer);
     }
     break;
     }

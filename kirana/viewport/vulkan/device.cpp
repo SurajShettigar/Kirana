@@ -41,6 +41,16 @@ kirana::viewport::vulkan::SwapchainSupportInfo kirana::viewport::vulkan::
     return supportInfo;
 }
 
+vk::PhysicalDeviceAccelerationStructurePropertiesKHR kirana::viewport::vulkan::
+    Device::getAccelerationStructureProperties(const vk::PhysicalDevice &gpu)
+{
+    vk::PhysicalDeviceAccelerationStructurePropertiesKHR accelStructProps;
+    vk::PhysicalDeviceProperties2 props;
+    props.pNext = &accelStructProps;
+    gpu.getProperties2(&props);
+    return *reinterpret_cast<
+        vk::PhysicalDeviceAccelerationStructurePropertiesKHR *>(props.pNext);
+}
 
 vk::PhysicalDeviceRayTracingPipelinePropertiesKHR kirana::viewport::vulkan::
     Device::getRaytracingProperties(const vk::PhysicalDevice &gpu)
@@ -139,7 +149,7 @@ bool kirana::viewport::vulkan::Device::selectIdealGPU()
     }
 
     // Set Extension properties.
-    // Set raytracing properties
+    m_accelStructProperties = getAccelerationStructureProperties(m_gpu);
     m_raytracingProperties = getRaytracingProperties(m_gpu);
 
     Logger::get().log(constants::LOG_CHANNEL_VULKAN, LogSeverity::debug,
@@ -280,12 +290,39 @@ vk::DeviceAddress kirana::viewport::vulkan::Device::getBufferAddress(
 {
     return m_current.getBufferAddress(vk::BufferDeviceAddressInfo(buffer));
 }
-
+void kirana::viewport::vulkan::Device::setDebugObjectName(
+    vk::ObjectType type, uint64_t handle, const std::string &name) const
+{
+    m_current.setDebugUtilsObjectNameEXT(
+        vk::DebugUtilsObjectNameInfoEXT(type, handle, name.c_str()));
+}
 
 void kirana::viewport::vulkan::Device::setDebugObjectName(
     const vk::Buffer &buffer, const std::string &name) const
 {
-    m_current.setDebugUtilsObjectNameEXT(vk::DebugUtilsObjectNameInfoEXT(
-        vk::ObjectType::eBuffer, (uint64_t) static_cast<VkBuffer>(buffer),
-        name.c_str()));
+    setDebugObjectName(vk::ObjectType::eBuffer,
+                       (uint64_t) static_cast<VkBuffer>(buffer), name);
+}
+
+void kirana::viewport::vulkan::Device::setDebugObjectName(
+    const vk::ShaderModule &shaderModule, const std::string &name) const
+{
+    setDebugObjectName(vk::ObjectType::eShaderModule,
+                       (uint64_t) static_cast<VkShaderModule>(shaderModule),
+                       name);
+}
+
+void kirana::viewport::vulkan::Device::setDebugObjectName(
+    const vk::Pipeline &pipeline, const std::string &name) const
+{
+    setDebugObjectName(vk::ObjectType::ePipeline,
+                       (uint64_t) static_cast<VkPipeline>(pipeline), name);
+}
+void kirana::viewport::vulkan::Device::setDebugObjectName(
+    const vk::AccelerationStructureKHR &accelStruct,
+    const std::string &name) const
+{
+    setDebugObjectName(
+        vk::ObjectType::eAccelerationStructureKHR,
+        (uint64_t) static_cast<VkAccelerationStructureKHR>(accelStruct), name);
 }

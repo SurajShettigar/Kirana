@@ -15,7 +15,7 @@ class AccelerationStructure
   private:
     bool m_isInitialized = false;
 
-    std::unordered_map<uint32_t , uint32_t> m_meshIndexTable;
+    std::unordered_map<uint32_t, uint32_t> m_meshIndexTable;
     std::vector<BLASData> m_BLASData;
     std::vector<vk::AccelerationStructureInstanceKHR> m_TLASInstanceData;
     ASData m_TLASData;
@@ -34,7 +34,9 @@ class AccelerationStructure
         ASData *accelerationStructure) const;
     [[nodiscard]] vk::DeviceAddress getBLASAddress(uint32_t meshIndex) const;
 
-    void createBLAS(const std::unordered_map<std::string, MeshData> &meshes);
+    void createBLAS(const std::unordered_map<std::string, MeshData> &meshes,
+                    const vk::DeviceAddress &vertexBufferAddress,
+                    const vk::DeviceAddress &indexBufferAddress);
 
     bool buildBLAS(
         vk::BuildAccelerationStructureFlagsKHR flags =
@@ -50,7 +52,9 @@ class AccelerationStructure
   public:
     AccelerationStructure(
         const Device *device, const Allocator *allocator,
-        const std::unordered_map<std::string, MeshData> &meshes);
+        const std::unordered_map<std::string, MeshData> &meshes,
+        const vk::DeviceAddress &vertexBufferAddress,
+        const vk::DeviceAddress &indexBufferAddress);
     ~AccelerationStructure();
     AccelerationStructure(const AccelerationStructure &as) = delete;
     AccelerationStructure &operator=(const AccelerationStructure &as) = delete;

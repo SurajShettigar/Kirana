@@ -92,6 +92,18 @@ kirana::viewport::vulkan::Drawer::Drawer(
                 m_frames[i].raytraceDescriptorSet->writeImage(
                     m_raytracedImage->getDescriptorImageInfo(),
                     vk::DescriptorType::eStorageImage, 1);
+                m_frames[i].raytraceDescriptorSet->writeBuffer(
+                    m_scene->getRaytracedGlobalBuffer().descInfo,
+                    vk::DescriptorType::eUniformBuffer, 2);
+                m_frames[i].raytraceDescriptorSet->writeBuffer(
+                    m_scene->getRaytracedObjectBuffer().descInfo,
+                    vk::DescriptorType::eStorageBuffer, 3);
+                m_frames[i].raytraceDescriptorSet->writeBuffer(
+                    m_scene->getVertexBuffer().descInfo,
+                    vk::DescriptorType::eStorageBuffer, 4);
+                m_frames[i].raytraceDescriptorSet->writeBuffer(
+                    m_scene->getIndexBuffer().descInfo,
+                    vk::DescriptorType::eStorageBuffer, 5);
             }
 
             m_frames[i].renderFence = m_device->current.createFence(
@@ -233,12 +245,10 @@ void kirana::viewport::vulkan::Drawer::draw()
             m_scene->getRaytracePipeline().getLayout().current,
             {
                 frame.globalDescriptorSet->current,
-                frame.objectDescriptorSet->current,
                 frame.raytraceDescriptorSet->current,
             },
             {m_scene->getCameraBufferOffset(frameIndex),
-             m_scene->getWorldDataBufferOffset(frameIndex),
-             m_scene->getObjectBufferOffset(frameIndex)},
+             m_scene->getWorldDataBufferOffset(frameIndex)},
             vk::PipelineBindPoint::eRayTracingKHR);
         frame.commandBuffers->traceRays(m_scene->getShaderBindingTable(),
                                         m_raytracedImage->getProperties().size);
@@ -248,14 +258,15 @@ void kirana::viewport::vulkan::Drawer::draw()
     }
     else
     {
+        frame.commandBuffers->bindVertexBuffer(
+            *(m_scene->getVertexBuffer().buffer), 0);
+        frame.commandBuffers->bindIndexBuffer(
+            *(m_scene->getIndexBuffer().buffer), 0);
+
         std::string lastMaterial;
-        // TODO: Bind Vertex Buffers together and draw them at once.
-        size_t meshIndex = 0;
+        uint32_t meshIndex = 0;
         for (const auto &m : m_scene->getMeshData())
         {
-            if (isRaytracing && !m.second.render)
-                continue;
-
             if (lastMaterial != m.second.material->name)
             {
                 frame.commandBuffers->bindPipeline(m.second.material->current);
@@ -269,17 +280,12 @@ void kirana::viewport::vulkan::Drawer::draw()
                 lastMaterial = m.second.material->name;
             }
 
-            frame.commandBuffers->bindVertexBuffer(
-                *(m.second.vertexBuffer.buffer), 0);
-            frame.commandBuffers->bindIndexBuffer(
-                *(m.second.indexBuffer.buffer), 0);
-
             // TODO: Implement instancing
-            for (size_t i = 0; i < m.second.instances.size(); i++)
+            for (uint32_t i = 0; i < m.second.instances.size(); i++)
             {
                 frame.commandBuffers->drawIndexed(
-                    static_cast<uint32_t>(m.second.indexCount), 1, 0, 0,
-                    i + meshIndex);
+                    m.second.indexCount, 1, m.second.firstIndex,
+                    m.second.vertexOffset, i + meshIndex);
 
                 // TODO: Find better way to render outline
                 if (*m.second.instances[0].selected &&
@@ -290,8 +296,8 @@ void kirana::viewport::vulkan::Drawer::draw()
                     lastMaterial = outline->name;
 
                     frame.commandBuffers->drawIndexed(
-                        static_cast<uint32_t>(m.second.indexCount), 1, 0, 0,
-                        i + meshIndex);
+                        m.second.indexCount, 1, m.second.firstIndex,
+                        m.second.vertexOffset, i + meshIndex);
                 }
             }
             meshIndex++;

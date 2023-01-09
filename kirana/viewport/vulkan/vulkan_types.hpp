@@ -100,7 +100,8 @@ struct VertexInputDescription
     std::vector<vk::VertexInputAttributeDescription> attributes;
 };
 
-enum class ShaderStage {
+enum class ShaderStage
+{
     COMPUTE = 0,
     VERTEX = 1,
     FRAGMENT = 2,
@@ -133,9 +134,6 @@ struct CameraData
 struct ObjectData
 {
     math::Matrix4x4 modelMatrix;
-    alignas(8) uint64_t vertexBufferAddress;
-    alignas(8) uint64_t indexBufferAddress;
-    alignas(16) math::Vector3 color;
 };
 
 struct InstanceData
@@ -152,13 +150,18 @@ struct InstanceData
 struct MeshData
 {
     uint32_t index;
-    AllocatedBuffer vertexBuffer;
-    AllocatedBuffer indexBuffer;
-    size_t vertexCount;
-    size_t indexCount;
+    uint32_t vertexCount;
+    uint32_t indexCount;
+    uint32_t firstIndex;
+    int32_t vertexOffset;
     std::vector<InstanceData> instances;
     const Pipeline *material;
     bool render = false;
+
+    inline uint32_t getGlobalInstanceIndex(uint32_t instanceIndex) const
+    {
+        return index + instances[instanceIndex].index;
+    }
 };
 
 /**
@@ -174,6 +177,21 @@ struct FrameData
     vk::Semaphore presentSemaphore;
     const CommandPool *commandPool = nullptr;
     const CommandBuffers *commandBuffers = nullptr;
+};
+
+struct RaytracedGlobalData
+{
+    uint64_t vertexBufferAddress;
+    alignas(8) uint64_t indexBufferAddress;
+};
+
+struct RaytracedObjectData
+{
+    math::Matrix4x4 modelMatrix;
+    uint32_t firstIndex;
+    alignas(4) uint32_t vertexOffset;
+    alignas(4) uint32_t padding1;
+    alignas(4) uint32_t padding2;
 };
 
 /**

@@ -54,25 +54,23 @@ vk::DeviceAddress kirana::viewport::vulkan::AccelerationStructure::
 }
 
 void kirana::viewport::vulkan::AccelerationStructure::createBLAS(
-    const std::unordered_map<std::string, MeshData> &meshes)
+    const std::unordered_map<std::string, MeshData> &meshes,
+    const vk::DeviceAddress &vertexBufferAddress,
+    const vk::DeviceAddress &indexBufferAddress)
 {
     for (const auto &m : meshes)
     {
         if (!m.second.render)
             continue;
-        const vk::DeviceAddress &vertexBufferAdd =
-            m_device->getBufferAddress(*m.second.vertexBuffer.buffer);
-        const vk::DeviceAddress &indexBufferAdd =
-            m_device->getBufferAddress(*m.second.indexBuffer.buffer);
 
         const vk::AccelerationStructureGeometryTrianglesDataKHR triangles{
             vk::Format::eR32G32B32Sfloat,
-            vertexBufferAdd,
+            vertexBufferAddress,
             sizeof(scene::Vertex),
             static_cast<uint32_t>(m.second.vertexCount),
             vk::IndexType::eUint32,
-            indexBufferAdd,
-            nullptr,
+            indexBufferAddress,
+            {},
         };
 
         const vk::AccelerationStructureGeometryKHR geo{
@@ -80,7 +78,9 @@ void kirana::viewport::vulkan::AccelerationStructure::createBLAS(
             vk::GeometryFlagsKHR(vk::GeometryFlagBitsKHR::eOpaque)};
 
         const vk::AccelerationStructureBuildRangeInfoKHR offset{
-            static_cast<uint32_t>(m.second.indexCount / 3), 0, 0, 0};
+            static_cast<uint32_t>(m.second.indexCount / 3),
+            static_cast<uint32_t>(m.second.firstIndex * sizeof(uint32_t)),
+            static_cast<uint32_t>(m.second.vertexOffset), 0};
 
         // TODO: Add multiple geometries in a single BLAS.
         BLASData blasData;
@@ -166,6 +166,9 @@ bool kirana::viewport::vulkan::AccelerationStructure::buildBLAS(
             "Failed to allocate scratch buffer for Acceleration Structure");
         return false;
     }
+
+    m_device->setDebugObjectName(*scratchBuffer.buffer, "BLAS_ScratchBuffer");
+
     const vk::DeviceAddress scratchBufferAddress =
         m_device->getBufferAddress(*scratchBuffer.buffer);
 
@@ -199,8 +202,8 @@ bool kirana::viewport::vulkan::AccelerationStructure::buildBLAS(
                                              buildDataCount);
 
         uint32_t compactionIndex = 0;
-        commandBuffers->begin(
-            vk::CommandBufferUsageFlagBits::eOneTimeSubmit, bIdx);
+        commandBuffers->begin(vk::CommandBufferUsageFlagBits::eOneTimeSubmit,
+                              bIdx);
         for (uint32_t i = buildDataFirstIndex;
              i < buildDataFirstIndex + buildDataCount; i++)
         {
@@ -211,11 +214,17 @@ bool kirana::viewport::vulkan::AccelerationStructure::buildBLAS(
             {
                 m_BLASData[i].buildInfo.dstAccelerationStructure =
                     m_BLASData[i].accelStruct.as;
-                m_BLASData[i].buildInfo.scratchData.deviceAddress =
-                    scratchBufferAddress;
+                m_BLASData[i].buildInfo.scratchData = m_device->alignSize(
+                    static_cast<vk::DeviceSize>(scratchBufferAddress),
+                    static_cast<vk::DeviceSize>(
+                        m_device->accelStructProperties
+                            .minAccelerationStructureScratchOffsetAlignment));
                 commandBuffers->buildAccelerationStructure(
                     m_BLASData[i].buildInfo, m_BLASData[i].offsets.data(),
                     compactionQueryPool, compactionIndex++, true, bIdx);
+
+                m_device->setDebugObjectName(m_BLASData[i].accelStruct.as,
+                                             "BLAS_" + std::to_string(i));
             }
             else
             {
@@ -264,7 +273,7 @@ void kirana::viewport::vulkan::AccelerationStructure::createTLAS(
             m_TLASInstanceData.emplace_back(
                 vk::AccelerationStructureInstanceKHR{
                     getVulkanTransformMatrix(i.transform->getMatrix()),
-                    m.second.index + i.index, 0xFF, 0,
+                    m.second.getGlobalInstanceIndex(i.index), 0xFF, 0,
                     vk::GeometryInstanceFlagBitsKHR::eTriangleCullDisable,
                     getBLASAddress(m.second.index)});
         }
@@ -295,6 +304,9 @@ bool kirana::viewport::vulkan::AccelerationStructure::buildTLAS(
                           "Structure instances");
         return false;
     }
+    m_device->setDebugObjectName(*TLASInstanceBuffer.buffer,
+                                 "TLAS_InstanceBuffer");
+
     const vk::DeviceAddress TLASInstanceBufferAddress =
         m_device->getBufferAddress(*TLASInstanceBuffer.buffer);
 
@@ -344,11 +356,17 @@ bool kirana::viewport::vulkan::AccelerationStructure::buildTLAS(
                               "Top-Level Acceleration Structures");
             return false;
         }
+        m_device->setDebugObjectName(*scratchBuffer.buffer,
+                                     "TLAS_ScratchBuffer");
         const vk::DeviceAddress scratchBufferAddress =
             m_device->getBufferAddress(*scratchBuffer.buffer);
 
         buildInfo.dstAccelerationStructure = m_TLASData.as;
-        buildInfo.scratchData.deviceAddress = scratchBufferAddress;
+        buildInfo.scratchData = m_device->alignSize(
+            static_cast<vk::DeviceSize>(scratchBufferAddress),
+            static_cast<vk::DeviceSize>(
+                m_device->accelStructProperties
+                    .minAccelerationStructureScratchOffsetAlignment));
 
         const vk::AccelerationStructureBuildRangeInfoKHR rangeInfo{
             static_cast<uint32_t>(m_TLASInstanceData.size()), 0, 0, 0};
@@ -374,12 +392,14 @@ bool kirana::viewport::vulkan::AccelerationStructure::buildTLAS(
 
 kirana::viewport::vulkan::AccelerationStructure::AccelerationStructure(
     const Device *const device, const Allocator *const allocator,
-    const std::unordered_map<std::string, MeshData> &meshes)
+    const std::unordered_map<std::string, MeshData> &meshes,
+    const vk::DeviceAddress &vertexBufferAddress,
+    const vk::DeviceAddress &indexBufferAddress)
     : m_isInitialized{false}, m_device{device}, m_allocator{allocator},
       m_commandPool{
           new CommandPool(m_device, m_device->queueFamilyIndices.graphics)}
 {
-    createBLAS(meshes);
+    createBLAS(meshes, vertexBufferAddress, indexBufferAddress);
     m_isInitialized = buildBLAS();
     if (m_isInitialized)
     {

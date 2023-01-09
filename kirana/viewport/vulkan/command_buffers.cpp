@@ -192,7 +192,7 @@ void kirana::viewport::vulkan::CommandBuffers::traceRays(
     uint32_t index) const
 {
     m_current[index].traceRaysKHR(sbt.rayGenRegion, sbt.missRegion,
-                                  sbt.hitRegion, sbt.callableRegion, size[0],
+                                  sbt.hitRegion, {}, size[0],
                                   size[1], size[2]);
 }
 
@@ -217,7 +217,7 @@ void kirana::viewport::vulkan::CommandBuffers::copyImage(
     // Transition image layouts from its original layout to transfer layouts.
     createImageMemoryBarrier(vk::PipelineStageFlagBits::eAllCommands,
                              vk::PipelineStageFlagBits::eAllCommands, {},
-                             dstImage.getProperties().layout,
+                             vk::ImageLayout::eUndefined,
                              vk::ImageLayout::eTransferDstOptimal,
                              dstImage.getImage(), dstSubRR);
     createImageMemoryBarrier(vk::PipelineStageFlagBits::eAllCommands,
@@ -243,7 +243,7 @@ void kirana::viewport::vulkan::CommandBuffers::copyImage(
     createImageMemoryBarrier(vk::PipelineStageFlagBits::eAllCommands,
                              vk::PipelineStageFlagBits::eAllCommands, {},
                              vk::ImageLayout::eTransferDstOptimal,
-                             dstImage.getProperties().layout,
+                             vk::ImageLayout::ePresentSrcKHR,
                              dstImage.getImage(), dstSubRR);
     createImageMemoryBarrier(vk::PipelineStageFlagBits::eAllCommands,
                              vk::PipelineStageFlagBits::eAllCommands, {},

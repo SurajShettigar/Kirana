@@ -1,7 +1,6 @@
 #include "mesh.hpp"
 #include "scene_utils.hpp"
 #include "material.hpp"
-
 #include <assimp/scene.h>
 #include <constants.h>
 #include <logger.hpp>
@@ -71,6 +70,9 @@ kirana::scene::Mesh::Mesh(const aiMesh *mesh,
                 m_vertices[v3].normal[2] = mesh->mNormals[v3].z;
             }
 
+            m_vertices[v1].color = math::Vector4(1.0f, 1.0f, 1.0f, 1.0f);
+            m_vertices[v2].color = math::Vector4(1.0f, 1.0f, 1.0f, 1.0f);
+            m_vertices[v3].color = math::Vector4(1.0f, 1.0f, 1.0f, 1.0f);
             if (mesh->HasVertexColors(v1))
             {
                 m_vertices[v1].color[0] = mesh->mColors[v1]->r;

@@ -18,9 +18,6 @@ layout (set = 0, binding = 0) uniform CameraBuffer {
 
 struct ObjectData {
     mat4 modelMatrix; // Row-major
-    uint64_t vertexBufferAddress;
-    uint64_t indexBufferAddress;
-    vec3 color;
 };
 
 layout(std140,set = 1, binding = 0) readonly buffer ObjectBuffer{

@@ -18,6 +18,8 @@ class Device
     SwapchainSupportInfo m_swapchainSupportInfo;
     vk::Queue m_graphicsQueue;
     vk::Queue m_presentationQueue;
+    vk::PhysicalDeviceAccelerationStructurePropertiesKHR
+        m_accelStructProperties;
     vk::PhysicalDeviceRayTracingPipelinePropertiesKHR m_raytracingProperties;
 
     const Instance *const m_instance;
@@ -27,6 +29,8 @@ class Device
         const vk::PhysicalDevice &gpu, const vk::SurfaceKHR &surface);
     static SwapchainSupportInfo getSwapchainSupportInfo(
         const vk::PhysicalDevice &gpu, const vk::SurfaceKHR &surface);
+    static vk::PhysicalDeviceAccelerationStructurePropertiesKHR
+    getAccelerationStructureProperties(const vk::PhysicalDevice &gpu);
     static vk::PhysicalDeviceRayTracingPipelinePropertiesKHR
     getRaytracingProperties(const vk::PhysicalDevice &gpu);
     /**
@@ -55,6 +59,8 @@ class Device
     const SwapchainSupportInfo &swapchainSupportInfo = m_swapchainSupportInfo;
     const vk::Queue &graphicsQueue = m_graphicsQueue;
     const vk::Queue &presentationQueue = m_presentationQueue;
+    const vk::PhysicalDeviceAccelerationStructurePropertiesKHR
+        &accelStructProperties = m_accelStructProperties;
     const vk::PhysicalDeviceRayTracingPipelinePropertiesKHR
         &raytracingProperties = m_raytracingProperties;
 
@@ -64,8 +70,7 @@ class Device
         return alignment > 0 ? (size + alignment - 1) & ~(alignment - 1) : size;
     }
 
-    inline uint32_t alignSize(uint32_t size,
-                                    uint32_t alignment) const
+    inline uint32_t alignSize(uint32_t size, uint32_t alignment) const
     {
         return alignment > 0 ? (size + alignment - 1) & ~(alignment - 1) : size;
     }
@@ -94,7 +99,16 @@ class Device
     [[nodiscard]] vk::DeviceAddress getBufferAddress(
         const vk::Buffer &buffer) const;
 
-    void setDebugObjectName(const vk::Buffer &buffer, const std::string &name) const;
+    void setDebugObjectName(vk::ObjectType type, uint64_t handle,
+                            const std::string &name) const;
+    void setDebugObjectName(const vk::Buffer &buffer,
+                            const std::string &name) const;
+    void setDebugObjectName(const vk::ShaderModule &shaderModule,
+                            const std::string &name) const;
+    void setDebugObjectName(const vk::Pipeline &pipeline,
+                            const std::string &name) const;
+    void setDebugObjectName(const vk::AccelerationStructureKHR &accelStruct,
+                            const std::string &name) const;
 };
 } // namespace kirana::viewport::vulkan
 

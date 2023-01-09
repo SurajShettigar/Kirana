@@ -66,8 +66,7 @@ kirana::viewport::vulkan::ShaderBindingTable::ShaderBindingTable(
     // Create the SBT Buffer.
 
     const vk::DeviceSize bufferSize =
-        m_rayGenRegion.size + m_missRegion.size +
-        m_hitRegion.size /* + m_callableRegion.size*/;
+        m_rayGenRegion.size + m_missRegion.size + m_hitRegion.size;
 
     // Prepare the SBT Buffer data.
     std::vector<uint8_t> bufferData(bufferSize);
@@ -103,10 +102,12 @@ kirana::viewport::vulkan::ShaderBindingTable::ShaderBindingTable(
 
     m_device->setDebugObjectName(*m_buffer.buffer, "ShaderBindingTableBuffer");
 
-    m_rayGenRegion.deviceAddress = m_device->getBufferAddress(*m_buffer.buffer);
-    m_missRegion.deviceAddress =
-        m_rayGenRegion.deviceAddress + m_rayGenRegion.size;
-    m_hitRegion.deviceAddress = m_missRegion.deviceAddress + m_missRegion.size;
+    const vk::DeviceAddress sbtBufferAdd =
+        m_device->getBufferAddress(*m_buffer.buffer);
+    m_rayGenRegion.deviceAddress = sbtBufferAdd;
+    m_missRegion.deviceAddress = sbtBufferAdd + m_rayGenRegion.size;
+    m_hitRegion.deviceAddress =
+        sbtBufferAdd + m_rayGenRegion.size + m_missRegion.size;
 
     m_isInitialized = true;
 
