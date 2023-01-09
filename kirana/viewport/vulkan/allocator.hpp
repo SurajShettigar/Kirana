@@ -44,7 +44,6 @@ class Allocator
     const bool &isInitialized = m_isInitialized;
     const vma::Allocator &current = *m_current;
 
-    void unMapMemory(const AllocatedBuffer &buffer) const;
     bool allocateBuffer(vk::DeviceSize size, vk::BufferUsageFlags usageFlags,
                         vma::MemoryUsage memoryUsage, AllocatedBuffer *buffer,
                         bool mapMemoryPointer = true) const;

@@ -280,3 +280,12 @@ vk::DeviceAddress kirana::viewport::vulkan::Device::getBufferAddress(
 {
     return m_current.getBufferAddress(vk::BufferDeviceAddressInfo(buffer));
 }
+
+
+void kirana::viewport::vulkan::Device::setDebugObjectName(
+    const vk::Buffer &buffer, const std::string &name) const
+{
+    m_current.setDebugUtilsObjectNameEXT(vk::DebugUtilsObjectNameInfoEXT(
+        vk::ObjectType::eBuffer, (uint64_t) static_cast<VkBuffer>(buffer),
+        name.c_str()));
+}

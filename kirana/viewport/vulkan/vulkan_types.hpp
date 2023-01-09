@@ -133,6 +133,9 @@ struct CameraData
 struct ObjectData
 {
     math::Matrix4x4 modelMatrix;
+    alignas(8) uint64_t vertexBufferAddress;
+    alignas(8) uint64_t indexBufferAddress;
+    alignas(16) math::Vector3 color;
 };
 
 struct InstanceData

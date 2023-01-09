@@ -1,9 +1,19 @@
 #version 460
+#extension GL_GOOGLE_include_directive: enable
 #extension GL_EXT_ray_tracing : require
 
-layout(location = 0) rayPayloadInEXT vec3 hitValue;
+#include "base_raytrace.glsl"
+
+layout (set = 0, binding = 1) uniform WorldData
+{
+    vec4 ambientColor;
+    vec3 sunDirection;
+    float sunIntensity;
+    vec4 sunColor;
+} worldData;
+layout(location = 0) rayPayloadInEXT HitInfo payload;
 
 void main()
 {
-    hitValue = vec3(0.0, 0.1, 0.3);
+    payload.color = worldData.ambientColor.xyz;
 }

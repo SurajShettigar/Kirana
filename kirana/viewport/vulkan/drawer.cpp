@@ -204,6 +204,8 @@ void kirana::viewport::vulkan::Drawer::draw()
     frame.commandBuffers->reset();
     frame.commandBuffers->begin();
 
+    // TODO: Write a neater way to switch between shading
+
     if (!isRaytracing)
     {
         frame.commandBuffers->beginRenderPass(
@@ -229,7 +231,14 @@ void kirana::viewport::vulkan::Drawer::draw()
             vk::PipelineBindPoint::eRayTracingKHR);
         frame.commandBuffers->bindDescriptorSets(
             m_scene->getRaytracePipeline().getLayout().current,
-            {frame.raytraceDescriptorSet->current}, {},
+            {
+                frame.globalDescriptorSet->current,
+                frame.objectDescriptorSet->current,
+                frame.raytraceDescriptorSet->current,
+            },
+            {m_scene->getCameraBufferOffset(frameIndex),
+             m_scene->getWorldDataBufferOffset(frameIndex),
+             m_scene->getObjectBufferOffset(frameIndex)},
             vk::PipelineBindPoint::eRayTracingKHR);
         frame.commandBuffers->traceRays(m_scene->getShaderBindingTable(),
                                         m_raytracedImage->getProperties().size);

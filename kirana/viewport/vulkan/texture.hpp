@@ -17,7 +17,7 @@ class Texture
         vk::ImageUsageFlags usage;
         vk::ImageAspectFlags aspect;
         bool generateDescriptorInfo = true;
-        vk::ImageLayout layout = vk::ImageLayout::eShaderReadOnlyOptimal;
+        vk::ImageLayout layout = vk::ImageLayout::eGeneral;
         vk::ImageType imageType = vk::ImageType::e2D;
         vk::ImageViewType imageViewType = vk::ImageViewType::e2D;
         vk::SampleCountFlags sampleCount = vk::SampleCountFlagBits::e1;

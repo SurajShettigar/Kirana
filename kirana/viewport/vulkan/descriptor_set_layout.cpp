@@ -20,7 +20,8 @@ kirana::viewport::vulkan::DescriptorSetLayout::DescriptorSetLayout(
             1, vk::DescriptorType::eUniformBufferDynamic, 1,
             vk::ShaderStageFlagBits::eVertex |
                 vk::ShaderStageFlagBits::eFragment |
-                vk::ShaderStageFlagBits::eClosestHitKHR);
+                vk::ShaderStageFlagBits::eClosestHitKHR |
+                vk::ShaderStageFlagBits::eMissKHR);
 
         bindings.clear();
         bindings.emplace_back(camBuffer);

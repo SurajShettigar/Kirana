@@ -1,10 +1,44 @@
 #version 460
+#extension GL_GOOGLE_include_directive: enable
 #extension GL_EXT_ray_tracing : require
 
-layout(binding = 0, set = 0) uniform accelerationStructureEXT topLevelAS;
-layout(binding = 1, set = 0, rgba32f) uniform image2D image;
+#include "base_raytrace.glsl"
 
-void main() 
+layout (set = 0, binding = 0) uniform CameraBuffer {
+    mat4 view; // Row-major storage
+    mat4 proj; // Row-major
+    mat4 viewProj; // Row-major
+    vec3 position;
+    vec3 direction;
+    float nearPlane;
+    float farPlane;
+} camData;
+layout (set = 2, binding = 0) uniform accelerationStructureEXT topLevelAS;
+layout (rgba32f, set = 2, binding = 1) uniform image2D image;
+
+layout(location = 0) rayPayloadEXT HitInfo payload;
+
+void main()
 {
-    imageStore(image, ivec2(gl_LaunchIDEXT.xy), vec4(0.5, 0.5, 0.5, 1.0));
+    // gl_LaunchIDEXT is the index of the current pixel.
+    // gl_LaunchSizeEXT is the size of the image provided in traceRayEXT vulkan command call.
+
+    // Get UV coordinates, normalized to value 0-1
+    const vec2 pixCenter = vec2(gl_LaunchIDEXT.xy) + vec2(0.5);
+    const vec2 uv = (pixCenter / vec2(gl_LaunchSizeEXT.xy));
+
+    // Convert the UV-coordinates to -1 to 1 range to calculate direction
+    const vec2 ndc = uv * 2.0 - 1.0;
+
+    const vec3 rayOrigin = camData.position;
+    vec4 rayDirection = transpose(inverse(camData.viewProj)) * vec4(ndc.x, ndc.y, 1.0, 1.0);
+    rayDirection = normalize(rayDirection);
+
+    uint rayFlags = gl_RayFlagsOpaqueEXT;
+    float tMin = camData.nearPlane;
+    float tMax = camData.farPlane;
+
+    traceRayEXT(topLevelAS, rayFlags, 0xFF, 0, 0, 0, rayOrigin.xyz, tMin, rayDirection.xyz, tMax, 0);
+
+    imageStore(image, ivec2(gl_LaunchIDEXT.xy), vec4(payload.color, 1.0));
 }

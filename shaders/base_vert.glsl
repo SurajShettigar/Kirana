@@ -1,3 +1,5 @@
+#extension GL_EXT_shader_explicit_arithmetic_types_int64 : require
+
 // Vertex Buffer input
 layout (location = 0) in vec3 vPosition;
 layout (location = 1) in vec3 vNormal;
@@ -16,6 +18,9 @@ layout (set = 0, binding = 0) uniform CameraBuffer {
 
 struct ObjectData {
     mat4 modelMatrix; // Row-major
+    uint64_t vertexBufferAddress;
+    uint64_t indexBufferAddress;
+    vec3 color;
 };
 
 layout(std140,set = 1, binding = 0) readonly buffer ObjectBuffer{

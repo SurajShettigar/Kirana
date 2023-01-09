@@ -94,13 +94,14 @@ kirana::viewport::vulkan::ShaderBindingTable::ShaderBindingTable(
             bufferSize,
             vk::BufferUsageFlagBits::eShaderBindingTableKHR |
                 vk::BufferUsageFlagBits::eShaderDeviceAddress,
-            &m_buffer, reinterpret_cast<void *>(bufferDataPtr)))
+            &m_buffer, reinterpret_cast<void *>(bufferData.data())))
     {
-
         Logger::get().log(constants::LOG_CHANNEL_VULKAN, LogSeverity::error,
                           "Failed to allocate buffer for Shader Binding Table");
         return;
     }
+
+    m_device->setDebugObjectName(*m_buffer.buffer, "ShaderBindingTableBuffer");
 
     m_rayGenRegion.deviceAddress = m_device->getBufferAddress(*m_buffer.buffer);
     m_missRegion.deviceAddress =

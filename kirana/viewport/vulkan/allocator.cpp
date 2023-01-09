@@ -68,12 +68,6 @@ kirana::viewport::vulkan::Allocator::~Allocator()
                       "Allocator destroyed");
 }
 
-void kirana::viewport::vulkan::Allocator::unMapMemory(
-    const AllocatedBuffer &buffer) const
-{
-    m_current->unmapMemory(*buffer.allocation);
-}
-
 bool kirana::viewport::vulkan::Allocator::allocateBuffer(
     vk::DeviceSize size, vk::BufferUsageFlags usageFlags,
     vma::MemoryUsage memoryUsage, AllocatedBuffer *buffer,
@@ -134,6 +128,7 @@ bool kirana::viewport::vulkan::Allocator::allocateImage(
         image->image = std::make_unique<vk::Image>(data.first);
         image->allocation = std::make_unique<vma::Allocation>(data.second);
 
+        // TODO: Add a better way to transition image layouts.
         // Transition the image layout from undefined.
         VK_HANDLE_RESULT(m_device->current.waitForFences(
                              m_commandFence, true,
@@ -153,6 +148,7 @@ bool kirana::viewport::vulkan::Allocator::allocateImage(
                              m_commandFence, true,
                              constants::VULKAN_COPY_BUFFER_WAIT_TIMEOUT),
                          "Failed to wait for copy fence")
+
         return true;
     }
     catch (...)
@@ -222,7 +218,7 @@ void kirana::viewport::vulkan::Allocator::free(
     const AllocatedBuffer &buffer) const
 {
     if (buffer.memoryPointer != nullptr)
-        unMapMemory(buffer);
+        m_current->unmapMemory(*buffer.allocation);
     if (buffer.buffer)
         m_current->destroyBuffer(*buffer.buffer, *buffer.allocation);
 }

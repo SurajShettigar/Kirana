@@ -67,6 +67,8 @@ class VulkanRenderer
         return renderer;
     }
 
+    // TODO: Add a global command pool-buffer to handle one-time commands.
+
     /// Initializes vulkan.
     void init(const window::Window *window, const scene::ViewportScene &scene,
               viewport::Shading shading);

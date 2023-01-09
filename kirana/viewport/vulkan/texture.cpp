@@ -129,7 +129,8 @@ bool kirana::viewport::vulkan::Texture::createDepthTexture(
                                vk::ImageUsageFlagBits::eDepthStencilAttachment,
                                vk::ImageAspectFlagBits::eDepth |
                                    vk::ImageAspectFlagBits::eStencil,
-                               false},
+                               false,
+                               vk::ImageLayout::eDepthStencilAttachmentOptimal},
                     "Depth_Texture");
     return depthTexture->m_isInitialized;
 }

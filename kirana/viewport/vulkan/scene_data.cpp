@@ -83,6 +83,11 @@ void kirana::viewport::vulkan::SceneData::onObjectChanged()
             {
                 mat = i.transform->getMatrix();
                 data[index].modelMatrix = mat;
+                data[index].vertexBufferAddress = static_cast<uint64_t>(
+                    m_device->getBufferAddress(*m.second.vertexBuffer.buffer));
+                data[index].indexBufferAddress = static_cast<uint64_t>(
+                    m_device->getBufferAddress(*m.second.indexBuffer.buffer));
+                data[index].color = math::Vector3(1.0f, 0.0f, 0.0f);
                 ++index;
             }
         }
@@ -101,6 +106,8 @@ void kirana::viewport::vulkan::SceneData::createWorldDataBuffer()
     {
         m_worldDataBuffer.descInfo = vk::DescriptorBufferInfo(
             *m_worldDataBuffer.buffer, 0, sizeof(scene::WorldData));
+
+        m_device->setDebugObjectName(*m_cameraBuffer.buffer, "WorldBuffer");
         onWorldChanged();
     }
 }
@@ -117,6 +124,8 @@ void kirana::viewport::vulkan::SceneData::createCameraBuffer()
     {
         m_cameraBuffer.descInfo = vk::DescriptorBufferInfo(
             *m_cameraBuffer.buffer, 0, sizeof(vulkan::CameraData));
+
+        m_device->setDebugObjectName(*m_cameraBuffer.buffer, "CameraBuffer");
         onCameraChanged();
     }
 }
@@ -230,6 +239,11 @@ bool kirana::viewport::vulkan::SceneData::createMeshes()
                             vk::BufferUsageFlagBits::eStorageBuffer,
                         &meshData.vertexBuffer, vertices.data()))
                     initialized = false;
+
+                if (initialized)
+                    m_device->setDebugObjectName(*meshData.vertexBuffer.buffer,
+                                                 meshName + "_VertexBuffer");
+
                 // Create index buffer
                 meshData.indexCount = indices.size();
                 const size_t indicesSize =
@@ -243,6 +257,10 @@ bool kirana::viewport::vulkan::SceneData::createMeshes()
                             vk::BufferUsageFlagBits::eStorageBuffer,
                         &meshData.indexBuffer, indices.data()))
                     initialized = false;
+
+                if (initialized)
+                    m_device->setDebugObjectName(*meshData.indexBuffer.buffer,
+                                                 meshName + "_IndexBuffer");
             }
             // If any one of the instance is visible, render it.
             if (r.renderVisible)
@@ -266,6 +284,8 @@ bool kirana::viewport::vulkan::SceneData::createObjectBuffer()
         m_objectBuffer.descInfo = vk::DescriptorBufferInfo(
             *m_objectBuffer.buffer, 0,
             sizeof(vulkan::ObjectData) * m_totalInstanceCount);
+
+        m_device->setDebugObjectName(*m_objectBuffer.buffer, "ObjectBuffer");
         onObjectChanged();
         return true;
     }
@@ -281,6 +301,7 @@ bool kirana::viewport::vulkan::SceneData::initializeRaytracing()
     if (m_accelStructure->isInitialized)
     {
         const std::vector<const DescriptorSetLayout *> descLayouts{
+            m_globalDescSetLayout, m_objectDescSetLayout,
             m_raytraceDescSetLayout};
         m_raytracePipeline =
             new RaytracePipeline(m_device, m_renderPass, descLayouts,

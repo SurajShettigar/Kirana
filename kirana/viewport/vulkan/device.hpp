@@ -93,6 +93,8 @@ class Device
                                      uint32_t imageIndex) const;
     [[nodiscard]] vk::DeviceAddress getBufferAddress(
         const vk::Buffer &buffer) const;
+
+    void setDebugObjectName(const vk::Buffer &buffer, const std::string &name) const;
 };
 } // namespace kirana::viewport::vulkan
 

@@ -199,6 +199,8 @@ bool kirana::viewport::vulkan::AccelerationStructure::buildBLAS(
                                              buildDataCount);
 
         uint32_t compactionIndex = 0;
+        commandBuffers->begin(
+            vk::CommandBufferUsageFlagBits::eOneTimeSubmit, bIdx);
         for (uint32_t i = buildDataFirstIndex;
              i < buildDataFirstIndex + buildDataCount; i++)
         {
@@ -211,13 +213,9 @@ bool kirana::viewport::vulkan::AccelerationStructure::buildBLAS(
                     m_BLASData[i].accelStruct.as;
                 m_BLASData[i].buildInfo.scratchData.deviceAddress =
                     scratchBufferAddress;
-
-                commandBuffers->begin(
-                    vk::CommandBufferUsageFlagBits::eOneTimeSubmit, bIdx);
                 commandBuffers->buildAccelerationStructure(
                     m_BLASData[i].buildInfo, m_BLASData[i].offsets.data(),
                     compactionQueryPool, compactionIndex++, true, bIdx);
-                commandBuffers->end(bIdx);
             }
             else
             {
@@ -228,6 +226,7 @@ bool kirana::viewport::vulkan::AccelerationStructure::buildBLAS(
                 commandBuffersBuilt = false;
             }
         }
+        commandBuffers->end(bIdx);
     }
 
     if (commandBuffersBuilt)
