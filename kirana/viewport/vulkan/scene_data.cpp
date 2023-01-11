@@ -26,7 +26,7 @@ void kirana::viewport::vulkan::SceneData::setVertexDescription()
     const vk::VertexInputAttributeDescription normalAttrib(
         1, 0, vk::Format::eR32G32B32Sfloat, offsetof(scene::Vertex, normal));
     const vk::VertexInputAttributeDescription colorAttrib(
-        2, 0, vk::Format::eR32G32B32Sfloat, offsetof(scene::Vertex, color));
+        2, 0, vk::Format::eR32G32B32A32Sfloat, offsetof(scene::Vertex, color));
 
     m_vertexDesc.attributes.push_back(posAttrib);
     m_vertexDesc.attributes.push_back(normalAttrib);
@@ -53,6 +53,8 @@ void kirana::viewport::vulkan::SceneData::onCameraChanged()
     m_cameraData.projectionMatrix = camera.getProjectionMatrix();
     m_cameraData.viewProjectionMatrix =
         m_cameraData.projectionMatrix * m_cameraData.viewMatrix;
+    m_cameraData.invViewProjMatrix =
+        math::Matrix4x4::inverse(m_cameraData.viewProjectionMatrix);
     m_cameraData.position = camera.transform.getPosition();
     m_cameraData.direction = camera.transform.getForward();
     m_cameraData.nearPlane = camera.nearPlane;
@@ -70,19 +72,17 @@ void kirana::viewport::vulkan::SceneData::onCameraChanged()
 
 void kirana::viewport::vulkan::SceneData::onObjectChanged()
 {
-
-    auto data = (vulkan::ObjectData *)m_objectBuffer.memoryPointer;
-    math::Matrix4x4 mat;
+    auto data =
+        reinterpret_cast<vulkan::ObjectData *>(m_objectBuffer.memoryPointer);
     size_t index = 0;
     for (size_t frameIndex = 0;
          frameIndex < constants::VULKAN_FRAME_OVERLAP_COUNT; frameIndex++)
     {
         for (const auto &m : m_meshes)
         {
-            for (const auto &i : m.second.instances)
+            for (const auto &i : m.instances)
             {
-                mat = i.transform->getMatrix();
-                data[index].modelMatrix = mat;
+                data[index].modelMatrix = i.transform->getMatrix();
                 ++index;
             }
         }
@@ -158,6 +158,8 @@ bool kirana::viewport::vulkan::SceneData::createVertexAndIndexBuffer(
     m_device->setDebugObjectName(*m_indexBuffer.buffer, "IndexBuffer");
     m_indexBuffer.descInfo =
         vk::DescriptorBufferInfo(*m_indexBuffer.buffer, 0, indicesSize);
+
+    return true;
 }
 
 std::unique_ptr<kirana::viewport::vulkan::Pipeline> kirana::viewport::vulkan::
@@ -218,6 +220,25 @@ const std::unique_ptr<kirana::viewport::vulkan::Pipeline>
     }
 }
 
+
+bool kirana::viewport::vulkan::SceneData::hasMeshData(
+    const std::string &meshName, uint32_t *meshIndex) const
+{
+    if (m_meshes.empty())
+        return false;
+
+    const auto it = std::find_if(
+        m_meshes.begin(), m_meshes.end(),
+        [meshName](const MeshData &m) { return m.name == meshName; });
+
+    if (it != m_meshes.end())
+    {
+        *meshIndex = it->index;
+        return true;
+    }
+    return false;
+}
+
 bool kirana::viewport::vulkan::SceneData::createMeshes()
 {
     m_totalInstanceCount = 0;
@@ -225,41 +246,33 @@ bool kirana::viewport::vulkan::SceneData::createMeshes()
     uint32_t instanceIndex = 0;
     std::vector<scene::Vertex> vertices;
     std::vector<uint32_t> indices;
+    m_meshes.clear();
     for (const auto &r : m_scene.getRenderables())
     {
         InstanceData instance{instanceIndex++, r.object->transform, &r.selected,
                               &r.renderVisible};
         for (const auto &m : r.object->getMeshes())
         {
-            const auto &meshName = m->getName();
-            if (m_meshes.find(meshName) != m_meshes.end())
-                m_meshes[meshName].instances.emplace_back(instance);
+            const std::string &meshName = m->getName();
+            uint32_t index = meshIndex;
+            // If there is already a mesh, we just store the instance.
+            if (hasMeshData(meshName, &index))
+                m_meshes[index].instances.emplace_back(instance);
             else
             {
-                // Mesh was found for the first time.
-                // Create Mesh Data
-                MeshData &meshData = m_meshes[meshName];
-                // Assign index
+                MeshData meshData{};
                 meshData.index = meshIndex++;
-                // Make it non-renderable at first
-                meshData.render = false;
-                // Assign material
-                meshData.material = findMaterial(m->getMaterial()->getName(),
-                                                 r.overrideMaterial)
-                                        .get();
-
-                // Reset instance Index
-                instanceIndex = 0;
-                instance.index = instanceIndex;
-                // Assign instance data
-                meshData.instances.emplace_back(instance);
+                meshData.name = m->getName();
+                meshData.render = false; // Make it non-renderable at first
 
                 const auto &meshVertices = m->getVertices();
                 const auto &meshIndices = m->getIndices();
+                meshData.vertexCount =
+                    static_cast<uint32_t>(meshVertices.size());
+                meshData.indexCount = static_cast<uint32_t>(meshIndices.size());
                 // Get the offset into the global vertex and index buffer.
-                const auto firstIndex = static_cast<uint32_t>(indices.size());
-                const auto vertexOffset = static_cast<int32_t>(vertices.size());
-
+                meshData.firstIndex = static_cast<uint32_t>(indices.size());
+                meshData.vertexOffset = static_cast<uint32_t>(vertices.size());
                 // Add the mesh vertices and indices to the global vertex and
                 // index buffer.
                 vertices.insert(vertices.end(), meshVertices.begin(),
@@ -267,14 +280,19 @@ bool kirana::viewport::vulkan::SceneData::createMeshes()
                 indices.insert(indices.end(), meshIndices.begin(),
                                meshIndices.end());
 
-                meshData.vertexCount = meshVertices.size();
-                meshData.indexCount = meshIndices.size();
-                meshData.firstIndex = firstIndex;
-                meshData.vertexOffset = vertexOffset;
+                instanceIndex = 0;
+                instance.index = instanceIndex;
+                meshData.instances.emplace_back(instance);
+
+                meshData.material = findMaterial(m->getMaterial()->getName(),
+                                                 r.overrideMaterial)
+                                        .get();
+
+                m_meshes.emplace_back(std::move(meshData));
             }
             // If any one of the instance is visible, render it.
             if (r.renderVisible)
-                m_meshes[meshName].render = true;
+                m_meshes[index].render = true;
 
             ++m_totalInstanceCount;
         }
@@ -314,43 +332,36 @@ bool kirana::viewport::vulkan::SceneData::initializeRaytracing()
     const vk::DeviceAddress &indexBufferAddress =
         m_device->getBufferAddress(*m_indexBuffer.buffer);
 
-    m_raytracedGlobalData =
-        RaytracedGlobalData{static_cast<uint64_t>(vertexBufferAddress),
-                            static_cast<uint64_t>(indexBufferAddress)};
+    RaytracedGlobalData globalData{static_cast<uint64_t>(vertexBufferAddress),
+                                   static_cast<uint64_t>(indexBufferAddress)};
 
-    const vk::DeviceSize globalDataSize = sizeof(m_raytracedGlobalData);
+    const vk::DeviceSize globalDataSize = sizeof(RaytracedGlobalData);
 
     if (!m_allocator->allocateBufferToGPU(
             globalDataSize,
             vk::BufferUsageFlagBits::eUniformBuffer |
                 vk::BufferUsageFlagBits::eShaderDeviceAddress,
-            &m_raytracedGlobalBuffer,
-            reinterpret_cast<void *>(&m_raytracedGlobalData)))
+            &m_raytracedGlobalBuffer, reinterpret_cast<void *>(&globalData)))
         return false;
     m_raytracedGlobalBuffer.descInfo = vk::DescriptorBufferInfo(
         *m_raytracedGlobalBuffer.buffer, 0, globalDataSize);
     m_device->setDebugObjectName(*m_raytracedGlobalBuffer.buffer,
                                  "Raytraced_GlobalBuffer");
 
-    m_raytracedObjectData.clear();
+    std::vector<RaytracedObjectData> objectData;
     for (const auto &m : m_meshes)
-    {
-        for (const auto &i : m.second.instances)
-        {
-            m_raytracedObjectData.emplace_back(RaytracedObjectData{
-                i.transform->getMatrix(math::Transform::Space::Local),
-                m.second.firstIndex,
-                static_cast<uint32_t>(m.second.vertexOffset)});
-        }
-    }
+        for (const auto &i : m.instances)
+            objectData.emplace_back(
+                RaytracedObjectData{m.firstIndex, m.vertexOffset});
+
     const vk::DeviceSize objDataSize =
-        sizeof(RaytracedObjectData) * m_raytracedObjectData.size();
+        sizeof(RaytracedObjectData) * objectData.size();
     if (!m_allocator->allocateBufferToGPU(
             objDataSize,
             vk::BufferUsageFlagBits::eStorageBuffer |
                 vk::BufferUsageFlagBits::eShaderDeviceAddress,
             &m_raytracedObjectBuffer,
-            reinterpret_cast<void *>(m_raytracedObjectData.data())))
+            reinterpret_cast<void *>(objectData.data())))
         return false;
 
     m_raytracedObjectBuffer.descInfo = vk::DescriptorBufferInfo(

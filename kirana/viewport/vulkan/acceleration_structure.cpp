@@ -50,24 +50,21 @@ vk::DeviceAddress kirana::viewport::vulkan::AccelerationStructure::
 {
     return m_device->current.getAccelerationStructureAddressKHR(
         vk::AccelerationStructureDeviceAddressInfoKHR(
-            m_BLASData[m_meshIndexTable.at(meshIndex)].accelStruct.as));
+            m_BLASData[meshIndex].accelStruct.as));
 }
 
 void kirana::viewport::vulkan::AccelerationStructure::createBLAS(
-    const std::unordered_map<std::string, MeshData> &meshes,
+    const std::vector<MeshData> &meshes,
     const vk::DeviceAddress &vertexBufferAddress,
     const vk::DeviceAddress &indexBufferAddress)
 {
     for (const auto &m : meshes)
     {
-        if (!m.second.render)
-            continue;
-
         const vk::AccelerationStructureGeometryTrianglesDataKHR triangles{
             vk::Format::eR32G32B32Sfloat,
             vertexBufferAddress,
             sizeof(scene::Vertex),
-            static_cast<uint32_t>(m.second.vertexCount),
+            static_cast<uint32_t>(m.vertexCount),
             vk::IndexType::eUint32,
             indexBufferAddress,
             {},
@@ -78,17 +75,15 @@ void kirana::viewport::vulkan::AccelerationStructure::createBLAS(
             vk::GeometryFlagsKHR(vk::GeometryFlagBitsKHR::eOpaque)};
 
         const vk::AccelerationStructureBuildRangeInfoKHR offset{
-            static_cast<uint32_t>(m.second.indexCount / 3),
-            static_cast<uint32_t>(m.second.firstIndex * sizeof(uint32_t)),
-            static_cast<uint32_t>(m.second.vertexOffset), 0};
+            static_cast<uint32_t>(m.indexCount / 3),
+            static_cast<uint32_t>(m.firstIndex * sizeof(uint32_t)),
+            static_cast<uint32_t>(m.vertexOffset), 0};
 
         // TODO: Add multiple geometries in a single BLAS.
         BLASData blasData;
         blasData.geometries.emplace_back(geo);
         blasData.offsets.emplace_back(offset);
 
-        m_meshIndexTable[m.second.index] =
-            static_cast<uint32_t>(m_BLASData.size());
         m_BLASData.emplace_back(std::move(blasData));
     }
 }
@@ -196,7 +191,8 @@ bool kirana::viewport::vulkan::AccelerationStructure::buildBLAS(
     for (uint32_t bIdx = 0; bIdx < batchBuildDataIndices.size(); bIdx++)
     {
         const uint32_t buildDataFirstIndex = batchBuildDataIndices[bIdx][0];
-        const uint32_t buildDataCount = batchBuildDataIndices[bIdx].size();
+        const uint32_t buildDataCount =
+            static_cast<uint32_t>(batchBuildDataIndices[bIdx].size());
         if (compactionQueryPool)
             m_device->current.resetQueryPool(compactionQueryPool, 0,
                                              buildDataCount);
@@ -262,20 +258,19 @@ bool kirana::viewport::vulkan::AccelerationStructure::buildBLAS(
 }
 
 void kirana::viewport::vulkan::AccelerationStructure::createTLAS(
-    const std::unordered_map<std::string, MeshData> &meshes)
+    const std::vector<MeshData> &meshes)
 {
     for (const auto &m : meshes)
     {
-        if (!m.second.render)
-            continue;
-        for (const auto &i : m.second.instances)
+        for (const auto &i : m.instances)
         {
             m_TLASInstanceData.emplace_back(
                 vk::AccelerationStructureInstanceKHR{
                     getVulkanTransformMatrix(i.transform->getMatrix()),
-                    m.second.getGlobalInstanceIndex(i.index), 0xFF, 0,
+                    m.getGlobalInstanceIndex(i.index),
+                    static_cast<uint32_t>(m.render ? 0xFF : 0x00), 0,
                     vk::GeometryInstanceFlagBitsKHR::eTriangleCullDisable,
-                    getBLASAddress(m.second.index)});
+                    getBLASAddress(m.index)});
         }
     }
 }
@@ -338,7 +333,7 @@ bool kirana::viewport::vulkan::AccelerationStructure::buildTLAS(
 
     sizeInfo = m_device->current.getAccelerationStructureBuildSizesKHR(
         vk::AccelerationStructureBuildTypeKHR::eDevice, buildInfo,
-        m_TLASInstanceData.size());
+        static_cast<uint32_t>(m_TLASInstanceData.size()));
 
     if (createAccelerationStructure(
             sizeInfo, vk::AccelerationStructureTypeKHR::eTopLevel, &m_TLASData))
@@ -392,7 +387,7 @@ bool kirana::viewport::vulkan::AccelerationStructure::buildTLAS(
 
 kirana::viewport::vulkan::AccelerationStructure::AccelerationStructure(
     const Device *const device, const Allocator *const allocator,
-    const std::unordered_map<std::string, MeshData> &meshes,
+    const std::vector<MeshData> &meshes,
     const vk::DeviceAddress &vertexBufferAddress,
     const vk::DeviceAddress &indexBufferAddress)
     : m_isInitialized{false}, m_device{device}, m_allocator{allocator},

@@ -125,9 +125,10 @@ struct CameraData
     math::Matrix4x4 viewMatrix;
     math::Matrix4x4 projectionMatrix;
     math::Matrix4x4 viewProjectionMatrix;
+    math::Matrix4x4 invViewProjMatrix;
     math::Vector3 position;
     alignas(16) math::Vector3 direction;
-    float nearPlane;
+    alignas(4) float nearPlane;
     alignas(4) float farPlane;
 };
 
@@ -150,13 +151,14 @@ struct InstanceData
 struct MeshData
 {
     uint32_t index;
+    std::string name;
+    bool render;
     uint32_t vertexCount;
     uint32_t indexCount;
     uint32_t firstIndex;
-    int32_t vertexOffset;
+    uint32_t vertexOffset;
     std::vector<InstanceData> instances;
     const Pipeline *material;
-    bool render = false;
 
     inline uint32_t getGlobalInstanceIndex(uint32_t instanceIndex) const
     {
@@ -187,11 +189,8 @@ struct RaytracedGlobalData
 
 struct RaytracedObjectData
 {
-    math::Matrix4x4 modelMatrix;
     uint32_t firstIndex;
     alignas(4) uint32_t vertexOffset;
-    alignas(4) uint32_t padding1;
-    alignas(4) uint32_t padding2;
 };
 
 /**

@@ -38,13 +38,14 @@ float getLinearDepth(vec3 pos, float fallOff)
 {
     float near = vsIn.camNear;
     float far = vsIn.camFar / fallOff;
-    vec4 clipPos = vsIn.viewProj * vec4(pos, 1.0);
+    vec4 clipPos = vec4(pos, 1.0) * vsIn.viewProj;
     float depth = clamp((clipPos.z / clipPos.w) * 2.0 - 1.0, -1.0, 1.0);
     depth = (2.0 * near * far) / (far + near - depth * (far - near));
     return depth / far;
 }
 
 void main() {
+    // Get world position
     float t = -vsIn.nearPos.y / (vsIn.farPos.y - vsIn.nearPos.y);
     vec3 pos = vsIn.nearPos + t * (vsIn.farPos - vsIn.nearPos);
 

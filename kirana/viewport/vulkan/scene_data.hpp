@@ -42,8 +42,9 @@ class SceneData
     VertexInputDescription m_vertexDesc;
     mutable std::unordered_map<std::string, std::unique_ptr<Pipeline>>
         m_materials;
-    std::unordered_map<std::string, MeshData> m_meshes;
+    std::vector<MeshData> m_meshes;
     size_t m_totalInstanceCount;
+
     CameraData m_cameraData;
     AllocatedBuffer m_cameraBuffer;
     AllocatedBuffer m_worldDataBuffer;
@@ -54,9 +55,7 @@ class SceneData
     AccelerationStructure *m_accelStructure = nullptr;
     RaytracePipeline *m_raytracePipeline = nullptr;
     ShaderBindingTable *m_shaderBindingTable = nullptr;
-    RaytracedGlobalData m_raytracedGlobalData;
     AllocatedBuffer m_raytracedGlobalBuffer;
-    std::vector<RaytracedObjectData> m_raytracedObjectData;
     AllocatedBuffer m_raytracedObjectBuffer;
 
     const scene::ViewportScene &m_scene;
@@ -79,7 +78,7 @@ class SceneData
     void createMaterials();
     const std::unique_ptr<Pipeline> &findMaterial(
         const std::string &materialName, bool overrideShading = false);
-
+    bool hasMeshData(const std::string &meshName, uint32_t *meshIndex) const;
     bool createMeshes();
     bool createObjectBuffer();
     bool initializeRaytracing();
@@ -126,7 +125,7 @@ class SceneData
         return m_raytraceDescSetLayout;
     }
 
-    [[nodiscard]] inline const std::unordered_map<std::string, MeshData>
+    [[nodiscard]] inline const std::vector<MeshData>
         &getMeshData() const
     {
         return m_meshes;

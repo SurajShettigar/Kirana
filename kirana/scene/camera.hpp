@@ -65,15 +65,20 @@ class Camera
                                m_transform.getUp());
     }
 
+    // TODO: Get Inverse View Matrix
+
     [[nodiscard]] inline Matrix4x4 getProjectionMatrix() const
     {
         return m_projection;
     }
+    // TODO: Get Inverse Projection Matrix
 
     [[nodiscard]] inline Matrix4x4 getViewProjectionMatrix() const
     {
         return getProjectionMatrix() * getViewMatrix();
     }
+
+    // TODO: Get Inverse View-Projection Matrix
 
     void lookAt(const math::Vector3 &position,
                 const math::Vector3 &up = math::Vector3::UP);

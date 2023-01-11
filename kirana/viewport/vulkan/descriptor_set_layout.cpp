@@ -49,19 +49,11 @@ kirana::viewport::vulkan::DescriptorSetLayout::DescriptorSetLayout(
         const vk::DescriptorSetLayoutBinding objData(
             3, vk::DescriptorType::eStorageBuffer, 1,
             vk::ShaderStageFlagBits::eClosestHitKHR);
-        const vk::DescriptorSetLayoutBinding vertexBuffer(
-            4, vk::DescriptorType::eStorageBuffer, 1,
-            vk::ShaderStageFlagBits::eClosestHitKHR);
-        const vk::DescriptorSetLayoutBinding indexBuffer(
-            5, vk::DescriptorType::eStorageBuffer, 1,
-            vk::ShaderStageFlagBits::eClosestHitKHR);
         bindings.clear();
         bindings.emplace_back(accelerationStructure);
         bindings.emplace_back(outputImage);
         bindings.emplace_back(globalData);
         bindings.emplace_back(objData);
-        bindings.emplace_back(vertexBuffer);
-        bindings.emplace_back(indexBuffer);
     }
     break;
     }

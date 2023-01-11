@@ -105,7 +105,7 @@ class CommandBuffers
     void buildAccelerationStructure(
         const vk::AccelerationStructureBuildGeometryInfoKHR &geoInfo,
         const vk::AccelerationStructureBuildRangeInfoKHR *rangeInfo,
-        vk::QueryPool &compactionPool, size_t firstCompaction,
+        vk::QueryPool &compactionPool, uint32_t firstCompaction,
         bool addMemoryBarrier = true, uint32_t index = 0) const;
 };
 } // namespace kirana::viewport::vulkan

@@ -4,15 +4,10 @@
 
 #include "base_raytrace.glsl"
 
-layout (set = 0, binding = 0) uniform CameraBuffer {
-    mat4 view; // Row-major storage
-    mat4 proj; // Row-major
-    mat4 viewProj; // Row-major
-    vec3 position;
-    vec3 direction;
-    float nearPlane;
-    float farPlane;
-} camData;
+layout (set = 0, binding = 0) uniform _CameraData {
+    CameraData c;
+} camBuffer;
+
 layout (set = 1, binding = 0) uniform accelerationStructureEXT topLevelAS;
 layout (rgba32f, set = 1, binding = 1) uniform image2D image;
 
@@ -30,14 +25,14 @@ void main()
     // Convert the UV-coordinates to -1 to 1 range to calculate direction
     const vec2 ndc = uv * 2.0 - 1.0;
 
-    const vec3 rayOrigin = camData.position;
-    vec4 rayDirection = transpose(inverse(camData.viewProj)) * vec4(ndc.x, ndc.y, 1.0, 1.0);
+    const vec3 rayOrigin = camBuffer.c.position;
+    vec4 rayDirection = vec4(ndc.x, ndc.y, 1.0, 1.0) * camBuffer.c.invViewProj;
     rayDirection.xyz = rayDirection.xyz / rayDirection.w;
     rayDirection = normalize(rayDirection);
 
     uint rayFlags = gl_RayFlagsOpaqueEXT;
-    float tMin = camData.nearPlane;
-    float tMax = camData.farPlane;
+    float tMin = camBuffer.c.nearPlane;
+    float tMax = camBuffer.c.farPlane;
 
     traceRayEXT(topLevelAS, rayFlags, 0xFF, 0, 0, 0, rayOrigin.xyz, tMin, rayDirection.xyz, tMax, 0);
 

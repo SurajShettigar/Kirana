@@ -12,7 +12,7 @@ vec3 vertices[4] = vec3[4](
 
 vec3 clipToWorldSpace(vec3 clipPos)
 {
-    vec4 pos = inverse(transpose(camData.viewProj)) * vec4(clipPos, 1.0f);
+    vec4 pos = vec4(clipPos, 1.0f) * camData.invViewProj;
     return (pos.xyz / pos.w);
 }
 
@@ -27,7 +27,7 @@ layout(location=0) out VSOut {
 
 void main() {
     vec3 pos = vertices[gl_VertexIndex];
-    vsOut.viewProj = transpose(camData.viewProj);
+    vsOut.viewProj = camData.viewProj;
     vsOut.nearPos = clipToWorldSpace(vec3(pos.x, pos.y, 0.0));
     vsOut.farPos = clipToWorldSpace(vec3(pos.x, pos.y, 1.0));
     vsOut.camNear = camData.nearPlane;

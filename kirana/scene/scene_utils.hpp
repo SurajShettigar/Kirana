@@ -9,16 +9,16 @@ class Object;
 class Material;
 struct Vertex
 {
-    math::Vector4 position;
-    math::Vector4 normal;
-    math::Vector4 color;
+    math::Vector3 position;
+    alignas(16) math::Vector3 normal;
+    alignas(16) math::Vector4 color;
 };
 
 struct WorldData
 {
     math::Vector4 ambientColor{0.1f, 0.1f, 0.1f, 1.0f};
     math::Vector3 sunDirection{0.25f, -0.75f, -0.25f};
-    alignas(4) float sunIntensity{10.0f};
+    alignas(4) float sunIntensity{1.0f};
     alignas(16) math::Vector4 sunColor{1.0f, 1.0f, 1.0f, 1.0f};
 };
 

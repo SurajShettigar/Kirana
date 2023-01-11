@@ -1,76 +1,77 @@
 #version 460
-#extension GL_EXT_ray_tracing : require
-#extension GL_EXT_nonuniform_qualifier : enable
-#extension GL_EXT_scalar_block_layout : enable
 #extension GL_GOOGLE_include_directive : enable
-
-#extension GL_EXT_shader_explicit_arithmetic_types_int32 : require
-#extension GL_EXT_shader_explicit_arithmetic_types_int64 : require
 #extension GL_EXT_buffer_reference2 : require
 
 #include "base_raytrace.glsl"
 
-struct Vertex {
-    vec4 position;
-    vec4 normal;
-    vec4 color;
-};
+layout (set = 0, binding = 1) uniform _WorldData {
+    WorldData w;
+} worldBuffer;
 
-layout (set = 0, binding = 1) uniform WorldData
-{
-    vec4 ambientColor;
-    vec3 sunDirection;
-    float sunIntensity;
-    vec4 sunColor;
-} worldData;
-
-struct ObjectData {
-    mat4 localMat;
-    uint firstIndex;
-    uint vertexOffset;
-    uint padding1;
-    uint padding2;
-};
-
-layout (set = 1, binding = 3) readonly buffer ObjectBuffer {
-    ObjectData objects[];
+layout (set = 1, binding = 2) uniform _GlobalData {
+    GlobalData g;
+} globalBuffer;
+layout (set = 1, binding = 3) readonly buffer ObjectData {
+    Object o[];
 } objBuffer;
 
-layout (set = 1, binding = 4) readonly buffer VertexBuffer {
+layout (buffer_reference) readonly buffer VertexData {
     Vertex v[];
-} vBuffer;
-layout (set = 1, binding = 5) readonly buffer IndexBuffer {
+};
+layout (buffer_reference) readonly buffer IndexData {
     uint32_t i[];
-} iBuffer;
+};
 
 layout (location = 0) rayPayloadInEXT HitInfo payload;
 hitAttributeEXT vec2 attribs;
 
-void main()
+u32vec3 getTriangleIndices(IndexData iBuffer)
 {
-    ObjectData obj = objBuffer.objects[gl_InstanceCustomIndexEXT];
-    uint indexOffset = obj.firstIndex + (3 * gl_PrimitiveID);
-    uint vertexOffset = obj.vertexOffset;
+    const Object obj = objBuffer.o[gl_InstanceCustomIndexEXT];
+    uint32_t indexOffset = obj.firstIndex + (3 * gl_PrimitiveID);
+    uint32_t vertexOffset = obj.vertexOffset;
 
     u32vec3 index = u32vec3(iBuffer.i[indexOffset], iBuffer.i[indexOffset + 1], iBuffer.i[indexOffset + 2]);
     index += u32vec3(vertexOffset);
+    return index;
+}
 
-    Vertex v0 = vBuffer.v[index.x];
-    Vertex v1 = vBuffer.v[index.y];
-    Vertex v2 = vBuffer.v[index.z];
+Vertex[3] getTriangles(VertexData vBuffer, const u32vec3 indices)
+{
+    return Vertex[3](vBuffer.v[indices.x], vBuffer.v[indices.y], vBuffer.v[indices.z]);
+}
+
+vec3 getWorldPosition(const vec3[3] vPositions, const vec3 barycentrics)
+{
+    const vec3 pos = vPositions[0] * barycentrics.x + vPositions[1] * barycentrics.y + vPositions[2] * barycentrics.z;
+    return vec3(gl_ObjectToWorldEXT * vec4(pos, 1.0));
+}
+
+vec3 getWorldNormal(const vec3[3] vNormals, vec3 barycentrics)
+{
+    const vec3 normal = vNormals[0] * barycentrics.x + vNormals[1] * barycentrics.y + vNormals[2] * barycentrics.z;
+    return vec3(normalize(normal * gl_WorldToObjectEXT));
+}
+
+
+void main()
+{
+    VertexData vBuffer = VertexData(globalBuffer.g.vertexBufferAddress);
+    IndexData iBuffer = IndexData(globalBuffer.g.indexBufferAddress);
+
+    const u32vec3 indices = getTriangleIndices(iBuffer);
+    Vertex v[3] = getTriangles(vBuffer, indices);
 
     const vec3 barycentrics = vec3(1.0 - attribs.x - attribs.y, attribs.x, attribs.y);
+    const vec3 worldPos = getWorldPosition(vec3[3](v[0].position, v[1].position, v[2].position), barycentrics);
+    const vec3 worldNormal = getWorldNormal(vec3[3](v[0].normal, v[1].normal, v[2].normal), barycentrics);
 
-    const vec4 pos = v0.position * barycentrics.x + v1.position * barycentrics.y + v2.position * barycentrics.z;
-    const vec3 worldPos = vec3(gl_ObjectToWorldEXT * vec4(pos.xyz, 1.0));
-
-    vec3 normal = v0.normal.xyz * barycentrics.x + v1.normal.xyz * barycentrics.y + v2.normal.xyz * barycentrics.z;
-    normal = normalize(normal);
-    vec3 worldNormal = vec3(normalize(normal * gl_WorldToObjectEXT));
+    const vec3 lightDirection = normalize(-worldBuffer.w.sunDirection);
+    const vec3 lightColor = worldBuffer.w.sunColor.rgb * worldBuffer.w.sunIntensity;
 
     vec3 color = vec3(0.65, 0.65, 0.65);
-    color += worldData.ambientColor.rbg;
-    color *= worldData.sunColor.rgb * max(dot(worldNormal, normalize(-worldData.sunDirection)), 0.0);
+    color += worldBuffer.w.ambientColor.rbg;
+    color *= max(dot(worldNormal, lightDirection), 0.0) * lightColor;
 
-    payload.color = worldPos.rgb;
+    payload.color = color.rgb;
 }

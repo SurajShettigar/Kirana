@@ -266,7 +266,7 @@ void kirana::viewport::vulkan::CommandBuffers::end(uint32_t index) const
 void kirana::viewport::vulkan::CommandBuffers::buildAccelerationStructure(
     const vk::AccelerationStructureBuildGeometryInfoKHR &geoInfo,
     const vk::AccelerationStructureBuildRangeInfoKHR *rangeInfo,
-    vk::QueryPool &compactionPool, size_t firstCompaction,
+    vk::QueryPool &compactionPool, uint32_t firstCompaction,
     bool addMemoryBarrier, uint32_t index) const
 {
     m_current[index].buildAccelerationStructuresKHR(geoInfo, rangeInfo);
