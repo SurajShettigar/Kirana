@@ -13,6 +13,28 @@
 #include <scene.hpp>
 #include <utility>
 
+void kirana::viewport::vulkan::Allocator::displayMemoryInfo()
+{
+    const double MBMultiplier = 9.54e-7;
+
+    auto budgets = m_current->getHeapBudgets();
+    Logger::get().log(constants::LOG_CHANNEL_VULKAN, LogSeverity::debug,
+                      "Allocator Budgets: " + std::to_string(budgets.size()));
+    for (uint32_t i = 0; i < budgets.size(); i++)
+    {
+        const double budget =
+            static_cast<double>(budgets[i].budget) * MBMultiplier;
+        const double usage =
+            static_cast<double>(budgets[i].usage) * MBMultiplier;
+        std::string info =
+            "Budget: " + std::to_string(static_cast<uint32_t>(budget)) + "MB";
+        info +=
+            " Usage: " + std::to_string(static_cast<uint32_t>(usage)) + "MB";
+        Logger::get().log(constants::LOG_CHANNEL_VULKAN, LogSeverity::debug,
+                          "Allocator [" + std::to_string(i) + "]" + ": " +
+                              info);
+    }
+}
 
 kirana::viewport::vulkan::Allocator::Allocator(const Instance *instance,
                                                const Device *device)
@@ -21,8 +43,9 @@ kirana::viewport::vulkan::Allocator::Allocator(const Instance *instance,
     try
     {
         vma::AllocatorCreateInfo createInfo(
-            {vma::AllocatorCreateFlagBits::eBufferDeviceAddress}, m_device->gpu,
-            m_device->current);
+            {vma::AllocatorCreateFlagBits::eBufferDeviceAddress |
+             vma::AllocatorCreateFlagBits::eExtMemoryBudget},
+            m_device->gpu, m_device->current);
         createInfo.setInstance(m_instance->current);
         m_current =
             std::make_unique<vma::Allocator>(vma::createAllocator(createInfo));
@@ -32,6 +55,8 @@ kirana::viewport::vulkan::Allocator::Allocator(const Instance *instance,
         m_commandPool =
             new CommandPool(m_device, m_device->queueFamilyIndices.graphics);
         m_commandPool->allocateCommandBuffers(m_commandBuffers);
+
+        displayMemoryInfo();
         m_isInitialized = true;
         Logger::get().log(constants::LOG_CHANNEL_VULKAN, LogSeverity::trace,
                           "Allocator created");
@@ -68,13 +93,21 @@ kirana::viewport::vulkan::Allocator::~Allocator()
                       "Allocator destroyed");
 }
 
+void kirana::viewport::vulkan::Allocator::setCurrentFrameIndex(
+    uint32_t frameIndex)
+{
+    m_current->setCurrentFrameIndex(frameIndex);
+}
+
 bool kirana::viewport::vulkan::Allocator::allocateBuffer(
     vk::DeviceSize size, vk::BufferUsageFlags usageFlags,
     vma::MemoryUsage memoryUsage, AllocatedBuffer *buffer,
     bool mapMemoryPointer) const
 {
     const vk::BufferCreateInfo createInfo({}, size, usageFlags);
-    const vma::AllocationCreateInfo allocCreateInfo({}, memoryUsage);
+    const vma::AllocationCreateInfo allocCreateInfo(
+        {},
+        memoryUsage);
     try
     {
         const std::pair<vk::Buffer, vma::Allocation> data =

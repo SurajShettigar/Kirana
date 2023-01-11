@@ -11,7 +11,7 @@ layout (set = 0, binding = 0) uniform _CameraData {
 layout (set = 1, binding = 0) uniform accelerationStructureEXT topLevelAS;
 layout (rgba32f, set = 1, binding = 1) uniform image2D image;
 
-layout(location = 0) rayPayloadEXT HitInfo payload;
+layout (location = 0) rayPayloadEXT HitInfo payload;
 
 void main()
 {
@@ -34,7 +34,18 @@ void main()
     float tMin = camBuffer.c.nearPlane;
     float tMax = camBuffer.c.farPlane;
 
-    traceRayEXT(topLevelAS, rayFlags, 0xFF, 0, 0, 0, rayOrigin.xyz, tMin, rayDirection.xyz, tMax, 0);
+    traceRayEXT(topLevelAS, // Acceleration Structure
+    rayFlags, // Ray flags
+    0xFF, // Culling Mask. ANDed with mask set in acceleration structure.
+    0, // SBT Record offset
+    0, // SBT Record stride
+    0, // Miss Shader Index
+    rayOrigin.xyz, // Ray origin
+    tMin, // Min Ray hit distance
+    rayDirection.xyz, // Ray direction
+    tMax, // Max Ray hit distance
+    0 // Payload location
+    );
 
     imageStore(image, ivec2(gl_LaunchIDEXT.xy), vec4(payload.color, 1.0));
 }

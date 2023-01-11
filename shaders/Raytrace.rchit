@@ -8,6 +8,7 @@ layout (set = 0, binding = 1) uniform _WorldData {
     WorldData w;
 } worldBuffer;
 
+layout (set = 1, binding = 0) uniform accelerationStructureEXT topLevelAS;
 layout (set = 1, binding = 2) uniform _GlobalData {
     GlobalData g;
 } globalBuffer;
@@ -23,6 +24,8 @@ layout (buffer_reference) readonly buffer IndexData {
 };
 
 layout (location = 0) rayPayloadInEXT HitInfo payload;
+layout (location = 1) rayPayloadEXT bool isShadowed;
+
 hitAttributeEXT vec2 attribs;
 
 u32vec3 getTriangleIndices(IndexData iBuffer)
@@ -66,12 +69,40 @@ void main()
     const vec3 worldPos = getWorldPosition(vec3[3](v[0].position, v[1].position, v[2].position), barycentrics);
     const vec3 worldNormal = getWorldNormal(vec3[3](v[0].normal, v[1].normal, v[2].normal), barycentrics);
 
-    const vec3 lightDirection = normalize(-worldBuffer.w.sunDirection);
+    float attenuation = 1.0;
+    const float lightDistance = 100000.0;
+    const vec3 lightDirection = normalize(- worldBuffer.w.sunDirection);
     const vec3 lightColor = worldBuffer.w.sunColor.rgb * worldBuffer.w.sunIntensity;
+    const float dotL = dot(worldNormal, lightDirection);
+
+    if (dotL > 0.0)
+    {
+        float tMin = 0.001;
+        float tMax = lightDistance;
+        vec3 origin = gl_WorldRayOriginEXT + gl_WorldRayDirectionEXT * gl_HitTEXT;
+        vec3 direction = lightDirection;
+        uint flags = gl_RayFlagsOpaqueEXT + gl_RayFlagsTerminateOnFirstHitEXT + gl_RayFlagsSkipClosestHitShaderEXT;
+        isShadowed = true;
+        traceRayEXT(topLevelAS, // Acceleration Structure
+        flags, // Ray flags
+        0xFF, // Culling Mask. ANDed with mask set in acceleration structure.
+        0, // SBT Record offset
+        0, // SBT Record stride
+        1, // Miss Shader Index
+        origin, // Ray origin
+        tMin, // Min Ray hit distance
+        direction, // Ray direction
+        tMax, // Max Ray hit distance
+        1 // Payload location
+        );
+    }
+
+    if (isShadowed)
+    attenuation = 0.1;
 
     vec3 color = vec3(0.65, 0.65, 0.65);
     color += worldBuffer.w.ambientColor.rbg;
-    color *= max(dot(worldNormal, lightDirection), 0.0) * lightColor;
+    color *= max(dotL, 0.0) * lightColor * attenuation;
 
     payload.color = color.rgb;
 }

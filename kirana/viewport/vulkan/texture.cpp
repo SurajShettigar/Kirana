@@ -32,7 +32,7 @@ bool kirana::viewport::vulkan::Texture::createImageView()
     try
     {
         m_imageView = m_device->current.createImageView(imgViewCreateInfo);
-
+        m_device->setDebugObjectName(m_imageView, "ImageView_" + m_name);
         if (m_properties.generateDescriptorInfo)
             m_descInfo = vk::DescriptorImageInfo{getSampler(), m_imageView,
                                                  m_properties.layout};
@@ -73,6 +73,7 @@ kirana::viewport::vulkan::Texture::Texture(const Device *const device,
     if (allocated)
     {
         m_image = *m_allocatedImage.image;
+        m_device->setDebugObjectName(m_image, "Image_" + m_name);
         m_isInitialized = createImageView();
         if (m_isInitialized)
             Logger::get().log(constants::LOG_CHANNEL_VULKAN, LogSeverity::trace,

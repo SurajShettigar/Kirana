@@ -8,10 +8,13 @@ function(buildShader SHADER_SOURCE_FILE)
     set(OUTPUT_PATH ${SHADER_INSTALL_DIR}/${SHADER_NAME}.spv)
     add_custom_command(
             OUTPUT ${OUTPUT_PATH}
-            COMMAND Vulkan::glslangValidator -V ${INPUT_PATH} -o ${OUTPUT_PATH} --target-env ${VULKAN_GLSLANG_VALIDATOR_TARGET} $<$<CONFIG:Debug>:-g>
+            COMMAND Vulkan::glslangValidator
+            -V ${INPUT_PATH}
+            -o ${OUTPUT_PATH}
+            --target-env ${VULKAN_GLSLANG_VALIDATOR_TARGET}
+            "$<$<CONFIG:Debug>:-g>"
             DEPENDS ${INPUT_PATH}
-            IMPLICIT_DEPENDS CXX ${INPUT_PATH}
-            VERBATIM)
+            IMPLICIT_DEPENDS CXX ${INPUT_PATH})
     set_source_files_properties(${OUTPUT_PATH} PROPERTIES GENERATED TRUE)
     target_sources(Shaders PRIVATE ${OUTPUT_PATH})
 endfunction()

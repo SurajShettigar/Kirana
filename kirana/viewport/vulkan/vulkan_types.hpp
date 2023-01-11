@@ -107,8 +107,9 @@ enum class ShaderStage
     FRAGMENT = 2,
     RAYTRACE_RAY_GEN = 3,
     RAYTRACE_MISS = 4,
-    RAYTRACE_CLOSEST_HIT = 5,
-    SHADER_STAGE_MAX = 6
+    RAYTRACE_MISS_SHADOW = 5,
+    RAYTRACE_CLOSEST_HIT = 6,
+    SHADER_STAGE_MAX = 7
 };
 
 // TODO: Remove it once descriptor set is implemented.

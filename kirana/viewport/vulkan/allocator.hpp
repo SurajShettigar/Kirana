@@ -35,6 +35,8 @@ class Allocator
     const Instance *const m_instance;
     const Device *const m_device;
 
+    void displayMemoryInfo();
+
   public:
     explicit Allocator(const Instance *instance, const Device *device);
     ~Allocator();
@@ -43,6 +45,8 @@ class Allocator
 
     const bool &isInitialized = m_isInitialized;
     const vma::Allocator &current = *m_current;
+
+    void setCurrentFrameIndex(uint32_t frameIndex);
 
     bool allocateBuffer(vk::DeviceSize size, vk::BufferUsageFlags usageFlags,
                         vma::MemoryUsage memoryUsage, AllocatedBuffer *buffer,

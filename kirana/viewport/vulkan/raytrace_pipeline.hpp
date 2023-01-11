@@ -8,6 +8,7 @@ namespace kirana::viewport::vulkan
 class RaytracePipeline : public Pipeline
 {
   protected:
+    uint32_t m_maxRecursionDepth = 2;
     bool build() override;
 
   public:

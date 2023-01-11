@@ -16,9 +16,14 @@ namespace constants = kirana::utils::constants;
 using kirana::utils::Logger;
 using kirana::utils::LogSeverity;
 
+/// Vector of necessary instance extensions when creating vulkan instance.
+static const std::vector<const char *> REQUIRED_INSTANCE_EXTENSIONS {
+    VK_KHR_GET_PHYSICAL_DEVICE_PROPERTIES_2_EXTENSION_NAME
+};
 /// Vector of necessary device extensions when selecting device.
 static const std::vector<const char *> REQUIRED_DEVICE_EXTENSIONS{
     VK_KHR_SWAPCHAIN_EXTENSION_NAME,
+    VK_EXT_MEMORY_BUDGET_EXTENSION_NAME,
     VK_KHR_ACCELERATION_STRUCTURE_EXTENSION_NAME,
     VK_KHR_RAY_TRACING_PIPELINE_EXTENSION_NAME, VK_KHR_RAY_QUERY_EXTENSION_NAME,
     VK_KHR_DEFERRED_HOST_OPERATIONS_EXTENSION_NAME};

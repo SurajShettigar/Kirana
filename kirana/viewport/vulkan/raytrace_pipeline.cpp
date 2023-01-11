@@ -7,6 +7,15 @@
 
 bool kirana::viewport::vulkan::RaytracePipeline::build()
 {
+    if (m_device->raytracingProperties.maxRayRecursionDepth <
+        m_maxRecursionDepth)
+    {
+        Logger::get().log(constants::LOG_CHANNEL_VULKAN, LogSeverity::error,
+                          "Failed to create Raytrace Pipeline for material: " +
+                              m_name + ". Max Recursion Depth Exceeded");
+        return false;
+    }
+
     const Shader shader(m_device, m_shaderName);
 
     if (!shader.isInitialized)
@@ -15,30 +24,31 @@ bool kirana::viewport::vulkan::RaytracePipeline::build()
     std::vector<vk::PipelineShaderStageCreateInfo> shaderStages;
     for (const auto &m : shader.getAllModules())
     {
+        std::string stageName = "";
         vk::ShaderStageFlagBits stageFlag = vk::ShaderStageFlagBits::eVertex;
         switch (m.first)
         {
-        case ShaderStage::COMPUTE:
-            stageFlag = vk::ShaderStageFlagBits::eCompute;
-            break;
-        case ShaderStage::VERTEX:
-            stageFlag = vk::ShaderStageFlagBits::eVertex;
-            break;
-        case ShaderStage::FRAGMENT:
-            stageFlag = vk::ShaderStageFlagBits::eFragment;
-            break;
         case ShaderStage::RAYTRACE_RAY_GEN:
             stageFlag = vk::ShaderStageFlagBits::eRaygenKHR;
+            stageName = "RayGen";
             break;
         case ShaderStage::RAYTRACE_MISS:
             stageFlag = vk::ShaderStageFlagBits::eMissKHR;
+            stageName = "Miss";
+            break;
+        case ShaderStage::RAYTRACE_MISS_SHADOW:
+            stageFlag = vk::ShaderStageFlagBits::eMissKHR;
+            stageName = "MissShadow";
             break;
         case ShaderStage::RAYTRACE_CLOSEST_HIT:
             stageFlag = vk::ShaderStageFlagBits::eClosestHitKHR;
+            stageName = "ClosestHit";
             break;
         default:
             break;
         }
+        m_device->setDebugObjectName(m.second, "ShaderModule_" + m_shaderName +
+                                                   "_" + stageName);
         shaderStages.emplace_back(vk::PipelineShaderStageCreateInfo(
             {}, stageFlag, m.second, constants::VULKAN_SHADER_MAIN_FUNC_NAME));
     }
@@ -53,22 +63,28 @@ bool kirana::viewport::vulkan::RaytracePipeline::build()
 
     // Ray-Gen Shader
     shaderGroup.type = vk::RayTracingShaderGroupTypeKHR::eGeneral;
-    shaderGroup.generalShader = 0; // Index/Order of shader stage
+    shaderGroup.generalShader = static_cast<uint32_t>(
+        shaderGroups.size()); // Index/Order of shader stage
     shaderGroups.push_back(shaderGroup);
 
     // Miss Shader
     shaderGroup.type = vk::RayTracingShaderGroupTypeKHR::eGeneral;
-    shaderGroup.generalShader = 1;
+    shaderGroup.generalShader = static_cast<uint32_t>(shaderGroups.size());
+    shaderGroups.push_back(shaderGroup);
+
+    // Miss Shadow Shader
+    shaderGroup.type = vk::RayTracingShaderGroupTypeKHR::eGeneral;
+    shaderGroup.generalShader = static_cast<uint32_t>(shaderGroups.size());
     shaderGroups.push_back(shaderGroup);
 
     // Hit group
     shaderGroup.type = vk::RayTracingShaderGroupTypeKHR::eTrianglesHitGroup;
-    shaderGroup.closestHitShader = 2;
+    shaderGroup.closestHitShader = static_cast<uint32_t>(shaderGroups.size());
     shaderGroup.generalShader = VK_SHADER_UNUSED_KHR;
     shaderGroups.push_back(shaderGroup);
 
-    vk::RayTracingPipelineCreateInfoKHR createInfo({}, shaderStages,
-                                                   shaderGroups, 1);
+    vk::RayTracingPipelineCreateInfoKHR createInfo(
+        {}, shaderStages, shaderGroups, m_maxRecursionDepth);
     createInfo.layout = m_pipelineLayout->current;
 
     auto result =
@@ -95,6 +111,8 @@ kirana::viewport::vulkan::RaytracePipeline::RaytracePipeline(
 {
     if (m_pipelineLayout->isInitialized)
         m_isInitialized = build();
+    if (m_isInitialized)
+        m_device->setDebugObjectName(m_current, "RaytracePipeline_" + m_name);
 }
 
 kirana::viewport::vulkan::RaytracePipeline::~RaytracePipeline()

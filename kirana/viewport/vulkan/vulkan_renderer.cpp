@@ -43,8 +43,8 @@ void kirana::viewport::vulkan::VulkanRenderer::init(
     }
     if (m_descriptorPool && m_descriptorPool->isInitialized)
     {
-        m_currentScene = new SceneData(m_device, m_allocator, m_renderpass,
-                                       scene, shading);
+        m_currentScene =
+            new SceneData(m_device, m_allocator, m_renderpass, scene, shading);
     }
     if (m_descriptorPool && m_descriptorPool->isInitialized)
     {
@@ -55,10 +55,13 @@ void kirana::viewport::vulkan::VulkanRenderer::init(
                 [&]() { this->rebuildSwapchain(); });
     }
     m_isInitialized = m_drawer->isInitialized;
+    m_currentFrame = 0;
 }
 
 void kirana::viewport::vulkan::VulkanRenderer::update()
 {
+    m_allocator->setCurrentFrameIndex(m_currentFrame);
+    m_currentFrame++;
 }
 
 void kirana::viewport::vulkan::VulkanRenderer::render()

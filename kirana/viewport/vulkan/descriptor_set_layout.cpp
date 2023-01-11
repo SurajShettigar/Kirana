@@ -39,7 +39,8 @@ kirana::viewport::vulkan::DescriptorSetLayout::DescriptorSetLayout(
     case LayoutType::RAYTRACE: {
         const vk::DescriptorSetLayoutBinding accelerationStructure(
             0, vk::DescriptorType::eAccelerationStructureKHR, 1,
-            vk::ShaderStageFlagBits::eRaygenKHR);
+            vk::ShaderStageFlagBits::eRaygenKHR |
+                vk::ShaderStageFlagBits::eClosestHitKHR);
         const vk::DescriptorSetLayoutBinding outputImage(
             1, vk::DescriptorType::eStorageImage, 1,
             vk::ShaderStageFlagBits::eRaygenKHR);

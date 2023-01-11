@@ -221,6 +221,9 @@ bool kirana::viewport::vulkan::AccelerationStructure::buildBLAS(
 
                 m_device->setDebugObjectName(m_BLASData[i].accelStruct.as,
                                              "BLAS_" + std::to_string(i));
+                m_device->setDebugObjectName(
+                    *m_BLASData[i].accelStruct.buffer.buffer,
+                    "BLAS_" + std::to_string(i));
             }
             else
             {
@@ -338,6 +341,9 @@ bool kirana::viewport::vulkan::AccelerationStructure::buildTLAS(
     if (createAccelerationStructure(
             sizeInfo, vk::AccelerationStructureTypeKHR::eTopLevel, &m_TLASData))
     {
+        m_device->setDebugObjectName(m_TLASData.as, "TLAS");
+        m_device->setDebugObjectName(*m_TLASData.buffer.buffer, "TLAS");
+
         AllocatedBuffer scratchBuffer;
         if (!m_allocator->allocateBuffer(
                 update ? sizeInfo.updateScratchSize : sizeInfo.buildScratchSize,

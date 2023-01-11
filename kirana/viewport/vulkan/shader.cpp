@@ -28,6 +28,9 @@ std::string kirana::viewport::vulkan::Shader::getPathForShaderStage(
     case ShaderStage::RAYTRACE_MISS:
         extension = constants::VULKAN_SHADER_RAYTRACE_MISS_EXTENSION;
         break;
+    case ShaderStage::RAYTRACE_MISS_SHADOW:
+        extension = constants::VULKAN_SHADER_RAYTRACE_MISS_SHADOW_EXTENSION;
+        break;
     case ShaderStage::RAYTRACE_CLOSEST_HIT:
         extension = constants::VULKAN_SHADER_RAYTRACE_CLOSEST_HIT_EXTENSION;
         break;

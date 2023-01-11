@@ -107,6 +107,10 @@ class Device
                             const std::string &name) const;
     void setDebugObjectName(const vk::Pipeline &pipeline,
                             const std::string &name) const;
+    void setDebugObjectName(const vk::Image &image,
+                            const std::string &name) const;
+    void setDebugObjectName(const vk::ImageView &imageView,
+                            const std::string &name) const;
     void setDebugObjectName(const vk::AccelerationStructureKHR &accelStruct,
                             const std::string &name) const;
 };

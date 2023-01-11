@@ -293,8 +293,10 @@ vk::DeviceAddress kirana::viewport::vulkan::Device::getBufferAddress(
 void kirana::viewport::vulkan::Device::setDebugObjectName(
     vk::ObjectType type, uint64_t handle, const std::string &name) const
 {
+#if DEBUG
     m_current.setDebugUtilsObjectNameEXT(
         vk::DebugUtilsObjectNameInfoEXT(type, handle, name.c_str()));
+#endif
 }
 
 void kirana::viewport::vulkan::Device::setDebugObjectName(
@@ -318,6 +320,21 @@ void kirana::viewport::vulkan::Device::setDebugObjectName(
     setDebugObjectName(vk::ObjectType::ePipeline,
                        (uint64_t) static_cast<VkPipeline>(pipeline), name);
 }
+
+void kirana::viewport::vulkan::Device::setDebugObjectName(
+    const vk::Image &image, const std::string &name) const
+{
+    setDebugObjectName(vk::ObjectType::eImage,
+                       (uint64_t) static_cast<VkImage>(image), name);
+}
+
+void kirana::viewport::vulkan::Device::setDebugObjectName(
+    const vk::ImageView &imageView, const std::string &name) const
+{
+    setDebugObjectName(vk::ObjectType::eImageView,
+                       (uint64_t) static_cast<VkImageView>(imageView), name);
+}
+
 void kirana::viewport::vulkan::Device::setDebugObjectName(
     const vk::AccelerationStructureKHR &accelStruct,
     const std::string &name) const

@@ -22,6 +22,9 @@ kirana::viewport::vulkan::Instance::Instance(
 #endif
 
     auto extensions = reqInstanceExtensions;
+    extensions.insert(extensions.end(),
+                      vulkan::REQUIRED_INSTANCE_EXTENSIONS.begin(),
+                      vulkan::REQUIRED_INSTANCE_EXTENSIONS.end());
     if (constants::VULKAN_USE_VALIDATION_LAYERS)
         extensions.push_back(VK_EXT_DEBUG_UTILS_EXTENSION_NAME);
 

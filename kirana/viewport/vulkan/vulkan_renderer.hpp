@@ -37,6 +37,7 @@ class VulkanRenderer
   private:
     bool m_isInitialized = false;
     bool m_isMinimized = false;
+    uint32_t m_currentFrame = 0;
     const window::Window *m_window = nullptr;
 
     Allocator *m_allocator = nullptr;

@@ -15,30 +15,27 @@ bool kirana::viewport::vulkan::RasterPipeline::build()
     std::vector<vk::PipelineShaderStageCreateInfo> shaderStages;
     for (const auto &m : shader.getAllModules())
     {
+        std::string stageName = "";
         vk::ShaderStageFlagBits stageFlag = vk::ShaderStageFlagBits::eVertex;
         switch (m.first)
         {
         case ShaderStage::COMPUTE:
             stageFlag = vk::ShaderStageFlagBits::eCompute;
+            stageName = "Compute";
             break;
         case ShaderStage::VERTEX:
             stageFlag = vk::ShaderStageFlagBits::eVertex;
+            stageName = "Vertex";
             break;
         case ShaderStage::FRAGMENT:
             stageFlag = vk::ShaderStageFlagBits::eFragment;
-            break;
-        case ShaderStage::RAYTRACE_RAY_GEN:
-            stageFlag = vk::ShaderStageFlagBits::eRaygenKHR;
-            break;
-        case ShaderStage::RAYTRACE_MISS:
-            stageFlag = vk::ShaderStageFlagBits::eMissKHR;
-            break;
-        case ShaderStage::RAYTRACE_CLOSEST_HIT:
-            stageFlag = vk::ShaderStageFlagBits::eClosestHitKHR;
+            stageName = "Fragment";
             break;
         default:
             break;
         }
+        m_device->setDebugObjectName(m.second, "ShaderModule_" + m_shaderName +
+                                                   "_" + stageName);
         shaderStages.emplace_back(vk::PipelineShaderStageCreateInfo(
             {}, stageFlag, m.second, constants::VULKAN_SHADER_MAIN_FUNC_NAME));
     }
@@ -129,6 +126,8 @@ kirana::viewport::vulkan::RasterPipeline::RasterPipeline(
 {
     if (m_pipelineLayout->isInitialized)
         m_isInitialized = build();
+    if (m_isInitialized)
+        m_device->setDebugObjectName(m_current, "Pipeline_" + m_name);
 }
 
 kirana::viewport::vulkan::RasterPipeline::~RasterPipeline()
