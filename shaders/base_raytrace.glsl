@@ -29,6 +29,7 @@ struct WorldData
 struct GlobalData {
     uint64_t vertexBufferAddress;
     uint64_t indexBufferAddress;
+    uint32_t frameIndex;
 };
 
 struct Vertex {

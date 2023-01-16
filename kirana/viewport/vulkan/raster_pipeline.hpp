@@ -37,6 +37,7 @@ class RasterPipeline : public Pipeline
     explicit RasterPipeline(
         const Device *device, const RenderPass *renderPass,
         const std::vector<const DescriptorSetLayout *> &descriptorSetLayouts,
+        const std::vector<const PushConstantBase *> &pushConstants,
         std::string name, std::string shaderName,
         VertexInputDescription vertexInputDesc, Properties properties);
     ~RasterPipeline() override;

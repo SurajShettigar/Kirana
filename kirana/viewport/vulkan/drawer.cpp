@@ -16,6 +16,7 @@
 #include <scene.hpp>
 #include "texture.hpp"
 #include "vulkan_utils.hpp"
+#include "push_constant.hpp"
 
 #include <constants.h>
 
@@ -93,11 +94,8 @@ kirana::viewport::vulkan::Drawer::Drawer(
                     m_raytracedImage->getDescriptorImageInfo(),
                     vk::DescriptorType::eStorageImage, 1);
                 m_frames[i].raytraceDescriptorSet->writeBuffer(
-                    m_scene->getRaytracedGlobalBuffer().descInfo,
-                    vk::DescriptorType::eUniformBuffer, 2);
-                m_frames[i].raytraceDescriptorSet->writeBuffer(
                     m_scene->getRaytracedObjectBuffer().descInfo,
-                    vk::DescriptorType::eStorageBuffer, 3);
+                    vk::DescriptorType::eStorageBuffer, 2);
             }
 
             m_frames[i].renderFence = m_device->current.createFence(
@@ -244,6 +242,9 @@ void kirana::viewport::vulkan::Drawer::draw()
             {m_scene->getCameraBufferOffset(frameIndex),
              m_scene->getWorldDataBufferOffset(frameIndex)},
             vk::PipelineBindPoint::eRayTracingKHR);
+        frame.commandBuffers->pushConstants<RaytracedGlobalData>(
+            m_scene->getRaytracePipeline().getLayout().current,
+            m_scene->getRaytracedGlobalData());
         frame.commandBuffers->traceRays(m_scene->getShaderBindingTable(),
                                         m_raytracedImage->getProperties().size);
         frame.commandBuffers->copyImage(*m_raytracedImage,
@@ -258,7 +259,7 @@ void kirana::viewport::vulkan::Drawer::draw()
             *(m_scene->getIndexBuffer().buffer), 0);
 
         std::string lastMaterial;
-//        uint32_t meshIndex = 0;
+        //        uint32_t meshIndex = 0;
         for (const auto &m : m_scene->getMeshData())
         {
             if (lastMaterial != m.material->name)
@@ -293,7 +294,7 @@ void kirana::viewport::vulkan::Drawer::draw()
                         m.getGlobalInstanceIndex(i));
                 }
             }
-//            meshIndex++;
+            //            meshIndex++;
         }
     }
 

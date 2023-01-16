@@ -60,7 +60,10 @@ void kirana::viewport::vulkan::VulkanRenderer::init(
 
 void kirana::viewport::vulkan::VulkanRenderer::update()
 {
-    m_allocator->setCurrentFrameIndex(m_currentFrame);
+    if (m_allocator)
+        m_allocator->setCurrentFrameIndex(m_currentFrame);
+    if (m_currentScene)
+        m_currentScene->updateFrameIndex(m_currentFrame);
     m_currentFrame++;
 }
 

@@ -1,6 +1,7 @@
 #include "command_buffers.hpp"
 #include "vulkan_utils.hpp"
 
+#include "push_constant.hpp"
 #include "shader_binding_table.hpp"
 #include "texture.hpp"
 
@@ -160,15 +161,6 @@ void kirana::viewport::vulkan::CommandBuffers::bindIndexBuffer(
     m_current[index].bindIndexBuffer(buffer, offset, indexType);
 }
 
-// TODO: Temporary solution to push constants.
-void kirana::viewport::vulkan::CommandBuffers::pushConstants(
-    vk::PipelineLayout layout, vk::ShaderStageFlags stageFlags, uint32_t offset,
-    const MeshPushConstants &meshConstants, uint32_t index) const
-{
-    m_current[index].pushConstants<MeshPushConstants>(layout, stageFlags,
-                                                      offset, meshConstants);
-}
-
 void kirana::viewport::vulkan::CommandBuffers::draw(uint32_t vertexCount,
                                                     uint32_t instanceCount,
                                                     uint32_t firstVertex,
@@ -192,8 +184,7 @@ void kirana::viewport::vulkan::CommandBuffers::traceRays(
     uint32_t index) const
 {
     m_current[index].traceRaysKHR(sbt.rayGenRegion, sbt.missRegion,
-                                  sbt.hitRegion, {}, size[0],
-                                  size[1], size[2]);
+                                  sbt.hitRegion, {}, size[0], size[1], size[2]);
 }
 
 void kirana::viewport::vulkan::CommandBuffers::copyBuffer(

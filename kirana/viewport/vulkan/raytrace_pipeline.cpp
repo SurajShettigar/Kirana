@@ -4,6 +4,7 @@
 #include "shader.hpp"
 #include "pipeline_layout.hpp"
 #include "vulkan_utils.hpp"
+#include "push_constant.hpp"
 
 bool kirana::viewport::vulkan::RaytracePipeline::build()
 {
@@ -105,9 +106,10 @@ bool kirana::viewport::vulkan::RaytracePipeline::build()
 kirana::viewport::vulkan::RaytracePipeline::RaytracePipeline(
     const Device *const device, const RenderPass *const renderPass,
     const std::vector<const DescriptorSetLayout *> &descriptorSetLayouts,
+    const std::vector<const PushConstantBase *> &pushConstants,
     std::string name, std::string shaderName)
-    : Pipeline(device, renderPass, descriptorSetLayouts, std::move(name),
-               std::move(shaderName))
+    : Pipeline(device, renderPass, descriptorSetLayouts, pushConstants,
+               std::move(name), std::move(shaderName))
 {
     if (m_pipelineLayout->isInitialized)
         m_isInitialized = build();

@@ -6,6 +6,7 @@
 
 namespace kirana::viewport::vulkan
 {
+template <typename T> class PushConstant;
 class ShaderBindingTable;
 class Texture;
 class CommandBuffers
@@ -76,10 +77,9 @@ class CommandBuffers
     void bindIndexBuffer(const vk::Buffer &buffer, const vk::DeviceSize &offset,
                          vk::IndexType indexType = vk::IndexType::eUint32,
                          uint32_t index = 0) const;
-    // TODO: Temporary solution to push constants.
+    template <typename T>
     void pushConstants(vk::PipelineLayout layout,
-                       vk::ShaderStageFlags stageFlags, uint32_t offset,
-                       const MeshPushConstants &meshConstants,
+                       const PushConstant<T> &pushConstant,
                        uint32_t index = 0) const;
     void draw(uint32_t vertexCount, uint32_t instanceCount,
               uint32_t firstVertex, uint32_t firstInstance,
@@ -108,6 +108,18 @@ class CommandBuffers
         vk::QueryPool &compactionPool, uint32_t firstCompaction,
         bool addMemoryBarrier = true, uint32_t index = 0) const;
 };
+
+// Template functions
+template <typename T>
+void CommandBuffers::pushConstants(vk::PipelineLayout layout,
+                                   const PushConstant<T> &pushConstant,
+                                   uint32_t index) const
+{
+    m_current[index].pushConstants<T>(
+        layout, pushConstant.getRange().stageFlags,
+        pushConstant.getRange().offset, pushConstant.get());
+}
+
 } // namespace kirana::viewport::vulkan
 
 

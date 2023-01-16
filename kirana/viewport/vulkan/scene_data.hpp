@@ -23,6 +23,7 @@ class Device;
 class RenderPass;
 class Allocator;
 class DescriptorSetLayout;
+template <typename T> class PushConstant;
 class AccelerationStructure;
 class RaytracePipeline;
 class ShaderBindingTable;
@@ -30,6 +31,7 @@ class SceneData
 {
   private:
     bool m_isInitialized = false;
+    uint32_t m_frameIndex = 0;
     viewport::Shading m_currentShading = viewport::Shading::BASIC;
 
     const Device *const m_device;
@@ -38,6 +40,7 @@ class SceneData
     const DescriptorSetLayout *m_globalDescSetLayout;
     const DescriptorSetLayout *m_objectDescSetLayout;
     const DescriptorSetLayout *m_raytraceDescSetLayout;
+    PushConstant<RaytracedGlobalData> *m_raytraceGlobalData = nullptr;
 
     VertexInputDescription m_vertexDesc;
     mutable std::unordered_map<std::string, std::unique_ptr<Pipeline>>
@@ -55,7 +58,6 @@ class SceneData
     AccelerationStructure *m_accelStructure = nullptr;
     RaytracePipeline *m_raytracePipeline = nullptr;
     ShaderBindingTable *m_shaderBindingTable = nullptr;
-    AllocatedBuffer m_raytracedGlobalBuffer;
     AllocatedBuffer m_raytracedObjectBuffer;
 
     const scene::ViewportScene &m_scene;
@@ -93,6 +95,8 @@ class SceneData
 
     const bool &isInitialized = m_isInitialized;
 
+    void updateFrameIndex(uint32_t frameIndex);
+
     inline bool shouldRenderOutline() const
     {
         return m_currentShading == viewport::Shading::BASIC;
@@ -125,8 +129,10 @@ class SceneData
         return m_raytraceDescSetLayout;
     }
 
-    [[nodiscard]] inline const std::vector<MeshData>
-        &getMeshData() const
+    [[nodiscard]] const PushConstant<RaytracedGlobalData>
+        &getRaytracedGlobalData() const;
+
+    [[nodiscard]] inline const std::vector<MeshData> &getMeshData() const
     {
         return m_meshes;
     }
@@ -173,11 +179,6 @@ class SceneData
     [[nodiscard]] inline const ShaderBindingTable &getShaderBindingTable() const
     {
         return *m_shaderBindingTable;
-    }
-
-    [[nodiscard]] inline const AllocatedBuffer &getRaytracedGlobalBuffer() const
-    {
-        return m_raytracedGlobalBuffer;
     }
 
     [[nodiscard]] inline const AllocatedBuffer &getRaytracedObjectBuffer() const

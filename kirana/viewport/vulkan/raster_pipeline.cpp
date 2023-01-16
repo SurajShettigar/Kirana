@@ -4,6 +4,7 @@
 #include "shader.hpp"
 #include "pipeline_layout.hpp"
 #include "vulkan_utils.hpp"
+#include "push_constant.hpp"
 
 bool kirana::viewport::vulkan::RasterPipeline::build()
 {
@@ -118,10 +119,11 @@ bool kirana::viewport::vulkan::RasterPipeline::build()
 kirana::viewport::vulkan::RasterPipeline::RasterPipeline(
     const Device *device, const RenderPass *renderPass,
     const std::vector<const DescriptorSetLayout *> &descriptorSetLayouts,
+    const std::vector<const PushConstantBase *> &pushConstants,
     std::string name, std::string shaderName,
     VertexInputDescription vertexInputDesc, Properties properties)
-    : Pipeline(device, renderPass, descriptorSetLayouts, std::move(name),
-               std::move(shaderName)),
+    : Pipeline(device, renderPass, descriptorSetLayouts, pushConstants,
+               std::move(name), std::move(shaderName)),
       m_vertexInputDesc{vertexInputDesc}, m_properties{properties}
 {
     if (m_pipelineLayout->isInitialized)

@@ -1,16 +1,18 @@
 #include "pipeline.hpp"
 #include "device.hpp"
 #include "renderpass.hpp"
-#include "shader.hpp"
 #include "pipeline_layout.hpp"
 #include "vulkan_utils.hpp"
+#include "push_constant.hpp"
 
 kirana::viewport::vulkan::Pipeline::Pipeline(
     const Device *const device, const RenderPass *const renderPass,
     const std::vector<const DescriptorSetLayout *> &descriptorSetLayouts,
+    const std::vector<const PushConstantBase *> &pushConstants,
     std::string name, std::string shaderName)
     : m_isInitialized{false}, m_device{device}, m_renderPass{renderPass},
-      m_pipelineLayout{new PipelineLayout(m_device, descriptorSetLayouts)},
+      m_pipelineLayout{
+          new PipelineLayout(m_device, descriptorSetLayouts, pushConstants)},
       m_name{std::move(name)}, m_shaderName{std::move(shaderName)}
 {
 }

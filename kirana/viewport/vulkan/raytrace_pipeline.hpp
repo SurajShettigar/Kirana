@@ -14,6 +14,7 @@ class RaytracePipeline : public Pipeline
   public:
     explicit RaytracePipeline(const Device *device, const RenderPass *renderPass,
                               const std::vector<const DescriptorSetLayout *> &descriptorSetLayouts,
+                              const std::vector<const PushConstantBase *> &pushConstants,
                               std::string name, std::string shaderName);
     ~RaytracePipeline() override;
 

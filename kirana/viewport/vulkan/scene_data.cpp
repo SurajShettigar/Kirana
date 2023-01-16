@@ -11,6 +11,7 @@
 #include "acceleration_structure.hpp"
 #include "raytrace_pipeline.hpp"
 #include "shader_binding_table.hpp"
+#include "push_constant.hpp"
 
 #include <algorithm>
 #include <viewport_scene.hpp>
@@ -44,6 +45,7 @@ void kirana::viewport::vulkan::SceneData::onWorldChanged()
             m_worldDataBuffer, sizeof(scene::WorldData),
             static_cast<uint32_t>(paddedSize * i), &m_scene.getWorldData());
     }
+    updateFrameIndex(0);
 }
 
 void kirana::viewport::vulkan::SceneData::onCameraChanged()
@@ -68,6 +70,7 @@ void kirana::viewport::vulkan::SceneData::onCameraChanged()
             m_cameraBuffer, sizeof(vulkan::CameraData),
             static_cast<uint32_t>(paddedSize * i), &m_cameraData);
     }
+    updateFrameIndex(0);
 }
 
 void kirana::viewport::vulkan::SceneData::onObjectChanged()
@@ -87,6 +90,7 @@ void kirana::viewport::vulkan::SceneData::onObjectChanged()
             }
         }
     }
+    updateFrameIndex(0);
 }
 
 void kirana::viewport::vulkan::SceneData::createWorldDataBuffer()
@@ -188,7 +192,8 @@ std::unique_ptr<kirana::viewport::vulkan::Pipeline> kirana::viewport::vulkan::
         m_globalDescSetLayout, m_objectDescSetLayout};
 
     return std::make_unique<RasterPipeline>(
-        m_device, m_renderPass, descLayouts, material.getName(),
+        m_device, m_renderPass, descLayouts,
+        std::vector<const PushConstantBase *>(), material.getName(),
         material.getShader(), m_vertexDesc, properties);
 }
 
@@ -332,21 +337,9 @@ bool kirana::viewport::vulkan::SceneData::initializeRaytracing()
     const vk::DeviceAddress &indexBufferAddress =
         m_device->getBufferAddress(*m_indexBuffer.buffer);
 
-    RaytracedGlobalData globalData{static_cast<uint64_t>(vertexBufferAddress),
-                                   static_cast<uint64_t>(indexBufferAddress)};
-
-    const vk::DeviceSize globalDataSize = sizeof(RaytracedGlobalData);
-
-    if (!m_allocator->allocateBufferToGPU(
-            globalDataSize,
-            vk::BufferUsageFlagBits::eUniformBuffer |
-                vk::BufferUsageFlagBits::eShaderDeviceAddress,
-            &m_raytracedGlobalBuffer, reinterpret_cast<void *>(&globalData)))
-        return false;
-    m_raytracedGlobalBuffer.descInfo = vk::DescriptorBufferInfo(
-        *m_raytracedGlobalBuffer.buffer, 0, globalDataSize);
-    m_device->setDebugObjectName(*m_raytracedGlobalBuffer.buffer,
-                                 "Raytraced_GlobalBuffer");
+    m_raytraceGlobalData = new PushConstant<RaytracedGlobalData>(
+        {vertexBufferAddress, indexBufferAddress, 0},
+        vk::ShaderStageFlagBits::eClosestHitKHR);
 
     std::vector<RaytracedObjectData> objectData;
     for (const auto &m : m_meshes)
@@ -377,10 +370,12 @@ bool kirana::viewport::vulkan::SceneData::initializeRaytracing()
     {
         const std::vector<const DescriptorSetLayout *> descLayouts{
             m_globalDescSetLayout, m_raytraceDescSetLayout};
-        m_raytracePipeline =
-            new RaytracePipeline(m_device, m_renderPass, descLayouts,
-                                 constants::DEFAULT_MATERIAL_RAYTRACE_NAME,
-                                 constants::VULKAN_SHADER_RAYTRACE_NAME);
+        const std::vector<const PushConstantBase *> pushConstants{
+            m_raytraceGlobalData};
+        m_raytracePipeline = new RaytracePipeline(
+            m_device, m_renderPass, descLayouts, pushConstants,
+            constants::DEFAULT_MATERIAL_RAYTRACE_NAME,
+            constants::VULKAN_SHADER_RAYTRACE_NAME);
     }
     if (m_raytracePipeline && m_raytracePipeline->isInitialized)
         m_shaderBindingTable =
@@ -450,10 +445,6 @@ kirana::viewport::vulkan::SceneData::~SceneData()
     {
         m_allocator->free(m_raytracedObjectBuffer);
     }
-    if (m_raytracedGlobalBuffer.buffer)
-    {
-        m_allocator->free(m_raytracedGlobalBuffer);
-    }
     if (m_shaderBindingTable)
     {
         delete m_shaderBindingTable;
@@ -470,6 +461,12 @@ kirana::viewport::vulkan::SceneData::~SceneData()
     {
         delete m_accelStructure;
         m_accelStructure = nullptr;
+    }
+
+    if (m_raytraceGlobalData)
+    {
+        delete m_raytraceGlobalData;
+        m_raytraceGlobalData = nullptr;
     }
 
     if (m_objectBuffer.buffer)
@@ -509,6 +506,23 @@ kirana::viewport::vulkan::SceneData::~SceneData()
     }
     Logger::get().log(constants::LOG_CHANNEL_VULKAN, LogSeverity::trace,
                       "Scene data destroyed");
+}
+
+void kirana::viewport::vulkan::SceneData::updateFrameIndex(uint32_t frameIndex)
+{
+    m_frameIndex = frameIndex;
+    if (m_raytraceGlobalData == nullptr)
+        return;
+    auto data = m_raytraceGlobalData->get();
+    data.frameIndex = frameIndex;
+    m_raytraceGlobalData->set(data);
+}
+
+[[nodiscard]] const kirana::viewport::vulkan::PushConstant<
+    kirana::viewport::vulkan::RaytracedGlobalData>
+    &kirana::viewport::vulkan::SceneData::getRaytracedGlobalData() const
+{
+    return *m_raytraceGlobalData;
 }
 
 const kirana::viewport::vulkan::Pipeline *kirana::viewport::vulkan::SceneData::

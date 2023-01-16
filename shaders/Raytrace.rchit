@@ -9,12 +9,14 @@ layout (set = 0, binding = 1) uniform _WorldData {
 } worldBuffer;
 
 layout (set = 1, binding = 0) uniform accelerationStructureEXT topLevelAS;
-layout (set = 1, binding = 2) uniform _GlobalData {
-    GlobalData g;
-} globalBuffer;
-layout (set = 1, binding = 3) readonly buffer ObjectData {
+layout (set = 1, binding = 2) readonly buffer ObjectData {
     Object o[];
 } objBuffer;
+
+
+layout (push_constant) uniform _GlobalData {
+    GlobalData g;
+} globalBuffer;
 
 layout (buffer_reference) readonly buffer VertexData {
     Vertex v[];

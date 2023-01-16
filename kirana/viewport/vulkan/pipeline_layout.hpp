@@ -7,6 +7,7 @@ namespace kirana::viewport::vulkan
 {
 class Device;
 class DescriptorSetLayout;
+class PushConstantBase;
 
 class PipelineLayout
 {
@@ -19,7 +20,8 @@ class PipelineLayout
   public:
     explicit PipelineLayout(
         const Device *device,
-        const std::vector<const DescriptorSetLayout *> &descriptorSetLayouts);
+        const std::vector<const DescriptorSetLayout *> &descriptorSetLayouts,
+        const std::vector<const PushConstantBase *> &pushConstants);
     ~PipelineLayout();
     PipelineLayout(const PipelineLayout &pipelineLayout) = delete;
     PipelineLayout &operator=(const PipelineLayout &pipelineLayout) = delete;

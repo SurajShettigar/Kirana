@@ -8,6 +8,7 @@ namespace kirana::viewport::vulkan
 class Device;
 class RenderPass;
 class DescriptorSetLayout;
+class PushConstantBase;
 class Shader;
 class PipelineLayout;
 struct VertexInputDescription;
@@ -32,6 +33,7 @@ class Pipeline
     explicit Pipeline(
         const Device *device, const RenderPass *renderPass,
         const std::vector<const DescriptorSetLayout *> &descriptorSetLayouts,
+        const std::vector<const PushConstantBase *> &pushConstants,
         std::string name, std::string shaderName);
     virtual ~Pipeline();
     Pipeline(const Pipeline &pipeline) = delete;

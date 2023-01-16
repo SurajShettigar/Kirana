@@ -112,12 +112,6 @@ enum class ShaderStage
     SHADER_STAGE_MAX = 7
 };
 
-// TODO: Remove it once descriptor set is implemented.
-struct MeshPushConstants
-{
-    math::Matrix4x4 renderMatrix;
-};
-
 /**
  * Holds the Camera view and projection matrix.
  */
@@ -186,6 +180,7 @@ struct RaytracedGlobalData
 {
     uint64_t vertexBufferAddress;
     alignas(8) uint64_t indexBufferAddress;
+    alignas(4) uint32_t frameIndex;
 };
 
 struct RaytracedObjectData

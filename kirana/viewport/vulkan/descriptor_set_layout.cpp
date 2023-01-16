@@ -44,16 +44,12 @@ kirana::viewport::vulkan::DescriptorSetLayout::DescriptorSetLayout(
         const vk::DescriptorSetLayoutBinding outputImage(
             1, vk::DescriptorType::eStorageImage, 1,
             vk::ShaderStageFlagBits::eRaygenKHR);
-        const vk::DescriptorSetLayoutBinding globalData(
-            2, vk::DescriptorType::eUniformBuffer, 1,
-            vk::ShaderStageFlagBits::eClosestHitKHR);
         const vk::DescriptorSetLayoutBinding objData(
-            3, vk::DescriptorType::eStorageBuffer, 1,
+            2, vk::DescriptorType::eStorageBuffer, 1,
             vk::ShaderStageFlagBits::eClosestHitKHR);
         bindings.clear();
         bindings.emplace_back(accelerationStructure);
         bindings.emplace_back(outputImage);
-        bindings.emplace_back(globalData);
         bindings.emplace_back(objData);
     }
     break;
