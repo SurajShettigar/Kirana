@@ -22,7 +22,15 @@ bool kirana::viewport::vulkan::RaytracePipeline::build()
     if (!shader.isInitialized)
         return false;
 
+
     std::vector<vk::PipelineShaderStageCreateInfo> shaderStages;
+    std::vector<vk::RayTracingShaderGroupCreateInfoKHR> shaderGroups;
+
+    vk::RayTracingShaderGroupCreateInfoKHR shaderGroup{};
+    shaderGroup.anyHitShader = VK_SHADER_UNUSED_KHR;
+    shaderGroup.closestHitShader = VK_SHADER_UNUSED_KHR;
+    shaderGroup.generalShader = VK_SHADER_UNUSED_KHR;
+    shaderGroup.intersectionShader = VK_SHADER_UNUSED_KHR;
     for (const auto &m : shader.getAllModules())
     {
         std::string stageName = "";
@@ -54,14 +62,6 @@ bool kirana::viewport::vulkan::RaytracePipeline::build()
             {}, stageFlag, m.second, constants::VULKAN_SHADER_MAIN_FUNC_NAME));
     }
 
-    std::vector<vk::RayTracingShaderGroupCreateInfoKHR> shaderGroups;
-
-    vk::RayTracingShaderGroupCreateInfoKHR shaderGroup{};
-    shaderGroup.anyHitShader = VK_SHADER_UNUSED_KHR;
-    shaderGroup.closestHitShader = VK_SHADER_UNUSED_KHR;
-    shaderGroup.generalShader = VK_SHADER_UNUSED_KHR;
-    shaderGroup.intersectionShader = VK_SHADER_UNUSED_KHR;
-
     // Ray-Gen Shader
     shaderGroup.type = vk::RayTracingShaderGroupTypeKHR::eGeneral;
     shaderGroup.generalShader = static_cast<uint32_t>(
@@ -74,9 +74,9 @@ bool kirana::viewport::vulkan::RaytracePipeline::build()
     shaderGroups.push_back(shaderGroup);
 
     // Miss Shadow Shader
-    shaderGroup.type = vk::RayTracingShaderGroupTypeKHR::eGeneral;
-    shaderGroup.generalShader = static_cast<uint32_t>(shaderGroups.size());
-    shaderGroups.push_back(shaderGroup);
+//    shaderGroup.type = vk::RayTracingShaderGroupTypeKHR::eGeneral;
+//    shaderGroup.generalShader = static_cast<uint32_t>(shaderGroups.size());
+//    shaderGroups.push_back(shaderGroup);
 
     // Hit group
     shaderGroup.type = vk::RayTracingShaderGroupTypeKHR::eTrianglesHitGroup;

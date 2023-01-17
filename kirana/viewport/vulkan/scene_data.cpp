@@ -45,7 +45,7 @@ void kirana::viewport::vulkan::SceneData::onWorldChanged()
             m_worldDataBuffer, sizeof(scene::WorldData),
             static_cast<uint32_t>(paddedSize * i), &m_scene.getWorldData());
     }
-    updateFrameIndex(0);
+    updateRaytracedFrameCount(true);
 }
 
 void kirana::viewport::vulkan::SceneData::onCameraChanged()
@@ -70,7 +70,7 @@ void kirana::viewport::vulkan::SceneData::onCameraChanged()
             m_cameraBuffer, sizeof(vulkan::CameraData),
             static_cast<uint32_t>(paddedSize * i), &m_cameraData);
     }
-    updateFrameIndex(0);
+    updateRaytracedFrameCount(true);
 }
 
 void kirana::viewport::vulkan::SceneData::onObjectChanged()
@@ -90,7 +90,7 @@ void kirana::viewport::vulkan::SceneData::onObjectChanged()
             }
         }
     }
-    updateFrameIndex(0);
+    updateRaytracedFrameCount(true);
 }
 
 void kirana::viewport::vulkan::SceneData::createWorldDataBuffer()
@@ -338,8 +338,9 @@ bool kirana::viewport::vulkan::SceneData::initializeRaytracing()
         m_device->getBufferAddress(*m_indexBuffer.buffer);
 
     m_raytraceGlobalData = new PushConstant<RaytracedGlobalData>(
-        {vertexBufferAddress, indexBufferAddress, 0},
-        vk::ShaderStageFlagBits::eClosestHitKHR);
+        {vertexBufferAddress, indexBufferAddress, 0, 10, 8},
+        vk::ShaderStageFlagBits::eRaygenKHR |
+            vk::ShaderStageFlagBits::eClosestHitKHR);
 
     std::vector<RaytracedObjectData> objectData;
     for (const auto &m : m_meshes)
@@ -508,14 +509,18 @@ kirana::viewport::vulkan::SceneData::~SceneData()
                       "Scene data destroyed");
 }
 
-void kirana::viewport::vulkan::SceneData::updateFrameIndex(uint32_t frameIndex)
+void kirana::viewport::vulkan::SceneData::updateRaytracedFrameCount(bool reset)
 {
-    m_frameIndex = frameIndex;
+    if (reset || m_currentShading != Shading::RAYTRACE_PBR)
+        m_raytracedFrameCount = 0;
+
     if (m_raytraceGlobalData == nullptr)
         return;
     auto data = m_raytraceGlobalData->get();
-    data.frameIndex = frameIndex;
+    data.frameIndex = m_raytracedFrameCount;
     m_raytraceGlobalData->set(data);
+
+    m_raytracedFrameCount++;
 }
 
 [[nodiscard]] const kirana::viewport::vulkan::PushConstant<

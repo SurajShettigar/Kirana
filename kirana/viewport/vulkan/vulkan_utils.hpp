@@ -17,15 +17,16 @@ using kirana::utils::Logger;
 using kirana::utils::LogSeverity;
 
 /// Vector of necessary instance extensions when creating vulkan instance.
-static const std::vector<const char *> REQUIRED_INSTANCE_EXTENSIONS {
-    VK_KHR_GET_PHYSICAL_DEVICE_PROPERTIES_2_EXTENSION_NAME
-};
+static const std::vector<const char *> REQUIRED_INSTANCE_EXTENSIONS{
+    VK_KHR_GET_PHYSICAL_DEVICE_PROPERTIES_2_EXTENSION_NAME};
 /// Vector of necessary device extensions when selecting device.
 static const std::vector<const char *> REQUIRED_DEVICE_EXTENSIONS{
     VK_KHR_SWAPCHAIN_EXTENSION_NAME,
     VK_EXT_MEMORY_BUDGET_EXTENSION_NAME,
+    VK_KHR_SHADER_CLOCK_EXTENSION_NAME,
     VK_KHR_ACCELERATION_STRUCTURE_EXTENSION_NAME,
-    VK_KHR_RAY_TRACING_PIPELINE_EXTENSION_NAME, VK_KHR_RAY_QUERY_EXTENSION_NAME,
+    VK_KHR_RAY_TRACING_PIPELINE_EXTENSION_NAME,
+    VK_KHR_RAY_QUERY_EXTENSION_NAME,
     VK_KHR_DEFERRED_HOST_OPERATIONS_EXTENSION_NAME};
 /// Vector of necessary validation numLayers for debugging.
 static const std::vector<const char *> REQUIRED_VALIDATION_LAYERS{
@@ -40,6 +41,8 @@ static vk::PhysicalDeviceShaderDrawParametersFeatures
     DEVICE_SHADER_DRAW_PARAMS_FEATURES{true};
 static vk::PhysicalDeviceBufferDeviceAddressFeatures
     DEVICE_BUFFER_DEVICE_ADDRESS_FEATURES{true};
+static vk::PhysicalDeviceShaderClockFeaturesKHR DEVICE_SHADER_CLOCK_FEATURES{
+    true, true};
 
 #define VK_HANDLE_RESULT(f, err)                                               \
     {                                                                          \
@@ -164,7 +167,8 @@ static inline vk::PhysicalDeviceFeatures2 getRequiredDeviceFeatures()
     DEVICE_SHADER_DRAW_PARAMS_FEATURES.pNext = &DEVICE_ACCEL_STRUCT_FEATURES;
     DEVICE_BUFFER_DEVICE_ADDRESS_FEATURES.pNext =
         &DEVICE_SHADER_DRAW_PARAMS_FEATURES;
-    features.pNext = &DEVICE_BUFFER_DEVICE_ADDRESS_FEATURES;
+    DEVICE_SHADER_CLOCK_FEATURES.pNext = &DEVICE_BUFFER_DEVICE_ADDRESS_FEATURES;
+    features.pNext = &DEVICE_SHADER_CLOCK_FEATURES;
 
     return features;
 }
@@ -179,9 +183,20 @@ static bool hasRequiredDeviceFeatures(
         !reqFeatures.features.shaderInt64)
         return false;
 
+    auto *shaderClock =
+        reinterpret_cast<vk::PhysicalDeviceShaderClockFeaturesKHR *>(
+            reqFeatures.pNext);
+
+    Logger::get().log(constants::LOG_CHANNEL_VULKAN, LogSeverity::trace,
+                      "Shader Clock Feature: " +
+                          std::to_string(shaderClock->shaderDeviceClock));
+
+    if (!shaderClock->shaderDeviceClock || !shaderClock->shaderSubgroupClock)
+        return false;
+
     auto *bufferDeviceAddress =
         reinterpret_cast<vk::PhysicalDeviceBufferDeviceAddressFeatures *>(
-            reqFeatures.pNext);
+            shaderClock->pNext);
 
     Logger::get().log(
         constants::LOG_CHANNEL_VULKAN, LogSeverity::trace,

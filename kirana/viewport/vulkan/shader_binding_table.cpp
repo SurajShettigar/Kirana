@@ -13,7 +13,7 @@ kirana::viewport::vulkan::ShaderBindingTable::ShaderBindingTable(
       m_pipeline{pipeline}
 {
     const uint32_t rayGenCount = 1; // There will always be one Ray-Gen shader.
-    const uint32_t missCount = 2;
+    const uint32_t missCount = 1;
     const uint32_t hitCount = 1;
     const uint32_t callableCount = 0;
 

@@ -179,14 +179,16 @@ struct FrameData
 struct RaytracedGlobalData
 {
     uint64_t vertexBufferAddress;
-    alignas(8) uint64_t indexBufferAddress;
-    alignas(4) uint32_t frameIndex;
+    uint64_t indexBufferAddress;
+    uint32_t frameIndex;
+    uint32_t maxBounces;
+    uint32_t maxSamples;
 };
 
 struct RaytracedObjectData
 {
     uint32_t firstIndex;
-    alignas(4) uint32_t vertexOffset;
+    uint32_t vertexOffset;
 };
 
 /**

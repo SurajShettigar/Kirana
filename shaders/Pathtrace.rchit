@@ -1,8 +1,9 @@
 #version 460
-#extension GL_GOOGLE_include_directive : enable
-#extension GL_EXT_buffer_reference2 : require
+#extension GL_GOOGLE_include_directive: enable
+#extension  GL_EXT_buffer_reference2: enable
 
 #include "base_raytrace.glsl"
+#include "raytrace_utils.glsl"
 
 layout (set = 0, binding = 1) uniform _WorldData {
     WorldData w;
@@ -25,7 +26,6 @@ layout (push_constant) uniform _GlobalData {
 } globalConstants;
 
 layout (location = 0) rayPayloadInEXT HitInfo payload;
-layout (location = 1) rayPayloadEXT bool isShadowed;
 
 hitAttributeEXT vec2 attribs;
 
@@ -57,9 +57,9 @@ vec3 getWorldNormal(const vec3[3] vNormals, vec3 barycentrics)
     return vec3(normalize(normal * gl_WorldToObjectEXT));
 }
 
-
 void main()
 {
+    const float PI = 3.141592;
     VertexData vBuffer = VertexData(globalConstants.g.vertexBufferAddress);
     IndexData iBuffer = IndexData(globalConstants.g.indexBufferAddress);
 
@@ -70,40 +70,16 @@ void main()
     const vec3 worldPos = getWorldPosition(vec3[3](v[0].position, v[1].position, v[2].position), barycentrics);
     const vec3 worldNormal = getWorldNormal(vec3[3](v[0].normal, v[1].normal, v[2].normal), barycentrics);
 
-    float attenuation = 1.0;
-    const float lightDistance = 100000.0;
-    const vec3 lightDirection = normalize(- worldBuffer.w.sunDirection);
-    const vec3 lightColor = worldBuffer.w.sunColor.rgb * worldBuffer.w.sunIntensity;
-    const float dotL = dot(worldNormal, lightDirection);
+    vec3 tangent;
+    vec3 binormal;
+    getCoordinateFrame(worldNormal, tangent, binormal);
 
-    if (dotL > 0.0)
-    {
-        float tMin = 0.001;
-        float tMax = lightDistance;
-        vec3 origin = gl_WorldRayOriginEXT + gl_WorldRayDirectionEXT * gl_HitTEXT;
-        vec3 direction = lightDirection;
-        uint flags = gl_RayFlagsOpaqueEXT + gl_RayFlagsTerminateOnFirstHitEXT + gl_RayFlagsSkipClosestHitShaderEXT;
-        isShadowed = true;
-        traceRayEXT(topLevelAS, // Acceleration Structure
-        flags, // Ray flags
-        0xFF, // Culling Mask. ANDed with mask set in acceleration structure.
-        0, // SBT Record offset
-        0, // SBT Record stride
-        1, // Miss Shader Index
-        origin, // Ray origin
-        tMin, // Min Ray hit distance
-        direction, // Ray direction
-        tMax, // Max Ray hit distance
-        1 // Payload location
-        );
-    }
+    const vec3 reflectedDirection = normalize(randomHemispherical(payload.seed, vec3[3](tangent, binormal, worldNormal)));
+    const vec3 matColor = vec3(1.0);
+    vec3 brdf = matColor / PI;
 
-    if (isShadowed)
-    attenuation = 0.1;
-
-    vec3 color = vec3(0.65, 0.65, 0.65);
-    color += worldBuffer.w.ambientColor.rbg;
-    color *= max(dotL, 0.0) * lightColor * attenuation;
-
-    payload.color = color.rgb;
+    payload.rayOrigin = worldPos;
+    payload.rayDirection = reflectedDirection;
+    payload.color = vec3(0.0); // Light emmitted
+    payload.weight = brdf * dot(worldNormal, reflectedDirection) * PI;
 }

@@ -212,6 +212,44 @@ void kirana::viewport::vulkan::Drawer::draw()
 
     if (!isRaytracing)
     {
+    }
+
+    if (isRaytracing)
+    {
+//        if (m_scene->getRaytracedGlobalData().get().frameIndex <=
+//            constants::VULKAN_RAYTRACING_MAX_SAMPLES)
+//        {
+            frame.commandBuffers->bindPipeline(
+                m_scene->getRaytracePipeline().current,
+                vk::PipelineBindPoint::eRayTracingKHR);
+            frame.commandBuffers->bindDescriptorSets(
+                m_scene->getRaytracePipeline().getLayout().current,
+                {
+                    frame.globalDescriptorSet->current,
+                    frame.raytraceDescriptorSet->current,
+                },
+                {m_scene->getCameraBufferOffset(frameIndex),
+                 m_scene->getWorldDataBufferOffset(frameIndex)},
+                vk::PipelineBindPoint::eRayTracingKHR);
+            frame.commandBuffers->pushConstants<RaytracedGlobalData>(
+                m_scene->getRaytracePipeline().getLayout().current,
+                m_scene->getRaytracedGlobalData());
+            frame.commandBuffers->traceRays(
+                m_scene->getShaderBindingTable(),
+                m_raytracedImage->getProperties().size);
+            frame.commandBuffers->copyImage(
+                *m_raytracedImage, *m_swapchain->getImages()[imgIndex],
+                m_raytracedImage->getProperties().size);
+            frame.commandBuffers->end();
+            vk::PipelineStageFlags pipelineFlags(
+                vk::PipelineStageFlagBits::eColorAttachmentOutput);
+            m_device->graphicsSubmit(frame.presentSemaphore, pipelineFlags,
+                                     frame.commandBuffers->current[0],
+                                     frame.renderSemaphore, frame.renderFence);
+//        }
+    }
+    else
+    {
         frame.commandBuffers->beginRenderPass(
             m_renderPass->current, m_renderPass->framebuffers[imgIndex],
             m_swapchain->imageExtent,
@@ -226,33 +264,7 @@ void kirana::viewport::vulkan::Drawer::draw()
                                     1.0f};
         const vk::Rect2D scissor{{0, 0}, {size[0], size[1]}};
         frame.commandBuffers->setViewportScissor(viewport, scissor);
-    }
 
-    if (isRaytracing)
-    {
-        frame.commandBuffers->bindPipeline(
-            m_scene->getRaytracePipeline().current,
-            vk::PipelineBindPoint::eRayTracingKHR);
-        frame.commandBuffers->bindDescriptorSets(
-            m_scene->getRaytracePipeline().getLayout().current,
-            {
-                frame.globalDescriptorSet->current,
-                frame.raytraceDescriptorSet->current,
-            },
-            {m_scene->getCameraBufferOffset(frameIndex),
-             m_scene->getWorldDataBufferOffset(frameIndex)},
-            vk::PipelineBindPoint::eRayTracingKHR);
-        frame.commandBuffers->pushConstants<RaytracedGlobalData>(
-            m_scene->getRaytracePipeline().getLayout().current,
-            m_scene->getRaytracedGlobalData());
-        frame.commandBuffers->traceRays(m_scene->getShaderBindingTable(),
-                                        m_raytracedImage->getProperties().size);
-        frame.commandBuffers->copyImage(*m_raytracedImage,
-                                        *m_swapchain->getImages()[imgIndex],
-                                        m_raytracedImage->getProperties().size);
-    }
-    else
-    {
         frame.commandBuffers->bindVertexBuffer(
             *(m_scene->getVertexBuffer().buffer), 0);
         frame.commandBuffers->bindIndexBuffer(
@@ -294,19 +306,15 @@ void kirana::viewport::vulkan::Drawer::draw()
                         m.getGlobalInstanceIndex(i));
                 }
             }
-            //            meshIndex++;
         }
-    }
-
-    if (!isRaytracing)
         frame.commandBuffers->endRenderPass();
-    frame.commandBuffers->end();
-
-    vk::PipelineStageFlags pipelineFlags(
-        vk::PipelineStageFlagBits::eColorAttachmentOutput);
-    m_device->graphicsSubmit(frame.presentSemaphore, pipelineFlags,
-                             frame.commandBuffers->current[0],
-                             frame.renderSemaphore, frame.renderFence);
+        frame.commandBuffers->end();
+        vk::PipelineStageFlags pipelineFlags(
+            vk::PipelineStageFlagBits::eColorAttachmentOutput);
+        m_device->graphicsSubmit(frame.presentSemaphore, pipelineFlags,
+                                 frame.commandBuffers->current[0],
+                                 frame.renderSemaphore, frame.renderFence);
+    }
 
     vk::Result presentResult = m_device->present(
         frame.renderSemaphore, m_swapchain->current, imgIndex);

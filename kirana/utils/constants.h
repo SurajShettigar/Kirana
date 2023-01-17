@@ -29,6 +29,7 @@ static const uint16_t VULKAN_DESCRIPTOR_SET_MAX_COUNT = 10;
 static const uint16_t VULKAN_DESCRIPTOR_DEFAULT_POOL_SIZE = 10;
 static const uint64_t VULKAN_ACCELERATION_STRUCTURE_BATCH_SIZE_LIMIT =
     268435456; // 256 MB
+static const uint32_t VULKAN_RAYTRACING_MAX_SAMPLES = 32;
 
 static const char *const VULKAN_SHADER_COMPUTE_EXTENSION = ".comp.spv";
 static const char *const VULKAN_SHADER_VERTEX_EXTENSION = ".vert.spv";
@@ -47,7 +48,7 @@ static const char *const VULKAN_SHADER_MAT_CAP_NAME = "MatCap";
 static const char *const VULKAN_SHADER_WIREFRAME_NAME = "Wireframe";
 static const char *const VULKAN_SHADER_GRID_NAME = "Grid";
 static const char *const VULKAN_SHADER_OUTLINE_NAME = "Outline";
-static const char *const VULKAN_SHADER_RAYTRACE_NAME = "Raytrace";
+static const char *const VULKAN_SHADER_RAYTRACE_NAME = "Pathtrace";
 
 static const char *const DEFAULT_MATERIAL_MAT_CAP_NAME = "Default_MatCap_Mat";
 static const char *const DEFAULT_MATERIAL_WIREFRAME_NAME =
@@ -57,7 +58,7 @@ static const char *const DEFAULT_MATERIAL_CAMERA_NAME = "Default_Camera_Mat";
 static const char *const DEFAULT_MATERIAL_LIGHT_NAME = "Default_Light_Mat";
 static const char *const DEFAULT_MATERIAL_OUTLINE_NAME = "Default_Outline_Mat";
 static const char *const DEFAULT_MATERIAL_RAYTRACE_NAME =
-    "Default_Raytrace_Mat";
+    "Default_Pathtrace_Mat";
 
 static const char *const DEFAULT_SCENE_NAME = "Scene";
 static const char *const DEFAULT_SCENE_MATERIAL_NAME = "Material";

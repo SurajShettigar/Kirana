@@ -31,7 +31,7 @@ class SceneData
 {
   private:
     bool m_isInitialized = false;
-    uint32_t m_frameIndex = 0;
+    uint32_t m_raytracedFrameCount = 0;
     viewport::Shading m_currentShading = viewport::Shading::BASIC;
 
     const Device *const m_device;
@@ -95,7 +95,7 @@ class SceneData
 
     const bool &isInitialized = m_isInitialized;
 
-    void updateFrameIndex(uint32_t frameIndex);
+    void updateRaytracedFrameCount(bool reset = false);
 
     inline bool shouldRenderOutline() const
     {

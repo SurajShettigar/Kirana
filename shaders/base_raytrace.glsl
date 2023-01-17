@@ -5,6 +5,11 @@
 
 struct HitInfo {
     vec3 color;
+    uint seed;
+    uint depth;
+    vec3 rayOrigin;
+    vec3 rayDirection;
+    vec3 weight;
 };
 
 struct CameraData {
@@ -30,6 +35,8 @@ struct GlobalData {
     uint64_t vertexBufferAddress;
     uint64_t indexBufferAddress;
     uint32_t frameIndex;
+    uint32_t maxBounces;
+    uint32_t antiAliasSamples;
 };
 
 struct Vertex {
