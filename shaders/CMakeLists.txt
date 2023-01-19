@@ -20,7 +20,7 @@ function(buildShader SHADER_SOURCE_FILE)
 endfunction()
 
 
-file(GLOB SHADER_SOURCE_FILES
+file(GLOB_RECURSE SHADER_SOURCE_FILES
         ${CMAKE_CURRENT_SOURCE_DIR}/*.vert
         ${CMAKE_CURRENT_SOURCE_DIR}/*.frag
         ${CMAKE_CURRENT_SOURCE_DIR}/*.comp

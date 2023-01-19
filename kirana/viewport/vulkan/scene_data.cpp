@@ -213,7 +213,7 @@ const std::unique_ptr<kirana::viewport::vulkan::Pipeline>
     switch (m_currentShading)
     {
     case viewport::Shading::BASIC:
-        return m_materials[constants::DEFAULT_MATERIAL_MAT_CAP_NAME];
+        return m_materials[constants::DEFAULT_MATERIAL_BASIC_SHADED_NAME];
     case viewport::Shading::WIREFRAME:
         return m_materials[constants::DEFAULT_MATERIAL_WIREFRAME_NAME];
     default:

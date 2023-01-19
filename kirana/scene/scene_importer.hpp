@@ -1,7 +1,7 @@
 #ifndef SCENE_IMPORTER_HPP
 #define SCENE_IMPORTER_HPP
 
-#include "scene_utils.hpp"
+#include "scene_types.hpp"
 #include "scene.hpp"
 
 namespace kirana::scene

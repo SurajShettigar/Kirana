@@ -15,9 +15,9 @@ const kirana::scene::Material::StencilProperties
         StencilOperation::REPLACE,
         1};
 
-const kirana::scene::Material kirana::scene::Material::DEFAULT_MATERIAL_MAT_CAP{
-    constants::DEFAULT_MATERIAL_MAT_CAP_NAME,
-    constants::VULKAN_SHADER_MAT_CAP_NAME,
+const kirana::scene::Material kirana::scene::Material::DEFAULT_MATERIAL_BASIC_SHADED{
+    constants::DEFAULT_MATERIAL_BASIC_SHADED_NAME,
+    constants::VULKAN_SHADER_BASIC_SHADED_NAME,
     MaterialProperties{false, 1.0f, CullMode::BACK, SurfaceType::OPAQUE, true,
                        true, CompareOperation::LESS_OR_EQUAL,
                        STENCIL_PROPERTIES_WRITE}};
@@ -29,7 +29,7 @@ const kirana::scene::Material
         MaterialProperties{true, 1.0f}};
 
 const kirana::scene::Material kirana::scene::Material::DEFAULT_MATERIAL_GRID{
-    constants::DEFAULT_MATERIAL_GRID_NAME, constants::VULKAN_SHADER_GRID_NAME,
+    constants::DEFAULT_MATERIAL_GRID_NAME, constants::VULKAN_SHADER_EDITOR_GRID_NAME,
     MaterialProperties{false, 1.0f, CullMode::NONE, SurfaceType::TRANSPARENT,
                        true, false}};
 
@@ -44,7 +44,7 @@ const kirana::scene::Material kirana::scene::Material::DEFAULT_MATERIAL_LIGHT{
 
 const kirana::scene::Material kirana::scene::Material::DEFAULT_MATERIAL_OUTLINE{
     constants::DEFAULT_MATERIAL_OUTLINE_NAME,
-    constants::VULKAN_SHADER_OUTLINE_NAME,
+    constants::VULKAN_SHADER_EDITOR_OUTLINE_NAME,
     MaterialProperties{false, 1.0f, CullMode::FRONT, SurfaceType::OPAQUE, false,
                        true, CompareOperation::LESS_OR_EQUAL,
                        STENCIL_PROPERTIES_READ}};

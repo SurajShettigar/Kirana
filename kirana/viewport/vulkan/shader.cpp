@@ -37,7 +37,7 @@ std::string kirana::viewport::vulkan::Shader::getPathForShaderStage(
     default:
         extension = "";
     }
-    return utils::filesystem::combinePath(constants::VULKAN_SHADER_DIR_PATH,
+    return utils::filesystem::combinePath(constants::VULKAN_SHADER_DIR_ROOT_PATH,
                                           {name.c_str()}, extension);
 }
 
@@ -63,7 +63,7 @@ bool kirana::viewport::vulkan::Shader::readShaderFile(
 kirana::viewport::vulkan::Shader::Shader(const Device *const device,
                                          const std::string &name)
     : m_isInitialized{false},
-      m_name{name.empty() ? utils::constants::VULKAN_SHADER_DEFAULT_NAME
+      m_name{name.empty() ? utils::constants::VULKAN_SHADER_DEFAULT_SHADED_NAME
                           : name},
       m_device{device}
 {

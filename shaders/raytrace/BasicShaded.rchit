@@ -54,7 +54,7 @@ vec3 getWorldPosition(const vec3[3] vPositions, const vec3 barycentrics)
 vec3 getWorldNormal(const vec3[3] vNormals, vec3 barycentrics)
 {
     const vec3 normal = vNormals[0] * barycentrics.x + vNormals[1] * barycentrics.y + vNormals[2] * barycentrics.z;
-    return vec3(normalize(normal * gl_WorldToObjectEXT));
+    return normalize(vec3(normal * gl_WorldToObjectEXT));
 }
 
 void main()

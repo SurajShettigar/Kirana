@@ -41,33 +41,27 @@ static const char *const VULKAN_SHADER_RAYTRACE_MISS_SHADOW_EXTENSION =
 static const char *const VULKAN_SHADER_RAYTRACE_CLOSEST_HIT_EXTENSION =
     ".rchit.spv";
 static const char *const VULKAN_SHADER_MAIN_FUNC_NAME = "main";
-static const char *const VULKAN_SHADER_DIR_PATH = SHADER_DIR;
+static const char *const VULKAN_SHADER_DIR_ROOT_PATH = SHADER_DIR;
+static const char *const VULKAN_SHADER_DIR_EDITOR_PATH = "editor";
+static const char *const VULKAN_SHADER_DIR_RASTER_PATH = "raster";
+static const char *const VULKAN_SHADER_DIR_RAYTRACE_PATH = "raytrace";
 
-static const char *const VULKAN_SHADER_DEFAULT_NAME = "Principled";
-static const char *const VULKAN_SHADER_MAT_CAP_NAME = "MatCap";
+static const char *const VULKAN_SHADER_BASIC_SHADED_NAME = "BasicShaded";
 static const char *const VULKAN_SHADER_WIREFRAME_NAME = "Wireframe";
-static const char *const VULKAN_SHADER_GRID_NAME = "Grid";
-static const char *const VULKAN_SHADER_OUTLINE_NAME = "Outline";
-static const char *const VULKAN_SHADER_RAYTRACE_NAME = "Pathtrace";
+static const char *const VULKAN_SHADER_DEFAULT_SHADED_NAME = "Principled";
 
-static const char *const DEFAULT_MATERIAL_MAT_CAP_NAME = "Default_MatCap_Mat";
-static const char *const DEFAULT_MATERIAL_WIREFRAME_NAME =
-    "Default_Wireframe_Mat";
-static const char *const DEFAULT_MATERIAL_GRID_NAME = "Default_Grid_Mat";
-static const char *const DEFAULT_MATERIAL_CAMERA_NAME = "Default_Camera_Mat";
-static const char *const DEFAULT_MATERIAL_LIGHT_NAME = "Default_Light_Mat";
-static const char *const DEFAULT_MATERIAL_OUTLINE_NAME = "Default_Outline_Mat";
-static const char *const DEFAULT_MATERIAL_RAYTRACE_NAME =
-    "Default_Pathtrace_Mat";
+static const char *const VULKAN_SHADER_EDITOR_GRID_NAME = "Grid";
+static const char *const VULKAN_SHADER_EDITOR_OUTLINE_NAME = "Outline";
+
+static const char *const DEFAULT_MATERIAL_NAME_SUFFIX = "_Mat";
 
 static const char *const DEFAULT_SCENE_NAME = "Scene";
-static const char *const DEFAULT_SCENE_MATERIAL_NAME = "Material";
 static const char *const DEFAULT_SCENE_MATERIAL_SHADER_NAME =
-    VULKAN_SHADER_DEFAULT_NAME;
+    VULKAN_SHADER_DEFAULT_SHADED_NAME;
 
 static const char *const DATA_DIR_PATH = DATA_DIR;
-//static const char *const DEFAULT_MODEL_NAME = "Quad_Model.fbx";
- static const char * const DEFAULT_MODEL_NAME = "Large_Model.fbx";
+// static const char *const DEFAULT_MODEL_NAME = "Quad_Model.fbx";
+static const char *const DEFAULT_MODEL_NAME = "Large_Model.fbx";
 
 static const float VIEWPORT_SELECTED_OBJECT_OUTLINE_WIDTH = 0.025f;
 static const std::array<float, 3> VIEWPORT_SELECTED_OBJECT_OUTLINE_COLOR = {

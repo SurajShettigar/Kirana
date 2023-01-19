@@ -1,7 +1,7 @@
 #version 460
 #extension GL_GOOGLE_include_directive: enable
 
-#include "base_vert.glsl"
+#include "../base/base_vert.glsl"
 
 vec3 vertices[4] = vec3[4](
     vec3(-1.0, -1.0, 0.0),
