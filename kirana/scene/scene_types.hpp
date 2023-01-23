@@ -82,9 +82,10 @@ struct SceneImportSettings
 struct Renderable
 {
     const Object *object = nullptr;
-    bool overrideMaterial = false;
-    bool selected = false;
+    bool selectable = true;
+    bool viewportVisible = true;
     bool renderVisible = true;
+    bool selected = false;
 };
 
 static const SceneImportSettings DEFAULT_SCENE_IMPORT_SETTINGS{

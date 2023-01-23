@@ -4,15 +4,24 @@
 #include <unordered_map>
 #include "vulkan_types.hpp"
 
+namespace kirana::scene
+{
+class ShaderData;
+}
+
 namespace kirana::viewport::vulkan
 {
 class Device;
+class DescriptorSetLayout;
+class PushConstantBase;
 class Shader
 {
   private:
     bool m_isInitialized = false;
-    std::string m_name = "MatCap";
+    std::string m_name = "";
     std::unordered_map<ShaderStage, vk::ShaderModule> m_stages;
+    std::vector<std::unique_ptr<DescriptorSetLayout>> m_descriptorSetLayouts;
+    std::vector<std::unique_ptr<PushConstantBase>> m_pushConstants;
 
     const Device *const m_device;
 
@@ -21,7 +30,8 @@ class Shader
     static bool readShaderFile(const char *path, std::vector<uint32_t> *buffer);
 
   public:
-    explicit Shader(const Device *device, const std::string &name = "");
+    explicit Shader(const Device *device, std::string shaderName,
+                    const scene::ShaderData &shaderData);
     ~Shader();
     Shader(const Shader &shader) = delete;
     Shader &operator=(const Shader &shader) = delete;

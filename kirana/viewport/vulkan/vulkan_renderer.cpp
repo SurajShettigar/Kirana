@@ -175,12 +175,3 @@ void kirana::viewport::vulkan::VulkanRenderer::setShading(Shading shading)
     m_device->waitUntilIdle();
     m_currentScene->setShading(shading);
 }
-
-/*
-void kirana::viewport::vulkan::VulkanRenderer::loadScene(
-    const scene::Scene &scene)
-{
-    m_currentScene = new SceneData(m_allocator, scene);
-    if (m_currentScene->isInitialized)
-        m_drawer->loadScene(m_currentScene);
-}*/

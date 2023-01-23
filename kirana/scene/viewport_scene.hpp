@@ -20,21 +20,22 @@ class ViewportScene
 
   private:
     mutable utils::Event<> m_onWorldChange;
-    mutable utils::Event<const Scene &, bool> m_onSceneLoaded;
+    mutable utils::Event<bool> m_onSceneLoaded;
 
     WorldData m_worldData;
     std::unique_ptr<Camera> m_camera;
     std::unique_ptr<primitives::Plane> m_grid;
     Scene m_currentScene;
 
-    std::unordered_map<std::string, size_t> m_sceneObjectIndexTable;
-    std::unordered_map<std::string, bool> m_sceneObjectSelectionTable;
+    std::unordered_map<std::string, uint32_t> m_objectIndexTable;
+    std::unordered_map<std::string, bool> m_objectSelectionTable;
 
-    std::vector<std::shared_ptr<Material>> m_materials;
-    std::vector<Renderable> m_renderables;
+    std::vector<std::shared_ptr<Material>> m_editorMaterials;
+    std::vector<Renderable> m_editorRenderables;
 
-    void addDefaultMaterials();
-    void addDefaultRenderables();
+    std::vector<Renderable> m_sceneRenderables;
+
+    void initializeEditorObjects();
     void onSceneLoaded();
     void toggleObjectSelection(const std::string &objectName = "",
                                bool multiSelect = false);
@@ -71,7 +72,7 @@ class ViewportScene
     }
 
     inline uint32_t addOnSceneLoadedEventListener(
-        const std::function<void(const Scene &, bool)> &callback) const
+        const std::function<void(bool)> &callback) const
     {
         return m_onSceneLoaded.addListener(callback);
     }
@@ -85,9 +86,17 @@ class ViewportScene
         return m_worldData;
     }
 
-    [[nodiscard]] inline const Camera &getCamera() const
+    [[nodiscard]] inline CameraData getCameraData() const
     {
-        return *m_camera;
+        return CameraData{
+            m_camera->getViewMatrix(),
+            m_camera->getProjectionMatrix(),
+            m_camera->getViewProjectionMatrix(),
+            math::Matrix4x4::inverse(m_camera->getViewProjectionMatrix()),
+            m_camera->transform.getPosition(),
+            m_camera->transform.getForward(),
+            m_camera->nearPlane,
+            m_camera->farPlane};
     }
 
     [[nodiscard]] inline const Scene &getCurrentScene() const
@@ -96,21 +105,34 @@ class ViewportScene
     }
 
     [[nodiscard]] inline const std::vector<std::shared_ptr<Material>>
-        &getRenderableMaterials() const
+        &getEditorMaterials() const
     {
-        return m_materials;
+        return m_editorMaterials;
     }
 
-    [[nodiscard]] inline const std::vector<Renderable> &getRenderables() const
+    [[nodiscard]] inline const std::vector<Renderable> &getEditorRenderables()
+        const
     {
-        return m_renderables;
+        return m_editorRenderables;
+    }
+
+    [[nodiscard]] inline const std::vector<std::shared_ptr<Material>>
+        &getSceneMaterials() const
+    {
+        return m_currentScene.getMaterials();
+    }
+
+    [[nodiscard]] inline const std::vector<Renderable> &getSceneRenderables()
+        const
+    {
+        return m_sceneRenderables;
     }
 
     [[nodiscard]] std::vector<Renderable> getSelectedRenderables() const
     {
         // TODO: Find a faster way to filter selected renderables.
         std::vector<Renderable> selectedRenderables;
-        for (const auto &r : m_renderables)
+        for (const auto &r : m_sceneRenderables)
             if (r.selected)
                 selectedRenderables.push_back(r);
         return selectedRenderables;

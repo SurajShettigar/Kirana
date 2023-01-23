@@ -32,11 +32,10 @@ class Material
     // Events
     // TODO: Add Material change event
 
-    Material() = default;
-    explicit Material(
-        const std::string &name, const std::string &shader,
-        const MaterialProperties &properties,
-        ShadingPipeline currentTechnique = ShadingPipeline::RASTER);
+    Material();
+    explicit Material(std::string shaderName, std::string materialName,
+                      MaterialProperties properties,
+                      bool isEditorMaterial = false);
     ~Material() = default;
 
     Material(const Material &material);
@@ -51,40 +50,48 @@ class Material
     {
         return m_shaderName;
     }
-    [[nodiscard]] inline const std::string &getShaderPath() const
+    [[nodiscard]] inline const ShaderData &getShaderData(
+        ShadingPipeline currentPipeline) const
     {
-        return m_shaderPath;
+        return m_isEditorMaterial
+                   ? m_shaderData[0]
+                   : m_shaderData[static_cast<int>(currentPipeline)];
+    }
+    [[nodiscard]] inline const RasterPipelineData &getRasterPipelineData() const
+    {
+        return m_properties.rasterData;
+    }
+    [[nodiscard]] inline const RaytracePipelineData &getRaytracePipelineData()
+        const
+    {
+        return m_properties.raytraceData;
     }
     [[nodiscard]] inline const MaterialDataBase *getMaterialData() const
     {
         return m_properties.materialData.get();
     }
-    inline const MaterialDataBase *getCurrentPipelineData() const
-    {
-        return m_currentPipeline == ShadingPipeline::RASTER
-                   ? &m_properties.rasterData
-                   : &m_properties.raytraceData;
-    }
 
+    inline void setName(const std::string &name)
+    {
+        m_name = name;
+    }
     inline void setMaterialData(const MaterialDataBase *data)
     {
         *m_properties.materialData = *data;
     }
 
-    inline void setPipeline(ShadingPipeline pipeline)
-    {
-        m_currentPipeline = pipeline;
-        setShaderPath();
-    }
-
   private:
-    std::string m_name = "";
     std::string m_shaderName = "";
-    std::string m_shaderPath = "";
-    ShadingPipeline m_currentPipeline = ShadingPipeline::RASTER;
+    std::string m_name = "";
     MaterialProperties m_properties;
+    bool m_isEditorMaterial = false;
+    std::array<ShaderData,
+               static_cast<int>(ShadingPipeline::SHADING_PIPELINE_MAX)>
+        m_shaderData;
 
-    void setShaderPath();
+    void setShaderData();
+    static std::string getMaterialNameFromShaderName(
+        const std::string &shaderName);
 };
 } // namespace kirana::scene
 

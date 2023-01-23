@@ -45,10 +45,11 @@ static const char *const VULKAN_SHADER_DIR_ROOT_PATH = SHADER_DIR;
 static const char *const VULKAN_SHADER_DIR_EDITOR_PATH = "editor";
 static const char *const VULKAN_SHADER_DIR_RASTER_PATH = "raster";
 static const char *const VULKAN_SHADER_DIR_RAYTRACE_PATH = "raytrace";
+static const char *const VULKAN_SHADER_DIR_COMPUTE_PATH = "compute";
 
 static const char *const VULKAN_SHADER_BASIC_SHADED_NAME = "BasicShaded";
 static const char *const VULKAN_SHADER_WIREFRAME_NAME = "Wireframe";
-static const char *const VULKAN_SHADER_DEFAULT_SHADED_NAME = "Principled";
+static const char *const VULKAN_SHADER_PRINCIPLED_NAME = "Principled";
 
 static const char *const VULKAN_SHADER_EDITOR_GRID_NAME = "Grid";
 static const char *const VULKAN_SHADER_EDITOR_OUTLINE_NAME = "Outline";
@@ -57,7 +58,7 @@ static const char *const DEFAULT_MATERIAL_NAME_SUFFIX = "_Mat";
 
 static const char *const DEFAULT_SCENE_NAME = "Scene";
 static const char *const DEFAULT_SCENE_MATERIAL_SHADER_NAME =
-    VULKAN_SHADER_DEFAULT_SHADED_NAME;
+    VULKAN_SHADER_PRINCIPLED_NAME;
 
 static const char *const DATA_DIR_PATH = DATA_DIR;
 // static const char *const DEFAULT_MODEL_NAME = "Quad_Model.fbx";

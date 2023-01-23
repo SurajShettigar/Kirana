@@ -42,13 +42,11 @@ class SceneData
     const DescriptorSetLayout *m_raytraceDescSetLayout;
     PushConstant<RaytracedGlobalData> *m_raytraceGlobalData = nullptr;
 
-    VertexInputDescription m_vertexDesc;
     mutable std::unordered_map<std::string, std::unique_ptr<Pipeline>>
         m_materials;
     std::vector<MeshData> m_meshes;
     size_t m_totalInstanceCount;
 
-    CameraData m_cameraData;
     AllocatedBuffer m_cameraBuffer;
     AllocatedBuffer m_worldDataBuffer;
     AllocatedBuffer m_vertexBuffer;
@@ -63,11 +61,13 @@ class SceneData
     const scene::ViewportScene &m_scene;
     uint32_t m_cameraChangeListener;
     uint32_t m_worldChangeListener;
+    uint32_t m_sceneLoadListener;
 
     void setVertexDescription();
 
     void onWorldChanged();
     void onCameraChanged();
+    void onSceneLoaded(bool result);
     void onObjectChanged();
 
     void createWorldDataBuffer();

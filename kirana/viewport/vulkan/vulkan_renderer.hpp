@@ -82,11 +82,6 @@ class VulkanRenderer
 
     /// Switches the current pipeline to support the required shading.
     void setShading(viewport::Shading shading);
-    /**
-     * Convert Scene object into vulkan SceneData object.
-     * @param scene The Scene object to be converted.
-     */
-    //    void loadScene(const scene::Scene &scene);
 };
 } // namespace kirana::viewport::vulkan
 

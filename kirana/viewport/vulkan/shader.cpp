@@ -61,12 +61,14 @@ bool kirana::viewport::vulkan::Shader::readShaderFile(
 }
 
 kirana::viewport::vulkan::Shader::Shader(const Device *const device,
-                                         const std::string &name)
+                                         const std::string &name,
+                                         const scene::ShaderData &shaderData)
     : m_isInitialized{false},
-      m_name{name.empty() ? utils::constants::VULKAN_SHADER_DEFAULT_SHADED_NAME
+      m_name{name.empty() ? utils::constants::VULKAN_SHADER_PRINCIPLED_NAME
                           : name},
       m_device{device}
 {
+    vk::ShaderStageFlagBits
     for (int i = 0; i < static_cast<int>(ShaderStage::SHADER_STAGE_MAX); i++)
     {
         const auto stage = static_cast<ShaderStage>(i);

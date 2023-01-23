@@ -50,27 +50,20 @@ void kirana::viewport::vulkan::SceneData::onWorldChanged()
 
 void kirana::viewport::vulkan::SceneData::onCameraChanged()
 {
-    const auto &camera = m_scene.getCamera();
-    m_cameraData.viewMatrix = camera.getViewMatrix();
-    m_cameraData.projectionMatrix = camera.getProjectionMatrix();
-    m_cameraData.viewProjectionMatrix =
-        m_cameraData.projectionMatrix * m_cameraData.viewMatrix;
-    m_cameraData.invViewProjMatrix =
-        math::Matrix4x4::inverse(m_cameraData.viewProjectionMatrix);
-    m_cameraData.position = camera.transform.getPosition();
-    m_cameraData.direction = camera.transform.getForward();
-    m_cameraData.nearPlane = camera.nearPlane;
-    m_cameraData.farPlane = camera.farPlane;
-
+    const auto &cameraData = m_scene.getCameraData();
     const vk::DeviceSize paddedSize =
-        m_device->alignUniformBufferSize(sizeof(vulkan::CameraData));
+        m_device->alignUniformBufferSize(sizeof(scene::CameraData));
     for (size_t i = 0; i < constants::VULKAN_FRAME_OVERLAP_COUNT; i++)
     {
-        m_allocator->copyDataToMemory(
-            m_cameraBuffer, sizeof(vulkan::CameraData),
-            static_cast<uint32_t>(paddedSize * i), &m_cameraData);
+        m_allocator->copyDataToMemory(m_cameraBuffer, sizeof(scene::CameraData),
+                                      static_cast<uint32_t>(paddedSize * i),
+                                      &cameraData);
     }
     updateRaytracedFrameCount(true);
+}
+
+void kirana::viewport::vulkan::SceneData::onSceneLoaded(bool result)
+{
 }
 
 void kirana::viewport::vulkan::SceneData::onObjectChanged()
@@ -114,7 +107,7 @@ void kirana::viewport::vulkan::SceneData::createWorldDataBuffer()
 void kirana::viewport::vulkan::SceneData::createCameraBuffer()
 {
     const vk::DeviceSize paddedSize =
-        m_device->alignUniformBufferSize(sizeof(vulkan::CameraData));
+        m_device->alignUniformBufferSize(sizeof(scene::CameraData));
     const vk::DeviceSize bufferSize =
         constants::VULKAN_FRAME_OVERLAP_COUNT * paddedSize;
     if (m_allocator->allocateBuffer(
@@ -122,7 +115,7 @@ void kirana::viewport::vulkan::SceneData::createCameraBuffer()
             vma::MemoryUsage::eCpuToGpu, &m_cameraBuffer))
     {
         m_cameraBuffer.descInfo = vk::DescriptorBufferInfo(
-            *m_cameraBuffer.buffer, 0, sizeof(vulkan::CameraData));
+            *m_cameraBuffer.buffer, 0, sizeof(scene::CameraData));
 
         m_device->setDebugObjectName(*m_cameraBuffer.buffer, "CameraBuffer");
         onCameraChanged();
@@ -199,7 +192,7 @@ std::unique_ptr<kirana::viewport::vulkan::Pipeline> kirana::viewport::vulkan::
 
 void kirana::viewport::vulkan::SceneData::createMaterials()
 {
-    for (const auto &m : m_scene.getRenderableMaterials())
+    for (const auto &m : m_scene.getSceneMaterials())
         m_materials[m->getName()] = std::move(getPipelineForMaterial(*m));
 }
 
@@ -213,9 +206,11 @@ const std::unique_ptr<kirana::viewport::vulkan::Pipeline>
     switch (m_currentShading)
     {
     case viewport::Shading::BASIC:
-        return m_materials[constants::DEFAULT_MATERIAL_BASIC_SHADED_NAME];
+        return m_materials[scene::Material::DEFAULT_MATERIAL_BASIC_SHADED
+                               .getName()];
     case viewport::Shading::WIREFRAME:
-        return m_materials[constants::DEFAULT_MATERIAL_WIREFRAME_NAME];
+        return m_materials[scene::Material::DEFAULT_MATERIAL_WIREFRAME
+                               .getName()];
     default:
     case viewport::Shading::REALTIME_PBR:
         // TODO: Add PBR Pipeline
@@ -252,7 +247,7 @@ bool kirana::viewport::vulkan::SceneData::createMeshes()
     std::vector<scene::Vertex> vertices;
     std::vector<uint32_t> indices;
     m_meshes.clear();
-    for (const auto &r : m_scene.getRenderables())
+    for (const auto &r : m_scene.getSceneRenderables())
     {
         InstanceData instance{instanceIndex++, r.object->transform, &r.selected,
                               &r.renderVisible};
@@ -413,9 +408,11 @@ kirana::viewport::vulkan::SceneData::SceneData(
         [&]() { this->onWorldChanged(); });
     m_cameraChangeListener = m_scene.addOnCameraChangeEventListener(
         [&]() { this->onCameraChanged(); });
+    m_sceneLoadListener = m_scene.addOnSceneLoadedEventListener(
+        [&](bool result) { this->onSceneLoaded(result); });
 
-    // Create shaders, pipeline layouts and pipelines for all the materials in
-    // the scene.
+    // Create shaders, pipeline layouts and pipelines for
+    // all the materials in the scene.
     m_materials.clear();
     createMaterials();
 
@@ -439,6 +436,7 @@ kirana::viewport::vulkan::SceneData::SceneData(
 
 kirana::viewport::vulkan::SceneData::~SceneData()
 {
+    m_scene.removeOnSceneLoadedEventListener(m_sceneLoadListener);
     m_scene.removeOnWorldChangeEventListener(m_worldChangeListener);
     m_scene.removeOnCameraChangeEventListener(m_cameraChangeListener);
 
@@ -533,7 +531,8 @@ void kirana::viewport::vulkan::SceneData::updateRaytracedFrameCount(bool reset)
 const kirana::viewport::vulkan::Pipeline *kirana::viewport::vulkan::SceneData::
     getOutlineMaterial() const
 {
-    return m_materials[std::string(constants::DEFAULT_MATERIAL_OUTLINE_NAME)]
+    return m_materials[scene::Material::DEFAULT_MATERIAL_EDITOR_OUTLINE
+                           .getName()]
         .get();
 }
 
@@ -547,7 +546,7 @@ uint32_t kirana::viewport::vulkan::SceneData::getCameraBufferOffset(
     uint32_t offsetIndex) const
 {
     return static_cast<uint32_t>(m_device->alignUniformBufferSize(
-        sizeof(vulkan::CameraData) * offsetIndex));
+        sizeof(scene::CameraData) * offsetIndex));
 }
 
 uint32_t kirana::viewport::vulkan::SceneData::getWorldDataBufferOffset(

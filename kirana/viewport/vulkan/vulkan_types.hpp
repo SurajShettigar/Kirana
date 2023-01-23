@@ -112,21 +112,6 @@ enum class ShaderStage
     SHADER_STAGE_MAX = 7
 };
 
-/**
- * Holds the Camera view and projection matrix.
- */
-struct CameraData
-{
-    math::Matrix4x4 viewMatrix;
-    math::Matrix4x4 projectionMatrix;
-    math::Matrix4x4 viewProjectionMatrix;
-    math::Matrix4x4 invViewProjMatrix;
-    math::Vector3 position;
-    alignas(16) math::Vector3 direction;
-    alignas(4) float nearPlane;
-    alignas(4) float farPlane;
-};
-
 struct ObjectData
 {
     math::Matrix4x4 modelMatrix;
