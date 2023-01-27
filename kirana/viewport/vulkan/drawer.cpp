@@ -231,7 +231,7 @@ void kirana::viewport::vulkan::Drawer::draw()
                 {m_scene->getCameraBufferOffset(frameIndex),
                  m_scene->getWorldDataBufferOffset(frameIndex)},
                 vk::PipelineBindPoint::eRayTracingKHR);
-            frame.commandBuffers->pushConstants<RaytracedGlobalData>(
+            frame.commandBuffers->pushConstants<PushConstantRaytrace>(
                 m_scene->getRaytracePipeline().getLayout().current,
                 m_scene->getRaytracedGlobalData());
             frame.commandBuffers->traceRays(

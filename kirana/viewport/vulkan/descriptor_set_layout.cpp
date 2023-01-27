@@ -4,55 +4,15 @@
 #include "vulkan_utils.hpp"
 
 kirana::viewport::vulkan::DescriptorSetLayout::DescriptorSetLayout(
-    const Device *device, LayoutType layoutType)
+    const Device *device, const std::vector<DescriptorData> &bindingData)
     : m_isInitialized{false}, m_device{device}
 {
-    std::vector<vk::DescriptorSetLayoutBinding> bindings;
-    switch (layoutType)
+    std::vector<vk::DescriptorSetLayoutBinding> bindings(bindingData.size());
+    for (size_t i = 0; i < bindingData.size(); i++)
     {
-    case LayoutType::GLOBAL: {
-        const vk::DescriptorSetLayoutBinding camBuffer(
-            0, vk::DescriptorType::eUniformBufferDynamic, 1,
-            vk::ShaderStageFlagBits::eVertex |
-                vk::ShaderStageFlagBits::eRaygenKHR);
-
-        const vk::DescriptorSetLayoutBinding worldDataBuffer(
-            1, vk::DescriptorType::eUniformBufferDynamic, 1,
-            vk::ShaderStageFlagBits::eVertex |
-                vk::ShaderStageFlagBits::eFragment |
-                vk::ShaderStageFlagBits::eClosestHitKHR |
-                vk::ShaderStageFlagBits::eMissKHR);
-
-        bindings.clear();
-        bindings.emplace_back(camBuffer);
-        bindings.emplace_back(worldDataBuffer);
-    }
-    break;
-    case LayoutType::OBJECT: {
-        const vk::DescriptorSetLayoutBinding objectBuffer(
-            0, vk::DescriptorType::eStorageBufferDynamic, 1,
-            vk::ShaderStageFlagBits::eVertex);
-        bindings.clear();
-        bindings.emplace_back(objectBuffer);
-    }
-    break;
-    case LayoutType::RAYTRACE: {
-        const vk::DescriptorSetLayoutBinding accelerationStructure(
-            0, vk::DescriptorType::eAccelerationStructureKHR, 1,
-            vk::ShaderStageFlagBits::eRaygenKHR |
-                vk::ShaderStageFlagBits::eClosestHitKHR);
-        const vk::DescriptorSetLayoutBinding outputImage(
-            1, vk::DescriptorType::eStorageImage, 1,
-            vk::ShaderStageFlagBits::eRaygenKHR);
-        const vk::DescriptorSetLayoutBinding objData(
-            2, vk::DescriptorType::eStorageBuffer, 1,
-            vk::ShaderStageFlagBits::eClosestHitKHR);
-        bindings.clear();
-        bindings.emplace_back(accelerationStructure);
-        bindings.emplace_back(outputImage);
-        bindings.emplace_back(objData);
-    }
-    break;
+        bindings.emplace_back(vk::DescriptorSetLayoutBinding{
+            bindingData[i].binding, bindingData[i].type, 1,
+            bindingData[i].stages});
     }
 
     const vk::DescriptorSetLayoutCreateInfo createInfo({}, bindings);

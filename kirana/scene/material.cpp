@@ -17,18 +17,35 @@ void kirana::scene::Material::setShaderData()
 {
     using utils::filesystem::getFilename;
     using utils::filesystem::listFilesInPath;
-    std::string pipelineFolder = m_isEditorMaterial
-                                     ? constants::VULKAN_SHADER_DIR_EDITOR_PATH
-                                     : constants::VULKAN_SHADER_DIR_RASTER_PATH;
-    std::string basePath = utils::filesystem::combinePath(
-        constants::VULKAN_SHADER_DIR_ROOT_PATH, {pipelineFolder.c_str()}, "");
-    ShaderData shaderData{};
-    shaderData.name = m_shaderName;
-    shaderData.pipeline = ShadingPipeline::RASTER;
 
-    shaderData.stages.clear();
-    auto addStages = [&]() {
-        for (const auto &f : listFilesInPath(basePath, shaderData.name))
+    for (int i = 0; i < static_cast<int>(ShadingPipeline::SHADING_PIPELINE_MAX);
+         i++)
+    {
+        const auto currPipeline = static_cast<ShadingPipeline>(i);
+        std::string pipelineFolder = constants::VULKAN_SHADER_DIR_EDITOR_PATH;
+        if (!m_isEditorMaterial)
+        {
+            switch (currPipeline)
+            {
+            case ShadingPipeline::RASTER:
+                pipelineFolder = constants::VULKAN_SHADER_DIR_RASTER_PATH;
+                break;
+            case ShadingPipeline::RAYTRACE:
+                pipelineFolder = constants::VULKAN_SHADER_DIR_RAYTRACE_PATH;
+                break;
+            default:
+                pipelineFolder = constants::VULKAN_SHADER_DIR_RASTER_PATH;
+                break;
+            }
+        }
+        const std::string basePath = utils::filesystem::combinePath(
+            constants::VULKAN_SHADER_DIR_ROOT_PATH, {pipelineFolder.c_str()},
+            "");
+        ShaderData shaderData{};
+        shaderData.name = m_shaderName;
+        shaderData.pipeline = currPipeline;
+        shaderData.stages.clear();
+        for (const auto &f : listFilesInPath(basePath, m_shaderName))
         {
             const auto &extension = getFilename(f).second;
             if (SHADING_EXTENSION_STAGE_TABLE.find(extension) !=
@@ -38,21 +55,7 @@ void kirana::scene::Material::setShaderData()
                 shaderData.stages[stage] = f;
             }
         }
-    };
-    addStages();
-    m_shaderData[0] = shaderData;
-
-    // Add raytraced material stages, if available
-    if (!m_isEditorMaterial)
-    {
-        pipelineFolder = constants::VULKAN_SHADER_DIR_RAYTRACE_PATH;
-        basePath = utils::filesystem::combinePath(
-            constants::VULKAN_SHADER_DIR_ROOT_PATH, {pipelineFolder.c_str()},
-            "");
-        shaderData.pipeline = ShadingPipeline::RAYTRACE;
-        shaderData.stages.clear();
-        addStages();
-        m_shaderData[1] = shaderData;
+        m_shaderData[i] = shaderData;
     }
 }
 

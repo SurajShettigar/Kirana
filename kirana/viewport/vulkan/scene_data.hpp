@@ -40,7 +40,7 @@ class SceneData
     const DescriptorSetLayout *m_globalDescSetLayout;
     const DescriptorSetLayout *m_objectDescSetLayout;
     const DescriptorSetLayout *m_raytraceDescSetLayout;
-    PushConstant<RaytracedGlobalData> *m_raytraceGlobalData = nullptr;
+    PushConstant<PushConstantRaytrace> *m_raytraceGlobalData = nullptr;
 
     mutable std::unordered_map<std::string, std::unique_ptr<Pipeline>>
         m_materials;
@@ -129,7 +129,7 @@ class SceneData
         return m_raytraceDescSetLayout;
     }
 
-    [[nodiscard]] const PushConstant<RaytracedGlobalData>
+    [[nodiscard]] const PushConstant<PushConstantRaytrace>
         &getRaytracedGlobalData() const;
 
     [[nodiscard]] inline const std::vector<MeshData> &getMeshData() const

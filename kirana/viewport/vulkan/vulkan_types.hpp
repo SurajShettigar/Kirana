@@ -90,6 +90,13 @@ struct AllocateImage
     std::unique_ptr<vma::Allocation> allocation;
 };
 
+struct DescriptorData
+{
+    uint32_t binding;
+    vk::DescriptorType type;
+    vk::ShaderStageFlags stages;
+};
+
 /**
  * Holds list of bindings and attributes of vertices to define vertices to the
  * vulkan pipeline.
@@ -98,18 +105,6 @@ struct VertexInputDescription
 {
     std::vector<vk::VertexInputBindingDescription> bindings;
     std::vector<vk::VertexInputAttributeDescription> attributes;
-};
-
-enum class ShaderStage
-{
-    COMPUTE = 0,
-    VERTEX = 1,
-    FRAGMENT = 2,
-    RAYTRACE_RAY_GEN = 3,
-    RAYTRACE_MISS = 4,
-    RAYTRACE_MISS_SHADOW = 5,
-    RAYTRACE_CLOSEST_HIT = 6,
-    SHADER_STAGE_MAX = 7
 };
 
 struct ObjectData
@@ -161,7 +156,12 @@ struct FrameData
     const CommandBuffers *commandBuffers = nullptr;
 };
 
-struct RaytracedGlobalData
+struct PushConstantRaster
+{
+    uint32_t objectIndex;
+};
+
+struct PushConstantRaytrace
 {
     uint64_t vertexBufferAddress;
     uint64_t indexBufferAddress;

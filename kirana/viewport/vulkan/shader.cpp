@@ -1,45 +1,14 @@
 #include "shader.hpp"
 #include "device.hpp"
+#include "descriptor_set_layout.hpp"
+#include "push_constant.hpp"
+#include "pipeline_layout.hpp"
 #include "vulkan_utils.hpp"
 
+#include <material_types.hpp>
 #include <fstream>
 #include <string>
 #include <file_system.hpp>
-
-
-std::string kirana::viewport::vulkan::Shader::getPathForShaderStage(
-    const std::string &name, ShaderStage stage)
-{
-    const char *extension = "";
-    switch (stage)
-    {
-    case ShaderStage::COMPUTE:
-        extension = constants::VULKAN_SHADER_COMPUTE_EXTENSION;
-        break;
-    case ShaderStage::VERTEX:
-        extension = constants::VULKAN_SHADER_VERTEX_EXTENSION;
-        break;
-    case ShaderStage::FRAGMENT:
-        extension = constants::VULKAN_SHADER_FRAGMENT_EXTENSION;
-        break;
-    case ShaderStage::RAYTRACE_RAY_GEN:
-        extension = constants::VULKAN_SHADER_RAYTRACE_RAY_GEN_EXTENSION;
-        break;
-    case ShaderStage::RAYTRACE_MISS:
-        extension = constants::VULKAN_SHADER_RAYTRACE_MISS_EXTENSION;
-        break;
-    case ShaderStage::RAYTRACE_MISS_SHADOW:
-        extension = constants::VULKAN_SHADER_RAYTRACE_MISS_SHADOW_EXTENSION;
-        break;
-    case ShaderStage::RAYTRACE_CLOSEST_HIT:
-        extension = constants::VULKAN_SHADER_RAYTRACE_CLOSEST_HIT_EXTENSION;
-        break;
-    default:
-        extension = "";
-    }
-    return utils::filesystem::combinePath(constants::VULKAN_SHADER_DIR_ROOT_PATH,
-                                          {name.c_str()}, extension);
-}
 
 bool kirana::viewport::vulkan::Shader::readShaderFile(
     const char *path, std::vector<uint32_t> *buffer)
@@ -60,55 +29,169 @@ bool kirana::viewport::vulkan::Shader::readShaderFile(
     return true;
 }
 
-kirana::viewport::vulkan::Shader::Shader(const Device *const device,
-                                         const std::string &name,
-                                         const scene::ShaderData &shaderData)
-    : m_isInitialized{false},
-      m_name{name.empty() ? utils::constants::VULKAN_SHADER_PRINCIPLED_NAME
-                          : name},
-      m_device{device}
+
+std::vector<kirana::viewport::vulkan::DescriptorData> kirana::viewport::vulkan::
+    Shader::getDescriptors(DescriptorFrequency frequency,
+                           scene::ShadingPipeline pipeline)
 {
-    vk::ShaderStageFlagBits
-    for (int i = 0; i < static_cast<int>(ShaderStage::SHADER_STAGE_MAX); i++)
+    switch (frequency)
     {
-        const auto stage = static_cast<ShaderStage>(i);
-        const std::string path = getPathForShaderStage(name, stage);
-        if (utils::filesystem::fileExists(path.c_str()))
+    case DescriptorFrequency::GLOBAL: {
+        std::vector<DescriptorData> globalDescriptors(2);
+
+        const vk::DescriptorType type =
+            pipeline == scene::ShadingPipeline::RASTER
+                ? vk::DescriptorType::eUniformBufferDynamic
+                : vk::DescriptorType::eUniformBuffer;
+        // Camera Descriptor
+        vk::ShaderStageFlags stages = pipeline == scene::ShadingPipeline::RASTER
+                                          ? vk::ShaderStageFlagBits::eVertex
+                                          : vk::ShaderStageFlagBits::eRaygenKHR;
+        globalDescriptors[0] = DescriptorData{0, type, stages};
+
+        // World Descriptor
+        stages = pipeline == scene::ShadingPipeline::RASTER
+                     ? vk::ShaderStageFlagBits::eVertex |
+                           vk::ShaderStageFlagBits::eFragment
+                     : vk::ShaderStageFlagBits::eClosestHitKHR |
+                           vk::ShaderStageFlagBits::eMissKHR |
+                           vk::ShaderStageFlagBits::eAnyHitKHR;
+        globalDescriptors[1] = DescriptorData{1, type, stages};
+
+        return globalDescriptors;
+    }
+    case DescriptorFrequency::MATERIAL: {
+        std::vector<DescriptorData> materialDescriptors(1);
+
+        const vk::DescriptorType type =
+            pipeline == scene::ShadingPipeline::RASTER
+                ? vk::DescriptorType::eStorageBufferDynamic
+                : vk::DescriptorType::eStorageBuffer;
+        // Material Data Descriptor
+        const vk::ShaderStageFlags stages =
+            pipeline == scene::ShadingPipeline::RASTER
+                ? vk::ShaderStageFlagBits::eFragment
+                : vk::ShaderStageFlagBits::eClosestHitKHR |
+                      vk::ShaderStageFlagBits::eAnyHitKHR;
+        materialDescriptors[0] = DescriptorData{0, type, stages};
+
+        return materialDescriptors;
+    }
+    case DescriptorFrequency::OBJECT: {
+        std::vector<DescriptorData> objectDescriptors(1);
+
+        const vk::DescriptorType type =
+            pipeline == scene::ShadingPipeline::RASTER
+                ? vk::DescriptorType::eStorageBufferDynamic
+                : vk::DescriptorType::eStorageBuffer;
+        // Material Data Descriptor
+        const vk::ShaderStageFlags stages =
+            pipeline == scene::ShadingPipeline::RASTER
+                ? vk::ShaderStageFlagBits::eVertex
+                : vk::ShaderStageFlagBits::eClosestHitKHR |
+                      vk::ShaderStageFlagBits::eAnyHitKHR;
+        objectDescriptors[0] = DescriptorData{0, type, stages};
+
+        return objectDescriptors;
+    }
+    }
+}
+
+bool kirana::viewport::vulkan::Shader::createPipelineLayout(
+    scene::ShadingPipeline pipeline)
+{
+    // TODO: Use Shader Reflection to build pipeline layout
+    m_descLayouts.resize(3);
+    m_descLayouts[0] = new DescriptorSetLayout(
+        m_device, getDescriptors(DescriptorFrequency::GLOBAL, pipeline));
+    m_descLayouts[1] = new DescriptorSetLayout(
+        m_device, getDescriptors(DescriptorFrequency::MATERIAL, pipeline));
+    m_descLayouts[2] = new DescriptorSetLayout(
+        m_device, getDescriptors(DescriptorFrequency::OBJECT, pipeline));
+
+    m_pushConstants.resize(1);
+    switch (pipeline)
+    {
+    case scene::ShadingPipeline::RASTER: {
+        m_pushConstants[0] = new PushConstant<vulkan::PushConstantRaster>(
+            vulkan::PushConstantRaster{},
+            vk::ShaderStageFlagBits::eVertex |
+                vk::ShaderStageFlagBits::eFragment);
+    }
+    case scene::ShadingPipeline::RAYTRACE: {
+        m_pushConstants[0] = new PushConstant<vulkan::PushConstantRaytrace>(
+            vulkan::PushConstantRaytrace{},
+            vk::ShaderStageFlagBits::eRaygenKHR |
+                vk::ShaderStageFlagBits::eClosestHitKHR |
+                vk::ShaderStageFlagBits::eAnyHitKHR);
+    }
+    }
+
+    m_pipelineLayout =
+        new PipelineLayout(m_device, m_descLayouts, m_pushConstants);
+
+    return m_pipelineLayout->isInitialized;
+}
+
+kirana::viewport::vulkan::Shader::Shader(const Device *const device,
+                                         const scene::ShaderData &shaderData)
+    : m_isInitialized{false}, m_name{shaderData.name}, m_device{device}
+{
+    for (const auto &s : shaderData.stages)
+    {
+        const auto stage = static_cast<vk::ShaderStageFlagBits>(s.first);
+        const std::string &path = s.second;
+        std::vector<uint32_t> data;
+        if (!readShaderFile(path.c_str(), &data))
         {
-            std::vector<uint32_t> data;
-            if (!readShaderFile(path.c_str(), &data))
-            {
-                Logger::get().log(constants::LOG_CHANNEL_VULKAN,
-                                  LogSeverity::error,
-                                  ("Failed to read " + std::to_string(i) +
-                                   " stage for shader: " + std::string(name))
-                                      .c_str());
-                return;
-            }
-            try
-            {
-                m_stages[stage] = m_device->current.createShaderModule(
-                    vk::ShaderModuleCreateInfo(
-                        {}, data.size() * sizeof(uint32_t), data.data()));
-            }
-            catch (...)
-            {
-                handleVulkanException();
-                return;
-            }
+            Logger::get().log(constants::LOG_CHANNEL_VULKAN, LogSeverity::error,
+                              "Failed to read " +
+                                  scene::shadingStageToString(s.first) +
+                                  " stage for shader: " + m_name);
+            return;
+        }
+        try
+        {
+            m_stages[stage] =
+                m_device->current.createShaderModule(vk::ShaderModuleCreateInfo(
+                    {}, data.size() * sizeof(uint32_t), data.data()));
+        }
+        catch (...)
+        {
+            handleVulkanException();
+            return;
         }
     }
-    // TODO: Add a way to differentiate different shaders (raster, compute,
-    // raytrace).
-    // TODO: Add a robust way to check if all stages of a shader are
-    // initialized.
-    m_isInitialized = true;
+    m_isInitialized = createPipelineLayout(shaderData.pipeline);
 }
 
 kirana::viewport::vulkan::Shader::~Shader()
 {
     if (m_device)
     {
+        if (m_pipelineLayout)
+        {
+            delete m_pipelineLayout;
+            m_pipelineLayout = nullptr;
+        }
+        for (auto &p : m_pushConstants)
+        {
+            if (p)
+            {
+                delete p;
+                p = nullptr;
+            }
+        }
+        m_pushConstants.clear();
+        for (auto &d : m_descLayouts)
+        {
+            if (d)
+            {
+                delete d;
+                d = nullptr;
+            }
+        }
+        m_descLayouts.clear();
         for (const auto &s : m_stages)
             if (s.second)
                 m_device->current.destroyShaderModule(s.second);

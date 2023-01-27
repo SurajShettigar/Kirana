@@ -332,7 +332,7 @@ bool kirana::viewport::vulkan::SceneData::initializeRaytracing()
     const vk::DeviceAddress &indexBufferAddress =
         m_device->getBufferAddress(*m_indexBuffer.buffer);
 
-    m_raytraceGlobalData = new PushConstant<RaytracedGlobalData>(
+    m_raytraceGlobalData = new PushConstant<PushConstantRaytrace>(
         {vertexBufferAddress, indexBufferAddress, 0, 10, 8},
         vk::ShaderStageFlagBits::eRaygenKHR |
             vk::ShaderStageFlagBits::eClosestHitKHR);
@@ -522,7 +522,7 @@ void kirana::viewport::vulkan::SceneData::updateRaytracedFrameCount(bool reset)
 }
 
 [[nodiscard]] const kirana::viewport::vulkan::PushConstant<
-    kirana::viewport::vulkan::RaytracedGlobalData>
+    kirana::viewport::vulkan::PushConstantRaytrace>
     &kirana::viewport::vulkan::SceneData::getRaytracedGlobalData() const
 {
     return *m_raytraceGlobalData;

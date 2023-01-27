@@ -34,6 +34,41 @@ enum class ShadingStage
     CALLABLE = 0x00002000,
 };
 
+static std::string shadingStageToString(ShadingStage stage)
+{
+    switch (stage)
+    {
+    case ShadingStage::VERTEX:
+        return "VERTEX";
+    case ShadingStage::TESSELLATION_CONTROL:
+        return "TESSELLATION_CONTROL";
+    case ShadingStage::TESSELLATION_EVALUATION:
+        return "TESSELLATION_EVALUATION";
+    case ShadingStage::GEOMETRY:
+        return "GEOMETRY";
+    case ShadingStage::FRAGMENT:
+        return "FRAGMENT";
+    case ShadingStage::COMPUTE:
+        return "COMPUTE";
+    case ShadingStage::ALL_GRAPHICS:
+        return "ALL_GRAPHICS";
+    case ShadingStage::ALL:
+        return "ALL";
+    case ShadingStage::RAY_GEN:
+        return "RAY_GEN";
+    case ShadingStage::ANY_HIT:
+        return "ANY_HIT";
+    case ShadingStage::CLOSEST_HIT:
+        return "CLOSEST_HIT";
+    case ShadingStage::MISS:
+        return "MISS";
+    case ShadingStage::INTERSECTION:
+        return "INTERSECTION";
+    case ShadingStage::CALLABLE:
+        return "CALLABLE";
+    }
+}
+
 static const std::unordered_map<ShadingStage, std::string>
     SHADING_STAGE_EXTENSION_TABLE{
         {ShadingStage::VERTEX, "vert"},
