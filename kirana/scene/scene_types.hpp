@@ -38,7 +38,7 @@ struct Vertex
     }
 
     /// Vertex information of the biggest attribute
-    static VertexInfo getOverallVertexInfo()
+    static VertexInfo getLargestVertexInfo()
     {
         return {VertexDataFormat::FLOAT, 4, offsetof(Vertex, color)};
     }

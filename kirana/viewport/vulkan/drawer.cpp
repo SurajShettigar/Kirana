@@ -172,7 +172,7 @@ void kirana::viewport::vulkan::Drawer::draw()
         return;
 
     const bool isRaytracing =
-        m_scene->getCurrentShading() == viewport::Shading::RAYTRACE_PBR;
+        m_scene->getCurrentShading() == viewport::ShadingPipeline::RAYTRACE_PBR;
 
     const FrameData &frame = getCurrentFrame();
     const uint32_t frameIndex = getCurrentFrameIndex();

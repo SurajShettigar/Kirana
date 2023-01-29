@@ -18,7 +18,7 @@
 
 void kirana::viewport::vulkan::VulkanRenderer::init(
     const window::Window *const window, const scene::ViewportScene &scene,
-    viewport::Shading shading)
+    vulkan::ShadingPipeline pipeline, vulkan::ShadingType type)
 {
     m_window = window;
     m_instance = new Instance(m_window->getReqInstanceExtensionsForVulkan());
@@ -43,8 +43,8 @@ void kirana::viewport::vulkan::VulkanRenderer::init(
     }
     if (m_descriptorPool && m_descriptorPool->isInitialized)
     {
-        m_currentScene =
-            new SceneData(m_device, m_allocator, m_renderpass, scene, shading);
+        m_currentScene = new SceneData(m_device, m_allocator, m_renderpass,
+                                       scene, pipeline, type);
     }
     if (m_descriptorPool && m_descriptorPool->isInitialized)
     {
@@ -170,8 +170,16 @@ void kirana::viewport::vulkan::VulkanRenderer::rebuildSwapchain()
                              utils::LogSeverity::trace, "Swapchain rebuilt");
 }
 
-void kirana::viewport::vulkan::VulkanRenderer::setShading(Shading shading)
+void kirana::viewport::vulkan::VulkanRenderer::setShadingPipeline(
+    vulkan::ShadingPipeline pipeline)
 {
     m_device->waitUntilIdle();
-    m_currentScene->setShading(shading);
+    m_currentScene->setShadingPipeline(pipeline);
+}
+
+void kirana::viewport::vulkan::VulkanRenderer::setShadingType(
+    vulkan::ShadingType type)
+{
+    m_device->waitUntilIdle();
+    m_currentScene->setShadingType(type);
 }

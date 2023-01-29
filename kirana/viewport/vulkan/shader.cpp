@@ -32,7 +32,7 @@ bool kirana::viewport::vulkan::Shader::readShaderFile(
 
 std::vector<kirana::viewport::vulkan::DescriptorData> kirana::viewport::vulkan::
     Shader::getDescriptors(DescriptorFrequency frequency,
-                           scene::ShadingPipeline pipeline)
+                           vulkan::ShadingPipeline pipeline)
 {
     switch (frequency)
     {
@@ -40,17 +40,18 @@ std::vector<kirana::viewport::vulkan::DescriptorData> kirana::viewport::vulkan::
         std::vector<DescriptorData> globalDescriptors(2);
 
         const vk::DescriptorType type =
-            pipeline == scene::ShadingPipeline::RASTER
+            pipeline == vulkan::ShadingPipeline::RASTER
                 ? vk::DescriptorType::eUniformBufferDynamic
                 : vk::DescriptorType::eUniformBuffer;
         // Camera Descriptor
-        vk::ShaderStageFlags stages = pipeline == scene::ShadingPipeline::RASTER
-                                          ? vk::ShaderStageFlagBits::eVertex
-                                          : vk::ShaderStageFlagBits::eRaygenKHR;
+        vk::ShaderStageFlags stages =
+            pipeline == vulkan::ShadingPipeline::RASTER
+                ? vk::ShaderStageFlagBits::eVertex
+                : vk::ShaderStageFlagBits::eRaygenKHR;
         globalDescriptors[0] = DescriptorData{0, type, stages};
 
         // World Descriptor
-        stages = pipeline == scene::ShadingPipeline::RASTER
+        stages = pipeline == vulkan::ShadingPipeline::RASTER
                      ? vk::ShaderStageFlagBits::eVertex |
                            vk::ShaderStageFlagBits::eFragment
                      : vk::ShaderStageFlagBits::eClosestHitKHR |
@@ -64,12 +65,12 @@ std::vector<kirana::viewport::vulkan::DescriptorData> kirana::viewport::vulkan::
         std::vector<DescriptorData> materialDescriptors(1);
 
         const vk::DescriptorType type =
-            pipeline == scene::ShadingPipeline::RASTER
+            pipeline == vulkan::ShadingPipeline::RASTER
                 ? vk::DescriptorType::eStorageBufferDynamic
                 : vk::DescriptorType::eStorageBuffer;
         // Material Data Descriptor
         const vk::ShaderStageFlags stages =
-            pipeline == scene::ShadingPipeline::RASTER
+            pipeline == vulkan::ShadingPipeline::RASTER
                 ? vk::ShaderStageFlagBits::eFragment
                 : vk::ShaderStageFlagBits::eClosestHitKHR |
                       vk::ShaderStageFlagBits::eAnyHitKHR;
@@ -81,12 +82,12 @@ std::vector<kirana::viewport::vulkan::DescriptorData> kirana::viewport::vulkan::
         std::vector<DescriptorData> objectDescriptors(1);
 
         const vk::DescriptorType type =
-            pipeline == scene::ShadingPipeline::RASTER
+            pipeline == vulkan::ShadingPipeline::RASTER
                 ? vk::DescriptorType::eStorageBufferDynamic
                 : vk::DescriptorType::eStorageBuffer;
         // Material Data Descriptor
         const vk::ShaderStageFlags stages =
-            pipeline == scene::ShadingPipeline::RASTER
+            pipeline == vulkan::ShadingPipeline::RASTER
                 ? vk::ShaderStageFlagBits::eVertex
                 : vk::ShaderStageFlagBits::eClosestHitKHR |
                       vk::ShaderStageFlagBits::eAnyHitKHR;
@@ -97,28 +98,30 @@ std::vector<kirana::viewport::vulkan::DescriptorData> kirana::viewport::vulkan::
     }
 }
 
-bool kirana::viewport::vulkan::Shader::createPipelineLayout(
-    scene::ShadingPipeline pipeline)
+bool kirana::viewport::vulkan::Shader::createPipelineLayout()
 {
     // TODO: Use Shader Reflection to build pipeline layout
     m_descLayouts.resize(3);
     m_descLayouts[0] = new DescriptorSetLayout(
-        m_device, getDescriptors(DescriptorFrequency::GLOBAL, pipeline));
+        m_device,
+        getDescriptors(DescriptorFrequency::GLOBAL, m_shadingPipeline));
     m_descLayouts[1] = new DescriptorSetLayout(
-        m_device, getDescriptors(DescriptorFrequency::MATERIAL, pipeline));
+        m_device,
+        getDescriptors(DescriptorFrequency::MATERIAL, m_shadingPipeline));
     m_descLayouts[2] = new DescriptorSetLayout(
-        m_device, getDescriptors(DescriptorFrequency::OBJECT, pipeline));
+        m_device,
+        getDescriptors(DescriptorFrequency::OBJECT, m_shadingPipeline));
 
     m_pushConstants.resize(1);
-    switch (pipeline)
+    switch (m_shadingPipeline)
     {
-    case scene::ShadingPipeline::RASTER: {
+    case vulkan::ShadingPipeline::RASTER: {
         m_pushConstants[0] = new PushConstant<vulkan::PushConstantRaster>(
             vulkan::PushConstantRaster{},
             vk::ShaderStageFlagBits::eVertex |
                 vk::ShaderStageFlagBits::eFragment);
     }
-    case scene::ShadingPipeline::RAYTRACE: {
+    case vulkan::ShadingPipeline::RAYTRACE: {
         m_pushConstants[0] = new PushConstant<vulkan::PushConstantRaytrace>(
             vulkan::PushConstantRaytrace{},
             vk::ShaderStageFlagBits::eRaygenKHR |
@@ -135,34 +138,45 @@ bool kirana::viewport::vulkan::Shader::createPipelineLayout(
 
 kirana::viewport::vulkan::Shader::Shader(const Device *const device,
                                          const scene::ShaderData &shaderData)
-    : m_isInitialized{false}, m_name{shaderData.name}, m_device{device}
+    : m_isInitialized{false}, m_device{device}, m_name{shaderData.name},
+      m_shadingPipeline{
+          static_cast<vulkan::ShadingPipeline>(shaderData.pipeline)}
 {
     for (const auto &s : shaderData.stages)
     {
         const auto stage = static_cast<vk::ShaderStageFlagBits>(s.first);
-        const std::string &path = s.second;
-        std::vector<uint32_t> data;
-        if (!readShaderFile(path.c_str(), &data))
+        m_stages[stage].resize(s.second.size());
+        for (int i = 0; i < s.second.size(); i++)
         {
-            Logger::get().log(constants::LOG_CHANNEL_VULKAN, LogSeverity::error,
-                              "Failed to read " +
-                                  scene::shadingStageToString(s.first) +
-                                  " stage for shader: " + m_name);
-            return;
-        }
-        try
-        {
-            m_stages[stage] =
-                m_device->current.createShaderModule(vk::ShaderModuleCreateInfo(
-                    {}, data.size() * sizeof(uint32_t), data.data()));
-        }
-        catch (...)
-        {
-            handleVulkanException();
-            return;
+            const std::string &path = s.second[i];
+            std::vector<uint32_t> data;
+            if (!readShaderFile(path.c_str(), &data))
+            {
+                Logger::get().log(
+                    constants::LOG_CHANNEL_VULKAN, LogSeverity::error,
+                    "Failed to read " + scene::shadingStageToString(s.first) +
+                        " stage for shader: " + m_name);
+                return;
+            }
+            try
+            {
+                m_stages[stage][i] = m_device->current.createShaderModule(
+                    vk::ShaderModuleCreateInfo(
+                        {}, data.size() * sizeof(uint32_t), data.data()));
+
+                m_device->setDebugObjectName(m_stages.at(stage)[i],
+                                             "ShaderModule_" + m_name + "_" +
+                                                 std::to_string(i) + "_" +
+                                                 shaderStageToString(stage));
+            }
+            catch (...)
+            {
+                handleVulkanException();
+                return;
+            }
         }
     }
-    m_isInitialized = createPipelineLayout(shaderData.pipeline);
+    m_isInitialized = createPipelineLayout();
 }
 
 kirana::viewport::vulkan::Shader::~Shader()
@@ -193,8 +207,9 @@ kirana::viewport::vulkan::Shader::~Shader()
         }
         m_descLayouts.clear();
         for (const auto &s : m_stages)
-            if (s.second)
-                m_device->current.destroyShaderModule(s.second);
+            for (const auto &m : s.second)
+                if (m)
+                    m_device->current.destroyShaderModule(m);
         Logger::get().log(constants::LOG_CHANNEL_VULKAN, LogSeverity::trace,
                           (std::string(m_name) + " shader destroyed").c_str());
     }

@@ -32,7 +32,7 @@ class SceneData
   private:
     bool m_isInitialized = false;
     uint32_t m_raytracedFrameCount = 0;
-    viewport::Shading m_currentShading = viewport::Shading::BASIC;
+    viewport::ShadingPipeline m_currentShading = viewport::ShadingPipeline::BASIC;
 
     const Device *const m_device;
     const Allocator *const m_allocator;
@@ -88,7 +88,7 @@ class SceneData
   public:
     SceneData(const Device *device, const Allocator *allocator,
               const RenderPass *renderPass, const scene::ViewportScene &scene,
-              viewport::Shading shading = viewport::Shading::BASIC);
+              viewport::ShadingPipeline shading = viewport::ShadingPipeline::BASIC);
     ~SceneData();
 
     SceneData(const SceneData &sceneData) = delete;
@@ -99,14 +99,14 @@ class SceneData
 
     inline bool shouldRenderOutline() const
     {
-        return m_currentShading == viewport::Shading::BASIC;
+        return m_currentShading == viewport::ShadingPipeline::BASIC;
     }
 
-    inline void setShading(viewport::Shading shading)
+    inline void setShading(viewport::ShadingPipeline shading)
     {
         m_currentShading = shading;
     };
-    inline viewport::Shading getCurrentShading() const
+    inline viewport::ShadingPipeline getCurrentShading() const
     {
         return m_currentShading;
     }

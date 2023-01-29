@@ -27,19 +27,20 @@ class Shader
     };
 
     bool m_isInitialized = false;
+    const Device *const m_device;
     std::string m_name = "";
-    std::unordered_map<vk::ShaderStageFlagBits, vk::ShaderModule> m_stages;
+    vulkan::ShadingPipeline m_shadingPipeline = vulkan::ShadingPipeline::RASTER;
+    std::unordered_map<vk::ShaderStageFlagBits, std::vector<vk::ShaderModule>>
+        m_stages;
     std::vector<const DescriptorSetLayout *> m_descLayouts;
     std::vector<const PushConstantBase *> m_pushConstants;
     PipelineLayout *m_pipelineLayout;
 
-    const Device *const m_device;
-
     static bool readShaderFile(const char *path, std::vector<uint32_t> *buffer);
 
     static std::vector<DescriptorData> getDescriptors(
-        DescriptorFrequency frequency, scene::ShadingPipeline pipeline);
-    bool createPipelineLayout(scene::ShadingPipeline pipeline);
+        DescriptorFrequency frequency, vulkan::ShadingPipeline pipeline);
+    bool createPipelineLayout();
 
   public:
     explicit Shader(const Device *device, const scene::ShaderData &shaderData);
@@ -49,6 +50,7 @@ class Shader
 
     const bool &isInitialized = m_isInitialized;
     const std::string &name = m_name;
+    const vulkan::ShadingPipeline &shadingPipeline = m_shadingPipeline;
 
     inline bool hasShaderStage(vk::ShaderStageFlagBits stage) const
     {
@@ -56,16 +58,21 @@ class Shader
     }
 
     [[nodiscard]] inline const std::unordered_map<vk::ShaderStageFlagBits,
-                                                  vk::ShaderModule>
+                                                  std::vector<vk::ShaderModule>>
         &getAllModules() const
     {
         return m_stages;
     }
 
-    [[nodiscard]] inline const vk::ShaderModule &getShaderModule(
+    [[nodiscard]] inline const std::vector<vk::ShaderModule> &getShaderModule(
         vk::ShaderStageFlagBits stage) const
     {
         return m_stages.at(stage);
+    }
+
+    [[nodiscard]] inline const PipelineLayout &getPipelineLayout() const
+    {
+        return *m_pipelineLayout;
     }
 };
 } // namespace kirana::viewport::vulkan

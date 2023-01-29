@@ -1,7 +1,7 @@
 #ifndef KIRANA_VULKAN_RENDERER_HPP
 #define KIRANA_VULKAN_RENDERER_HPP
 
-#include <vector>
+#include "vulkan_types.hpp"
 
 namespace kirana::scene
 {
@@ -11,11 +11,6 @@ class ViewportScene;
 namespace kirana::window
 {
 class Window;
-}
-
-namespace kirana::viewport
-{
-enum class Shading;
 }
 
 namespace kirana::viewport::vulkan
@@ -72,7 +67,7 @@ class VulkanRenderer
 
     /// Initializes vulkan.
     void init(const window::Window *window, const scene::ViewportScene &scene,
-              viewport::Shading shading);
+              vulkan::ShadingPipeline pipeline, vulkan::ShadingType type);
     /// Updates the transforms.
     void update();
     /// Executes vulkan draw calls.
@@ -80,8 +75,8 @@ class VulkanRenderer
     /// Deletes vulkan objects.
     void clean();
 
-    /// Switches the current pipeline to support the required shading.
-    void setShading(viewport::Shading shading);
+    void setShadingPipeline(vulkan::ShadingPipeline pipeline);
+    void setShadingType(vulkan::ShadingType type);
 };
 } // namespace kirana::viewport::vulkan
 

@@ -52,7 +52,7 @@ void kirana::scene::Material::setShaderData()
                 SHADING_EXTENSION_STAGE_TABLE.end())
             {
                 const auto &stage = SHADING_EXTENSION_STAGE_TABLE.at(extension);
-                shaderData.stages[stage] = f;
+                shaderData.stages[stage].emplace_back(f);
             }
         }
         m_shaderData[i] = shaderData;

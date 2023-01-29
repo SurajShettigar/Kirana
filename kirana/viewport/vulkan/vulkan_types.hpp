@@ -21,6 +21,24 @@ class CommandBuffers;
 class Pipeline;
 class PipelineLayout;
 
+enum class ShadingPipeline
+{
+    RASTER = 0,
+    RAYTRACE = 1,
+    SHADING_MAX = 2,
+};
+
+enum class ShadingType
+{
+    BASIC = 0,
+    UNLIT = 1,
+    WIREFRAME = 2,
+    BASIC_SHADED_WIREFRAME = 3,
+    PBR = 4,
+    AO = 5,
+    SHADING_TYPE_MAX = 6
+};
+
 /**
  * Index of queue families of the selected device.
  */
@@ -95,16 +113,6 @@ struct DescriptorData
     uint32_t binding;
     vk::DescriptorType type;
     vk::ShaderStageFlags stages;
-};
-
-/**
- * Holds list of bindings and attributes of vertices to define vertices to the
- * vulkan pipeline.
- */
-struct VertexInputDescription
-{
-    std::vector<vk::VertexInputBindingDescription> bindings;
-    std::vector<vk::VertexInputAttributeDescription> attributes;
 };
 
 struct ObjectData

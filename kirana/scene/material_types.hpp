@@ -105,7 +105,7 @@ struct ShaderData
 {
     std::string name;
     ShadingPipeline pipeline;
-    std::unordered_map<ShadingStage, std::string> stages;
+    std::unordered_map<ShadingStage, std::vector<std::string>> stages;
 };
 
 enum class ShadingType
@@ -185,7 +185,8 @@ struct RasterPipelineData : MaterialDataBase
 struct RaytracePipelineData : MaterialDataBase
 {
     CullMode cull = CullMode::NONE;
-    VertexInfo vertexInfo = Vertex::getOverallVertexInfo();
+    VertexInfo vertexInfo = Vertex::getLargestVertexInfo();
+    uint32_t maxRecursionDepth = 2;
 };
 
 struct BasicShadedMaterialData : MaterialDataBase

@@ -205,16 +205,16 @@ const std::unique_ptr<kirana::viewport::vulkan::Pipeline>
 
     switch (m_currentShading)
     {
-    case viewport::Shading::BASIC:
+    case viewport::ShadingPipeline::BASIC:
         return m_materials[scene::Material::DEFAULT_MATERIAL_BASIC_SHADED
                                .getName()];
-    case viewport::Shading::WIREFRAME:
+    case viewport::ShadingPipeline::WIREFRAME:
         return m_materials[scene::Material::DEFAULT_MATERIAL_WIREFRAME
                                .getName()];
     default:
-    case viewport::Shading::REALTIME_PBR:
+    case viewport::ShadingPipeline::REALTIME_PBR:
         // TODO: Add PBR Pipeline
-    case viewport::Shading::RAYTRACE_PBR:
+    case viewport::ShadingPipeline::RAYTRACE_PBR:
         // TODO: Add Raytrace PBR Pipeline
         return m_materials[materialName];
     }
@@ -384,7 +384,7 @@ bool kirana::viewport::vulkan::SceneData::initializeRaytracing()
 kirana::viewport::vulkan::SceneData::SceneData(
     const Device *device, const Allocator *allocator,
     const RenderPass *renderPass, const scene::ViewportScene &scene,
-    viewport::Shading shading)
+    viewport::ShadingPipeline shading)
     : m_isInitialized{false}, m_currentShading{shading},
       m_totalInstanceCount{0}, m_device{device}, m_allocator{allocator},
       m_renderPass{renderPass}, m_globalDescSetLayout{new DescriptorSetLayout(
@@ -509,7 +509,7 @@ kirana::viewport::vulkan::SceneData::~SceneData()
 
 void kirana::viewport::vulkan::SceneData::updateRaytracedFrameCount(bool reset)
 {
-    if (reset || m_currentShading != Shading::RAYTRACE_PBR)
+    if (reset || m_currentShading != ShadingPipeline::RAYTRACE_PBR)
         m_raytracedFrameCount = 0;
 
     if (m_raytraceGlobalData == nullptr)
