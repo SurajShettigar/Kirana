@@ -26,6 +26,7 @@ class DescriptorSetLayout;
 class DescriptorPool;
 class Drawer;
 class SceneData;
+class RaytraceData;
 
 class VulkanRenderer
 {
@@ -40,13 +41,14 @@ class VulkanRenderer
     Surface *m_surface = nullptr;
     Device *m_device = nullptr;
     Swapchain *m_swapchain = nullptr;
+    uint32_t m_swapchainOutOfDateListener =
+        std::numeric_limits<unsigned int>::max();
     const Texture *m_depthTexture = nullptr;
     RenderPass *m_renderpass = nullptr;
     DescriptorPool *m_descriptorPool = nullptr;
     Drawer *m_drawer = nullptr;
-    uint32_t m_swapchainOutOfDateListener =
-        std::numeric_limits<unsigned int>::max();
 
+    RaytraceData *m_raytraceData = nullptr;
     SceneData *m_currentScene = nullptr;
 
     VulkanRenderer() = default;

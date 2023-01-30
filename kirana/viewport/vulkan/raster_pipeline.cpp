@@ -8,6 +8,9 @@
 
 bool kirana::viewport::vulkan::RasterPipeline::build()
 {
+    if (!m_shader->isInitialized)
+        return false;
+
     std::vector<vk::PipelineShaderStageCreateInfo> shaderStages;
     for (const auto &stage : m_shader->getAllModules())
         for (const auto &m : stage.second)

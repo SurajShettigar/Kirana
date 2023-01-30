@@ -12,6 +12,8 @@ class Texture;
 class Swapchain
 {
   private:
+    utils::Event<> m_onSwapchainOutOfDate;
+
     bool m_isInitialized = false;
 
     SwapchainSupportInfo m_supportInfo;
@@ -43,6 +45,16 @@ class Swapchain
     const vk::SwapchainKHR &current = m_current;
     const vk::Format &imageFormat = m_surfaceFormat.format;
     const vk::Extent2D &imageExtent = m_extent;
+
+    inline uint32_t addOnSwapchainOutOfDateListener(
+        const std::function<void()> &callback)
+    {
+        return m_onSwapchainOutOfDate.addListener(callback);
+    }
+    inline void removeOnSwapchainOutOfDateListener(uint32_t callbackID)
+    {
+        return m_onSwapchainOutOfDate.removeListener(callbackID);
+    }
 
     [[nodiscard]] vk::ResultValue<uint32_t> acquireNextImage(
         uint64_t timeout = 1000000000, const vk::Semaphore &semaphore = {},

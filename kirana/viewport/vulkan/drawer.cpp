@@ -186,10 +186,7 @@ void kirana::viewport::vulkan::Drawer::draw()
     const vk::ResultValue<uint32_t> imgValue = m_swapchain->acquireNextImage(
         constants::VULKAN_FRAME_SYNC_TIMEOUT, frame.presentSemaphore, nullptr);
     if (imgValue.result == vk::Result::eErrorOutOfDateKHR)
-    {
-        m_device->waitUntilIdle();
-        m_onSwapchainOutOfDate();
-    }
+        return;
     else if (imgValue.result != vk::Result::eSuccess &&
              imgValue.result != vk::Result::eSuboptimalKHR)
         VK_HANDLE_RESULT(imgValue.result, "Failed to acquire swapchain image")
@@ -216,37 +213,36 @@ void kirana::viewport::vulkan::Drawer::draw()
 
     if (isRaytracing)
     {
-//        if (m_scene->getRaytracedGlobalData().get().frameIndex <=
-//            constants::VULKAN_RAYTRACING_MAX_SAMPLES)
-//        {
-            frame.commandBuffers->bindPipeline(
-                m_scene->getRaytracePipeline().current,
-                vk::PipelineBindPoint::eRayTracingKHR);
-            frame.commandBuffers->bindDescriptorSets(
-                m_scene->getRaytracePipeline().getLayout().current,
-                {
-                    frame.globalDescriptorSet->current,
-                    frame.raytraceDescriptorSet->current,
-                },
-                {m_scene->getCameraBufferOffset(frameIndex),
-                 m_scene->getWorldDataBufferOffset(frameIndex)},
-                vk::PipelineBindPoint::eRayTracingKHR);
-            frame.commandBuffers->pushConstants<PushConstantRaytrace>(
-                m_scene->getRaytracePipeline().getLayout().current,
-                m_scene->getRaytracedGlobalData());
-            frame.commandBuffers->traceRays(
-                m_scene->getShaderBindingTable(),
-                m_raytracedImage->getProperties().size);
-            frame.commandBuffers->copyImage(
-                *m_raytracedImage, *m_swapchain->getImages()[imgIndex],
-                m_raytracedImage->getProperties().size);
-            frame.commandBuffers->end();
-            vk::PipelineStageFlags pipelineFlags(
-                vk::PipelineStageFlagBits::eColorAttachmentOutput);
-            m_device->graphicsSubmit(frame.presentSemaphore, pipelineFlags,
-                                     frame.commandBuffers->current[0],
-                                     frame.renderSemaphore, frame.renderFence);
-//        }
+        //        if (m_scene->getRaytracedGlobalData().get().frameIndex <=
+        //            constants::VULKAN_RAYTRACING_MAX_SAMPLES)
+        //        {
+        frame.commandBuffers->bindPipeline(
+            m_scene->getRaytracePipeline().current,
+            vk::PipelineBindPoint::eRayTracingKHR);
+        frame.commandBuffers->bindDescriptorSets(
+            m_scene->getRaytracePipeline().getLayout().current,
+            {
+                frame.globalDescriptorSet->current,
+                frame.raytraceDescriptorSet->current,
+            },
+            {m_scene->getCameraBufferOffset(frameIndex),
+             m_scene->getWorldDataBufferOffset(frameIndex)},
+            vk::PipelineBindPoint::eRayTracingKHR);
+        frame.commandBuffers->pushConstants<PushConstantRaytrace>(
+            m_scene->getRaytracePipeline().getLayout().current,
+            m_scene->getRaytracedGlobalData());
+        frame.commandBuffers->traceRays(m_scene->getShaderBindingTable(),
+                                        m_raytracedImage->getProperties().size);
+        frame.commandBuffers->copyImage(*m_raytracedImage,
+                                        *m_swapchain->getImages()[imgIndex],
+                                        m_raytracedImage->getProperties().size);
+        frame.commandBuffers->end();
+        vk::PipelineStageFlags pipelineFlags(
+            vk::PipelineStageFlagBits::eColorAttachmentOutput);
+        m_device->graphicsSubmit(frame.presentSemaphore, pipelineFlags,
+                                 frame.commandBuffers->current[0],
+                                 frame.renderSemaphore, frame.renderFence);
+        //        }
     }
     else
     {
@@ -319,10 +315,7 @@ void kirana::viewport::vulkan::Drawer::draw()
     vk::Result presentResult = m_device->present(
         frame.renderSemaphore, m_swapchain->current, imgIndex);
     if (presentResult == vk::Result::eErrorOutOfDateKHR)
-    {
-        m_device->waitUntilIdle();
-        m_onSwapchainOutOfDate();
-    }
+        return;
     else if (presentResult != vk::Result::eSuccess &&
              presentResult != vk::Result::eSuboptimalKHR)
         VK_HANDLE_RESULT(presentResult, "Failed to present rendered image")

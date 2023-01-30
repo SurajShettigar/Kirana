@@ -74,6 +74,12 @@ class Shader
     {
         return *m_pipelineLayout;
     }
+
+    [[nodiscard]] inline const PushConstantBase *getPushConstant(
+        uint32_t index = 0) const
+    {
+        return m_pushConstants[index];
+    }
 };
 } // namespace kirana::viewport::vulkan
 

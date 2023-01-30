@@ -10,6 +10,7 @@
 #include "texture.hpp"
 #include "renderpass.hpp"
 #include "descriptor_pool.hpp"
+#include "raytrace_data.hpp"
 #include "scene_data.hpp"
 #include "drawer.hpp"
 
@@ -30,6 +31,9 @@ void kirana::viewport::vulkan::VulkanRenderer::init(
     {
         m_allocator = new Allocator(m_instance, m_device);
         m_swapchain = new Swapchain(m_device, m_surface);
+        m_swapchainOutOfDateListener =
+            m_swapchain->addOnSwapchainOutOfDateListener(
+                [&]() { this->rebuildSwapchain(); });
     }
     if (m_swapchain && m_swapchain->isInitialized)
         Texture::createDepthTexture(m_device, m_allocator, m_window->resolution,
@@ -43,16 +47,14 @@ void kirana::viewport::vulkan::VulkanRenderer::init(
     }
     if (m_descriptorPool && m_descriptorPool->isInitialized)
     {
+        m_raytraceData = new RaytraceData(m_device, m_allocator, m_swapchain);
         m_currentScene = new SceneData(m_device, m_allocator, m_renderpass,
-                                       scene, pipeline, type);
+                                       m_raytraceData, scene, pipeline, type);
     }
     if (m_descriptorPool && m_descriptorPool->isInitialized)
     {
         m_drawer = new Drawer(m_device, m_allocator, m_descriptorPool,
                               m_swapchain, m_renderpass, m_currentScene);
-        m_swapchainOutOfDateListener =
-            m_drawer->addOnSwapchainOutOfDateListener(
-                [&]() { this->rebuildSwapchain(); });
     }
     m_isInitialized = m_drawer->isInitialized;
     m_currentFrame = 0;
@@ -81,8 +83,6 @@ void kirana::viewport::vulkan::VulkanRenderer::clean()
 {
     if (m_drawer)
     {
-        m_drawer->removeOnSwapchainOutOfDateListener(
-            m_swapchainOutOfDateListener);
         delete m_drawer;
         m_drawer = nullptr;
     }
@@ -90,6 +90,11 @@ void kirana::viewport::vulkan::VulkanRenderer::clean()
     {
         delete m_currentScene;
         m_currentScene = nullptr;
+    }
+    if (m_raytraceData)
+    {
+        delete m_raytraceData;
+        m_raytraceData = nullptr;
     }
     if (m_descriptorPool)
     {
@@ -108,6 +113,8 @@ void kirana::viewport::vulkan::VulkanRenderer::clean()
     }
     if (m_swapchain)
     {
+        m_swapchain->removeOnSwapchainOutOfDateListener(
+            m_swapchainOutOfDateListener);
         delete m_swapchain;
         m_swapchain = nullptr;
     }
@@ -135,6 +142,7 @@ void kirana::viewport::vulkan::VulkanRenderer::clean()
 
 void kirana::viewport::vulkan::VulkanRenderer::rebuildSwapchain()
 {
+    m_device->waitUntilIdle();
     if (m_window->resolution[0] == 0 || m_window->resolution[1] == 0)
     {
         m_isMinimized = true;

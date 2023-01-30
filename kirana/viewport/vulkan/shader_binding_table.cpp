@@ -107,7 +107,7 @@ kirana::viewport::vulkan::ShaderBindingTable::ShaderBindingTable(
     const Device *const device, const Allocator *const allocator,
     const RaytracePipeline *const pipeline)
     : m_isInitialized{false}, m_device{device}, m_allocator{allocator},
-      m_pipeline{pipeline},
+      m_pipeline{pipeline}, m_name{m_pipeline->name},
       m_handleSize{m_device->raytracingProperties.shaderGroupHandleSize},
       m_handleSizeAligned{m_device->alignSize(
           m_handleSize,
@@ -142,7 +142,7 @@ kirana::viewport::vulkan::ShaderBindingTable::ShaderBindingTable(
             m_device->getBufferAddress(*m_groups.at(g).buffer.buffer);
         m_device->setDebugObjectName(
             *m_groups.at(g).buffer.buffer,
-            "SBT_" + static_cast<std::string>(m_groups.at(g)));
+            "SBT_" + m_name + "_" + static_cast<std::string>(m_groups.at(g)));
     }
 
     m_isInitialized = true;

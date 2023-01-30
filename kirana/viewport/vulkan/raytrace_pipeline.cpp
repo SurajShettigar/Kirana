@@ -8,6 +8,9 @@
 
 bool kirana::viewport::vulkan::RaytracePipeline::build()
 {
+    if (!m_shader->isInitialized)
+        return false;
+
     if (m_device->raytracingProperties.maxRayRecursionDepth <
         m_properties.maxRecursionDepth)
     {

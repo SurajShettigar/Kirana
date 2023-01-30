@@ -65,6 +65,7 @@ class ShaderBindingTable
     const Device *const m_device;
     const Allocator *const m_allocator;
     const RaytracePipeline *const m_pipeline;
+    std::string m_name;
 
     uint32_t m_handleSize = 0;
     uint32_t m_handleSizeAligned = 0;
@@ -91,6 +92,7 @@ class ShaderBindingTable
     }
 
     const bool &isInitialized = m_isInitialized;
+    const std::string &name = m_name;
 };
 } // namespace kirana::viewport::vulkan
 #endif

@@ -1,15 +1,17 @@
-#include "material_data.hpp"
+#include "material_manager.hpp"
 
 #include "device.hpp"
 #include "shader.hpp"
 #include "raster_pipeline.hpp"
 #include "raytrace_pipeline.hpp"
+#include "shader_binding_table.hpp"
+#include "push_constant.hpp"
 
 #include <material.hpp>
 
 #include <algorithm>
 
-vk::Format kirana::viewport::vulkan::MaterialData::
+vk::Format kirana::viewport::vulkan::MaterialManager::
     getFormatFromVertexAttribInfo(const scene::VertexInfo &info)
 {
     if (info.componentCount == 1)
@@ -54,8 +56,8 @@ vk::Format kirana::viewport::vulkan::MaterialData::
     }
 }
 
-kirana::viewport::vulkan::MaterialData::VertexInputDescription kirana::
-    viewport::vulkan::MaterialData::getVertexInputDescription(
+kirana::viewport::vulkan::MaterialManager::VertexInputDescription kirana::
+    viewport::vulkan::MaterialManager::getVertexInputDescription(
         const scene::RasterPipelineData &rasterData)
 {
     VertexInputDescription desc{};
@@ -73,8 +75,8 @@ kirana::viewport::vulkan::MaterialData::VertexInputDescription kirana::
     return desc;
 }
 
-const kirana::viewport::vulkan::Shader *kirana::viewport::vulkan::MaterialData::
-    createShader(const scene::ShaderData &shaderData)
+const kirana::viewport::vulkan::Shader *kirana::viewport::vulkan::
+    MaterialManager::createShader(const scene::ShaderData &shaderData)
 {
     auto it = std::find_if(m_shaders.begin(), m_shaders.end(),
                            [&shaderData](const Shader *&shader) {
@@ -91,10 +93,10 @@ const kirana::viewport::vulkan::Shader *kirana::viewport::vulkan::MaterialData::
 }
 
 const kirana::viewport::vulkan::Pipeline *kirana::viewport::vulkan::
-    MaterialData::createPipeline(vulkan::ShadingPipeline shadingPipeline,
-                                 const RenderPass &renderPass,
-                                 const Shader *const shader,
-                                 const scene::Material &material)
+    MaterialManager::createPipeline(vulkan::ShadingPipeline shadingPipeline,
+                                    const RenderPass &renderPass,
+                                    const Shader *const shader,
+                                    const scene::Material &material)
 {
     auto it =
         std::find_if(m_pipelines.begin(), m_pipelines.end(),
@@ -148,13 +150,38 @@ const kirana::viewport::vulkan::Pipeline *kirana::viewport::vulkan::
     return m_pipelines.back();
 }
 
-kirana::viewport::vulkan::MaterialData::MaterialData(const Device *device)
-    : m_device{device}
+const kirana::viewport::vulkan::ShaderBindingTable *kirana::viewport::vulkan::
+    MaterialManager::createSBT(const RaytracePipeline *pipeline)
+{
+    auto it = std::find_if(m_SBTs.begin(), m_SBTs.end(),
+                           [&pipeline](const ShaderBindingTable *&sbt) {
+                               return sbt->name == pipeline->name;
+                           });
+
+    if (it != m_SBTs.end())
+        return *it;
+
+    m_SBTs.emplace_back(
+        new ShaderBindingTable(m_device, m_allocator, pipeline));
+    return m_SBTs.back();
+}
+
+kirana::viewport::vulkan::MaterialManager::MaterialManager(
+    const Device *const device, const Allocator *const allocator)
+    : m_device{device}, m_allocator{allocator}
 {
 }
 
-kirana::viewport::vulkan::MaterialData::~MaterialData()
+kirana::viewport::vulkan::MaterialManager::~MaterialManager()
 {
+    for (auto &s : m_SBTs)
+    {
+        if (s)
+        {
+            delete s;
+            s = nullptr;
+        }
+    }
     for (auto &p : m_pipelines)
     {
         if (p)
@@ -174,10 +201,9 @@ kirana::viewport::vulkan::MaterialData::~MaterialData()
 }
 
 
-bool kirana::viewport::vulkan::MaterialData::addMaterial(
+bool kirana::viewport::vulkan::MaterialManager::addMaterial(
     const RenderPass &renderPass, const scene::Material &material)
 {
-    Material &m = m_materials[material.getName()];
     for (int i = 0; i < static_cast<int>(vulkan::ShadingPipeline::SHADING_MAX);
          i++)
     {
@@ -185,13 +211,32 @@ bool kirana::viewport::vulkan::MaterialData::addMaterial(
             material.getShaderData(static_cast<scene::ShadingPipeline>(i));
         const auto shadingP =
             static_cast<vulkan::ShadingPipeline>(shaderData.pipeline);
-        m.shaders[shadingP] = createShader(shaderData);
-        if (!m.shaders[shadingP]->isInitialized)
+
+        Material m{};
+        m.shader = createShader(shaderData);
+        if (!m.shader->isInitialized)
             return false;
-        m.pipelines[shadingP] =
-            createPipeline(shadingP, renderPass, m_shaders[shadingP], material);
-        if (!m.pipelines[shadingP]->isInitialized)
+        m.pipeline = createPipeline(shadingP, renderPass, m.shader, material);
+        if (!m.pipeline->isInitialized)
             return false;
+        if (shadingP == vulkan::ShadingPipeline::RASTER)
+        {
+            RasterMaterial &rm = m_rasterMaterials[material.getName()];
+            rm.pipeline = m.pipeline;
+            rm.shader = m.shader;
+            rm.pushConstantData = new PushConstant<vulkan::PushConstantRaster>(
+                {}, rm.shader->getPushConstant()->getRange().stageFlags);
+        }
+        else if (shadingP == vulkan::ShadingPipeline::RAYTRACE)
+        {
+            RaytraceMaterial &rm = m_raytraceMaterials[material.getName()];
+            rm.pipeline = m.pipeline;
+            rm.shader = m.shader;
+            rm.sbt = createSBT(
+                reinterpret_cast<const RaytracePipeline *>(rm.pipeline));
+            rm.pushConstantData = new PushConstant<vulkan::PushConstantRaytrace>(
+                {}, rm.shader->getPushConstant()->getRange().stageFlags);
+        }
     }
     return true;
 }

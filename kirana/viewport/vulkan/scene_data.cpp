@@ -16,24 +16,6 @@
 #include <algorithm>
 #include <viewport_scene.hpp>
 
-void kirana::viewport::vulkan::SceneData::setVertexDescription()
-{
-    const vk::VertexInputBindingDescription bindingDesc(0,
-                                                        sizeof(scene::Vertex));
-    m_vertexDesc.bindings.push_back(bindingDesc);
-
-    const vk::VertexInputAttributeDescription posAttrib(
-        0, 0, vk::Format::eR32G32B32Sfloat, offsetof(scene::Vertex, position));
-    const vk::VertexInputAttributeDescription normalAttrib(
-        1, 0, vk::Format::eR32G32B32Sfloat, offsetof(scene::Vertex, normal));
-    const vk::VertexInputAttributeDescription colorAttrib(
-        2, 0, vk::Format::eR32G32B32A32Sfloat, offsetof(scene::Vertex, color));
-
-    m_vertexDesc.attributes.push_back(posAttrib);
-    m_vertexDesc.attributes.push_back(normalAttrib);
-    m_vertexDesc.attributes.push_back(colorAttrib);
-}
-
 void kirana::viewport::vulkan::SceneData::onWorldChanged()
 {
     const vk::DeviceSize paddedSize =
@@ -383,21 +365,14 @@ bool kirana::viewport::vulkan::SceneData::initializeRaytracing()
 
 kirana::viewport::vulkan::SceneData::SceneData(
     const Device *device, const Allocator *allocator,
-    const RenderPass *renderPass, const scene::ViewportScene &scene,
-    viewport::ShadingPipeline shading)
-    : m_isInitialized{false}, m_currentShading{shading},
-      m_totalInstanceCount{0}, m_device{device}, m_allocator{allocator},
-      m_renderPass{renderPass}, m_globalDescSetLayout{new DescriptorSetLayout(
-                                    m_device)},
-      m_objectDescSetLayout{new DescriptorSetLayout(
-          m_device, DescriptorSetLayout::LayoutType::OBJECT)},
-      m_raytraceDescSetLayout{new DescriptorSetLayout(
-          m_device, DescriptorSetLayout::LayoutType::RAYTRACE)},
-      m_scene{scene}
+    const RenderPass *renderPass, const RaytraceData *raytraceData,
+    const scene::ViewportScene &scene, vulkan::ShadingPipeline pipeline,
+    vulkan::ShadingType type)
+    : m_isInitialized{false}, m_device{device}, m_allocator{allocator},
+      m_renderPass{renderPass}, m_raytraceData{raytraceData}, m_scene{scene},
+      m_currentShadingPipeline{pipeline}, m_currentShadingType{type},
+      m_raytracedFrameCount{0}, m_totalInstanceCount{0}
 {
-    // Set the vulkan description of vertex buffers.
-    setVertexDescription();
-
     // Create Camera data buffer.
     createCameraBuffer();
     // Create World data buffer.

@@ -157,6 +157,9 @@ vk::ResultValue<uint32_t> kirana::viewport::vulkan::Swapchain::acquireNextImage(
                               static_cast<VkSemaphore>(semaphore),
                               static_cast<VkFence>(fence), &imgIndex);
 
+    if (vk::Result(result) == vk::Result::eErrorOutOfDateKHR)
+        m_onSwapchainOutOfDate();
+
     return {vk::Result(result), imgIndex};
 }
 std::array<uint32_t, 2> kirana::viewport::vulkan::Swapchain::

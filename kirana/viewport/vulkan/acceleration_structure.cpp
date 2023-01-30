@@ -281,6 +281,7 @@ void kirana::viewport::vulkan::AccelerationStructure::createTLAS(
 bool kirana::viewport::vulkan::AccelerationStructure::buildTLAS(
     vk::BuildAccelerationStructureFlagsKHR flags, bool update)
 {
+    // TODO: Add update mode support to update instance transforms
     if (!update && m_TLASData.buffer.buffer != nullptr)
     {
         Logger::get().log(constants::LOG_CHANNEL_VULKAN, LogSeverity::info,
