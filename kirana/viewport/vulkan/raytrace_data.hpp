@@ -16,6 +16,8 @@ class SceneData;
 
 class RaytraceData
 {
+  public:
+    static const vk::BufferUsageFlagBits VERTEX_INDEX_BUFFER_USAGE_FLAGS;
   private:
     bool m_isInitialized = false;
     const Device *const m_device;
@@ -28,6 +30,7 @@ class RaytraceData
 
     bool createRenderTarget();
   public:
+
     RaytraceData(const Device *device, const Allocator *allocator,
                  const Swapchain *swapchain);
     ~RaytraceData();

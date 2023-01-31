@@ -66,8 +66,10 @@ class MaterialManager
     AllocatedBuffer m_materialDataBuffer;
     AllocatedBuffer m_objectDataBuffer;
 
-    std::unordered_map<std::string, RasterMaterial> m_rasterMaterials;
-    std::unordered_map<std::string, RaytraceMaterial> m_raytraceMaterials;
+    int m_currentMaterialIndex = -1;
+    std::unordered_map<std::string, uint32_t> m_materialIndexTable;
+    std::unordered_map<uint32_t, RasterMaterial> m_rasterMaterials;
+    std::unordered_map<uint32_t, RaytraceMaterial> m_raytraceMaterials;
 
     static vk::Format getFormatFromVertexAttribInfo(
         const scene::VertexInfo &info);
@@ -86,23 +88,30 @@ class MaterialManager
     MaterialManager(const MaterialManager &materialData) = delete;
     MaterialManager &operator=(const MaterialManager &materialData) = delete;
 
-    bool addMaterial(const RenderPass &renderPass,
-                     const scene::Material &material);
+    int addMaterial(const RenderPass &renderPass,
+                    const scene::Material &material);
+
+    inline int getMaterialIndexFromName(const std::string &materialName) const
+    {
+        return m_materialIndexTable.find(materialName) ==
+                       m_materialIndexTable.end()
+                   ? -1
+                   : static_cast<int>(m_materialIndexTable.at(materialName));
+    }
 
     [[nodiscard]] inline const Pipeline *getPipeline(
-        const std::string &materialName,
-        vulkan::ShadingPipeline shadingPipeline)
+        uint32_t materialIndex, vulkan::ShadingPipeline shadingPipeline)
     {
         return shadingPipeline == vulkan::ShadingPipeline::RASTER
-                   ? m_rasterMaterials.at(materialName).pipeline
-                   : m_raytraceMaterials.at(materialName).pipeline;
+                   ? m_rasterMaterials.at(materialIndex).pipeline
+                   : m_raytraceMaterials.at(materialIndex).pipeline;
     }
 
     [[nodiscard]] inline const ShaderBindingTable &getShaderBindingTable(
-        const std::string &materialName)
+        uint32_t materialIndex)
     {
-        assert(m_raytraceMaterials.at(materialName).sbt != nullptr);
-        return *m_raytraceMaterials.at(materialName).sbt;
+        assert(m_raytraceMaterials.at(materialIndex).sbt != nullptr);
+        return *m_raytraceMaterials.at(materialIndex).sbt;
     }
 };
 } // namespace kirana::viewport::vulkan

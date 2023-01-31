@@ -201,9 +201,13 @@ kirana::viewport::vulkan::MaterialManager::~MaterialManager()
 }
 
 
-bool kirana::viewport::vulkan::MaterialManager::addMaterial(
+int kirana::viewport::vulkan::MaterialManager::addMaterial(
     const RenderPass &renderPass, const scene::Material &material)
 {
+    if (m_materialIndexTable.find(material.getName()) !=
+        m_materialIndexTable.end())
+        return static_cast<int>(m_materialIndexTable.at(material.getName()));
+
     for (int i = 0; i < static_cast<int>(vulkan::ShadingPipeline::SHADING_MAX);
          i++)
     {
@@ -215,13 +219,16 @@ bool kirana::viewport::vulkan::MaterialManager::addMaterial(
         Material m{};
         m.shader = createShader(shaderData);
         if (!m.shader->isInitialized)
-            return false;
+            return -1;
         m.pipeline = createPipeline(shadingP, renderPass, m.shader, material);
         if (!m.pipeline->isInitialized)
-            return false;
+            return -1;
+
+        m_materialIndexTable[material.getName()] =
+            static_cast<uint32_t>(++m_currentMaterialIndex);
         if (shadingP == vulkan::ShadingPipeline::RASTER)
         {
-            RasterMaterial &rm = m_rasterMaterials[material.getName()];
+            RasterMaterial &rm = m_rasterMaterials[m_currentMaterialIndex];
             rm.pipeline = m.pipeline;
             rm.shader = m.shader;
             rm.pushConstantData = new PushConstant<vulkan::PushConstantRaster>(
@@ -229,14 +236,15 @@ bool kirana::viewport::vulkan::MaterialManager::addMaterial(
         }
         else if (shadingP == vulkan::ShadingPipeline::RAYTRACE)
         {
-            RaytraceMaterial &rm = m_raytraceMaterials[material.getName()];
+            RaytraceMaterial &rm = m_raytraceMaterials[m_currentMaterialIndex];
             rm.pipeline = m.pipeline;
             rm.shader = m.shader;
             rm.sbt = createSBT(
                 reinterpret_cast<const RaytracePipeline *>(rm.pipeline));
-            rm.pushConstantData = new PushConstant<vulkan::PushConstantRaytrace>(
-                {}, rm.shader->getPushConstant()->getRange().stageFlags);
+            rm.pushConstantData =
+                new PushConstant<vulkan::PushConstantRaytrace>(
+                    {}, rm.shader->getPushConstant()->getRange().stageFlags);
         }
     }
-    return true;
+    return m_currentMaterialIndex;
 }

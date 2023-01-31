@@ -9,6 +9,10 @@
 #include "texture.hpp"
 #include "scene_data.hpp"
 
+const vk::BufferUsageFlagBits
+    kirana::viewport::vulkan::RaytraceData::VERTEX_INDEX_BUFFER_USAGE_FLAGS =
+        vk::BufferUsageFlagBits::eAccelerationStructureBuildInputReadOnlyKHR;
+
 bool kirana::viewport::vulkan::RaytraceData::createRenderTarget()
 {
     m_renderTarget = new Texture(

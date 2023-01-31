@@ -25,7 +25,6 @@ class ViewportScene
     WorldData m_worldData;
     std::unique_ptr<Camera> m_camera;
     std::unique_ptr<primitives::Plane> m_grid;
-    Scene m_currentScene;
 
     std::unordered_map<std::string, uint32_t> m_objectIndexTable;
     std::unordered_map<std::string, bool> m_objectSelectionTable;
@@ -33,7 +32,12 @@ class ViewportScene
     std::vector<std::shared_ptr<Material>> m_editorMaterials;
     std::vector<Renderable> m_editorRenderables;
 
+    Scene m_currentScene;
     std::vector<Renderable> m_sceneRenderables;
+    bool m_isSceneLoaded = false;
+
+    SceneInfo m_editorSceneInfo;
+    SceneInfo m_sceneInfo;
 
     void initializeEditorObjects();
     void onSceneLoaded();
@@ -128,6 +132,11 @@ class ViewportScene
         return m_sceneRenderables;
     }
 
+    inline bool isSceneLoaded() const
+    {
+        return m_isSceneLoaded;
+    }
+
     [[nodiscard]] std::vector<Renderable> getSelectedRenderables() const
     {
         // TODO: Find a faster way to filter selected renderables.
@@ -136,6 +145,16 @@ class ViewportScene
             if (r.selected)
                 selectedRenderables.push_back(r);
         return selectedRenderables;
+    }
+
+    [[nodiscard]] inline const SceneInfo &getEditorSceneInfo() const
+    {
+        return m_editorSceneInfo;
+    }
+
+    [[nodiscard]] inline const SceneInfo &getSceneInfo() const
+    {
+        return m_sceneInfo;
     }
 
     void setCameraResolution(const std::array<uint32_t, 2> &resolution)

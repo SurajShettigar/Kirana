@@ -12,7 +12,9 @@ struct CameraData;
 struct WorldData;
 class ViewportScene;
 class Material;
+struct SceneInfo;
 struct Renderable;
+typedef uint32_t INDEX_TYPE;
 } // namespace kirana::scene
 
 namespace kirana::viewport::vulkan
@@ -22,10 +24,19 @@ class Device;
 class RenderPass;
 class Allocator;
 class RaytraceData;
+class MaterialManager;
 
 class SceneData
 {
   private:
+    struct BatchBufferData
+    {
+        AllocatedBuffer cpuBuffer;
+        AllocatedBuffer gpuBuffer;
+        uint32_t currentDataOffset;
+        size_t currentSize;
+        char *currentMemoryPointer;
+    };
     bool m_isInitialized = false;
     const Device *const m_device;
     const Allocator *const m_allocator;
@@ -38,14 +49,15 @@ class SceneData
     uint32_t m_raytracedFrameCount = 0;
     size_t m_totalInstanceCount = 0;
 
-    mutable std::unordered_map<std::string, std::unique_ptr<Pipeline>>
-        m_materials;
-    std::vector<MeshData> m_meshes;
+    MaterialManager *m_materialManager = nullptr;
+
+    std::vector<MeshData> m_editorMeshes;
+    std::vector<MeshData> m_sceneMeshes;
 
     AllocatedBuffer m_cameraBuffer;
     AllocatedBuffer m_worldDataBuffer;
-    AllocatedBuffer m_vertexBuffer;
-    AllocatedBuffer m_indexBuffer;
+    std::vector<BatchBufferData> m_vertexBuffers;
+    std::vector<BatchBufferData> m_indexBuffers;
     AllocatedBuffer m_objectBuffer;
     // Raytracing data
     AllocatedBuffer m_raytracedObjectBuffer;
@@ -61,25 +73,26 @@ class SceneData
 
     void createWorldDataBuffer();
     void createCameraBuffer();
-    bool createVertexAndIndexBuffer(const std::vector<scene::Vertex> &vertices,
-                                    const std::vector<uint32_t> &indices);
+    bool transferBufferToGPU(BatchBufferData &bufferData);
+    std::pair<int, int> createVertexAndIndexBuffer(
+        const std::vector<scene::Vertex> &vertices,
+        const std::vector<scene::INDEX_TYPE> &indices);
 
-    std::unique_ptr<Pipeline> getPipelineForMaterial(
-        const scene::Material &material);
-    void createMaterials();
-    const std::unique_ptr<Pipeline> &findMaterial(
-        const std::string &materialName, bool overrideShading = false);
-    bool hasMeshData(const std::string &meshName, uint32_t *meshIndex) const;
-    bool createMeshes();
+
+    void createEditorMaterials();
+    void createSceneMaterials();
+    static bool hasMeshData(const std::vector<MeshData> &meshes,
+                            const std::string &meshName, uint32_t *meshIndex);
+    bool createMeshes(bool isEditor = false);
     bool createObjectBuffer();
-    bool initializeRaytracing();
 
   public:
-    SceneData(const Device *device, const Allocator *allocator,
-              const RenderPass *renderPass, const RaytraceData *raytraceData,
-              const scene::ViewportScene &scene,
-              vulkan::ShadingPipeline pipeline = vulkan::ShadingPipeline::RASTER,
-              vulkan::ShadingType type = vulkan::ShadingType::BASIC);
+    SceneData(
+        const Device *device, const Allocator *allocator,
+        const RenderPass *renderPass, const RaytraceData *raytraceData,
+        const scene::ViewportScene &scene,
+        vulkan::ShadingPipeline pipeline = vulkan::ShadingPipeline::RASTER,
+        vulkan::ShadingType type = vulkan::ShadingType::BASIC);
     ~SceneData();
 
     SceneData(const SceneData &sceneData) = delete;
@@ -107,7 +120,7 @@ class SceneData
 
     [[nodiscard]] inline const std::vector<MeshData> &getMeshData() const
     {
-        return m_meshes;
+        return m_sceneMeshes;
     }
 
     [[nodiscard]] const Pipeline *getOutlineMaterial() const;

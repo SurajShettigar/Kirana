@@ -105,9 +105,7 @@ bool kirana::viewport::vulkan::Allocator::allocateBuffer(
     bool mapMemoryPointer) const
 {
     const vk::BufferCreateInfo createInfo({}, size, usageFlags);
-    const vma::AllocationCreateInfo allocCreateInfo(
-        {},
-        memoryUsage);
+    const vma::AllocationCreateInfo allocCreateInfo({}, memoryUsage);
     try
     {
         const std::pair<vk::Buffer, vma::Allocation> data =
@@ -118,6 +116,9 @@ bool kirana::viewport::vulkan::Allocator::allocateBuffer(
             return m_current->mapMemory(*buffer->allocation,
                                         &buffer->memoryPointer) ==
                    vk::Result::eSuccess;
+        if ((usageFlags & vk::BufferUsageFlagBits::eShaderDeviceAddress) ==
+            vk::BufferUsageFlagBits::eShaderDeviceAddress)
+            buffer->address = m_device->getBufferAddress(*buffer->buffer);
         return true;
     }
     catch (...)

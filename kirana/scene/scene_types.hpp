@@ -66,6 +66,25 @@ struct CameraData
     alignas(4) float farPlane;
 };
 
+struct SceneInfo
+{
+    uint32_t vertexSize = 0;
+    uint32_t numVertices = 0;
+    size_t totalVertexSize = 0;
+    uint32_t indexSize = 0;
+    uint32_t numIndices = 0;
+    size_t totalIndexSize = 0;
+};
+
+struct Renderable
+{
+    const Object *object = nullptr;
+    bool selectable = true;
+    bool viewportVisible = true;
+    bool renderVisible = true;
+    bool selected = false;
+};
+
 struct SceneImportSettings
 {
     bool calculateTangentSpace = false;
@@ -77,15 +96,6 @@ struct SceneImportSettings
     bool optimizeMesh = true;
     bool preTransformVertices = false;
     bool generateBoundingBoxes = true;
-};
-
-struct Renderable
-{
-    const Object *object = nullptr;
-    bool selectable = true;
-    bool viewportVisible = true;
-    bool renderVisible = true;
-    bool selected = false;
 };
 
 static const SceneImportSettings DEFAULT_SCENE_IMPORT_SETTINGS{

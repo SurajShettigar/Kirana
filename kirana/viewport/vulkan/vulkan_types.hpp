@@ -93,8 +93,9 @@ struct SwapchainSupportInfo
  */
 struct AllocatedBuffer
 {
-    std::unique_ptr<vk::Buffer> buffer;
+    std::unique_ptr<vk::Buffer> buffer = nullptr;
     std::unique_ptr<vma::Allocation> allocation;
+    vk::DeviceAddress address;
     void *memoryPointer = nullptr;
     vk::DescriptorBufferInfo descInfo;
 };
@@ -118,14 +119,17 @@ struct DescriptorData
 struct ObjectData
 {
     math::Matrix4x4 modelMatrix;
+    uint64_t vertexBufferAddress;
+    uint64_t indexBufferAddress;
 };
 
 struct InstanceData
 {
     uint32_t index;
     const math::Transform *transform;
-    const bool *selected;
+    const bool *viewportVisible;
     const bool *renderVisible;
+    const bool *selected;
 };
 
 /**
@@ -138,10 +142,12 @@ struct MeshData
     bool render;
     uint32_t vertexCount;
     uint32_t indexCount;
+    int vertexBufferIndex;
+    int indexBufferIndex;
     uint32_t firstIndex;
     uint32_t vertexOffset;
     std::vector<InstanceData> instances;
-    const Pipeline *material;
+    uint32_t materialIndex;
 
     inline uint32_t getGlobalInstanceIndex(uint32_t instanceIndex) const
     {
@@ -171,8 +177,7 @@ struct PushConstantRaster
 
 struct PushConstantRaytrace
 {
-    uint64_t vertexBufferAddress;
-    uint64_t indexBufferAddress;
+    uint32_t objectIndex;
     uint32_t frameIndex;
     uint32_t maxBounces;
     uint32_t maxSamples;
