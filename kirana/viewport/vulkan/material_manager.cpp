@@ -6,6 +6,10 @@
 #include "raytrace_pipeline.hpp"
 #include "shader_binding_table.hpp"
 #include "push_constant.hpp"
+#include "pipeline_layout.hpp"
+#include "descriptor_pool.hpp"
+#include "descriptor_set_layout.hpp"
+#include "descriptor_set.hpp"
 
 #include <material.hpp>
 
@@ -150,6 +154,26 @@ const kirana::viewport::vulkan::Pipeline *kirana::viewport::vulkan::
     return m_pipelines.back();
 }
 
+
+void kirana::viewport::vulkan::MaterialManager::createDescriptorSets(
+    const Shader *shader, vulkan::ShadingPipeline pipeline)
+{
+    //    auto &descSets = pipeline == ShadingPipeline::RAYTRACE ?
+    //    m_raytraceDescSets
+    //                                                           :
+    //                                                           m_rasterDescSets;
+    //    if (descSets.find(shader->name) != descSets.end())
+    //        return;
+    //
+    //    const auto &descLayouts =
+    //        shader->getPipelineLayout().getDescriptorSetLayouts();
+    //
+    //    std::vector<DescriptorSet> &sets = descSets[shader->name];
+    //    sets.reserve(descLayouts.size());
+    //    m_descriptorPool->allocateDescriptorSets(descLayouts, &sets);
+    // TODO: Create descriptor sets based on the pipeline layout of each shader.
+}
+
 const kirana::viewport::vulkan::ShaderBindingTable *kirana::viewport::vulkan::
     MaterialManager::createSBT(const RaytracePipeline *pipeline)
 {
@@ -167,8 +191,9 @@ const kirana::viewport::vulkan::ShaderBindingTable *kirana::viewport::vulkan::
 }
 
 kirana::viewport::vulkan::MaterialManager::MaterialManager(
-    const Device *const device, const Allocator *const allocator)
-    : m_device{device}, m_allocator{allocator}
+    const Device *const device, const Allocator *const allocator,
+    const DescriptorPool *descriptorPool)
+    : m_device{device}, m_allocator{allocator}, m_descriptorPool{descriptorPool}
 {
 }
 
@@ -224,15 +249,17 @@ int kirana::viewport::vulkan::MaterialManager::addMaterial(
         if (!m.pipeline->isInitialized)
             return -1;
 
+        createDescriptorSets(m.shader, shadingP);
+
         m_materialIndexTable[material.getName()] =
             static_cast<uint32_t>(++m_currentMaterialIndex);
+        m_materialShaderTable[m_currentMaterialIndex] = m.shader->name;
+
         if (shadingP == vulkan::ShadingPipeline::RASTER)
         {
             RasterMaterial &rm = m_rasterMaterials[m_currentMaterialIndex];
             rm.pipeline = m.pipeline;
             rm.shader = m.shader;
-            rm.pushConstantData = new PushConstant<vulkan::PushConstantRaster>(
-                {}, rm.shader->getPushConstant()->getRange().stageFlags);
         }
         else if (shadingP == vulkan::ShadingPipeline::RAYTRACE)
         {
@@ -241,9 +268,6 @@ int kirana::viewport::vulkan::MaterialManager::addMaterial(
             rm.shader = m.shader;
             rm.sbt = createSBT(
                 reinterpret_cast<const RaytracePipeline *>(rm.pipeline));
-            rm.pushConstantData =
-                new PushConstant<vulkan::PushConstantRaytrace>(
-                    {}, rm.shader->getPushConstant()->getRange().stageFlags);
         }
     }
     return m_currentMaterialIndex;

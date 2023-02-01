@@ -3,6 +3,7 @@
 #include "device.hpp"
 #include "command_pool.hpp"
 #include "command_buffers.hpp"
+#include "scene_data.hpp"
 
 #include <vk_mem_alloc.hpp>
 #include "allocator.hpp"
@@ -54,19 +55,17 @@ vk::DeviceAddress kirana::viewport::vulkan::AccelerationStructure::
 }
 
 void kirana::viewport::vulkan::AccelerationStructure::createBLAS(
-    const std::vector<MeshData> &meshes,
-    const vk::DeviceAddress &vertexBufferAddress,
-    const vk::DeviceAddress &indexBufferAddress)
+    const SceneData &sceneData)
 {
-    for (const auto &m : meshes)
+    for (const auto &m : sceneData.getSceneMeshes())
     {
         const vk::AccelerationStructureGeometryTrianglesDataKHR triangles{
             vk::Format::eR32G32B32Sfloat,
-            vertexBufferAddress,
+            sceneData.getVertexBufferAddress(m.vertexBufferIndex),
             sizeof(scene::Vertex),
             static_cast<uint32_t>(m.vertexCount),
             vk::IndexType::eUint32,
-            indexBufferAddress,
+            sceneData.getVertexBufferAddress(m.indexBufferIndex),
             {},
         };
 
@@ -394,18 +393,16 @@ bool kirana::viewport::vulkan::AccelerationStructure::buildTLAS(
 
 kirana::viewport::vulkan::AccelerationStructure::AccelerationStructure(
     const Device *const device, const Allocator *const allocator,
-    const std::vector<MeshData> &meshes,
-    const vk::DeviceAddress &vertexBufferAddress,
-    const vk::DeviceAddress &indexBufferAddress)
+    const SceneData &sceneData)
     : m_isInitialized{false}, m_device{device}, m_allocator{allocator},
       m_commandPool{
           new CommandPool(m_device, m_device->queueFamilyIndices.graphics)}
 {
-    createBLAS(meshes, vertexBufferAddress, indexBufferAddress);
+    createBLAS(sceneData);
     m_isInitialized = buildBLAS();
     if (m_isInitialized)
     {
-        createTLAS(meshes);
+        createTLAS(sceneData.getSceneMeshes());
         m_isInitialized = buildTLAS();
     }
 

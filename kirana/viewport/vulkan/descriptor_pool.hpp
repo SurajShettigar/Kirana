@@ -1,7 +1,7 @@
 #ifndef DESCRIPTOR_POOL_HPP
 #define DESCRIPTOR_POOL_HPP
 
-#include <vulkan/vulkan.hpp>
+#include "vulkan_types.hpp"
 
 namespace kirana::viewport::vulkan
 {
@@ -25,11 +25,12 @@ class DescriptorPool
     const bool &isInitialized = m_isInitialized;
     const vk::DescriptorPool &current = m_current;
 
-    bool allocateDescriptorSet(const DescriptorSet *&descriptorSet,
-                               const DescriptorSetLayout *layout) const;
-    bool allocateDescriptorSets(
-        std::vector<const DescriptorSet **> sets,
-        const std::vector<const DescriptorSetLayout *> &layouts) const;
+    bool allocateDescriptorSet(const DescriptorSetLayout *layout,
+                               DescriptorSet *set) const;
+    bool allocateDescriptorSets(const std::vector<const DescriptorSetLayout *> &layouts,
+                                std::vector<DescriptorSet> *sets) const;
+
+    void writeDescriptorSet(const DescriptorSet &set) const;
 };
 } // namespace kirana::viewport::vulkan
 

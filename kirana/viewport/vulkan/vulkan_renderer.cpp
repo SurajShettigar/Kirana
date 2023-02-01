@@ -47,9 +47,11 @@ void kirana::viewport::vulkan::VulkanRenderer::init(
     }
     if (m_descriptorPool && m_descriptorPool->isInitialized)
     {
-        m_raytraceData = new RaytraceData(m_device, m_allocator, m_swapchain);
-        m_currentScene = new SceneData(m_device, m_allocator, m_renderpass,
-                                       m_raytraceData, scene, pipeline, type);
+        m_raytraceData = new RaytraceData(m_device, m_allocator,
+                                          m_descriptorPool, m_swapchain);
+        m_currentScene =
+            new SceneData(m_device, m_allocator, m_descriptorPool, m_renderpass,
+                          m_raytraceData, scene, pipeline, type);
     }
     if (m_descriptorPool && m_descriptorPool->isInitialized)
     {

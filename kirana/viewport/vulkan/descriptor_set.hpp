@@ -5,31 +5,66 @@
 
 namespace kirana::viewport::vulkan
 {
-class Device;
+class DescriptorSetLayout;
+class Texture;
+class AccelerationStructure;
 class DescriptorSet
 {
   private:
     vk::DescriptorSet m_current;
-
-    const Device *const m_device;
+    const DescriptorSetLayout *m_layout = nullptr;
+    mutable std::vector<vk::WriteDescriptorSet> m_writes;
 
   public:
-    explicit DescriptorSet(const Device *const device,
-                           vk::DescriptorSet descriptorSet)
-        : m_device{device}, m_current{descriptorSet} {};
+    explicit DescriptorSet(vk::DescriptorSet descriptorSet,
+                           const DescriptorSetLayout *layout)
+        : m_current{descriptorSet}, m_layout{layout} {};
     ~DescriptorSet() = default;
-    DescriptorSet(const DescriptorSet &descriptorSet) = delete;
-    DescriptorSet &operator=(const DescriptorSet &descriptorSet) = delete;
+
+    DescriptorSet(const DescriptorSet &descriptorSet)
+    {
+        if (this != &descriptorSet)
+        {
+            m_current = descriptorSet.m_current;
+            m_layout = descriptorSet.m_layout;
+            m_writes = descriptorSet.m_writes;
+        }
+    }
+    DescriptorSet &operator=(const DescriptorSet &descriptorSet)
+    {
+        if (this != &descriptorSet)
+        {
+            m_current = descriptorSet.m_current;
+            m_layout = descriptorSet.m_layout;
+            m_writes = descriptorSet.m_writes;
+        }
+        return *this;
+    }
 
     const vk::DescriptorSet &current = m_current;
 
-    void writeBuffer(const vk::DescriptorBufferInfo &bufferInfo,
-                     vk::DescriptorType type, uint32_t binding) const;
-    void writeAccelerationStructure(
-        const vk::AccelerationStructureKHR &accelStruct,
-        uint32_t binding) const;
-    void writeImage(const vk::DescriptorImageInfo &imageInfo,
-                    vk::DescriptorType type, uint32_t binding) const;
+    [[nodiscard]] inline const DescriptorSetLayout &getLayout() const
+    {
+        return *m_layout;
+    }
+
+    [[nodiscard]] inline const std::vector<vk::WriteDescriptorSet> &getWrites()
+        const
+    {
+        return m_writes;
+    }
+
+    inline void clearWrites() const
+    {
+        m_writes.clear();
+    }
+
+    bool bindBuffer(const DescriptorBindingInfo &bindPoint,
+                    const AllocatedBuffer &buffer);
+    bool bindImage(const DescriptorBindingInfo &bindPoint,
+                   const Texture &image);
+    bool bindAccelerationStructure(const DescriptorBindingInfo &bindPoint,
+                                   const AccelerationStructure &accelStruct);
 };
 } // namespace kirana::viewport::vulkan
 

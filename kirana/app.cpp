@@ -107,8 +107,14 @@ void kirana::Application::init()
     else
         m_viewportWindow = m_windowManager.createWindow("Kirana", false, true);
 
+    m_sceneManager.init();
+
     scene::ViewportScene &scene = m_sceneManager.getViewportScene();
     scene.setCameraResolution(m_viewportWindow->resolution);
+
+    m_viewport.init(m_viewportWindow.get(), scene);
+    m_isViewportRunning = true;
+
     if (m_sceneManager.loadScene())
     {
         m_logger.log(
@@ -120,10 +126,6 @@ void kirana::Application::init()
         m_logger.log(constants::LOG_CHANNEL_APPLICATION,
                      utils::LogSeverity::error, "Failed to load default scene");
     }
-    m_sceneManager.init();
-
-    m_viewport.init(m_viewportWindow.get(), scene);
-    m_isViewportRunning = true;
 
     m_isRunning = true;
     m_logger.log(constants::LOG_CHANNEL_APPLICATION, utils::LogSeverity::trace,

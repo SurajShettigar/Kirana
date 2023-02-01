@@ -16,13 +16,13 @@ namespace kirana::viewport::vulkan
 {
 class Device;
 class Allocator;
+class DescriptorPool;
 class DescriptorSet;
 class Pipeline;
 class RaytracePipeline;
 class Shader;
 class RenderPass;
 struct ShaderBindingTable;
-class PushConstantBase;
 
 class MaterialManager
 {
@@ -32,17 +32,11 @@ class MaterialManager
         std::vector<vk::VertexInputBindingDescription> bindings;
         std::vector<vk::VertexInputAttributeDescription> attributes;
     };
-    struct MaterialDataDescriptor
-    {
-        const DescriptorSet *set;
-        const AllocatedBuffer *buffer;
-    };
 
     struct Material
     {
         const Shader *shader;
         const Pipeline *pipeline;
-        PushConstantBase *pushConstantData = nullptr;
     };
 
     struct RasterMaterial : Material
@@ -56,20 +50,23 @@ class MaterialManager
 
     const Device *const m_device;
     const Allocator *const m_allocator;
+    const DescriptorPool *const m_descriptorPool;
 
     std::vector<const Shader *> m_shaders;
     std::vector<const Pipeline *> m_pipelines;
     std::vector<const ShaderBindingTable *> m_SBTs;
 
-    AllocatedBuffer m_cameraDataBuffer;
-    AllocatedBuffer m_worldDataBuffer;
     AllocatedBuffer m_materialDataBuffer;
-    AllocatedBuffer m_objectDataBuffer;
 
     int m_currentMaterialIndex = -1;
     std::unordered_map<std::string, uint32_t> m_materialIndexTable;
+    std::unordered_map<uint32_t, std::string> m_materialShaderTable;
     std::unordered_map<uint32_t, RasterMaterial> m_rasterMaterials;
     std::unordered_map<uint32_t, RaytraceMaterial> m_raytraceMaterials;
+    std::unordered_map<std::string, std::vector<DescriptorSet>>
+        m_rasterDescSets;
+    std::unordered_map<std::string, std::vector<DescriptorSet>>
+        m_raytraceDescSets;
 
     static vk::Format getFormatFromVertexAttribInfo(
         const scene::VertexInfo &info);
@@ -80,10 +77,12 @@ class MaterialManager
                                    const RenderPass &renderPass,
                                    const Shader *shader,
                                    const scene::Material &material);
+    void createDescriptorSets(const Shader *shader, vulkan::ShadingPipeline pipeline);
     const ShaderBindingTable *createSBT(const RaytracePipeline *pipeline);
 
   public:
-    MaterialManager(const Device *device, const Allocator *allocator);
+    MaterialManager(const Device *device, const Allocator *allocator,
+                    const DescriptorPool *descriptorPool);
     ~MaterialManager();
     MaterialManager(const MaterialManager &materialData) = delete;
     MaterialManager &operator=(const MaterialManager &materialData) = delete;
@@ -99,12 +98,28 @@ class MaterialManager
                    : static_cast<int>(m_materialIndexTable.at(materialName));
     }
 
+    inline std::string getShaderNameForMaterial(
+        const uint32_t materialIndex) const
+    {
+        return m_materialShaderTable.at(materialIndex);
+    }
+
     [[nodiscard]] inline const Pipeline *getPipeline(
         uint32_t materialIndex, vulkan::ShadingPipeline shadingPipeline)
     {
         return shadingPipeline == vulkan::ShadingPipeline::RASTER
                    ? m_rasterMaterials.at(materialIndex).pipeline
                    : m_raytraceMaterials.at(materialIndex).pipeline;
+    }
+
+    [[nodiscard]] inline const std::vector<DescriptorSet> &getDescriptorSets(
+        uint32_t materialIndex, vulkan::ShadingPipeline shadingPipeline)
+    {
+        return shadingPipeline == vulkan::ShadingPipeline::RASTER
+                   ? m_rasterDescSets.at(
+                         getShaderNameForMaterial(materialIndex))
+                   : m_raytraceDescSets.at(
+                         getShaderNameForMaterial(materialIndex));
     }
 
     [[nodiscard]] inline const ShaderBindingTable &getShaderBindingTable(

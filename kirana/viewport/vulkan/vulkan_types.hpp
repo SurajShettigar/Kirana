@@ -109,18 +109,29 @@ struct AllocateImage
     std::unique_ptr<vma::Allocation> allocation;
 };
 
-struct DescriptorData
+enum class DescriptorLayoutType
 {
+    GLOBAL = 0,
+    MATERIAL = 1,
+    OBJECT = 2
+};
+
+enum class DescriptorBindingDataType
+{
+    CAMERA = 0,
+    WORLD = 1,
+    RAYTRACE_ACCEL_STRUCT = 2,
+    RAYTRACE_RENDER_TARGET = 3,
+    MATERIAL_DATA = 4,
+    OBJECT_DATA = 5,
+};
+
+struct DescriptorBindingInfo
+{
+    DescriptorLayoutType layoutType;
     uint32_t binding;
     vk::DescriptorType type;
     vk::ShaderStageFlags stages;
-};
-
-struct ObjectData
-{
-    math::Matrix4x4 modelMatrix;
-    uint64_t vertexBufferAddress;
-    uint64_t indexBufferAddress;
 };
 
 struct InstanceData
@@ -146,8 +157,8 @@ struct MeshData
     int indexBufferIndex;
     uint32_t firstIndex;
     uint32_t vertexOffset;
-    std::vector<InstanceData> instances;
     uint32_t materialIndex;
+    std::vector<InstanceData> instances;
 
     inline uint32_t getGlobalInstanceIndex(uint32_t instanceIndex) const
     {
@@ -160,9 +171,6 @@ struct MeshData
  */
 struct FrameData
 {
-    const DescriptorSet *globalDescriptorSet = nullptr;
-    const DescriptorSet *objectDescriptorSet = nullptr;
-    const DescriptorSet *raytraceDescriptorSet = nullptr;
     vk::Fence renderFence;
     vk::Semaphore renderSemaphore;
     vk::Semaphore presentSemaphore;
@@ -170,23 +178,32 @@ struct FrameData
     const CommandBuffers *commandBuffers = nullptr;
 };
 
+struct ObjectData
+{
+    uint64_t vertexBufferAddress;
+    uint64_t indexBufferAddress;
+    uint32_t materialIndex;
+    uint32_t firstIndex;
+    uint32_t vertexOffset;
+};
+
 struct PushConstantRaster
 {
+    math::Matrix4x4 modelMatrix;
+    uint64_t vertexBufferAddress;
+    uint64_t indexBufferAddress;
     uint32_t objectIndex;
+    uint32_t firstIndex;
+    uint32_t vertexOffset;
+    uint32_t materialIndex;
 };
+
 
 struct PushConstantRaytrace
 {
-    uint32_t objectIndex;
     uint32_t frameIndex;
     uint32_t maxBounces;
     uint32_t maxSamples;
-};
-
-struct RaytracedObjectData
-{
-    uint32_t firstIndex;
-    uint32_t vertexOffset;
 };
 
 /**

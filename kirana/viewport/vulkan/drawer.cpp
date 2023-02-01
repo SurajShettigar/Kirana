@@ -266,11 +266,11 @@ void kirana::viewport::vulkan::Drawer::draw()
         frame.commandBuffers->bindIndexBuffer(
             *(m_scene->getIndexBuffer().buffer), 0);
 
-        std::string lastMaterial;
+        std::string lastPipeline;
         //        uint32_t meshIndex = 0;
         for (const auto &m : m_scene->getMeshData())
         {
-            if (lastMaterial != m.material->name)
+            if (lastPipeline != m.material->name)
             {
                 frame.commandBuffers->bindPipeline(m.material->current);
                 frame.commandBuffers->bindDescriptorSets(
@@ -280,7 +280,7 @@ void kirana::viewport::vulkan::Drawer::draw()
                     {m_scene->getCameraBufferOffset(frameIndex),
                      m_scene->getWorldDataBufferOffset(frameIndex),
                      m_scene->getObjectBufferOffset(frameIndex)});
-                lastMaterial = m.material->name;
+                lastPipeline = m.material->name;
             }
 
             // TODO: Implement instancing

@@ -1,30 +1,53 @@
 #include "descriptor_set.hpp"
-#include "device.hpp"
 
-void kirana::viewport::vulkan::DescriptorSet::writeBuffer(
-    const vk::DescriptorBufferInfo &bufferInfo, vk::DescriptorType type,
-    uint32_t binding) const
+#include "descriptor_set_layout.hpp"
+#include "texture.hpp"
+#include "acceleration_structure.hpp"
+
+#include "vulkan_utils.hpp"
+
+
+bool kirana::viewport::vulkan::DescriptorSet::bindBuffer(
+    const DescriptorBindingInfo &bindPoint, const AllocatedBuffer &buffer)
 {
-    vk::WriteDescriptorSet write(m_current, binding, 0, type, nullptr,
-                                 bufferInfo);
-    m_device->current.updateDescriptorSets(write, {});
+    if (!m_layout->containsBinding(bindPoint))
+    {
+        Logger::get().log(constants::LOG_CHANNEL_VULKAN, LogSeverity::error,
+                          "Descriptor Set layout binding does not match the "
+                          "given binding point");
+        return false;
+    }
+    m_writes.emplace_back(m_current, bindPoint.binding, 0, 1, bindPoint.type,
+                          nullptr, &buffer.descInfo);
 }
 
-
-void kirana::viewport::vulkan::DescriptorSet::writeAccelerationStructure(
-    const vk::AccelerationStructureKHR &accelStruct, uint32_t binding) const
+bool kirana::viewport::vulkan::DescriptorSet::bindImage(
+    const DescriptorBindingInfo &bindPoint, const Texture &image)
 {
-    vk::WriteDescriptorSetAccelerationStructureKHR writeInfo{accelStruct};
-    vk::WriteDescriptorSet write(m_current, binding, 0, 1,
-                                 vk::DescriptorType::eAccelerationStructureKHR);
-    write.pNext = &writeInfo;
-    m_device->current.updateDescriptorSets(write, {});
+    if (!m_layout->containsBinding(bindPoint))
+    {
+        Logger::get().log(constants::LOG_CHANNEL_VULKAN, LogSeverity::error,
+                          "Descriptor Set layout binding does not match the "
+                          "given binding point");
+        return false;
+    }
+    m_writes.emplace_back(m_current, bindPoint.binding, 0, 1, bindPoint.type,
+                          &image.getDescriptorImageInfo());
 }
 
-void kirana::viewport::vulkan::DescriptorSet::writeImage(
-    const vk::DescriptorImageInfo &imageInfo, vk::DescriptorType type,
-    uint32_t binding) const
+bool kirana::viewport::vulkan::DescriptorSet::bindAccelerationStructure(
+    const DescriptorBindingInfo &bindPoint,
+    const AccelerationStructure &accelStruct)
 {
-    vk::WriteDescriptorSet write(m_current, binding, 0, type, imageInfo);
-    m_device->current.updateDescriptorSets(write, {});
+    if (!m_layout->containsBinding(bindPoint))
+    {
+        Logger::get().log(constants::LOG_CHANNEL_VULKAN, LogSeverity::error,
+                          "Descriptor Set layout binding does not match the "
+                          "given binding point");
+        return false;
+    }
+    vk::WriteDescriptorSetAccelerationStructureKHR accelStructWrite{
+        accelStruct.getAccelerationStructure()};
+    m_writes.emplace_back(m_current, bindPoint.binding, 0, 1, bindPoint.type,
+                          nullptr, nullptr, nullptr, &accelStructWrite);
 }

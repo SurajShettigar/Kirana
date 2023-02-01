@@ -19,29 +19,15 @@ class PipelineLayout;
 class Shader
 {
   private:
-    enum class DescriptorFrequency
-    {
-        GLOBAL,
-        MATERIAL,
-        OBJECT
-    };
-
     bool m_isInitialized = false;
     const Device *const m_device;
     std::string m_name = "";
     vulkan::ShadingPipeline m_shadingPipeline = vulkan::ShadingPipeline::RASTER;
     std::unordered_map<vk::ShaderStageFlagBits, std::vector<vk::ShaderModule>>
         m_stages;
-    std::vector<const DescriptorSetLayout *> m_descLayouts;
-    std::vector<const PushConstantBase *> m_pushConstants;
-    PipelineLayout *m_pipelineLayout;
+    const PipelineLayout *m_pipelineLayout;
 
     static bool readShaderFile(const char *path, std::vector<uint32_t> *buffer);
-
-    static std::vector<DescriptorData> getDescriptors(
-        DescriptorFrequency frequency, vulkan::ShadingPipeline pipeline);
-    bool createPipelineLayout();
-
   public:
     explicit Shader(const Device *device, const scene::ShaderData &shaderData);
     ~Shader();
@@ -73,12 +59,6 @@ class Shader
     [[nodiscard]] inline const PipelineLayout &getPipelineLayout() const
     {
         return *m_pipelineLayout;
-    }
-
-    [[nodiscard]] inline const PushConstantBase *getPushConstant(
-        uint32_t index = 0) const
-    {
-        return m_pushConstants[index];
     }
 };
 } // namespace kirana::viewport::vulkan
