@@ -33,11 +33,11 @@ void kirana::viewport::vulkan::RaytraceData::bindDescriptorSets(
     m_descSets[static_cast<int>(bindingInfo.layoutType)].bindBuffer(
         bindingInfo, sceneData.getWorldDataBuffer());
 
-    bindingInfo = DescriptorSetLayout::getBindingInfoForData(
-        DescriptorBindingDataType::MATERIAL_DATA, ShadingPipeline::RAYTRACE);
-
-    m_descSets[static_cast<int>(bindingInfo.layoutType)].bindBuffer(
-        bindingInfo, sceneData.getMaterialDataBuffer());
+//    bindingInfo = DescriptorSetLayout::getBindingInfoForData(
+//        DescriptorBindingDataType::MATERIAL_DATA, ShadingPipeline::RAYTRACE);
+//
+//    m_descSets[static_cast<int>(bindingInfo.layoutType)].bindBuffer(
+//        bindingInfo, sceneData.getMaterialDataBuffer());
 
     bindingInfo = DescriptorSetLayout::getBindingInfoForData(
         DescriptorBindingDataType::OBJECT_DATA, ShadingPipeline::RAYTRACE);
@@ -94,15 +94,14 @@ kirana::viewport::vulkan::RaytraceData::RaytraceData(
     : m_isInitialized{false}, m_device{device}, m_allocator{allocator},
       m_descriptorPool{descriptorPool}, m_swapchain{swapchain}
 {
-    m_isInitialized = PipelineLayout::getDefaultPipelineLayout(
+    bool init = PipelineLayout::getDefaultPipelineLayout(
         m_device, vulkan::ShadingPipeline::RAYTRACE, m_raytracePipelineLayout);
-    if (m_isInitialized)
+    if (init)
     {
         const auto &descLayouts =
             m_raytracePipelineLayout->getDescriptorSetLayouts();
-        m_descSets.reserve(descLayouts.size());
-        m_isInitialized =
-            m_descriptorPool->allocateDescriptorSets(descLayouts, &m_descSets);
+        m_descSets.resize(descLayouts.size());
+        m_descriptorPool->allocateDescriptorSets(descLayouts, &m_descSets);
     }
 }
 
@@ -127,6 +126,8 @@ bool kirana::viewport::vulkan::RaytraceData::initialize(
     createAccelerationStructure(sceneData);
     createRenderTarget();
     updateDescriptors();
+    m_isInitialized = true;
+    return true;
 }
 
 void kirana::viewport::vulkan::RaytraceData::updateDescriptors(int setIndex)

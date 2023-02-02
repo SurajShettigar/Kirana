@@ -3,6 +3,7 @@
 
 #include <string>
 #include <vector>
+#include <array>
 #include "material_types.hpp"
 
 namespace kirana::scene

@@ -12,8 +12,9 @@ kirana::viewport::vulkan::DescriptorSetLayout::DescriptorSetLayout(
     std::vector<vk::DescriptorSetLayoutBinding> vkBindings(m_bindings.size());
     for (size_t i = 0; i < m_bindings.size(); i++)
     {
-        vkBindings.emplace_back(m_bindings[i].binding, m_bindings[i].type, 1,
-                                m_bindings[i].stages);
+        vkBindings[i] = vk::DescriptorSetLayoutBinding{
+            m_bindings[i].binding, m_bindings[i].type,
+            m_bindings[i].descriptorCount, m_bindings[i].stages};
     }
 
     const vk::DescriptorSetLayoutCreateInfo createInfo({}, vkBindings);
@@ -51,10 +52,7 @@ bool kirana::viewport::vulkan::DescriptorSetLayout::containsBinding(
         return false;
     auto it = std::find_if(m_bindings.begin(), m_bindings.end(),
                            [&bindingInfo](const DescriptorBindingInfo &b) {
-                               return b.layoutType == bindingInfo.layoutType &&
-                                      b.binding == bindingInfo.binding &&
-                                      b.type == bindingInfo.type &&
-                                      b.stages == bindingInfo.stages;
+                               return b == bindingInfo;
                            });
 
     return it != m_bindings.end();
@@ -120,7 +118,7 @@ kirana::viewport::vulkan::DescriptorBindingInfo kirana::viewport::vulkan::
                    ? DescriptorBindingInfo{DescriptorLayoutType::OBJECT, 0,
                                            vk::DescriptorType::
                                                eStorageBufferDynamic,
-                                           vk::ShaderStageFlagBits::eVertex}
+                                           vk::ShaderStageFlagBits::eVertex, 0}
                    : DescriptorBindingInfo{
                          DescriptorLayoutType::OBJECT, 0,
                          vk::DescriptorType::eStorageBuffer,

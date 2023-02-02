@@ -32,6 +32,7 @@ void kirana::scene::ViewportScene::initializeEditorObjects()
     {
         m_editorSceneInfo.numVertices += m->getVertices().size();
         m_editorSceneInfo.numIndices += m->getIndices().size();
+        m_editorSceneInfo.numMeshes++;
     }
     m_editorSceneInfo.totalVertexSize =
         static_cast<size_t>(m_editorSceneInfo.vertexSize) *
@@ -39,6 +40,8 @@ void kirana::scene::ViewportScene::initializeEditorObjects()
     m_editorSceneInfo.totalIndexSize =
         static_cast<size_t>(m_editorSceneInfo.indexSize) *
         static_cast<size_t>(m_editorSceneInfo.numIndices);
+    m_editorSceneInfo.numObjects = 1;
+    m_editorSceneInfo.numMaterials = 1;
 
     // TODO: Add renderables for camera, lights, gizmos, axis
 }
@@ -72,6 +75,12 @@ void kirana::scene::ViewportScene::onSceneLoaded()
         m_sceneInfo.totalIndexSize =
             static_cast<size_t>(m_sceneInfo.indexSize) *
             static_cast<size_t>(m_sceneInfo.numIndices);
+        m_sceneInfo.numMeshes =
+            static_cast<uint32_t>(m_currentScene.getMeshes().size());
+        m_sceneInfo.numObjects =
+            static_cast<uint32_t>(m_currentScene.getObjects().size());
+        m_sceneInfo.numMaterials =
+            static_cast<uint32_t>(m_currentScene.getMaterials().size());
 
         toggleObjectSelection(m_currentScene.getRoot()->getName());
     }

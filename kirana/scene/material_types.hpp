@@ -69,36 +69,20 @@ static std::string shadingStageToString(ShadingStage stage)
     }
 }
 
-static const std::unordered_map<ShadingStage, std::string>
-    SHADING_STAGE_EXTENSION_TABLE{
-        {ShadingStage::VERTEX, "vert"},
-        {ShadingStage::TESSELLATION_CONTROL, "tesc"},
-        {ShadingStage::TESSELLATION_EVALUATION, "tese"},
-        {ShadingStage::GEOMETRY, "geom"},
-        {ShadingStage::FRAGMENT, "frag"},
-        {ShadingStage::COMPUTE, "comp"},
-        {ShadingStage::RAY_GEN, "rgen"},
-        {ShadingStage::ANY_HIT, "rahit"},
-        {ShadingStage::CLOSEST_HIT, "rchit"},
-        {ShadingStage::MISS, "rmiss"},
-        {ShadingStage::INTERSECTION, "rint"},
-        {ShadingStage::CALLABLE, "rcall"},
-    };
-
 static const std::unordered_map<std::string, ShadingStage>
     SHADING_EXTENSION_STAGE_TABLE{
-        {"vert", ShadingStage::VERTEX},
-        {"tesc", ShadingStage::TESSELLATION_CONTROL},
-        {"tese", ShadingStage::TESSELLATION_EVALUATION},
-        {"geom", ShadingStage::GEOMETRY},
-        {"frag", ShadingStage::FRAGMENT},
-        {"comp", ShadingStage::COMPUTE},
-        {"rgen", ShadingStage::RAY_GEN},
-        {"rahit", ShadingStage::ANY_HIT},
-        {"rchit", ShadingStage::CLOSEST_HIT},
-        {"rmiss", ShadingStage::MISS},
-        {"rint", ShadingStage::INTERSECTION},
-        {"rcall", ShadingStage::CALLABLE},
+        {".vert.spv", ShadingStage::VERTEX},
+        {".tesc.spv", ShadingStage::TESSELLATION_CONTROL},
+        {".tese.spv", ShadingStage::TESSELLATION_EVALUATION},
+        {".geom.spv", ShadingStage::GEOMETRY},
+        {".frag.spv", ShadingStage::FRAGMENT},
+        {".comp.spv", ShadingStage::COMPUTE},
+        {".rgen.spv", ShadingStage::RAY_GEN},
+        {".rahit.spv", ShadingStage::ANY_HIT},
+        {".rchit.spv", ShadingStage::CLOSEST_HIT},
+        {".rmiss.spv", ShadingStage::MISS},
+        {".rint.spv", ShadingStage::INTERSECTION},
+        {".rcall.spv", ShadingStage::CALLABLE},
     };
 
 struct ShaderData
@@ -197,7 +181,7 @@ struct BasicShadedMaterialData : MaterialDataBase
 struct OutlineMaterialData : MaterialDataBase
 {
     math::Vector4 color;
-    float thickness;
+    alignas(4) float thickness;
 };
 
 struct WireframeMaterialData : MaterialDataBase
@@ -214,18 +198,18 @@ struct SingleShadedWireframeMaterialData : MaterialDataBase
 struct PrincipledMaterialData : MaterialDataBase
 {
     math::Vector4 baseColor;
-    float subSurface;
-    float metallic;
-    float specular;
-    float specularTint;
-    float roughness;
-    float anisotropic;
-    float sheen;
-    float sheenTint;
-    float clearCoat;
-    float clearCoatGloss;
-    float transmission;
-    float ior;
+    alignas(4) float subSurface;
+    alignas(4) float metallic;
+    alignas(4) float specular;
+    alignas(4) float specularTint;
+    alignas(4) float roughness;
+    alignas(4) float anisotropic;
+    alignas(4) float sheen;
+    alignas(4) float sheenTint;
+    alignas(4) float clearCoat;
+    alignas(4) float clearCoatGloss;
+    alignas(4) float transmission;
+    alignas(4) float ior;
 };
 
 struct MaterialProperties

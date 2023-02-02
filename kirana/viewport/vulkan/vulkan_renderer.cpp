@@ -66,8 +66,8 @@ void kirana::viewport::vulkan::VulkanRenderer::update()
 {
     if (m_allocator)
         m_allocator->setCurrentFrameIndex(m_currentFrame);
-    if (m_currentScene)
-        m_currentScene->updateRaytracedFrameCount();
+//    if (m_currentScene)
+//        m_currentScene->updateRaytracedFrameCount();
     m_currentFrame++;
 }
 

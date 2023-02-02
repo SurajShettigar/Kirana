@@ -16,6 +16,7 @@ class DescriptorSet
     mutable std::vector<vk::WriteDescriptorSet> m_writes;
 
   public:
+    DescriptorSet() = default;
     explicit DescriptorSet(vk::DescriptorSet descriptorSet,
                            const DescriptorSetLayout *layout)
         : m_current{descriptorSet}, m_layout{layout} {};
@@ -39,6 +40,11 @@ class DescriptorSet
             m_writes = descriptorSet.m_writes;
         }
         return *this;
+    }
+
+    explicit operator vk::DescriptorSet() const
+    {
+        return m_current;
     }
 
     const vk::DescriptorSet &current = m_current;

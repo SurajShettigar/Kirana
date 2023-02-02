@@ -132,6 +132,7 @@ kirana::viewport::vulkan::Swapchain::Swapchain(const Device *const device,
 
 kirana::viewport::vulkan::Swapchain::~Swapchain()
 {
+    m_onSwapchainOutOfDate.removeAllListeners();
     if (m_device)
     {
         if (m_current)

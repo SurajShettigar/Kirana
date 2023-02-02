@@ -1,21 +1,23 @@
 #version 460
 
+#extension GL_GOOGLE_include_directive: enable
+
+#include "base_raster.glsl"
+
 layout (location = 0) in vec4 inColor;
 layout (location = 1) in vec3 inWorldNormal;
 layout (location = 2) in vec3 inCamPos;
 layout (location = 0) out vec4 outFragColor;
 
-layout (set = 0, binding = 1) uniform WorldData
-{
-    vec4 ambientColor;
-    vec3 sunDirection;
-    float sunIntensity;
-    vec4 sunColor;
-} worldData;
+layout (set = 0, binding = 1) uniform _WorldData {
+    WorldData w;
+} worldBuffer;
 
 void main() {
     vec3 color = vec3(0.5f, 0.5f, 0.5f);
-    color += worldData.ambientColor.rgb;
-    color *= max(dot(inWorldNormal, normalize(-worldData.sunDirection)), 0.05f) * worldData.sunColor.rgb * worldData.sunIntensity;
+    color += worldBuffer.w.ambientColor.rgb;
+    color *= max(dot(inWorldNormal, normalize(- worldBuffer.w.sunDirection)), 0.05f)
+    * worldBuffer.w.sunColor.rgb
+    * worldBuffer.w.sunIntensity;
     outFragColor = vec4(color, 1.0);
 }

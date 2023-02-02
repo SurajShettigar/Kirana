@@ -65,11 +65,6 @@ class RaytraceData
         return *m_currentPipeline;
     }
 
-    [[nodiscard]] inline const std::vector<DescriptorSet> &getDescriptorSets() const
-    {
-        return m_descSets;
-    }
-
     [[nodiscard]] inline const ShaderBindingTable &getCurrentSBT() const
     {
         assert(m_currentSBT != nullptr);
@@ -81,6 +76,24 @@ class RaytraceData
     {
         assert(m_accelStruct != nullptr);
         return *m_accelStruct;
+    }
+
+    [[nodiscard]] inline const Texture &getRenderTarget() const
+    {
+        assert(m_renderTarget != nullptr);
+        return *m_renderTarget;
+    }
+
+    [[nodiscard]] inline const PipelineLayout &getRaytracePipelineLayout() const
+    {
+        assert(m_raytracePipelineLayout != nullptr);
+        return *m_raytracePipelineLayout;
+    }
+
+    [[nodiscard]] inline const std::vector<DescriptorSet> &getDescriptorSets()
+        const
+    {
+        return m_descSets;
     }
 
     const bool &isInitialized = m_isInitialized;

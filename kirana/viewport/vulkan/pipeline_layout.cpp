@@ -68,32 +68,27 @@ bool kirana::viewport::vulkan::PipelineLayout::getDefaultPipelineLayout(
     const Device *const device, vulkan::ShadingPipeline shadingPipeline,
     const PipelineLayout *&layout)
 {
-    std::vector<const DescriptorSetLayout *> descLayouts(3);
+    std::vector<const DescriptorSetLayout *> descLayouts(2);
     DescriptorSetLayout::getDefaultDescriptorLayout(
         device, DescriptorLayoutType::GLOBAL, shadingPipeline, descLayouts[0]);
+    //    DescriptorSetLayout::getDefaultDescriptorLayout(
+    //        device, DescriptorLayoutType::MATERIAL, shadingPipeline,
+    //        descLayouts[1]);
     DescriptorSetLayout::getDefaultDescriptorLayout(
-        device, DescriptorLayoutType::MATERIAL, shadingPipeline,
-        descLayouts[1]);
-    DescriptorSetLayout::getDefaultDescriptorLayout(
-        device, DescriptorLayoutType::OBJECT, shadingPipeline, descLayouts[2]);
+        device, DescriptorLayoutType::OBJECT, shadingPipeline, descLayouts[1]);
 
     std::vector<const PushConstantBase *> pushConstants(1);
     switch (shadingPipeline)
     {
     case ShadingPipeline::RAYTRACE: {
-        pushConstants[0] = new PushConstant<PushConstantRaytrace>(
-            vulkan::PushConstantRaytrace{},
-            vk::ShaderStageFlagBits::eRaygenKHR |
-                vk::ShaderStageFlagBits::eClosestHitKHR |
-                vk::ShaderStageFlagBits::eAnyHitKHR);
+        pushConstants[0] = new PushConstant<vulkan::PushConstantRaytrace>(
+            {}, vulkan::PUSH_CONSTANT_RAYTRACE_SHADER_STAGES);
     }
     break;
     case ShadingPipeline::RASTER:
     default: {
-        pushConstants[0] = new PushConstant<PushConstantRaster>(
-            vulkan::PushConstantRaster{},
-            vk::ShaderStageFlagBits::eVertex |
-                vk::ShaderStageFlagBits::eFragment);
+        pushConstants[0] = new PushConstant<vulkan::PushConstantRaster>(
+            {}, vulkan::PUSH_CONSTANT_RASTER_SHADER_STAGES);
     }
     break;
     }

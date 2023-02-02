@@ -132,6 +132,20 @@ struct DescriptorBindingInfo
     uint32_t binding;
     vk::DescriptorType type;
     vk::ShaderStageFlags stages;
+    uint32_t descriptorCount = 1;
+
+    bool operator==(const DescriptorBindingInfo &bindingInfo) const
+    {
+        return layoutType == bindingInfo.layoutType &&
+               binding == bindingInfo.binding && type == bindingInfo.type &&
+               stages == bindingInfo.stages &&
+               descriptorCount == bindingInfo.descriptorCount;
+    }
+
+    bool operator!=(const DescriptorBindingInfo &bindingInfo) const
+    {
+        return !(*this == bindingInfo);
+    }
 };
 
 struct InstanceData
@@ -182,7 +196,8 @@ struct ObjectData
 {
     uint64_t vertexBufferAddress;
     uint64_t indexBufferAddress;
-    uint32_t materialIndex;
+    uint64_t materialDataBufferAddress;
+    int materialDataIndex;
     uint32_t firstIndex;
     uint32_t vertexOffset;
 };
@@ -192,12 +207,12 @@ struct PushConstantRaster
     math::Matrix4x4 modelMatrix;
     uint64_t vertexBufferAddress;
     uint64_t indexBufferAddress;
+    uint64_t materialDataBufferAddress;
+    int materialDataIndex;
     uint32_t objectIndex;
     uint32_t firstIndex;
     uint32_t vertexOffset;
-    uint32_t materialIndex;
 };
-
 
 struct PushConstantRaytrace
 {
@@ -205,6 +220,14 @@ struct PushConstantRaytrace
     uint32_t maxBounces;
     uint32_t maxSamples;
 };
+
+static const vk::ShaderStageFlags PUSH_CONSTANT_RASTER_SHADER_STAGES =
+    vk::ShaderStageFlagBits::eVertex | vk::ShaderStageFlagBits::eFragment;
+static const vk::ShaderStageFlags PUSH_CONSTANT_RAYTRACE_SHADER_STAGES =
+    vk::ShaderStageFlagBits::eRaygenKHR |
+    vk::ShaderStageFlagBits::eClosestHitKHR |
+    vk::ShaderStageFlagBits::eAnyHitKHR;
+
 
 /**
  * Raytracing Acceleration Structure

@@ -1,6 +1,8 @@
 #include "material_manager.hpp"
 
 #include "device.hpp"
+#include <vk_mem_alloc.hpp>
+#include "allocator.hpp"
 #include "shader.hpp"
 #include "raster_pipeline.hpp"
 #include "raytrace_pipeline.hpp"
@@ -10,6 +12,8 @@
 #include "descriptor_pool.hpp"
 #include "descriptor_set_layout.hpp"
 #include "descriptor_set.hpp"
+
+#include "vulkan_utils.hpp"
 
 #include <material.hpp>
 
@@ -79,8 +83,8 @@ kirana::viewport::vulkan::MaterialManager::VertexInputDescription kirana::
     return desc;
 }
 
-const kirana::viewport::vulkan::Shader *kirana::viewport::vulkan::
-    MaterialManager::createShader(const scene::ShaderData &shaderData)
+int kirana::viewport::vulkan::MaterialManager::createShader(
+    const scene::ShaderData &shaderData)
 {
     auto it = std::find_if(m_shaders.begin(), m_shaders.end(),
                            [&shaderData](const Shader *&shader) {
@@ -90,17 +94,15 @@ const kirana::viewport::vulkan::Shader *kirana::viewport::vulkan::
                                               shaderData.pipeline);
                            });
     if (it != m_shaders.end())
-        return *it;
+        return static_cast<int>(it - m_shaders.begin());
 
     m_shaders.emplace_back(std::move(new Shader(m_device, shaderData)));
-    return m_shaders.back();
+    return static_cast<int>(m_shaders.size() - 1);
 }
 
-const kirana::viewport::vulkan::Pipeline *kirana::viewport::vulkan::
-    MaterialManager::createPipeline(vulkan::ShadingPipeline shadingPipeline,
-                                    const RenderPass &renderPass,
-                                    const Shader *const shader,
-                                    const scene::Material &material)
+int kirana::viewport::vulkan::MaterialManager::createPipeline(
+    vulkan::ShadingPipeline shadingPipeline, const RenderPass &renderPass,
+    const Shader *const shader, const scene::Material &material)
 {
     auto it =
         std::find_if(m_pipelines.begin(), m_pipelines.end(),
@@ -110,10 +112,19 @@ const kirana::viewport::vulkan::Pipeline *kirana::viewport::vulkan::
                      });
 
     if (it != m_pipelines.end())
-        return *it;
+        return static_cast<int>(it - m_pipelines.begin());
 
     switch (shadingPipeline)
     {
+    case ShadingPipeline::RAYTRACE: {
+        const auto &raytraceData = material.getRaytracePipelineData();
+        const RaytracePipeline::Properties props{
+            raytraceData.maxRecursionDepth};
+        m_pipelines.emplace_back(
+            new RaytracePipeline(m_device, &renderPass, shader, props));
+    }
+    break;
+    default:
     case ShadingPipeline::RASTER: {
         const auto &rasterData = material.getRasterPipelineData();
         const auto &vertexData = getVertexInputDescription(rasterData);
@@ -138,20 +149,55 @@ const kirana::viewport::vulkan::Pipeline *kirana::viewport::vulkan::
             static_cast<vk::StencilOp>(rasterData.stencil.depthFailOp),
             static_cast<vk::StencilOp>(rasterData.stencil.passOp),
             rasterData.stencil.reference};
-        m_pipelines.emplace_back(
-            new RasterPipeline(m_device, &renderPass, shader, props));
-    }
-    break;
-    case ShadingPipeline::RAYTRACE: {
-        const auto &raytraceData = material.getRaytracePipelineData();
-        const RaytracePipeline::Properties props{
-            raytraceData.maxRecursionDepth};
-        m_pipelines.emplace_back(
-            new RaytracePipeline(m_device, &renderPass, shader, props));
+        m_pipelines.emplace_back(std::move(
+            new RasterPipeline(m_device, &renderPass, shader, props)));
     }
     break;
     }
-    return m_pipelines.back();
+    return static_cast<int>(m_pipelines.size() - 1);
+}
+
+
+int kirana::viewport::vulkan::MaterialManager::copyMaterialDataToBuffer(
+    const std::string &shaderName, const scene::MaterialDataBase *data)
+{
+    // TODO: Create a device local material data buffer
+
+    auto &shaderDataBuffers = m_materialDataBuffers[shaderName];
+    const size_t dataSize = sizeof(*data);
+
+    bool sizeExceeded =
+        !shaderDataBuffers.empty() &&
+        (dataSize + shaderDataBuffers.back().currentSize) >
+            constants::VULKAN_MATERIAL_DATA_BUFFER_BATCH_SIZE_LIMIT;
+
+    if (shaderDataBuffers.empty() || sizeExceeded)
+    {
+        BatchBufferData buffer{};
+        if (!m_allocator->allocateBuffer(
+                constants::VULKAN_MATERIAL_DATA_BUFFER_BATCH_SIZE_LIMIT,
+                vk::BufferUsageFlagBits::eStorageBuffer |
+                    vk::BufferUsageFlagBits::eShaderDeviceAddress |
+                    vk::BufferUsageFlagBits::eTransferSrc,
+                vma::MemoryUsage::eCpuToGpu, &buffer.stagingBuffer, true))
+        {
+            Logger::get().log(
+                constants::LOG_CHANNEL_VULKAN, LogSeverity::error,
+                "Failed to allocate material data buffer for shader: " +
+                    shaderName);
+            return -1;
+        }
+        buffer.currentSize = 0;
+        buffer.currentDataCount = 0;
+        shaderDataBuffers.emplace_back(std::move(buffer));
+    }
+
+    auto &buffer = shaderDataBuffers.back();
+    m_allocator->copyDataToMemory(buffer.stagingBuffer, dataSize,
+                                  buffer.currentSize, data);
+    buffer.currentSize += dataSize;
+    buffer.currentDataCount++;
+    return static_cast<int>(shaderDataBuffers.size() - 1);
 }
 
 
@@ -174,8 +220,8 @@ void kirana::viewport::vulkan::MaterialManager::createDescriptorSets(
     // TODO: Create descriptor sets based on the pipeline layout of each shader.
 }
 
-const kirana::viewport::vulkan::ShaderBindingTable *kirana::viewport::vulkan::
-    MaterialManager::createSBT(const RaytracePipeline *pipeline)
+int kirana::viewport::vulkan::MaterialManager::createSBT(
+    const RaytracePipeline *pipeline)
 {
     auto it = std::find_if(m_SBTs.begin(), m_SBTs.end(),
                            [&pipeline](const ShaderBindingTable *&sbt) {
@@ -183,11 +229,11 @@ const kirana::viewport::vulkan::ShaderBindingTable *kirana::viewport::vulkan::
                            });
 
     if (it != m_SBTs.end())
-        return *it;
+        return static_cast<int>(it - m_SBTs.begin());
 
     m_SBTs.emplace_back(
         new ShaderBindingTable(m_device, m_allocator, pipeline));
-    return m_SBTs.back();
+    return static_cast<int>(m_SBTs.size() - 1);
 }
 
 kirana::viewport::vulkan::MaterialManager::MaterialManager(
@@ -199,6 +245,16 @@ kirana::viewport::vulkan::MaterialManager::MaterialManager(
 
 kirana::viewport::vulkan::MaterialManager::~MaterialManager()
 {
+    for (auto &m : m_materialDataBuffers)
+    {
+        for (auto &b : m.second)
+        {
+            if (b.stagingBuffer.buffer)
+                m_allocator->free(b.stagingBuffer);
+            if (b.finalBuffer.buffer)
+                m_allocator->free(b.finalBuffer);
+        }
+    }
     for (auto &s : m_SBTs)
     {
         if (s)
@@ -225,14 +281,33 @@ kirana::viewport::vulkan::MaterialManager::~MaterialManager()
     }
 }
 
-
-int kirana::viewport::vulkan::MaterialManager::addMaterial(
+uint32_t kirana::viewport::vulkan::MaterialManager::addMaterial(
     const RenderPass &renderPass, const scene::Material &material)
 {
     if (m_materialIndexTable.find(material.getName()) !=
         m_materialIndexTable.end())
         return static_cast<int>(m_materialIndexTable.at(material.getName()));
 
+    const std::string &shaderName = material.getShaderName();
+    const std::string &materialName = material.getName();
+
+    m_materialShaderTable[materialName] = material.getShaderName();
+
+    Material m{};
+    m.dataBufferIndex =
+        copyMaterialDataToBuffer(shaderName, material.getMaterialData());
+    m.materialDataIndex =
+        m.dataBufferIndex > -1
+            ? static_cast<int>(
+                  m_materialDataBuffers.at(shaderName)[m.dataBufferIndex]
+                      .currentDataCount -
+                  1)
+            : -1;
+
+    m.shaderIndices.resize(
+        static_cast<int>(vulkan::ShadingPipeline::SHADING_MAX));
+    m.pipelineIndices.resize(
+        static_cast<int>(vulkan::ShadingPipeline::SHADING_MAX));
     for (int i = 0; i < static_cast<int>(vulkan::ShadingPipeline::SHADING_MAX);
          i++)
     {
@@ -241,34 +316,40 @@ int kirana::viewport::vulkan::MaterialManager::addMaterial(
         const auto shadingP =
             static_cast<vulkan::ShadingPipeline>(shaderData.pipeline);
 
-        Material m{};
-        m.shader = createShader(shaderData);
-        if (!m.shader->isInitialized)
-            return -1;
-        m.pipeline = createPipeline(shadingP, renderPass, m.shader, material);
-        if (!m.pipeline->isInitialized)
-            return -1;
+        m.shaderIndices[i] = createShader(shaderData);
+        m.pipelineIndices[i] =
+            m.shaderIndices[i] > -1
+                ? createPipeline(shadingP, renderPass,
+                                 m_shaders[m.shaderIndices[i]], material)
+                : -1;
 
-        createDescriptorSets(m.shader, shadingP);
-
-        m_materialIndexTable[material.getName()] =
-            static_cast<uint32_t>(++m_currentMaterialIndex);
-        m_materialShaderTable[m_currentMaterialIndex] = m.shader->name;
-
-        if (shadingP == vulkan::ShadingPipeline::RASTER)
+        if (shadingP == ShadingPipeline::RAYTRACE)
         {
-            RasterMaterial &rm = m_rasterMaterials[m_currentMaterialIndex];
-            rm.pipeline = m.pipeline;
-            rm.shader = m.shader;
-        }
-        else if (shadingP == vulkan::ShadingPipeline::RAYTRACE)
-        {
-            RaytraceMaterial &rm = m_raytraceMaterials[m_currentMaterialIndex];
-            rm.pipeline = m.pipeline;
-            rm.shader = m.shader;
-            rm.sbt = createSBT(
-                reinterpret_cast<const RaytracePipeline *>(rm.pipeline));
+            m.sbtIndex =
+                m.pipelineIndices[i] > -1
+                    ? createSBT(reinterpret_cast<const RaytracePipeline *>(
+                          m_pipelines[m.pipelineIndices[i]]))
+                    : -1;
         }
     }
-    return m_currentMaterialIndex;
+    m_materials.emplace_back(m);
+    m_materialIndexTable[materialName] =
+        static_cast<uint32_t>(m_materials.size() - 1);
+    return m_materialIndexTable[materialName];
+}
+
+vk::DeviceAddress kirana::viewport::vulkan::MaterialManager::
+    getMaterialDataBufferAddress(uint32_t materialIndex) const
+{
+    const Material &mat = m_materials[materialIndex];
+
+    if (mat.dataBufferIndex < 0 || mat.materialDataIndex < 0 ||
+        mat.shaderIndices.empty() || mat.shaderIndices[0] < 0)
+        return 0;
+
+    const auto &shader = m_shaders[mat.shaderIndices[0]];
+    const auto &buffer =
+        m_materialDataBuffers.at(shader->name)[mat.dataBufferIndex];
+
+    return m_device->getBufferAddress(*buffer.stagingBuffer.buffer);
 }

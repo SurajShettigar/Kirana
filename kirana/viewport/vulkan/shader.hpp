@@ -6,7 +6,7 @@
 
 namespace kirana::scene
 {
-class ShaderData;
+struct ShaderData;
 enum class ShadingPipeline;
 } // namespace kirana::scene
 

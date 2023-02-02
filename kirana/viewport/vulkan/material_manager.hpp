@@ -9,6 +9,7 @@ struct VertexInfo;
 class Material;
 struct ShaderData;
 struct RasterPipelineData;
+struct MaterialDataBase;
 
 } // namespace kirana::scene
 
@@ -22,11 +23,19 @@ class Pipeline;
 class RaytracePipeline;
 class Shader;
 class RenderPass;
-struct ShaderBindingTable;
+class ShaderBindingTable;
 
 class MaterialManager
 {
   private:
+    struct BatchBufferData
+    {
+        AllocatedBuffer stagingBuffer;
+        AllocatedBuffer finalBuffer;
+        size_t currentSize = 0;
+        size_t currentDataCount = 0;
+    };
+
     struct VertexInputDescription
     {
         std::vector<vk::VertexInputBindingDescription> bindings;
@@ -35,17 +44,11 @@ class MaterialManager
 
     struct Material
     {
-        const Shader *shader;
-        const Pipeline *pipeline;
-    };
-
-    struct RasterMaterial : Material
-    {
-    };
-
-    struct RaytraceMaterial : Material
-    {
-        const ShaderBindingTable *sbt = nullptr;
+        std::vector<int> shaderIndices;
+        std::vector<int> pipelineIndices;
+        int dataBufferIndex = -1; // Index used to fetch appropriate data buffer
+        int materialDataIndex = -1; // Index local to data buffer
+        int sbtIndex = -1;
     };
 
     const Device *const m_device;
@@ -56,29 +59,30 @@ class MaterialManager
     std::vector<const Pipeline *> m_pipelines;
     std::vector<const ShaderBindingTable *> m_SBTs;
 
-    AllocatedBuffer m_materialDataBuffer;
-
-    int m_currentMaterialIndex = -1;
+    std::unordered_map<std::string, std::string> m_materialShaderTable;
     std::unordered_map<std::string, uint32_t> m_materialIndexTable;
-    std::unordered_map<uint32_t, std::string> m_materialShaderTable;
-    std::unordered_map<uint32_t, RasterMaterial> m_rasterMaterials;
-    std::unordered_map<uint32_t, RaytraceMaterial> m_raytraceMaterials;
-    std::unordered_map<std::string, std::vector<DescriptorSet>>
-        m_rasterDescSets;
-    std::unordered_map<std::string, std::vector<DescriptorSet>>
-        m_raytraceDescSets;
+    std::vector<Material> m_materials;
+    //    std::unordered_map<std::string, std::vector<DescriptorSet>>
+    //        m_rasterDescSets;
+    //    std::unordered_map<std::string, std::vector<DescriptorSet>>
+    //        m_raytraceDescSets;
+    std::unordered_map<std::string, std::vector<BatchBufferData>>
+        m_materialDataBuffers;
 
     static vk::Format getFormatFromVertexAttribInfo(
         const scene::VertexInfo &info);
     static VertexInputDescription getVertexInputDescription(
         const scene::RasterPipelineData &rasterData);
-    const Shader *createShader(const scene::ShaderData &shaderData);
-    const Pipeline *createPipeline(vulkan::ShadingPipeline shadingPipeline,
-                                   const RenderPass &renderPass,
-                                   const Shader *shader,
-                                   const scene::Material &material);
-    void createDescriptorSets(const Shader *shader, vulkan::ShadingPipeline pipeline);
-    const ShaderBindingTable *createSBT(const RaytracePipeline *pipeline);
+
+    int createShader(const scene::ShaderData &shaderData);
+    int createPipeline(vulkan::ShadingPipeline shadingPipeline,
+                       const RenderPass &renderPass, const Shader *shader,
+                       const scene::Material &material);
+    int copyMaterialDataToBuffer(const std::string &shaderName,
+                                 const scene::MaterialDataBase *data);
+    void createDescriptorSets(const Shader *shader,
+                              vulkan::ShadingPipeline pipeline);
+    int createSBT(const RaytracePipeline *pipeline);
 
   public:
     MaterialManager(const Device *device, const Allocator *allocator,
@@ -87,8 +91,8 @@ class MaterialManager
     MaterialManager(const MaterialManager &materialData) = delete;
     MaterialManager &operator=(const MaterialManager &materialData) = delete;
 
-    int addMaterial(const RenderPass &renderPass,
-                    const scene::Material &material);
+    uint32_t addMaterial(const RenderPass &renderPass,
+                         const scene::Material &material);
 
     inline int getMaterialIndexFromName(const std::string &materialName) const
     {
@@ -99,34 +103,42 @@ class MaterialManager
     }
 
     inline std::string getShaderNameForMaterial(
-        const uint32_t materialIndex) const
+        const std::string &materialName) const
     {
-        return m_materialShaderTable.at(materialIndex);
+        return m_materialShaderTable.at(materialName);
+    }
+
+    [[nodiscard]] vk::DeviceAddress getMaterialDataBufferAddress(
+        uint32_t materialIndex) const;
+    [[nodiscard]] inline int getMaterialDataIndex(uint32_t materialIndex) const
+    {
+        return m_materials[materialIndex].materialDataIndex;
     }
 
     [[nodiscard]] inline const Pipeline *getPipeline(
         uint32_t materialIndex, vulkan::ShadingPipeline shadingPipeline)
     {
-        return shadingPipeline == vulkan::ShadingPipeline::RASTER
-                   ? m_rasterMaterials.at(materialIndex).pipeline
-                   : m_raytraceMaterials.at(materialIndex).pipeline;
+        // TODO: Return default pipeline if none exists
+        return m_pipelines[m_materials[materialIndex].pipelineIndices
+                               [static_cast<int>(shadingPipeline)]];
     }
 
-    [[nodiscard]] inline const std::vector<DescriptorSet> &getDescriptorSets(
-        uint32_t materialIndex, vulkan::ShadingPipeline shadingPipeline)
-    {
-        return shadingPipeline == vulkan::ShadingPipeline::RASTER
-                   ? m_rasterDescSets.at(
-                         getShaderNameForMaterial(materialIndex))
-                   : m_raytraceDescSets.at(
-                         getShaderNameForMaterial(materialIndex));
-    }
+    //    [[nodiscard]] inline const std::vector<DescriptorSet>
+    //    &getDescriptorSets(
+    //        uint32_t materialIndex, vulkan::ShadingPipeline shadingPipeline)
+    //    {
+    //        return shadingPipeline == vulkan::ShadingPipeline::RASTER
+    //                   ? m_rasterDescSets.at(
+    //                         getShaderNameForMaterial(materialIndex))
+    //                   : m_raytraceDescSets.at(
+    //                         getShaderNameForMaterial(materialIndex));
+    //    }
 
     [[nodiscard]] inline const ShaderBindingTable &getShaderBindingTable(
         uint32_t materialIndex)
     {
-        assert(m_raytraceMaterials.at(materialIndex).sbt != nullptr);
-        return *m_raytraceMaterials.at(materialIndex).sbt;
+        // TODO: Return default SBT if none exists
+        return *m_SBTs[m_materials[materialIndex].sbtIndex];
     }
 };
 } // namespace kirana::viewport::vulkan

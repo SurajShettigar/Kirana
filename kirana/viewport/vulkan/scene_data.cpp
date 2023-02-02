@@ -7,6 +7,8 @@
 #include "descriptor_set.hpp"
 #include "raytrace_data.hpp"
 #include "material_manager.hpp"
+#include "pipeline_layout.hpp"
+#include "push_constant.hpp"
 
 #include "vulkan_utils.hpp"
 
@@ -45,11 +47,34 @@ void kirana::viewport::vulkan::SceneData::onSceneLoaded(bool result)
     {
         createSceneMaterials();
         createMeshes(false);
+        createObjectBuffer();
     }
+}
+
+
+void kirana::viewport::vulkan::SceneData::onObjectChanged()
+{
+    std::vector<vulkan::ObjectData> objData;
+    for (const auto &m : m_sceneMeshes)
+    {
+        for (const auto &i : m.instances)
+        {
+            objData.emplace_back(ObjectData{
+                getVertexBufferAddress(m.vertexBufferIndex),
+                getIndexBufferAddress(m.indexBufferIndex),
+                m_materialManager->getMaterialDataBufferAddress(
+                    m.materialIndex),
+                m_materialManager->getMaterialDataIndex(m.materialIndex),
+                m.firstIndex, m.vertexOffset});
+        }
+    }
+    memcpy(m_objectDataBuffer.memoryPointer, objData.data(),
+           sizeof(vulkan::ObjectData) * objData.size());
 }
 
 void kirana::viewport::vulkan::SceneData::createWorldDataBuffer()
 {
+    // TODO: Make World buffer device local and host-visible if supported
     const vk::DeviceSize paddedSize =
         m_device->alignUniformBufferSize(sizeof(scene::WorldData));
     const vk::DeviceSize bufferSize =
@@ -62,12 +87,19 @@ void kirana::viewport::vulkan::SceneData::createWorldDataBuffer()
             *m_worldDataBuffer.buffer, 0, sizeof(scene::WorldData));
 
         m_device->setDebugObjectName(*m_cameraBuffer.buffer, "WorldBuffer");
+
+        const auto &bindingInfo = DescriptorSetLayout::getBindingInfoForData(
+            DescriptorBindingDataType::WORLD, ShadingPipeline::RASTER);
+        m_rasterDescSets[static_cast<int>(bindingInfo.layoutType)].bindBuffer(
+            bindingInfo, m_worldDataBuffer);
+
         onWorldChanged();
     }
 }
 
 void kirana::viewport::vulkan::SceneData::createCameraBuffer()
 {
+    // TODO: Make Camera buffer device local and host-visible if supported
     const vk::DeviceSize paddedSize =
         m_device->alignUniformBufferSize(sizeof(scene::CameraData));
     const vk::DeviceSize bufferSize =
@@ -80,6 +112,12 @@ void kirana::viewport::vulkan::SceneData::createCameraBuffer()
             *m_cameraBuffer.buffer, 0, sizeof(scene::CameraData));
 
         m_device->setDebugObjectName(*m_cameraBuffer.buffer, "CameraBuffer");
+
+        const auto &bindingInfo = DescriptorSetLayout::getBindingInfoForData(
+            DescriptorBindingDataType::CAMERA, ShadingPipeline::RASTER);
+        m_rasterDescSets[static_cast<int>(bindingInfo.layoutType)].bindBuffer(
+            bindingInfo, m_cameraBuffer);
+
         onCameraChanged();
     }
 }
@@ -191,27 +229,13 @@ std::pair<int, int> kirana::viewport::vulkan::SceneData::
 void kirana::viewport::vulkan::SceneData::createEditorMaterials()
 {
     for (const auto &em : m_scene.getEditorMaterials())
-    {
-        const int index = m_materialManager->addMaterial(*m_renderPass, *em);
-        if (index == -1)
-        {
-            Logger::get().log(constants::LOG_CHANNEL_VULKAN, LogSeverity::error,
-                              "Failed to create material: " + em->getName());
-        }
-    }
+        m_materialManager->addMaterial(*m_renderPass, *em);
 }
 
 void kirana::viewport::vulkan::SceneData::createSceneMaterials()
 {
     for (const auto &m : m_scene.getSceneMaterials())
-    {
-        const int index = m_materialManager->addMaterial(*m_renderPass, *m);
-        if (index == -1)
-        {
-            Logger::get().log(constants::LOG_CHANNEL_VULKAN, LogSeverity::error,
-                              "Failed to create material: " + m->getName());
-        }
-    }
+        m_materialManager->addMaterial(*m_renderPass, *m);
 }
 
 
@@ -313,38 +337,71 @@ bool kirana::viewport::vulkan::SceneData::createMeshes(bool isEditor)
     return true;
 }
 
+void kirana::viewport::vulkan::SceneData::createObjectBuffer()
+{
+    // TODO: Make Object Data buffer device local.
+    const vk::DeviceSize bufferSize =
+        sizeof(vulkan::ObjectData) * m_scene.getSceneInfo().numObjects;
+    if (m_allocator->allocateBuffer(
+            bufferSize, vk::BufferUsageFlagBits::eStorageBuffer,
+            vma::MemoryUsage::eCpuToGpu, &m_objectDataBuffer, true))
+    {
+        m_cameraBuffer.descInfo =
+            vk::DescriptorBufferInfo(*m_objectDataBuffer.buffer, 0, bufferSize);
+
+        m_device->setDebugObjectName(*m_objectDataBuffer.buffer,
+                                     "ObjectDataBuffer");
+        onObjectChanged();
+    }
+}
+
 kirana::viewport::vulkan::SceneData::SceneData(
     const Device *device, const Allocator *allocator,
     const DescriptorPool *const descriptorPool, const RenderPass *renderPass,
-    const RaytraceData *raytraceData, const scene::ViewportScene &scene,
+    RaytraceData *raytraceData, const scene::ViewportScene &scene,
     vulkan::ShadingPipeline pipeline, vulkan::ShadingType type)
     : m_isInitialized{false}, m_device{device}, m_allocator{allocator},
       m_descriptorPool{descriptorPool}, m_renderPass{renderPass},
-      m_raytraceData{raytraceData}, m_scene{scene},
-      m_currentShadingPipeline{pipeline}, m_currentShadingType{type},
-      m_raytracedFrameCount{0}, m_totalInstanceCount{0},
-      m_materialManager{new MaterialManager(m_device, m_allocator, m_descriptorPool)}
+      m_raytraceData{raytraceData}, m_scene{scene}, m_raytracedFrameCount{0},
+      m_materialManager{
+          new MaterialManager(m_device, m_allocator, m_descriptorPool)}
 {
+    m_isInitialized = PipelineLayout::getDefaultPipelineLayout(
+        m_device, ShadingPipeline::RASTER, m_rasterPipelineLayout);
+    if (m_isInitialized)
+    {
+        const auto &descLayouts =
+            m_rasterPipelineLayout->getDescriptorSetLayouts();
+        m_rasterDescSets.resize(descLayouts.size());
+        m_descriptorPool->allocateDescriptorSets(descLayouts,
+                                                 &m_rasterDescSets);
+    }
+
     // Create Camera data buffer.
     createCameraBuffer();
     // Create World data buffer.
     createWorldDataBuffer();
+
+    for (const auto &s : m_rasterDescSets)
+        m_descriptorPool->writeDescriptorSet(s);
 
     // Add listeners
     m_worldChangeListener = m_scene.addOnWorldChangeEventListener(
         [&]() { this->onWorldChanged(); });
     m_cameraChangeListener = m_scene.addOnCameraChangeEventListener(
         [&]() { this->onCameraChanged(); });
-    m_sceneLoadListener = m_scene.addOnSceneLoadedEventListener(
-        [&](bool result) { this->onSceneLoaded(result); });
 
     createEditorMaterials();
     m_isInitialized = createMeshes(true);
     if (m_scene.isSceneLoaded())
-    {
-        createSceneMaterials();
-        m_isInitialized = createMeshes(false);
-    }
+        onSceneLoaded(true);
+
+    m_sceneLoadListener = m_scene.addOnSceneLoadedEventListener(
+        [&](bool result) { this->onSceneLoaded(result); });
+
+
+    setShadingPipeline(pipeline);
+    setShadingType(type);
 
     if (m_isInitialized)
     {
@@ -396,6 +453,47 @@ kirana::viewport::vulkan::SceneData::~SceneData()
                       "Scene data destroyed");
 }
 
+void kirana::viewport::vulkan::SceneData::setShadingPipeline(
+    vulkan::ShadingPipeline pipeline)
+{
+    m_currentShadingPipeline = pipeline;
+    if (m_currentShadingPipeline == ShadingPipeline::RAYTRACE &&
+        !m_raytraceData->isInitialized)
+        m_raytraceData->initialize(*this);
+}
+
+void kirana::viewport::vulkan::SceneData::setShadingType(
+    vulkan::ShadingType type)
+{
+    m_currentShadingType = type;
+}
+
+const kirana::viewport::vulkan::Pipeline &kirana::viewport::vulkan::SceneData::
+    getCurrentPipeline(bool isEditorMesh, uint32_t meshIndex) const
+{
+    if (isEditorMesh)
+        return *m_materialManager->getPipeline(
+            m_editorMeshes[meshIndex].materialIndex, m_currentShadingPipeline);
+
+    switch (m_currentShadingType)
+    {
+    case ShadingType::PBR:
+        return *m_materialManager->getPipeline(
+            m_sceneMeshes[meshIndex].materialIndex, m_currentShadingPipeline);
+    case ShadingType::WIREFRAME:
+        return *m_materialManager->getPipeline(
+            m_materialManager->getMaterialIndexFromName(
+                scene::Material::DEFAULT_MATERIAL_WIREFRAME.getName()),
+            m_currentShadingPipeline);
+    default:
+    case ShadingType::BASIC:
+        return *m_materialManager->getPipeline(
+            m_materialManager->getMaterialIndexFromName(
+                scene::Material::DEFAULT_MATERIAL_BASIC_SHADED.getName()),
+            m_currentShadingPipeline);
+    }
+}
+
 const kirana::viewport::vulkan::Pipeline *kirana::viewport::vulkan::SceneData::
     getOutlineMaterial() const
 {
@@ -425,23 +523,30 @@ uint32_t kirana::viewport::vulkan::SceneData::getWorldDataBufferOffset(
         sizeof(scene::WorldData) * offsetIndex));
 }
 
-kirana::viewport::vulkan::PushConstantRaster kirana::viewport::vulkan::
-    SceneData::getPushConstantRasterData(bool isEditor, uint32_t meshIndex,
-                                         uint32_t instanceIndex) const
+kirana::viewport::vulkan::PushConstant<
+    kirana::viewport::vulkan::PushConstantRaster>
+kirana::viewport::vulkan::SceneData::getPushConstantRasterData(
+    bool isEditor, uint32_t meshIndex, uint32_t instanceIndex) const
 {
     const MeshData &meshData =
         isEditor ? m_editorMeshes[meshIndex] : m_sceneMeshes[meshIndex];
-    return {meshData.instances[instanceIndex].transform->getMatrix(),
-            getVertexBufferAddress(meshData.vertexBufferIndex),
-            getIndexBufferAddress(meshData.indexBufferIndex),
-            meshData.getGlobalInstanceIndex(instanceIndex),
-            meshData.firstIndex,
-            meshData.vertexOffset,
-            meshData.materialIndex};
+
+    return PushConstant<PushConstantRaster>(
+        {meshData.instances[instanceIndex].transform->getMatrix(),
+         getVertexBufferAddress(meshData.vertexBufferIndex),
+         getIndexBufferAddress(meshData.indexBufferIndex),
+         m_materialManager->getMaterialDataBufferAddress(
+             meshData.materialIndex),
+         m_materialManager->getMaterialDataIndex(meshData.materialIndex),
+         meshData.getGlobalInstanceIndex(instanceIndex), meshData.firstIndex,
+         meshData.vertexOffset},
+        vulkan::PUSH_CONSTANT_RASTER_SHADER_STAGES);
 }
 
-kirana::viewport::vulkan::PushConstantRaytrace kirana::viewport::vulkan::
-    SceneData::getPushConstantRaytraceData() const
+kirana::viewport::vulkan::PushConstant<
+    kirana::viewport::vulkan::PushConstantRaytrace>
+kirana::viewport::vulkan::SceneData::getPushConstantRaytraceData() const
 {
-    return {};
+    return PushConstant<PushConstantRaytrace>(
+        {}, vulkan::PUSH_CONSTANT_RAYTRACE_SHADER_STAGES);
 }

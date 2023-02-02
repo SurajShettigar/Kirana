@@ -21,7 +21,9 @@ void kirana::viewport::Viewport::init(const window::Window *window,
     m_window = window;
     m_currentPipeline = pipeline;
     m_currentShadingType = type;
-    m_renderer.init(m_window, scene, m_currentPipeline);
+    m_renderer.init(m_window, scene,
+                    static_cast<vulkan::ShadingPipeline>(m_currentPipeline),
+                    static_cast<vulkan::ShadingType>(m_currentShadingType));
 }
 
 void kirana::viewport::Viewport::update()

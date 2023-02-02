@@ -25,7 +25,8 @@ class DescriptorPool;
 class RenderPass;
 class RaytraceData;
 class MaterialManager;
-
+class PipelineLayout;
+template <typename> class PushConstant;
 class SceneData
 {
   private:
@@ -42,13 +43,18 @@ class SceneData
     const Allocator *const m_allocator;
     const DescriptorPool *const m_descriptorPool;
     const RenderPass *m_renderPass;
-    const RaytraceData *const m_raytraceData;
+    RaytraceData *const m_raytraceData;
     const scene::ViewportScene &m_scene;
+    uint32_t m_raytracedFrameCount = 0;
+
+    // TODO: Switch to per-shader pipeline layout using shader reflection.
+    const PipelineLayout *m_rasterPipelineLayout = nullptr;
+    // TODO: Switch to per-shader descriptor set using shader reflection.
+    std::vector<DescriptorSet> m_rasterDescSets;
+
     vulkan::ShadingPipeline m_currentShadingPipeline =
         vulkan::ShadingPipeline::RASTER;
     vulkan::ShadingType m_currentShadingType = vulkan::ShadingType::BASIC;
-    uint32_t m_raytracedFrameCount = 0;
-    size_t m_totalInstanceCount = 0;
 
     MaterialManager *m_materialManager = nullptr;
 
@@ -68,6 +74,7 @@ class SceneData
     void onWorldChanged();
     void onCameraChanged();
     void onSceneLoaded(bool result);
+    void onObjectChanged();
 
     void createWorldDataBuffer();
     void createCameraBuffer();
@@ -83,12 +90,13 @@ class SceneData
     static bool hasMeshData(const std::vector<MeshData> &meshes,
                             const std::string &meshName, uint32_t *meshIndex);
     bool createMeshes(bool isEditor = false);
+    void createObjectBuffer();
 
   public:
     SceneData(
-        const Device *device, const Allocator *allocator, const DescriptorPool *descriptorPool,
-        const RenderPass *renderPass, const RaytraceData *raytraceData,
-        const scene::ViewportScene &scene,
+        const Device *device, const Allocator *allocator,
+        const DescriptorPool *descriptorPool, const RenderPass *renderPass,
+        RaytraceData *raytraceData, const scene::ViewportScene &scene,
         vulkan::ShadingPipeline pipeline = vulkan::ShadingPipeline::RASTER,
         vulkan::ShadingType type = vulkan::ShadingType::BASIC);
     ~SceneData();
@@ -97,23 +105,33 @@ class SceneData
 
     const bool &isInitialized = m_isInitialized;
 
-    inline void setShadingPipeline(vulkan::ShadingPipeline pipeline)
+    [[nodiscard]] inline const RaytraceData &getRaytraceData() const
     {
-        m_currentShadingPipeline = pipeline;
-    };
+        return *m_raytraceData;
+    }
+
+    [[nodiscard]] inline const PipelineLayout &getRasterPipelineLayout() const
+    {
+        return *m_rasterPipelineLayout;
+    }
+
+    [[nodiscard]] inline const std::vector<DescriptorSet>
+        &getRasterDescriptorSets() const
+    {
+        return m_rasterDescSets;
+    }
+
     [[nodiscard]] inline vulkan::ShadingPipeline getCurrentShadingPipeline()
         const
     {
         return m_currentShadingPipeline;
     }
-    inline void setShadingType(vulkan::ShadingType type)
-    {
-        m_currentShadingType = type;
-    };
     [[nodiscard]] inline vulkan::ShadingType getCurrentShadingType() const
     {
         return m_currentShadingType;
     }
+    void setShadingPipeline(vulkan::ShadingPipeline pipeline);
+    void setShadingType(vulkan::ShadingType type);
 
     [[nodiscard]] inline const std::vector<MeshData> &getEditorMeshes() const
     {
@@ -124,6 +142,9 @@ class SceneData
     {
         return m_sceneMeshes;
     }
+
+    const Pipeline &getCurrentPipeline(bool isEditorMesh,
+                                       uint32_t meshIndex) const;
 
     [[nodiscard]] const Pipeline *getOutlineMaterial() const;
 
@@ -141,6 +162,12 @@ class SceneData
     }
     [[nodiscard]] uint32_t getWorldDataBufferOffset(uint32_t offsetIndex) const;
 
+
+    [[nodiscard]] inline const AllocatedBuffer &getObjectDataBuffer() const
+    {
+        return m_objectDataBuffer;
+    }
+
     [[nodiscard]] inline vk::DeviceAddress getVertexBufferAddress(
         int bufferIndex) const
     {
@@ -157,9 +184,10 @@ class SceneData
                    : m_indexBuffers[bufferIndex].gpuBuffer.address;
     }
 
-    [[nodiscard]] PushConstantRaster getPushConstantRasterData(
+    [[nodiscard]] PushConstant<PushConstantRaster> getPushConstantRasterData(
         bool isEditor, uint32_t meshIndex, uint32_t instanceIndex) const;
-    [[nodiscard]] PushConstantRaytrace getPushConstantRaytraceData() const;
+    [[nodiscard]] PushConstant<PushConstantRaytrace>
+    getPushConstantRaytraceData() const;
 };
 } // namespace kirana::viewport::vulkan
 #endif

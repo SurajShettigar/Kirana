@@ -10,6 +10,33 @@ bool kirana::utils::filesystem::fileExists(const char *path)
     return stat(path, &buffer) == 0;
 }
 
+std::pair<std::string, std::string> kirana::utils::filesystem::getFilename(
+    const std::string &absolutePath, bool includePeriodsInName)
+{
+    const auto &filename = std::filesystem::path(absolutePath).filename();
+    std::filesystem::path name;
+    std::string extension = "";
+
+    if (includePeriodsInName)
+    {
+        name = filename.stem();
+        extension = filename.extension().string();
+    }
+    else
+    {
+        name = filename;
+        std::vector<std::string> exts;
+        while (name.string().find('.') != std::string::npos)
+        {
+            exts.push_back(name.extension().string());
+            name = name.stem();
+        }
+        for(auto it = exts.rbegin(); it != exts.rend(); it++)
+            extension += *it;
+    }
+    return {name.string(), extension};
+}
+
 std::vector<std::string> kirana::utils::filesystem::listFilesInPath(
     const std::string &directory, const std::string &filename)
 {
@@ -20,7 +47,8 @@ std::vector<std::string> kirana::utils::filesystem::listFilesInPath(
     {
         if (!f.is_directory())
         {
-            const std::string &fName = f.path().filename().stem().string();
+            const std::string &fName =
+                getFilename(f.path().string(), false).first;
             if (!filename.empty())
             {
                 if (fName == filename)
@@ -31,14 +59,6 @@ std::vector<std::string> kirana::utils::filesystem::listFilesInPath(
         }
     }
     return files;
-}
-
-
-std::pair<std::string, std::string> kirana::utils::filesystem::getFilename(
-    const std::string &absolutePath)
-{
-    const auto &filename = std::filesystem::path(absolutePath).filename();
-    return {filename.stem().string(), filename.extension().string()};
 }
 
 std::string kirana::utils::filesystem::combinePath(

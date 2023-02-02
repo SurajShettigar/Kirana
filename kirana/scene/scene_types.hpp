@@ -74,6 +74,9 @@ struct SceneInfo
     uint32_t indexSize = 0;
     uint32_t numIndices = 0;
     size_t totalIndexSize = 0;
+    uint32_t numMeshes = 0;
+    uint32_t numObjects = 0;
+    uint32_t numMaterials = 0;
 };
 
 struct Renderable

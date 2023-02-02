@@ -1,6 +1,6 @@
 #version 460
 #extension GL_GOOGLE_include_directive: enable
-#extension  GL_EXT_buffer_reference2: enable
+#extension GL_EXT_buffer_reference2: enable
 
 #include "base_raytrace.glsl"
 #include "raytrace_utils.glsl"
@@ -9,8 +9,7 @@ layout (set = 0, binding = 1) uniform _WorldData {
     WorldData w;
 } worldBuffer;
 
-layout (set = 1, binding = 0) uniform accelerationStructureEXT topLevelAS;
-layout (set = 1, binding = 2) readonly buffer ObjectData {
+layout (set = 2, binding = 0) readonly buffer ObjectData {
     Object o[];
 } objBuffer;
 
@@ -60,8 +59,8 @@ vec3 getWorldNormal(const vec3[3] vNormals, vec3 barycentrics)
 void main()
 {
     const float PI = 3.141592;
-    VertexData vBuffer = VertexData(globalConstants.g.vertexBufferAddress);
-    IndexData iBuffer = IndexData(globalConstants.g.indexBufferAddress);
+    VertexData vBuffer = VertexData(objBuffer.o[gl_InstanceCustomIndexEXT].vertexBufferAddress);
+    IndexData iBuffer = IndexData(objBuffer.o[gl_InstanceCustomIndexEXT].indexBufferAddress);
 
     const u32vec3 indices = getTriangleIndices(iBuffer);
     Vertex v[3] = getTriangles(vBuffer, indices);

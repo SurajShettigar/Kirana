@@ -11,7 +11,7 @@ class RaytracePipeline;
 
 class ShaderBindingTable
 {
-  private:
+  public:
     enum class GroupType
     {
         RAY_GEN = 0,
@@ -20,7 +20,7 @@ class ShaderBindingTable
         CALLABLE = 3,
         GROUP_TYPE_MAX = 4
     };
-
+  private:
     struct Group
     {
         GroupType type;

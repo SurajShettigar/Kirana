@@ -23,15 +23,22 @@ void kirana::scene::Material::setShaderData()
     {
         const auto currPipeline = static_cast<ShadingPipeline>(i);
         std::string pipelineFolder = constants::VULKAN_SHADER_DIR_EDITOR_PATH;
+        int validPiplineStageStart = static_cast<int>(ShadingStage::VERTEX);
+        int validPiplineStageEnd = static_cast<int>(ShadingStage::COMPUTE);
         if (!m_isEditorMaterial)
         {
             switch (currPipeline)
             {
             case ShadingPipeline::RASTER:
                 pipelineFolder = constants::VULKAN_SHADER_DIR_RASTER_PATH;
+                validPiplineStageStart = static_cast<int>(ShadingStage::VERTEX);
+                validPiplineStageEnd = static_cast<int>(ShadingStage::COMPUTE);
                 break;
             case ShadingPipeline::RAYTRACE:
                 pipelineFolder = constants::VULKAN_SHADER_DIR_RAYTRACE_PATH;
+                validPiplineStageStart =
+                    static_cast<int>(ShadingStage::RAY_GEN);
+                validPiplineStageEnd = static_cast<int>(ShadingStage::CALLABLE);
                 break;
             default:
                 pipelineFolder = constants::VULKAN_SHADER_DIR_RASTER_PATH;
@@ -47,15 +54,23 @@ void kirana::scene::Material::setShaderData()
         shaderData.stages.clear();
         for (const auto &f : listFilesInPath(basePath, m_shaderName))
         {
-            const auto &extension = getFilename(f).second;
+            const std::string extension = getFilename(f, false).second;
+
             if (SHADING_EXTENSION_STAGE_TABLE.find(extension) !=
                 SHADING_EXTENSION_STAGE_TABLE.end())
             {
                 const auto &stage = SHADING_EXTENSION_STAGE_TABLE.at(extension);
-                shaderData.stages[stage].emplace_back(f);
+                const int stageValue = static_cast<int>(stage);
+                // Make sure the stage is valid for the current shading
+                // pipeline.
+                if (stageValue >= validPiplineStageStart &&
+                    stageValue <= validPiplineStageEnd)
+                    shaderData.stages[stage].emplace_back(f);
             }
         }
         m_shaderData[i] = shaderData;
+        if(m_isEditorMaterial)
+            break ;
     }
 }
 
