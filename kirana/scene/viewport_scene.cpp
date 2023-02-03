@@ -50,7 +50,6 @@ void kirana::scene::ViewportScene::onSceneLoaded()
 {
     if (m_currentScene.isInitialized())
     {
-
         const auto &sceneObjects = m_currentScene.getObjects();
         for (uint32_t i = 0; i < sceneObjects.size(); i++)
         {

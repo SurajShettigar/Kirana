@@ -6,6 +6,6 @@
 layout (location = 0) out vec4 outColor;
 
 void main() {
-    gl_Position = getVertexPosition();
+    gl_Position = getWorldPosition();
     outColor = getVertexColor();
 }

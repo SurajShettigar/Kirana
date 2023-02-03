@@ -69,19 +69,19 @@ void kirana::scene::Material::setShaderData()
             }
         }
         m_shaderData[i] = shaderData;
-        if(m_isEditorMaterial)
-            break ;
+        if (m_isEditorMaterial)
+            break;
     }
 }
 
 kirana::scene::Material::Material()
     : m_shaderName{constants::DEFAULT_SCENE_MATERIAL_SHADER_NAME},
       m_name{getMaterialNameFromShaderName(m_shaderName)},
-      m_properties{
-          MaterialProperties{{{}, CullMode::BACK, SurfaceType::WIREFRAME},
-                             {},
-                             std::make_unique<WireframeMaterialData>(
-                                 DEFAULT_WIREFRAME_MATERIAL_DATA)}},
+      m_properties{MaterialProperties{
+          RasterPipelineData{CullMode::BACK, SurfaceType::WIREFRAME},
+          RaytracePipelineData{},
+          std::make_unique<WireframeMaterialData>(
+              DEFAULT_WIREFRAME_MATERIAL_DATA)}},
       m_isEditorMaterial{false}
 {
     setShaderData();
@@ -131,15 +131,15 @@ const kirana::scene::Material
     kirana::scene::Material::DEFAULT_MATERIAL_EDITOR_OUTLINE{
         constants::VULKAN_SHADER_EDITOR_OUTLINE_NAME, "",
         MaterialProperties{
-            {{},
-             CullMode::FRONT,
-             SurfaceType::OPAQUE,
-             false,
-             true,
-             CompareOperation::LESS_OR_EQUAL,
-             {true, CompareOperation::NOT_EQUAL, StencilOperation::KEEP,
-              StencilOperation::KEEP, StencilOperation::REPLACE, 1}},
-            {},
+            RasterPipelineData{CullMode::FRONT,
+                               SurfaceType::OPAQUE,
+                               false,
+                               true,
+                               CompareOperation::LESS_OR_EQUAL,
+                               {true, CompareOperation::NOT_EQUAL,
+                                StencilOperation::KEEP, StencilOperation::KEEP,
+                                StencilOperation::REPLACE, 1}},
+            RaytracePipelineData{},
             std::make_unique<OutlineMaterialData>(
                 DEFAULT_OUTLINE_MATERIAL_DATA)},
         true};
@@ -147,17 +147,16 @@ const kirana::scene::Material
 const kirana::scene::Material
     kirana::scene::Material::DEFAULT_MATERIAL_EDITOR_GRID{
         constants::VULKAN_SHADER_EDITOR_GRID_NAME, "",
-        MaterialProperties{
-            {{}, CullMode::BACK, SurfaceType::TRANSPARENT, true, false},
-            {},
-            nullptr},
+        MaterialProperties{RasterPipelineData{CullMode::BACK,
+                                              SurfaceType::TRANSPARENT, true,
+                                              false},
+                           RaytracePipelineData{}, nullptr},
         true};
 
 const kirana::scene::Material
     kirana::scene::Material::DEFAULT_MATERIAL_BASIC_SHADED{
         constants::VULKAN_SHADER_BASIC_SHADED_NAME, "",
-        MaterialProperties{{},
-                           {},
+        MaterialProperties{RasterPipelineData{}, RaytracePipelineData{},
                            std::make_unique<BasicShadedMaterialData>(
                                DEFAULT_BASIC_SHADED_MATERIAL_DATA)}};
 
@@ -165,14 +164,14 @@ const kirana::scene::Material
     kirana::scene::Material::DEFAULT_MATERIAL_WIREFRAME{
         getMaterialNameFromShaderName(constants::VULKAN_SHADER_WIREFRAME_NAME),
         constants::VULKAN_SHADER_WIREFRAME_NAME,
-        MaterialProperties{{{}, CullMode::BACK, SurfaceType::WIREFRAME},
-                           {},
-                           std::make_unique<WireframeMaterialData>(
-                               DEFAULT_WIREFRAME_MATERIAL_DATA)}};
+        MaterialProperties{
+            RasterPipelineData{CullMode::BACK, SurfaceType::WIREFRAME},
+            RaytracePipelineData{},
+            std::make_unique<WireframeMaterialData>(
+                DEFAULT_WIREFRAME_MATERIAL_DATA)}};
 
 const kirana::scene::Material kirana::scene::Material::DEFAULT_MATERIAL_SHADED{
     constants::VULKAN_SHADER_PRINCIPLED_NAME, "",
-    MaterialProperties{{},
-                       {},
+    MaterialProperties{RasterPipelineData{}, RaytracePipelineData{},
                        std::make_unique<PrincipledMaterialData>(
                            DEFAULT_PRINCIPLED_MATERIAL_DATA)}};

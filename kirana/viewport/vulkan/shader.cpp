@@ -35,6 +35,9 @@ kirana::viewport::vulkan::Shader::Shader(const Device *const device,
       m_shadingPipeline{
           static_cast<vulkan::ShadingPipeline>(shaderData.pipeline)}
 {
+    if (shaderData.stages.empty())
+        return;
+
     for (const auto &s : shaderData.stages)
     {
         const auto stage = static_cast<vk::ShaderStageFlagBits>(s.first);

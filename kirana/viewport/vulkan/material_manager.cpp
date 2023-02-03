@@ -75,7 +75,7 @@ kirana::viewport::vulkan::MaterialManager::VertexInputDescription kirana::
     for (uint32_t i = 0; i < rasterData.vertexAttributeInfo.size(); i++)
     {
         desc.attributes[i] = vk::VertexInputAttributeDescription{
-            0, i,
+            i, 0,
             getFormatFromVertexAttribInfo(rasterData.vertexAttributeInfo[i]),
             static_cast<uint32_t>(
                 rasterData.vertexAttributeInfo[i].structOffset)};
@@ -96,7 +96,13 @@ int kirana::viewport::vulkan::MaterialManager::createShader(
     if (it != m_shaders.end())
         return static_cast<int>(it - m_shaders.begin());
 
-    m_shaders.emplace_back(std::move(new Shader(m_device, shaderData)));
+    const Shader *shader = new Shader(m_device, shaderData);
+    if (!shader->isInitialized)
+    {
+        delete shader;
+        return -1;
+    }
+    m_shaders.emplace_back(std::move(shader));
     return static_cast<int>(m_shaders.size() - 1);
 }
 
@@ -120,8 +126,14 @@ int kirana::viewport::vulkan::MaterialManager::createPipeline(
         const auto &raytraceData = material.getRaytracePipelineData();
         const RaytracePipeline::Properties props{
             raytraceData.maxRecursionDepth};
-        m_pipelines.emplace_back(
-            new RaytracePipeline(m_device, &renderPass, shader, props));
+        const RaytracePipeline *pipeline =
+            new RaytracePipeline(m_device, &renderPass, shader, props);
+        if (!pipeline->isInitialized)
+        {
+            delete pipeline;
+            return -1;
+        }
+        m_pipelines.emplace_back(std::move(pipeline));
     }
     break;
     default:
@@ -149,8 +161,14 @@ int kirana::viewport::vulkan::MaterialManager::createPipeline(
             static_cast<vk::StencilOp>(rasterData.stencil.depthFailOp),
             static_cast<vk::StencilOp>(rasterData.stencil.passOp),
             rasterData.stencil.reference};
-        m_pipelines.emplace_back(std::move(
-            new RasterPipeline(m_device, &renderPass, shader, props)));
+        const RasterPipeline *pipeline =
+            new RasterPipeline(m_device, &renderPass, shader, props);
+        if (!pipeline->isInitialized)
+        {
+            delete pipeline;
+            return -1;
+        }
+        m_pipelines.emplace_back(std::move(pipeline));
     }
     break;
     }
@@ -159,12 +177,12 @@ int kirana::viewport::vulkan::MaterialManager::createPipeline(
 
 
 int kirana::viewport::vulkan::MaterialManager::copyMaterialDataToBuffer(
-    const std::string &shaderName, const scene::MaterialDataBase *data)
+    const std::string &shaderName, const scene::MaterialDataBase *matData)
 {
     // TODO: Create a device local material data buffer
 
     auto &shaderDataBuffers = m_materialDataBuffers[shaderName];
-    const size_t dataSize = sizeof(*data);
+    const size_t dataSize = matData->size();
 
     bool sizeExceeded =
         !shaderDataBuffers.empty() &&
@@ -173,9 +191,11 @@ int kirana::viewport::vulkan::MaterialManager::copyMaterialDataToBuffer(
 
     if (shaderDataBuffers.empty() || sizeExceeded)
     {
+        const size_t bufferSize = std::max(
+            dataSize, constants::VULKAN_MATERIAL_DATA_BUFFER_BATCH_SIZE_LIMIT);
         BatchBufferData buffer{};
         if (!m_allocator->allocateBuffer(
-                constants::VULKAN_MATERIAL_DATA_BUFFER_BATCH_SIZE_LIMIT,
+                bufferSize,
                 vk::BufferUsageFlagBits::eStorageBuffer |
                     vk::BufferUsageFlagBits::eShaderDeviceAddress |
                     vk::BufferUsageFlagBits::eTransferSrc,
@@ -187,6 +207,10 @@ int kirana::viewport::vulkan::MaterialManager::copyMaterialDataToBuffer(
                     shaderName);
             return -1;
         }
+        m_device->setDebugObjectName(
+            *buffer.stagingBuffer.buffer,
+            "MaterialDataBuffer_" + shaderName + "_" +
+                std::to_string(shaderDataBuffers.size()));
         buffer.currentSize = 0;
         buffer.currentDataCount = 0;
         shaderDataBuffers.emplace_back(std::move(buffer));
@@ -194,7 +218,7 @@ int kirana::viewport::vulkan::MaterialManager::copyMaterialDataToBuffer(
 
     auto &buffer = shaderDataBuffers.back();
     m_allocator->copyDataToMemory(buffer.stagingBuffer, dataSize,
-                                  buffer.currentSize, data);
+                                  buffer.currentSize, matData->data());
     buffer.currentSize += dataSize;
     buffer.currentDataCount++;
     return static_cast<int>(shaderDataBuffers.size() - 1);
@@ -231,8 +255,14 @@ int kirana::viewport::vulkan::MaterialManager::createSBT(
     if (it != m_SBTs.end())
         return static_cast<int>(it - m_SBTs.begin());
 
-    m_SBTs.emplace_back(
-        new ShaderBindingTable(m_device, m_allocator, pipeline));
+    const ShaderBindingTable *sbt =
+        new ShaderBindingTable(m_device, m_allocator, pipeline);
+    if (!sbt->isInitialized)
+    {
+        delete sbt;
+        return -1;
+    }
+    m_SBTs.emplace_back(sbt);
     return static_cast<int>(m_SBTs.size() - 1);
 }
 
@@ -311,8 +341,16 @@ uint32_t kirana::viewport::vulkan::MaterialManager::addMaterial(
     for (int i = 0; i < static_cast<int>(vulkan::ShadingPipeline::SHADING_MAX);
          i++)
     {
+        m.shaderIndices[i] = -1;
+        m.pipelineIndices[i] = -1;
+        m.sbtIndex = -1;
+
         const scene::ShaderData &shaderData =
             material.getShaderData(static_cast<scene::ShadingPipeline>(i));
+
+        if (shaderData.stages.empty())
+            continue;
+
         const auto shadingP =
             static_cast<vulkan::ShadingPipeline>(shaderData.pipeline);
 

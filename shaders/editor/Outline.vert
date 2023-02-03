@@ -6,6 +6,6 @@
 void main() {
     // TODO: Take outline thickness from input buffer
     float thickness = 0.01;
-    vec3 pos = getLocalVertexPosition() + getLocalNormal() * thickness;
+    vec3 pos = vPosition + vNormal * thickness;
     gl_Position = vec4(pos, 1.0f) * pushConstants.p.modelMatrix * camBuffer.c.viewProj;
 }

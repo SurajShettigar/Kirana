@@ -33,11 +33,12 @@ void kirana::viewport::vulkan::RaytraceData::bindDescriptorSets(
     m_descSets[static_cast<int>(bindingInfo.layoutType)].bindBuffer(
         bindingInfo, sceneData.getWorldDataBuffer());
 
-//    bindingInfo = DescriptorSetLayout::getBindingInfoForData(
-//        DescriptorBindingDataType::MATERIAL_DATA, ShadingPipeline::RAYTRACE);
-//
-//    m_descSets[static_cast<int>(bindingInfo.layoutType)].bindBuffer(
-//        bindingInfo, sceneData.getMaterialDataBuffer());
+    //    bindingInfo = DescriptorSetLayout::getBindingInfoForData(
+    //        DescriptorBindingDataType::MATERIAL_DATA,
+    //        ShadingPipeline::RAYTRACE);
+    //
+    //    m_descSets[static_cast<int>(bindingInfo.layoutType)].bindBuffer(
+    //        bindingInfo, sceneData.getMaterialDataBuffer());
 
     bindingInfo = DescriptorSetLayout::getBindingInfoForData(
         DescriptorBindingDataType::OBJECT_DATA, ShadingPipeline::RAYTRACE);
@@ -116,6 +117,11 @@ kirana::viewport::vulkan::RaytraceData::~RaytraceData()
     {
         delete m_renderTarget;
         m_renderTarget = nullptr;
+    }
+    if (m_raytracePipelineLayout)
+    {
+        delete m_raytracePipelineLayout;
+        m_raytracePipelineLayout = nullptr;
     }
 }
 

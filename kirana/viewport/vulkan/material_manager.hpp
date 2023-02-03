@@ -28,14 +28,6 @@ class ShaderBindingTable;
 class MaterialManager
 {
   private:
-    struct BatchBufferData
-    {
-        AllocatedBuffer stagingBuffer;
-        AllocatedBuffer finalBuffer;
-        size_t currentSize = 0;
-        size_t currentDataCount = 0;
-    };
-
     struct VertexInputDescription
     {
         std::vector<vk::VertexInputBindingDescription> bindings;
@@ -79,7 +71,7 @@ class MaterialManager
                        const RenderPass &renderPass, const Shader *shader,
                        const scene::Material &material);
     int copyMaterialDataToBuffer(const std::string &shaderName,
-                                 const scene::MaterialDataBase *data);
+                                 const scene::MaterialDataBase *matData);
     void createDescriptorSets(const Shader *shader,
                               vulkan::ShadingPipeline pipeline);
     int createSBT(const RaytracePipeline *pipeline);

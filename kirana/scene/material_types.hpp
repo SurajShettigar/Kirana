@@ -4,6 +4,7 @@
 #include <unordered_map>
 #include <string>
 #include <utility>
+#include <iostream>
 #include "scene_types.hpp"
 
 namespace kirana::scene
@@ -153,6 +154,22 @@ struct StencilProperties
 
 struct MaterialDataBase
 {
+    MaterialDataBase() = default;
+    virtual ~MaterialDataBase() = default;
+
+    [[nodiscard]] inline virtual size_t size() const
+    {
+        return sizeof(*this);
+    };
+    inline virtual void *data()
+    {
+        return this;
+    };
+
+    inline virtual const void *data() const
+    {
+        return this;
+    };
 };
 
 struct RasterPipelineData : MaterialDataBase
@@ -164,6 +181,35 @@ struct RasterPipelineData : MaterialDataBase
     CompareOperation depthCompareOp = CompareOperation::LESS_OR_EQUAL;
     StencilProperties stencil;
     std::vector<VertexInfo> vertexAttributeInfo = Vertex::getVertexInfo();
+
+    explicit RasterPipelineData(
+        CullMode cull = CullMode::BACK,
+        SurfaceType surfaceType = SurfaceType::OPAQUE, bool enableDepth = true,
+        bool writeDepth = true,
+        CompareOperation depthCompareOp = CompareOperation::LESS_OR_EQUAL,
+        StencilProperties stencil = {},
+        const std::vector<VertexInfo> &vertexAttributeInfo =
+            Vertex::getVertexInfo())
+        : MaterialDataBase(), cull{cull}, surfaceType{surfaceType},
+          enableDepth{enableDepth}, writeDepth{writeDepth},
+          depthCompareOp{depthCompareOp}, stencil{stencil},
+          vertexAttributeInfo{vertexAttributeInfo}
+    {
+    }
+
+    [[nodiscard]] inline size_t size() const override
+    {
+        return sizeof(*this);
+    }
+    inline void *data() override
+    {
+        return this;
+    }
+
+    inline const void *data() const override
+    {
+        return this;
+    };
 };
 
 struct RaytracePipelineData : MaterialDataBase
@@ -171,45 +217,175 @@ struct RaytracePipelineData : MaterialDataBase
     CullMode cull = CullMode::NONE;
     VertexInfo vertexInfo = Vertex::getLargestVertexInfo();
     uint32_t maxRecursionDepth = 2;
+
+    explicit RaytracePipelineData(CullMode cull = CullMode::NONE,
+                         VertexInfo vertexInfo = Vertex::getLargestVertexInfo(),
+                         uint32_t maxRecursionDepth = 2)
+        : MaterialDataBase(), cull{cull}, vertexInfo{vertexInfo},
+          maxRecursionDepth{maxRecursionDepth}
+    {
+    }
+
+    [[nodiscard]] inline size_t size() const override
+    {
+        return sizeof(*this);
+    }
+    inline void *data() override
+    {
+        return this;
+    }
+
+    inline const void *data() const override
+    {
+        return this;
+    };
 };
 
 struct BasicShadedMaterialData : MaterialDataBase
 {
-    math::Vector4 color;
+    math::Vector4 color = math::Vector4::ONE;
+
+    explicit BasicShadedMaterialData(const math::Vector4 &color = math::Vector4::ONE)
+        : color{color}
+    {
+    }
+
+    [[nodiscard]] inline size_t size() const override
+    {
+        return sizeof(*this);
+    }
+    inline void *data() override
+    {
+        return this;
+    }
+
+    inline const void *data() const override
+    {
+        return this;
+    };
 };
 
 struct OutlineMaterialData : MaterialDataBase
 {
-    math::Vector4 color;
-    alignas(4) float thickness;
+    math::Vector4 color = math::Vector4::ONE;
+    alignas(4) float thickness = 0.01f;
+
+    explicit OutlineMaterialData(const math::Vector4 &color = math::Vector4::ONE,
+                        float thickness = 0.01f)
+        : color{color}, thickness{thickness}
+    {
+    }
+
+    [[nodiscard]] inline size_t size() const override
+    {
+        return sizeof(*this);
+    }
+    inline void *data() override
+    {
+        return this;
+    }
+
+    inline const void *data() const override
+    {
+        return this;
+    };
 };
 
 struct WireframeMaterialData : MaterialDataBase
 {
-    math::Vector4 color;
+    math::Vector4 color = math::Vector4::ONE;
+
+    explicit WireframeMaterialData(const math::Vector4 &color = math::Vector4::ONE)
+        : color{color}
+    {
+    }
+
+    [[nodiscard]] inline size_t size() const override
+    {
+        return sizeof(*this);
+    }
+    inline void *data() override
+    {
+        return this;
+    }
+
+    inline const void *data() const override
+    {
+        return this;
+    };
 };
 
 struct SingleShadedWireframeMaterialData : MaterialDataBase
 {
-    math::Vector4 color;
-    math::Vector4 wireframeColor;
+    math::Vector4 color = math::Vector4::ONE;
+    math::Vector4 wireframeColor = math::Vector4::ONE;
+
+    explicit SingleShadedWireframeMaterialData(
+        const math::Vector4 &color = math::Vector4::ONE,
+        const math::Vector4 &wireframeColor = math::Vector4::ONE)
+        : color{color}, wireframeColor{wireframeColor}
+    {
+    }
+
+    [[nodiscard]] inline size_t size() const override
+    {
+        return sizeof(*this);
+    }
+    inline void *data() override
+    {
+        return this;
+    }
+
+    inline const void *data() const override
+    {
+        return this;
+    };
 };
 
 struct PrincipledMaterialData : MaterialDataBase
 {
-    math::Vector4 baseColor;
-    alignas(4) float subSurface;
-    alignas(4) float metallic;
-    alignas(4) float specular;
-    alignas(4) float specularTint;
-    alignas(4) float roughness;
-    alignas(4) float anisotropic;
-    alignas(4) float sheen;
-    alignas(4) float sheenTint;
-    alignas(4) float clearCoat;
-    alignas(4) float clearCoatGloss;
-    alignas(4) float transmission;
-    alignas(4) float ior;
+    math::Vector4 baseColor = math::Vector4::ONE;
+    alignas(4) float subSurface = 0.0f;
+    alignas(4) float metallic = 0.0f;
+    alignas(4) float specular = 0.0f;
+    alignas(4) float specularTint = 0.0f;
+    alignas(4) float roughness = 0.5f;
+    alignas(4) float anisotropic = 0.0f;
+    alignas(4) float sheen = 0.0f;
+    alignas(4) float sheenTint = 0.0f;
+    alignas(4) float clearCoat = 0.0f;
+    alignas(4) float clearCoatGloss = 0.0f;
+    alignas(4) float transmission = 0.0f;
+    alignas(4) float ior = 1.0f;
+
+    explicit PrincipledMaterialData(const math::Vector4 &baseColor = math::Vector4::ONE,
+                           float subSurface = 0.0f, float metallic = 0.0f,
+                           float specular = 0.0f, float specularTint = 0.0f,
+                           float roughness = 0.5f, float anisotropic = 0.0f,
+                           float sheen = 0.0f, float sheenTint = 0.0f,
+                           float clearCoat = 0.0f, float clearCoatGloss = 0.0f,
+                           float transmission = 0.0f, float ior = 1.0f)
+        : baseColor{baseColor}, subSurface{subSurface}, metallic{metallic},
+          specular{specular}, specularTint{specularTint}, roughness{roughness},
+          anisotropic{anisotropic}, sheen{sheen}, sheenTint{sheenTint},
+          clearCoat{clearCoat}, clearCoatGloss{clearCoatGloss},
+          transmission{transmission}, ior{ior}
+    {
+    }
+
+    [[nodiscard]] inline size_t size() const override
+    {
+        return sizeof(*this);
+    }
+    inline void *data() override
+    {
+        return this;
+    }
+
+    inline const void *data() const override
+    {
+        return this;
+    };
 };
 
 struct MaterialProperties
@@ -218,9 +394,7 @@ struct MaterialProperties
     RaytracePipelineData raytraceData{};
     std::unique_ptr<MaterialDataBase> materialData = nullptr;
 
-    MaterialProperties()
-    {
-    }
+    MaterialProperties() = default;
 
     MaterialProperties(RasterPipelineData rasterData,
                        RaytracePipelineData raytraceData,
@@ -274,20 +448,15 @@ struct MaterialProperties
 };
 
 static const BasicShadedMaterialData DEFAULT_BASIC_SHADED_MATERIAL_DATA{
-    {},
     math::Vector4{0.65f, 0.65f, 0.65f, 1.0f}};
 
 static const OutlineMaterialData DEFAULT_OUTLINE_MATERIAL_DATA{
-    {},
-    math::Vector4{1.0f, 1.0f, 1.0f, 1.0f},
-    0.01f};
+    math::Vector4{1.0f, 1.0f, 1.0f, 1.0f}, 0.01f};
 
 static const WireframeMaterialData DEFAULT_WIREFRAME_MATERIAL_DATA{
-    {},
     math::Vector4{0.0f, 0.0f, 0.0f, 0.0f}};
 
 static const PrincipledMaterialData DEFAULT_PRINCIPLED_MATERIAL_DATA{
-    {},
     math::Vector4{0.65f, 0.65f, 0.65f, 1.0f}};
 
 } // namespace kirana::scene

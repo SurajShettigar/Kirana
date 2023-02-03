@@ -8,7 +8,7 @@ layout (location = 1) out vec3 outWorldNormal;
 layout (location = 2) out vec3 outCamPos;
 
 void main() {
-    gl_Position = getVertexPosition();
+    gl_Position = getWorldPosition();
     outColor = getVertexColor();
     outWorldNormal = getWorldNormal();
     outCamPos = camBuffer.c.position;

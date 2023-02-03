@@ -100,6 +100,14 @@ struct AllocatedBuffer
     vk::DescriptorBufferInfo descInfo;
 };
 
+struct BatchBufferData
+{
+    AllocatedBuffer stagingBuffer;
+    AllocatedBuffer finalBuffer;
+    size_t currentSize = 0;
+    size_t currentDataCount = 0;
+};
+
 /**
  * Holds an image allocated in memory by VMA.
  */

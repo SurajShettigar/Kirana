@@ -68,8 +68,9 @@ void kirana::viewport::vulkan::SceneData::onObjectChanged()
                 m.firstIndex, m.vertexOffset});
         }
     }
-    memcpy(m_objectDataBuffer.memoryPointer, objData.data(),
-           sizeof(vulkan::ObjectData) * objData.size());
+    m_allocator->copyDataToMemory(m_objectDataBuffer,
+                                  sizeof(vulkan::ObjectData) * objData.size(),
+                                  0, objData.data());
 }
 
 void kirana::viewport::vulkan::SceneData::createWorldDataBuffer()
@@ -125,8 +126,8 @@ void kirana::viewport::vulkan::SceneData::createCameraBuffer()
 bool kirana::viewport::vulkan::SceneData::transferBufferToGPU(
     BatchBufferData &bufferData)
 {
-    if (bufferData.cpuBuffer.buffer != nullptr &&
-        bufferData.gpuBuffer.buffer == nullptr)
+    if (bufferData.stagingBuffer.buffer != nullptr &&
+        bufferData.finalBuffer.buffer == nullptr)
     {
         if (m_allocator->allocateBuffer(
                 bufferData.currentSize,
@@ -134,10 +135,10 @@ bool kirana::viewport::vulkan::SceneData::transferBufferToGPU(
                     vk::BufferUsageFlagBits::eShaderDeviceAddress |
                     vk::BufferUsageFlagBits::eTransferDst |
                     RaytraceData::VERTEX_INDEX_BUFFER_USAGE_FLAGS,
-                vma::MemoryUsage::eGpuOnly, &bufferData.gpuBuffer, false))
+                vma::MemoryUsage::eGpuOnly, &bufferData.finalBuffer, false))
         {
-            if (!m_allocator->copyBuffer(bufferData.cpuBuffer,
-                                         bufferData.gpuBuffer,
+            if (!m_allocator->copyBuffer(bufferData.stagingBuffer,
+                                         bufferData.finalBuffer,
                                          bufferData.currentSize))
             {
                 Logger::get().log(
@@ -145,7 +146,7 @@ bool kirana::viewport::vulkan::SceneData::transferBufferToGPU(
                     "Failed to transfer data from CPU to GPU buffer");
                 return false;
             }
-            m_allocator->free(bufferData.cpuBuffer);
+            m_allocator->free(bufferData.stagingBuffer);
             return true;
         }
         else
@@ -163,64 +164,81 @@ std::pair<int, int> kirana::viewport::vulkan::SceneData::
                                const std::vector<scene::INDEX_TYPE> &indices)
 {
     const size_t totalVertexSize = vertices.size() * sizeof(scene::Vertex);
-
     if (m_vertexBuffers.empty() ||
         ((totalVertexSize + m_vertexBuffers.back().currentSize) >
-         constants::VULKAN_VERTEX_BUFFER_BATCH_SIZE_LIMIT) ||
-        m_vertexBuffers.back().cpuBuffer.buffer == nullptr)
+         constants::VULKAN_VERTEX_BUFFER_BATCH_SIZE_LIMIT))
     {
+        const size_t bufferSize = std::max(
+            totalVertexSize, constants::VULKAN_VERTEX_BUFFER_BATCH_SIZE_LIMIT);
         // The previous buffer is filled, move it to the GPU.
-        if (!m_vertexBuffers.empty())
-            transferBufferToGPU(m_vertexBuffers.back());
+        //        if (!m_vertexBuffers.empty())
+        //            transferBufferToGPU(m_vertexBuffers.back());
         // Create a new vertex buffer
-        BatchBufferData batch{};
+        BatchBufferData buffer{};
 
         if (!m_allocator->allocateBuffer(
-                constants::VULKAN_VERTEX_BUFFER_BATCH_SIZE_LIMIT,
-                vk::BufferUsageFlagBits::eTransferSrc,
-                vma::MemoryUsage::eCpuToGpu, &batch.cpuBuffer, true))
+                bufferSize,
+                vk::BufferUsageFlagBits::eStorageBuffer |
+                    vk::BufferUsageFlagBits::eShaderDeviceAddress |
+                    vk::BufferUsageFlagBits::eTransferSrc |
+                    vk::BufferUsageFlagBits::eVertexBuffer |
+                    RaytraceData::VERTEX_INDEX_BUFFER_USAGE_FLAGS,
+                vma::MemoryUsage::eCpuToGpu, &buffer.stagingBuffer, true))
             return {-1, -1};
 
-        batch.currentMemoryPointer =
-            reinterpret_cast<char *>(batch.cpuBuffer.memoryPointer);
-        m_vertexBuffers.emplace_back(std::move(batch));
+        m_device->setDebugObjectName(
+            *buffer.stagingBuffer.buffer,
+            "VertexBuffer_" + std::to_string(m_vertexBuffers.size()));
+        buffer.currentSize = 0;
+        buffer.currentDataCount = 0;
+        m_vertexBuffers.emplace_back(std::move(buffer));
     }
+    auto &vBuffer = m_vertexBuffers.back();
 
-    memcpy(
-        reinterpret_cast<void *>(m_vertexBuffers.back().currentMemoryPointer),
-        reinterpret_cast<const void *>(vertices.data()), totalVertexSize);
-    m_vertexBuffers.back().currentMemoryPointer += totalVertexSize;
-    m_vertexBuffers.back().currentSize += totalVertexSize;
-    m_vertexBuffers.back().currentDataOffset += vertices.size();
+
+    m_allocator->copyDataToMemory(vBuffer.stagingBuffer, totalVertexSize,
+                                  vBuffer.currentSize, vertices.data());
+    vBuffer.currentSize += totalVertexSize;
+    vBuffer.currentDataCount += vertices.size();
 
 
     const size_t totalIndexSize = indices.size() * sizeof(scene::INDEX_TYPE);
 
     if (m_indexBuffers.empty() ||
         ((totalIndexSize + m_indexBuffers.back().currentSize) >
-         constants::VULKAN_INDEX_BUFFER_BATCH_SIZE_LIMIT) ||
-        m_indexBuffers.back().cpuBuffer.buffer == nullptr)
+         constants::VULKAN_INDEX_BUFFER_BATCH_SIZE_LIMIT))
     {
+        const size_t bufferSize = std::max(
+            totalIndexSize, constants::VULKAN_INDEX_BUFFER_BATCH_SIZE_LIMIT);
         // The previous buffer is filled, move it to the GPU.
-        if (!m_indexBuffers.empty())
-            transferBufferToGPU(m_indexBuffers.back());
+        //        if (!m_indexBuffers.empty())
+        //            transferBufferToGPU(m_indexBuffers.back());
         // Create a new vertex buffer
-        BatchBufferData batch{};
+        BatchBufferData buffer{};
         if (!m_allocator->allocateBuffer(
-                constants::VULKAN_INDEX_BUFFER_BATCH_SIZE_LIMIT,
-                vk::BufferUsageFlagBits::eTransferSrc,
-                vma::MemoryUsage::eCpuToGpu, &batch.cpuBuffer, true))
+                bufferSize,
+                vk::BufferUsageFlagBits::eStorageBuffer |
+                    vk::BufferUsageFlagBits::eShaderDeviceAddress |
+                    vk::BufferUsageFlagBits::eTransferSrc |
+                    vk::BufferUsageFlagBits::eIndexBuffer |
+                    RaytraceData::VERTEX_INDEX_BUFFER_USAGE_FLAGS,
+                vma::MemoryUsage::eCpuToGpu, &buffer.stagingBuffer, true))
             return {-1, -1};
-        batch.currentMemoryPointer =
-            reinterpret_cast<char *>(batch.cpuBuffer.memoryPointer);
-        m_indexBuffers.emplace_back(std::move(batch));
-    }
 
-    memcpy(reinterpret_cast<void *>(m_indexBuffers.back().currentMemoryPointer),
-           reinterpret_cast<const void *>(indices.data()), totalIndexSize);
-    m_indexBuffers.back().currentMemoryPointer += totalIndexSize;
-    m_indexBuffers.back().currentSize += totalIndexSize;
-    m_indexBuffers.back().currentDataOffset += indices.size();
+        m_device->setDebugObjectName(*buffer.stagingBuffer.buffer,
+                                     "IndexBuffer_" +
+                                         std::to_string(m_indexBuffers.size()));
+
+        buffer.currentSize = 0;
+        buffer.currentDataCount = 0;
+        m_indexBuffers.emplace_back(std::move(buffer));
+    }
+    auto &iBuffer = m_indexBuffers.back();
+
+    m_allocator->copyDataToMemory(iBuffer.stagingBuffer, totalIndexSize,
+                                  iBuffer.currentSize, indices.data());
+    iBuffer.currentSize += totalIndexSize;
+    iBuffer.currentDataCount += indices.size();
 
     return {static_cast<int>(m_vertexBuffers.size() - 1),
             static_cast<int>(m_indexBuffers.size() - 1)};
@@ -293,23 +311,25 @@ bool kirana::viewport::vulkan::SceneData::createMeshes(bool isEditor)
                     static_cast<uint32_t>(meshVertices.size());
                 meshData.indexCount = static_cast<uint32_t>(meshIndices.size());
 
-                auto indices =
+                auto bufferIndices =
                     createVertexAndIndexBuffer(meshVertices, meshIndices);
-                if (indices.first == -1 || indices.second == -1)
+                if (bufferIndices.first == -1 || bufferIndices.second == -1)
                 {
                     Logger::get().log(
                         constants::LOG_CHANNEL_VULKAN, LogSeverity::trace,
                         "Failed to put data in vertex/index buffer for mesh: " +
                             m->getName());
                 }
-                meshData.vertexBufferIndex = indices.first;
-                meshData.indexBufferIndex = indices.second;
+                meshData.vertexBufferIndex = bufferIndices.first;
+                meshData.indexBufferIndex = bufferIndices.second;
 
                 // Get the offset into the global vertex and index buffer.
-                meshData.firstIndex = static_cast<uint32_t>(
-                    m_indexBuffers[indices.second].currentDataOffset);
                 meshData.vertexOffset = static_cast<uint32_t>(
-                    m_vertexBuffers[indices.first].currentDataOffset);
+                    m_vertexBuffers[bufferIndices.first].currentDataCount -
+                    meshData.vertexCount);
+                meshData.firstIndex = static_cast<uint32_t>(
+                    m_indexBuffers[bufferIndices.second].currentDataCount -
+                    meshData.indexCount);
 
                 int matIndex = m_materialManager->getMaterialIndexFromName(
                     m->getMaterial()->getName());
@@ -332,8 +352,6 @@ bool kirana::viewport::vulkan::SceneData::createMeshes(bool isEditor)
                 meshes[index].render = true;
         }
     }
-    transferBufferToGPU(m_vertexBuffers.back());
-    transferBufferToGPU(m_indexBuffers.back());
     return true;
 }
 
@@ -346,7 +364,7 @@ void kirana::viewport::vulkan::SceneData::createObjectBuffer()
             bufferSize, vk::BufferUsageFlagBits::eStorageBuffer,
             vma::MemoryUsage::eCpuToGpu, &m_objectDataBuffer, true))
     {
-        m_cameraBuffer.descInfo =
+        m_objectDataBuffer.descInfo =
             vk::DescriptorBufferInfo(*m_objectDataBuffer.buffer, 0, bufferSize);
 
         m_device->setDebugObjectName(*m_objectDataBuffer.buffer,
@@ -424,17 +442,21 @@ kirana::viewport::vulkan::SceneData::~SceneData()
 
     for (auto &v : m_vertexBuffers)
     {
-        if (v.cpuBuffer.buffer)
-            m_allocator->free(v.cpuBuffer);
-        if (v.gpuBuffer.buffer)
-            m_allocator->free(v.gpuBuffer);
+        if (v.stagingBuffer.buffer)
+            m_allocator->free(v.stagingBuffer);
+        if (v.finalBuffer.buffer)
+            m_allocator->free(v.finalBuffer);
     }
     for (auto &i : m_indexBuffers)
     {
-        if (i.cpuBuffer.buffer)
-            m_allocator->free(i.cpuBuffer);
-        if (i.gpuBuffer.buffer)
-            m_allocator->free(i.gpuBuffer);
+        if (i.stagingBuffer.buffer)
+            m_allocator->free(i.stagingBuffer);
+        if (i.finalBuffer.buffer)
+            m_allocator->free(i.finalBuffer);
+    }
+    if (m_objectDataBuffer.buffer)
+    {
+        m_allocator->free(m_objectDataBuffer);
     }
     if (m_worldDataBuffer.buffer)
     {
@@ -443,6 +465,11 @@ kirana::viewport::vulkan::SceneData::~SceneData()
     if (m_cameraBuffer.buffer)
     {
         m_allocator->free(m_cameraBuffer);
+    }
+    if (m_rasterPipelineLayout)
+    {
+        delete m_rasterPipelineLayout;
+        m_rasterPipelineLayout = nullptr;
     }
     if (m_materialManager)
     {

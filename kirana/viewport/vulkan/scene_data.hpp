@@ -30,14 +30,6 @@ template <typename> class PushConstant;
 class SceneData
 {
   private:
-    struct BatchBufferData
-    {
-        AllocatedBuffer cpuBuffer;
-        AllocatedBuffer gpuBuffer;
-        uint32_t currentDataOffset;
-        size_t currentSize;
-        char *currentMemoryPointer;
-    };
     bool m_isInitialized = false;
     const Device *const m_device;
     const Allocator *const m_allocator;
@@ -168,12 +160,33 @@ class SceneData
         return m_objectDataBuffer;
     }
 
+    inline const vk::Buffer &getVertexBuffer(bool isEditorMesh,
+                                             uint32_t meshIndex) const
+    {
+        return isEditorMesh ? *m_vertexBuffers[m_editorMeshes[meshIndex]
+                                                   .vertexBufferIndex]
+                                   .stagingBuffer.buffer
+                            : *m_vertexBuffers[m_sceneMeshes[meshIndex]
+                                                   .vertexBufferIndex]
+                                   .stagingBuffer.buffer;
+    }
+
+    inline const vk::Buffer &getIndexBuffer(bool isEditorMesh,
+                                            uint32_t meshIndex) const
+    {
+        return isEditorMesh
+                   ? *m_indexBuffers[m_editorMeshes[meshIndex].indexBufferIndex]
+                          .stagingBuffer.buffer
+                   : *m_indexBuffers[m_sceneMeshes[meshIndex].indexBufferIndex]
+                          .stagingBuffer.buffer;
+    }
+
     [[nodiscard]] inline vk::DeviceAddress getVertexBufferAddress(
         int bufferIndex) const
     {
         return bufferIndex == -1
                    ? 0
-                   : m_vertexBuffers[bufferIndex].gpuBuffer.address;
+                   : m_vertexBuffers[bufferIndex].stagingBuffer.address;
     }
 
     [[nodiscard]] inline vk::DeviceAddress getIndexBufferAddress(
@@ -181,7 +194,7 @@ class SceneData
     {
         return bufferIndex == -1
                    ? 0
-                   : m_indexBuffers[bufferIndex].gpuBuffer.address;
+                   : m_indexBuffers[bufferIndex].stagingBuffer.address;
     }
 
     [[nodiscard]] PushConstant<PushConstantRaster> getPushConstantRasterData(

@@ -4,5 +4,5 @@
 #include "base_vert.glsl"
 
 void main() {
-    gl_Position = getVertexPosition();
+    gl_Position = getWorldPosition();
 }

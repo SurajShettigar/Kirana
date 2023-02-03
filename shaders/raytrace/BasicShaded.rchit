@@ -9,7 +9,7 @@ layout (set = 0, binding = 1) uniform _WorldData {
     WorldData w;
 } worldBuffer;
 
-layout (set = 2, binding = 0) readonly buffer ObjectData {
+layout (set = 1, binding = 0) readonly buffer ObjectData {
     Object o[];
 } objBuffer;
 
