@@ -22,9 +22,9 @@ void kirana::viewport::vulkan::SceneData::onWorldChanged()
 
     for (size_t i = 0; i < constants::VULKAN_FRAME_OVERLAP_COUNT; i++)
     {
-        m_allocator->copyDataToMemory(
-            m_worldDataBuffer, sizeof(scene::WorldData),
-            static_cast<uint32_t>(paddedSize * i), &m_scene.getWorldData());
+        m_allocator->copyDataToBuffer(m_worldDataBuffer,
+                                      &m_scene.getWorldData(), paddedSize * i,
+                                      sizeof(scene::WorldData));
     }
 }
 
@@ -35,9 +35,9 @@ void kirana::viewport::vulkan::SceneData::onCameraChanged()
         m_device->alignUniformBufferSize(sizeof(scene::CameraData));
     for (size_t i = 0; i < constants::VULKAN_FRAME_OVERLAP_COUNT; i++)
     {
-        m_allocator->copyDataToMemory(m_cameraBuffer, sizeof(scene::CameraData),
-                                      static_cast<uint32_t>(paddedSize * i),
-                                      &cameraData);
+        m_allocator->copyDataToBuffer(m_cameraBuffer, &cameraData,
+                                      paddedSize * i,
+                                      sizeof(scene::CameraData));
     }
 }
 
@@ -68,9 +68,8 @@ void kirana::viewport::vulkan::SceneData::onObjectChanged()
                 m.firstIndex, m.vertexOffset});
         }
     }
-    m_allocator->copyDataToMemory(m_objectDataBuffer,
-                                  sizeof(vulkan::ObjectData) * objData.size(),
-                                  0, objData.data());
+    m_allocator->copyDataToBuffer(m_objectDataBuffer, objData.data(), 0,
+                                  sizeof(vulkan::ObjectData) * objData.size());
 }
 
 void kirana::viewport::vulkan::SceneData::createWorldDataBuffer()
@@ -80,9 +79,9 @@ void kirana::viewport::vulkan::SceneData::createWorldDataBuffer()
         m_device->alignUniformBufferSize(sizeof(scene::WorldData));
     const vk::DeviceSize bufferSize =
         constants::VULKAN_FRAME_OVERLAP_COUNT * paddedSize;
-    if (m_allocator->allocateBuffer(
-            bufferSize, vk::BufferUsageFlagBits::eUniformBuffer,
-            vma::MemoryUsage::eCpuToGpu, &m_worldDataBuffer))
+    if (m_allocator->allocateBuffer(&m_worldDataBuffer, bufferSize,
+                                    vk::BufferUsageFlagBits::eUniformBuffer,
+                                    Allocator::AllocationType::WRITEABLE))
     {
         m_worldDataBuffer.descInfo = vk::DescriptorBufferInfo(
             *m_worldDataBuffer.buffer, 0, sizeof(scene::WorldData));
@@ -105,9 +104,9 @@ void kirana::viewport::vulkan::SceneData::createCameraBuffer()
         m_device->alignUniformBufferSize(sizeof(scene::CameraData));
     const vk::DeviceSize bufferSize =
         constants::VULKAN_FRAME_OVERLAP_COUNT * paddedSize;
-    if (m_allocator->allocateBuffer(
-            bufferSize, vk::BufferUsageFlagBits::eUniformBuffer,
-            vma::MemoryUsage::eCpuToGpu, &m_cameraBuffer))
+    if (m_allocator->allocateBuffer(&m_cameraBuffer, bufferSize,
+                                    vk::BufferUsageFlagBits::eUniformBuffer,
+                                    Allocator::AllocationType::WRITEABLE))
     {
         m_cameraBuffer.descInfo = vk::DescriptorBufferInfo(
             *m_cameraBuffer.buffer, 0, sizeof(scene::CameraData));
@@ -123,42 +122,6 @@ void kirana::viewport::vulkan::SceneData::createCameraBuffer()
     }
 }
 
-bool kirana::viewport::vulkan::SceneData::transferBufferToGPU(
-    BatchBufferData &bufferData)
-{
-    if (bufferData.stagingBuffer.buffer != nullptr &&
-        bufferData.finalBuffer.buffer == nullptr)
-    {
-        if (m_allocator->allocateBuffer(
-                bufferData.currentSize,
-                vk::BufferUsageFlagBits::eStorageBuffer |
-                    vk::BufferUsageFlagBits::eShaderDeviceAddress |
-                    vk::BufferUsageFlagBits::eTransferDst |
-                    RaytraceData::VERTEX_INDEX_BUFFER_USAGE_FLAGS,
-                vma::MemoryUsage::eGpuOnly, &bufferData.finalBuffer, false))
-        {
-            if (!m_allocator->copyBuffer(bufferData.stagingBuffer,
-                                         bufferData.finalBuffer,
-                                         bufferData.currentSize))
-            {
-                Logger::get().log(
-                    constants::LOG_CHANNEL_VULKAN, LogSeverity::error,
-                    "Failed to transfer data from CPU to GPU buffer");
-                return false;
-            }
-            m_allocator->free(bufferData.stagingBuffer);
-            return true;
-        }
-        else
-        {
-            Logger::get().log(constants::LOG_CHANNEL_VULKAN, LogSeverity::error,
-                              "Failed to create GPU buffer");
-            return false;
-        }
-    }
-    return true;
-}
-
 std::pair<int, int> kirana::viewport::vulkan::SceneData::
     createVertexAndIndexBuffer(const std::vector<scene::Vertex> &vertices,
                                const std::vector<scene::INDEX_TYPE> &indices)
@@ -170,24 +133,20 @@ std::pair<int, int> kirana::viewport::vulkan::SceneData::
     {
         const size_t bufferSize = std::max(
             totalVertexSize, constants::VULKAN_VERTEX_BUFFER_BATCH_SIZE_LIMIT);
-        // The previous buffer is filled, move it to the GPU.
-        //        if (!m_vertexBuffers.empty())
-        //            transferBufferToGPU(m_vertexBuffers.back());
-        // Create a new vertex buffer
+
         BatchBufferData buffer{};
 
         if (!m_allocator->allocateBuffer(
-                bufferSize,
-                vk::BufferUsageFlagBits::eStorageBuffer |
+                &buffer.buffer, bufferSize,
+                vk::BufferUsageFlagBits::eVertexBuffer |
                     vk::BufferUsageFlagBits::eShaderDeviceAddress |
-                    vk::BufferUsageFlagBits::eTransferSrc |
-                    vk::BufferUsageFlagBits::eVertexBuffer |
+                    vk::BufferUsageFlagBits::eStorageBuffer |
                     RaytraceData::VERTEX_INDEX_BUFFER_USAGE_FLAGS,
-                vma::MemoryUsage::eCpuToGpu, &buffer.stagingBuffer, true))
+                Allocator::AllocationType::GPU_WRITEABLE))
             return {-1, -1};
 
         m_device->setDebugObjectName(
-            *buffer.stagingBuffer.buffer,
+            *buffer.buffer.buffer,
             "VertexBuffer_" + std::to_string(m_vertexBuffers.size()));
         buffer.currentSize = 0;
         buffer.currentDataCount = 0;
@@ -196,8 +155,8 @@ std::pair<int, int> kirana::viewport::vulkan::SceneData::
     auto &vBuffer = m_vertexBuffers.back();
 
 
-    m_allocator->copyDataToMemory(vBuffer.stagingBuffer, totalVertexSize,
-                                  vBuffer.currentSize, vertices.data());
+    m_allocator->copyDataToBuffer(vBuffer.buffer, vertices.data(),
+                                  vBuffer.currentSize, totalVertexSize);
     vBuffer.currentSize += totalVertexSize;
     vBuffer.currentDataCount += vertices.size();
 
@@ -210,22 +169,18 @@ std::pair<int, int> kirana::viewport::vulkan::SceneData::
     {
         const size_t bufferSize = std::max(
             totalIndexSize, constants::VULKAN_INDEX_BUFFER_BATCH_SIZE_LIMIT);
-        // The previous buffer is filled, move it to the GPU.
-        //        if (!m_indexBuffers.empty())
-        //            transferBufferToGPU(m_indexBuffers.back());
-        // Create a new vertex buffer
+
         BatchBufferData buffer{};
         if (!m_allocator->allocateBuffer(
-                bufferSize,
-                vk::BufferUsageFlagBits::eStorageBuffer |
+                &buffer.buffer, bufferSize,
+                vk::BufferUsageFlagBits::eIndexBuffer |
                     vk::BufferUsageFlagBits::eShaderDeviceAddress |
-                    vk::BufferUsageFlagBits::eTransferSrc |
-                    vk::BufferUsageFlagBits::eIndexBuffer |
+                    vk::BufferUsageFlagBits::eStorageBuffer |
                     RaytraceData::VERTEX_INDEX_BUFFER_USAGE_FLAGS,
-                vma::MemoryUsage::eCpuToGpu, &buffer.stagingBuffer, true))
+                Allocator::AllocationType::GPU_WRITEABLE))
             return {-1, -1};
 
-        m_device->setDebugObjectName(*buffer.stagingBuffer.buffer,
+        m_device->setDebugObjectName(*buffer.buffer.buffer,
                                      "IndexBuffer_" +
                                          std::to_string(m_indexBuffers.size()));
 
@@ -235,8 +190,8 @@ std::pair<int, int> kirana::viewport::vulkan::SceneData::
     }
     auto &iBuffer = m_indexBuffers.back();
 
-    m_allocator->copyDataToMemory(iBuffer.stagingBuffer, totalIndexSize,
-                                  iBuffer.currentSize, indices.data());
+    m_allocator->copyDataToBuffer(iBuffer.buffer, indices.data(),
+                                  iBuffer.currentSize, totalIndexSize);
     iBuffer.currentSize += totalIndexSize;
     iBuffer.currentDataCount += indices.size();
 
@@ -360,9 +315,9 @@ void kirana::viewport::vulkan::SceneData::createObjectBuffer()
     // TODO: Make Object Data buffer device local.
     const vk::DeviceSize bufferSize =
         sizeof(vulkan::ObjectData) * m_scene.getSceneInfo().numObjects;
-    if (m_allocator->allocateBuffer(
-            bufferSize, vk::BufferUsageFlagBits::eStorageBuffer,
-            vma::MemoryUsage::eCpuToGpu, &m_objectDataBuffer, true))
+    if (m_allocator->allocateBuffer(&m_objectDataBuffer, bufferSize,
+                                    vk::BufferUsageFlagBits::eStorageBuffer,
+                                    Allocator::AllocationType::WRITEABLE))
     {
         m_objectDataBuffer.descInfo =
             vk::DescriptorBufferInfo(*m_objectDataBuffer.buffer, 0, bufferSize);
@@ -442,17 +397,13 @@ kirana::viewport::vulkan::SceneData::~SceneData()
 
     for (auto &v : m_vertexBuffers)
     {
-        if (v.stagingBuffer.buffer)
-            m_allocator->free(v.stagingBuffer);
-        if (v.finalBuffer.buffer)
-            m_allocator->free(v.finalBuffer);
+        if (v.buffer.buffer)
+            m_allocator->free(v.buffer);
     }
     for (auto &i : m_indexBuffers)
     {
-        if (i.stagingBuffer.buffer)
-            m_allocator->free(i.stagingBuffer);
-        if (i.finalBuffer.buffer)
-            m_allocator->free(i.finalBuffer);
+        if (i.buffer.buffer)
+            m_allocator->free(i.buffer);
     }
     if (m_objectDataBuffer.buffer)
     {

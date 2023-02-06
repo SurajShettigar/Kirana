@@ -24,10 +24,10 @@ class Swapchain
     vk::Extent2D m_extent;
 
     vk::SwapchainKHR m_prevSwapchain = nullptr;
-    vk::SwapchainKHR m_current;
+    vk::SwapchainKHR m_current = nullptr;
     std::vector<std::unique_ptr<Texture>> m_images;
 
-    const Device *const m_device;
+    const Device *const m_device = nullptr;
     const Surface *const m_surface;
 
     /// Initializes swapchain data like surface format, present mode etc.
@@ -45,6 +45,8 @@ class Swapchain
     const vk::SwapchainKHR &current = m_current;
     const vk::Format &imageFormat = m_surfaceFormat.format;
     const vk::Extent2D &imageExtent = m_extent;
+
+    bool initialize();
 
     inline uint32_t addOnSwapchainOutOfDateListener(
         const std::function<void()> &callback)

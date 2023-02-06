@@ -31,10 +31,10 @@ bool kirana::viewport::vulkan::AccelerationStructure::
         ASData *accelerationStructure) const
 {
     if (m_allocator->allocateBuffer(
-            sizeInfo.accelerationStructureSize,
+            &accelerationStructure->buffer, sizeInfo.accelerationStructureSize,
             vk::BufferUsageFlagBits::eAccelerationStructureStorageKHR |
                 vk::BufferUsageFlagBits::eShaderDeviceAddress,
-            vma::MemoryUsage::eGpuOnly, &accelerationStructure->buffer, false))
+            Allocator::AllocationType::GPU_READ_ONLY))
     {
         accelerationStructure->as =
             m_device->current.createAccelerationStructureKHR(
@@ -150,10 +150,10 @@ bool kirana::viewport::vulkan::AccelerationStructure::buildBLAS(
 
     AllocatedBuffer scratchBuffer;
     if (!m_allocator->allocateBuffer(
-            maxScratchBufferSize,
+            &scratchBuffer, maxScratchBufferSize,
             vk::BufferUsageFlagBits::eShaderDeviceAddress |
                 vk::BufferUsageFlagBits::eStorageBuffer,
-            vma::MemoryUsage::eGpuOnly, &scratchBuffer, false))
+            Allocator::AllocationType::GPU_READ_ONLY))
     {
         Logger::get().log(
             constants::LOG_CHANNEL_VULKAN, LogSeverity::error,
@@ -289,13 +289,15 @@ bool kirana::viewport::vulkan::AccelerationStructure::buildTLAS(
     }
 
     AllocatedBuffer TLASInstanceBuffer;
-    if (!m_allocator->allocateBufferToGPU(
-            sizeof(vk::AccelerationStructureInstanceKHR) *
-                m_TLASInstanceData.size(),
+    size_t bufferSize = sizeof(vk::AccelerationStructureInstanceKHR) *
+                        m_TLASInstanceData.size();
+    if (!m_allocator->allocateBuffer(
+            &TLASInstanceBuffer, bufferSize,
             vk::BufferUsageFlagBits::eShaderDeviceAddress |
                 vk::BufferUsageFlagBits::
                     eAccelerationStructureBuildInputReadOnlyKHR,
-            &TLASInstanceBuffer, m_TLASInstanceData.data()))
+            Allocator::AllocationType::GPU_WRITEABLE, m_TLASInstanceData.data(), 0,
+            bufferSize))
     {
         Logger::get().log(constants::LOG_CHANNEL_VULKAN, LogSeverity::info,
                           "Failed to create buffer for Top-Level Acceleration "
@@ -346,10 +348,11 @@ bool kirana::viewport::vulkan::AccelerationStructure::buildTLAS(
 
         AllocatedBuffer scratchBuffer;
         if (!m_allocator->allocateBuffer(
+                &scratchBuffer,
                 update ? sizeInfo.updateScratchSize : sizeInfo.buildScratchSize,
                 vk::BufferUsageFlagBits::eStorageBuffer |
                     vk::BufferUsageFlagBits::eShaderDeviceAddress,
-                vma::MemoryUsage::eGpuOnly, &scratchBuffer, false))
+                Allocator::AllocationType::GPU_WRITEABLE))
         {
 
             Logger::get().log(constants::LOG_CHANNEL_VULKAN, LogSeverity::info,

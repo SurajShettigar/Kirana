@@ -96,14 +96,12 @@ struct AllocatedBuffer
     std::unique_ptr<vk::Buffer> buffer = nullptr;
     std::unique_ptr<vma::Allocation> allocation;
     vk::DeviceAddress address;
-    void *memoryPointer = nullptr;
     vk::DescriptorBufferInfo descInfo;
 };
 
 struct BatchBufferData
 {
-    AllocatedBuffer stagingBuffer;
-    AllocatedBuffer finalBuffer;
+    AllocatedBuffer buffer;
     size_t currentSize = 0;
     size_t currentDataCount = 0;
 };

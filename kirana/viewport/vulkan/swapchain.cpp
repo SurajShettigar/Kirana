@@ -9,7 +9,7 @@
 
 void kirana::viewport::vulkan::Swapchain::initializeSwapchainData()
 {
-    m_supportInfo = m_device->swapchainSupportInfo;
+    m_supportInfo = m_device->getSwapchainSupportInfo();
 
     // Select surface resolution
     if (m_supportInfo.capabilities.currentExtent.width !=
@@ -116,13 +116,28 @@ bool kirana::viewport::vulkan::Swapchain::createSwapchain()
     return true;
 }
 
+bool kirana::viewport::vulkan::Swapchain::initialize()
+{
+    initializeSwapchainData();
+    if (m_device && m_current)
+    {
+        m_device->current.destroySwapchainKHR(m_current);
+        Logger::get().log(constants::LOG_CHANNEL_VULKAN, LogSeverity::trace,
+                          "Swapchain destroyed");
+    }
+    if (!m_images.empty())
+        m_images.clear();
+    return createSwapchain();
+}
+
 kirana::viewport::vulkan::Swapchain::Swapchain(const Device *const device,
                                                const Surface *const surface)
     : m_isInitialized{false},
       m_prevSwapchain{nullptr}, m_device{device}, m_surface{surface}
 {
-    initializeSwapchainData();
-    if (createSwapchain())
+
+    m_isInitialized = initialize();
+    if (m_isInitialized)
     {
         Logger::get().log(constants::LOG_CHANNEL_VULKAN, LogSeverity::trace,
                           "Swapchain created");

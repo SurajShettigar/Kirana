@@ -130,8 +130,9 @@ bool kirana::viewport::vulkan::Device::selectIdealGPU()
     }
 
     // Check if device has swapchain capabilities.
-    m_swapchainSupportInfo = getSwapchainSupportInfo(m_gpu, m_surface->current);
-    if (!m_swapchainSupportInfo.isSupported())
+    const SwapchainSupportInfo swapInfo =
+        getSwapchainSupportInfo(m_gpu, m_surface->current);
+    if (!swapInfo.isSupported())
     {
         Logger::get().log(constants::LOG_CHANNEL_VULKAN, LogSeverity::error,
                           "Failed to find GPU with swapchain capabilities");
@@ -226,10 +227,10 @@ kirana::viewport::vulkan::Device::~Device()
     }
 }
 
-
-void kirana::viewport::vulkan::Device::reinitializeSwapchainInfo()
+kirana::viewport::vulkan::SwapchainSupportInfo kirana::viewport::vulkan::
+    Device::getSwapchainSupportInfo() const
 {
-    m_swapchainSupportInfo = getSwapchainSupportInfo(m_gpu, m_surface->current);
+    return Device::getSwapchainSupportInfo(m_gpu, m_surface->current);
 }
 
 void kirana::viewport::vulkan::Device::waitUntilIdle() const

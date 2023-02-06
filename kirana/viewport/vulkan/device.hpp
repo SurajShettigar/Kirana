@@ -15,7 +15,6 @@ class Device
     vk::PhysicalDevice m_gpu;
     vk::Device m_current;
     QueueFamilyIndices m_queueFamilyIndices;
-    SwapchainSupportInfo m_swapchainSupportInfo;
     vk::Queue m_graphicsQueue;
     vk::Queue m_presentationQueue;
     vk::PhysicalDeviceAccelerationStructurePropertiesKHR
@@ -56,13 +55,14 @@ class Device
     const vk::PhysicalDevice &gpu = m_gpu;
     const vk::Device &current = m_current;
     const QueueFamilyIndices &queueFamilyIndices = m_queueFamilyIndices;
-    const SwapchainSupportInfo &swapchainSupportInfo = m_swapchainSupportInfo;
     const vk::Queue &graphicsQueue = m_graphicsQueue;
     const vk::Queue &presentationQueue = m_presentationQueue;
     const vk::PhysicalDeviceAccelerationStructurePropertiesKHR
         &accelStructProperties = m_accelStructProperties;
     const vk::PhysicalDeviceRayTracingPipelinePropertiesKHR
         &raytracingProperties = m_raytracingProperties;
+
+    [[nodiscard]] SwapchainSupportInfo getSwapchainSupportInfo() const;
 
     inline vk::DeviceSize alignSize(vk::DeviceSize size,
                                     vk::DeviceSize alignment) const
@@ -80,8 +80,6 @@ class Device
         return alignSize(
             size, m_gpu.getProperties().limits.minUniformBufferOffsetAlignment);
     }
-
-    void reinitializeSwapchainInfo();
     void waitUntilIdle() const;
     void graphicsSubmit(const vk::Semaphore &waitSemaphore,
                         vk::PipelineStageFlags stageFlags,

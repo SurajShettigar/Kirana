@@ -71,7 +71,6 @@ class SceneData
     void createWorldDataBuffer();
     void createCameraBuffer();
 
-    bool transferBufferToGPU(BatchBufferData &bufferData);
     std::pair<int, int> createVertexAndIndexBuffer(
         const std::vector<scene::Vertex> &vertices,
         const std::vector<scene::INDEX_TYPE> &indices);
@@ -165,10 +164,10 @@ class SceneData
     {
         return isEditorMesh ? *m_vertexBuffers[m_editorMeshes[meshIndex]
                                                    .vertexBufferIndex]
-                                   .stagingBuffer.buffer
+                                   .buffer.buffer
                             : *m_vertexBuffers[m_sceneMeshes[meshIndex]
                                                    .vertexBufferIndex]
-                                   .stagingBuffer.buffer;
+                                   .buffer.buffer;
     }
 
     inline const vk::Buffer &getIndexBuffer(bool isEditorMesh,
@@ -176,25 +175,23 @@ class SceneData
     {
         return isEditorMesh
                    ? *m_indexBuffers[m_editorMeshes[meshIndex].indexBufferIndex]
-                          .stagingBuffer.buffer
+                          .buffer.buffer
                    : *m_indexBuffers[m_sceneMeshes[meshIndex].indexBufferIndex]
-                          .stagingBuffer.buffer;
+                          .buffer.buffer;
     }
 
     [[nodiscard]] inline vk::DeviceAddress getVertexBufferAddress(
         int bufferIndex) const
     {
-        return bufferIndex == -1
-                   ? 0
-                   : m_vertexBuffers[bufferIndex].stagingBuffer.address;
+        return bufferIndex == -1 ? 0
+                                 : m_vertexBuffers[bufferIndex].buffer.address;
     }
 
     [[nodiscard]] inline vk::DeviceAddress getIndexBufferAddress(
         int bufferIndex) const
     {
-        return bufferIndex == -1
-                   ? 0
-                   : m_indexBuffers[bufferIndex].stagingBuffer.address;
+        return bufferIndex == -1 ? 0
+                                 : m_indexBuffers[bufferIndex].buffer.address;
     }
 
     [[nodiscard]] PushConstant<PushConstantRaster> getPushConstantRasterData(

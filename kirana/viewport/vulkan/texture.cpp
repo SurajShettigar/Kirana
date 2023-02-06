@@ -67,9 +67,8 @@ kirana::viewport::vulkan::Texture::Texture(const Device *const device,
     bool allocated = false;
     // TODO: Copy Pixel data if it exits to vk::Image
     allocated = m_allocator->allocateImage(
-        imgCreateInfo, m_properties.layout, m_subresourceRange,
-        vma::MemoryUsage::eGpuOnly, vk::MemoryPropertyFlagBits::eDeviceLocal,
-        &m_allocatedImage);
+        &m_allocatedImage, imgCreateInfo, m_properties.layout,
+        m_subresourceRange, Allocator::AllocationType::GPU_READ_ONLY);
     if (allocated)
     {
         m_image = *m_allocatedImage.image;

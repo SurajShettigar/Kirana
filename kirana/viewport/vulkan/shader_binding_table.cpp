@@ -126,12 +126,13 @@ kirana::viewport::vulkan::ShaderBindingTable::ShaderBindingTable(
 
     for (int g = 0; g < static_cast<int>(GroupType::GROUP_TYPE_MAX); g++)
     {
-        if (!m_allocator->allocateBufferToGPU(
-                m_groups.at(g).size,
+        if (!m_allocator->allocateBuffer(
+                &m_groups.at(g).buffer, m_groups.at(g).size,
                 vk::BufferUsageFlagBits::eShaderBindingTableKHR |
                     vk::BufferUsageFlagBits::eShaderDeviceAddress,
-                &m_groups.at(g).buffer,
-                reinterpret_cast<void *>(bufferData.at(g).data())))
+                Allocator::AllocationType::GPU_WRITEABLE,
+                reinterpret_cast<void *>(bufferData.at(g).data()), 0,
+                m_groups.at(g).size))
         {
             Logger::get().log(
                 constants::LOG_CHANNEL_VULKAN, LogSeverity::error,

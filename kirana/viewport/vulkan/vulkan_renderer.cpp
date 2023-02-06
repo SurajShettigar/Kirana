@@ -66,8 +66,8 @@ void kirana::viewport::vulkan::VulkanRenderer::update()
 {
     if (m_allocator)
         m_allocator->setCurrentFrameIndex(m_currentFrame);
-//    if (m_currentScene)
-//        m_currentScene->updateRaytracedFrameCount();
+    //    if (m_currentScene)
+    //        m_currentScene->updateRaytracedFrameCount();
     m_currentFrame++;
 }
 
@@ -152,30 +152,20 @@ void kirana::viewport::vulkan::VulkanRenderer::rebuildSwapchain()
     }
     m_isMinimized = false;
 
-    if (m_renderpass)
-    {
-        delete m_renderpass;
-        m_renderpass = nullptr;
-    }
     if (m_depthTexture)
     {
         delete m_depthTexture;
         m_depthTexture = nullptr;
     }
-    if (m_swapchain)
-    {
-        delete m_swapchain;
-        m_swapchain = nullptr;
-    }
-    m_device->reinitializeSwapchainInfo();
+
     if (m_surface && m_surface->isInitialized)
-        m_swapchain = new Swapchain(m_device, m_surface);
+        m_swapchain->initialize();
     if (m_swapchain && m_swapchain->isInitialized)
         Texture::createDepthTexture(m_device, m_allocator, m_window->resolution,
                                     m_depthTexture);
     if (m_depthTexture && m_depthTexture->isInitialized)
-        m_renderpass = new RenderPass(m_device, m_swapchain, m_depthTexture);
-    m_drawer->reinitialize(m_swapchain, m_renderpass);
+        m_renderpass->initialize(m_depthTexture);
+
     utils::Logger::get().log(utils::constants::LOG_CHANNEL_VULKAN,
                              utils::LogSeverity::trace, "Swapchain rebuilt");
 }

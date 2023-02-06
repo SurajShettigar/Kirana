@@ -195,11 +195,10 @@ int kirana::viewport::vulkan::MaterialManager::copyMaterialDataToBuffer(
             dataSize, constants::VULKAN_MATERIAL_DATA_BUFFER_BATCH_SIZE_LIMIT);
         BatchBufferData buffer{};
         if (!m_allocator->allocateBuffer(
-                bufferSize,
+                &buffer.buffer, bufferSize,
                 vk::BufferUsageFlagBits::eStorageBuffer |
-                    vk::BufferUsageFlagBits::eShaderDeviceAddress |
-                    vk::BufferUsageFlagBits::eTransferSrc,
-                vma::MemoryUsage::eCpuToGpu, &buffer.stagingBuffer, true))
+                    vk::BufferUsageFlagBits::eShaderDeviceAddress,
+                Allocator::AllocationType::WRITEABLE))
         {
             Logger::get().log(
                 constants::LOG_CHANNEL_VULKAN, LogSeverity::error,
@@ -208,7 +207,7 @@ int kirana::viewport::vulkan::MaterialManager::copyMaterialDataToBuffer(
             return -1;
         }
         m_device->setDebugObjectName(
-            *buffer.stagingBuffer.buffer,
+            *buffer.buffer.buffer,
             "MaterialDataBuffer_" + shaderName + "_" +
                 std::to_string(shaderDataBuffers.size()));
         buffer.currentSize = 0;
@@ -217,8 +216,8 @@ int kirana::viewport::vulkan::MaterialManager::copyMaterialDataToBuffer(
     }
 
     auto &buffer = shaderDataBuffers.back();
-    m_allocator->copyDataToMemory(buffer.stagingBuffer, dataSize,
-                                  buffer.currentSize, matData->data());
+    m_allocator->copyDataToBuffer(buffer.buffer, matData->data(),
+                                  buffer.currentSize, dataSize);
     buffer.currentSize += dataSize;
     buffer.currentDataCount++;
     return static_cast<int>(shaderDataBuffers.size() - 1);
@@ -279,10 +278,8 @@ kirana::viewport::vulkan::MaterialManager::~MaterialManager()
     {
         for (auto &b : m.second)
         {
-            if (b.stagingBuffer.buffer)
-                m_allocator->free(b.stagingBuffer);
-            if (b.finalBuffer.buffer)
-                m_allocator->free(b.finalBuffer);
+            if (b.buffer.buffer)
+                m_allocator->free(b.buffer);
         }
     }
     for (auto &s : m_SBTs)
@@ -389,5 +386,5 @@ vk::DeviceAddress kirana::viewport::vulkan::MaterialManager::
     const auto &buffer =
         m_materialDataBuffers.at(shader->name)[mat.dataBufferIndex];
 
-    return m_device->getBufferAddress(*buffer.stagingBuffer.buffer);
+    return buffer.buffer.address;
 }

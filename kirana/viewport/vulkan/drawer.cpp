@@ -155,16 +155,18 @@ void kirana::viewport::vulkan::Drawer::rasterizeMeshes(const FrameData &frame,
                                               m.getGlobalInstanceIndex(i));
 
             // TODO: Find better way to render outline
-//            if (*m.instances[0].selected)
-//            {
-//                const auto outline = m_scene->getOutlineMaterial();
-//                frame.commandBuffers->bindPipeline(outline->current);
-//                lastPipeline = outline->name;
-//
-//                frame.commandBuffers->drawIndexed(m.indexCount, 1, m.firstIndex,
-//                                                  m.vertexOffset,
-//                                                  m.getGlobalInstanceIndex(i));
-//            }
+            //            if (*m.instances[0].selected)
+            //            {
+            //                const auto outline =
+            //                m_scene->getOutlineMaterial();
+            //                frame.commandBuffers->bindPipeline(outline->current);
+            //                lastPipeline = outline->name;
+            //
+            //                frame.commandBuffers->drawIndexed(m.indexCount, 1,
+            //                m.firstIndex,
+            //                                                  m.vertexOffset,
+            //                                                  m.getGlobalInstanceIndex(i));
+            //            }
         }
     }
 }
@@ -268,7 +270,6 @@ void kirana::viewport::vulkan::Drawer::draw()
         m_device->current.waitForFences(frame.renderFence, true,
                                         constants::VULKAN_FRAME_SYNC_TIMEOUT),
         "Failed to wait for render fence")
-    m_device->current.resetFences(frame.renderFence);
 
     const vk::ResultValue<uint32_t> imgValue = m_swapchain->acquireNextImage(
         constants::VULKAN_FRAME_SYNC_TIMEOUT, frame.presentSemaphore, nullptr);
@@ -278,8 +279,9 @@ void kirana::viewport::vulkan::Drawer::draw()
              imgValue.result != vk::Result::eSuboptimalKHR)
         VK_HANDLE_RESULT(imgValue.result, "Failed to acquire swapchain image")
 
-    const uint32_t imgIndex = imgValue.value;
+    m_device->current.resetFences(frame.renderFence);
 
+    const uint32_t imgIndex = imgValue.value;
     const vulkan::ShadingPipeline &currShadingPipeline =
         m_scene->getCurrentShadingPipeline();
     if (currShadingPipeline == ShadingPipeline::RAYTRACE)
@@ -300,11 +302,4 @@ void kirana::viewport::vulkan::Drawer::draw()
         VK_HANDLE_RESULT(presentResult, "Failed to present rendered image")
 
     m_currentFrameNumber++;
-}
-
-void kirana::viewport::vulkan::Drawer::reinitialize(
-    const Swapchain *const swapchain, const RenderPass *const renderPass)
-{
-    m_swapchain = swapchain;
-    m_renderPass = renderPass;
 }
