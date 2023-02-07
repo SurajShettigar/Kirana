@@ -51,7 +51,6 @@ static vk::PhysicalDeviceShaderClockFeaturesKHR DEVICE_SHADER_CLOCK_FEATURES{
         {                                                                      \
             Logger::get().log(constants::LOG_CHANNEL_VULKAN,                   \
                               LogSeverity::error, err);                        \
-            abort();                                                           \
         }                                                                      \
     }
 

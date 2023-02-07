@@ -25,6 +25,7 @@ class AccelerationStructure
     const Device *const m_device;
     const Allocator *const m_allocator;
     const CommandPool *m_commandPool;
+    vk::Fence m_commandFence;
 
     static vk::TransformMatrixKHR getVulkanTransformMatrix(
         const math::Matrix4x4 &matrix);

@@ -19,12 +19,21 @@ kirana::viewport::vulkan::QueueFamilyIndices kirana::viewport::vulkan::Device::
     {
         if (q.queueFlags & vk::QueueFlagBits::eGraphics)
             indices.graphics = i;
+        if (q.queueFlags & vk::QueueFlagBits::eTransfer)
+            indices.transfer = i;
+        if (q.queueFlags & vk::QueueFlagBits::eCompute)
+            indices.compute = i;
+        i++;
     }
 
     vk::Bool32 isPresentSupported =
         gpu.getSurfaceSupportKHR(indices.graphics, surface);
     if (isPresentSupported)
         indices.presentation = indices.graphics;
+    if (!indices.isTransferSupported())
+        indices.transfer = indices.graphics;
+    if (!indices.isComputeSupported())
+        indices.compute = indices.compute;
 
     return indices;
 }
@@ -210,6 +219,10 @@ kirana::viewport::vulkan::Device::Device(const Instance *const instance,
                 m_current.getQueue(m_queueFamilyIndices.graphics, 0);
             m_presentationQueue =
                 m_current.getQueue(m_queueFamilyIndices.presentation, 0);
+            m_transferQueue =
+                m_current.getQueue(m_queueFamilyIndices.transfer, 0);
+            m_computeQueue =
+                m_current.getQueue(m_queueFamilyIndices.compute, 0);
             m_isInitialized = true;
             Logger::get().log(constants::LOG_CHANNEL_VULKAN, LogSeverity::trace,
                               "Device initialized");
@@ -248,21 +261,29 @@ void kirana::viewport::vulkan::Device::graphicsSubmit(
                            fence);
 }
 
-void kirana::viewport::vulkan::Device::graphicsSubmit(
-    const vk::CommandBuffer &commandBuffer, const vk::Fence &fence) const
-{
-    m_graphicsQueue.submit(vk::SubmitInfo({}, {}, commandBuffer, {}), fence);
-}
-
-void kirana::viewport::vulkan::Device::graphicsSubmit(
+void kirana::viewport::vulkan::Device::transferSubmit(
     const std::vector<vk::CommandBuffer> &commandBuffers) const
 {
-    m_graphicsQueue.submit(vk::SubmitInfo({}, {}, commandBuffers));
+    m_transferQueue.submit(vk::SubmitInfo({}, {}, commandBuffers));
 }
 
-void kirana::viewport::vulkan::Device::graphicsWait() const
+void kirana::viewport::vulkan::Device::transferSubmit(
+    const std::vector<vk::CommandBuffer> &commandBuffers,
+    const vk::Fence &fence) const
 {
-    m_graphicsQueue.waitIdle();
+    m_transferQueue.submit(vk::SubmitInfo({}, {}, commandBuffers, {}), fence);
+}
+
+void kirana::viewport::vulkan::Device::transferWait() const
+{
+    //    try
+    //    {
+    m_transferQueue.waitIdle();
+    //    }
+    //    catch (...)
+    //    {
+    //        handleVulkanException();
+    //    }
 }
 
 vk::Result kirana::viewport::vulkan::Device::present(

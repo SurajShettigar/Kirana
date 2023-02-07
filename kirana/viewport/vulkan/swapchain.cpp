@@ -65,18 +65,26 @@ void kirana::viewport::vulkan::Swapchain::initializeSwapchainData()
 
 bool kirana::viewport::vulkan::Swapchain::createSwapchain()
 {
-    vk::SharingMode sharingMode =
+    const vk::SharingMode sharingMode =
         m_device->queueFamilyIndices.isGraphicsAndPresentSame()
             ? vk::SharingMode::eExclusive
             : vk::SharingMode::eConcurrent;
+
+//    std::vector<uint32_t> queueFamilyIndices;
+//    if (sharingMode == vk::SharingMode::eConcurrent)
+//    {
+//        queueFamilyIndices.push_back(m_device->queueFamilyIndices.graphics);
+//        queueFamilyIndices.push_back(m_device->queueFamilyIndices.presentation);
+//    }
 
     vk::SwapchainCreateInfoKHR createInfo(
         vk::SwapchainCreateFlagsKHR(), m_surface->current, m_imageCount,
         m_surfaceFormat.format, m_surfaceFormat.colorSpace, m_extent, 1,
         vk::ImageUsageFlagBits::eColorAttachment |
             vk::ImageUsageFlagBits::eTransferDst,
-        sharingMode, {}, m_transform, vk::CompositeAlphaFlagBitsKHR::eOpaque,
-        m_presentMode, true, m_prevSwapchain);
+        sharingMode, {}, m_transform,
+        vk::CompositeAlphaFlagBitsKHR::eOpaque, m_presentMode, true,
+        m_prevSwapchain);
 
     if (sharingMode == vk::SharingMode::eConcurrent)
     {

@@ -8,8 +8,8 @@
 
 void kirana::viewport::vulkan::ShaderBindingTable::initializeShaderRecords()
 {
-    const vk::RayTracingPipelineCreateInfoKHR &pipelineInfo =
-        m_pipeline->getCreateInfo();
+    const auto& shaderStages = m_pipeline->getShaderStagesInfo();
+    const auto& shaderGroups = m_pipeline->getShaderGroupsInfo();
 
     const uint32_t rayGenIndex = static_cast<int>(GroupType::RAY_GEN);
     const uint32_t missIndex = static_cast<int>(GroupType::MISS);
@@ -19,12 +19,12 @@ void kirana::viewport::vulkan::ShaderBindingTable::initializeShaderRecords()
     // TODO: Calculate record indices and count when using pipeline libraries.
 
     // Set record indices from the created raytracing pipeline
-    for (uint32_t i = 0; i < pipelineInfo.groupCount; i++)
+    for (uint32_t i = 0; i < shaderGroups.size(); i++)
     {
-        if (pipelineInfo.pGroups[i].type ==
+        if (shaderGroups[i].type ==
             vk::RayTracingShaderGroupTypeKHR::eGeneral)
         {
-            switch (pipelineInfo.pStages[i].stage)
+            switch (shaderStages[i].stage)
             {
             case vk::ShaderStageFlagBits::eRaygenKHR:
                 m_groups[rayGenIndex].recordIndices.push_back(i);
@@ -65,7 +65,7 @@ void kirana::viewport::vulkan::ShaderBindingTable::initializeShaderRecords()
             m_groups.at(i).stride * m_groups.at(i).recordCount;
     }
 
-    m_totalGroupCount = pipelineInfo.groupCount;
+    m_totalGroupCount = shaderGroups.size();
 }
 
 std::array<std::vector<uint8_t>,
@@ -126,12 +126,14 @@ kirana::viewport::vulkan::ShaderBindingTable::ShaderBindingTable(
 
     for (int g = 0; g < static_cast<int>(GroupType::GROUP_TYPE_MAX); g++)
     {
+        if(m_groups.at(g).size == 0)
+            continue ;
         if (!m_allocator->allocateBuffer(
                 &m_groups.at(g).buffer, m_groups.at(g).size,
                 vk::BufferUsageFlagBits::eShaderBindingTableKHR |
                     vk::BufferUsageFlagBits::eShaderDeviceAddress,
                 Allocator::AllocationType::GPU_WRITEABLE,
-                reinterpret_cast<void *>(bufferData.at(g).data()), 0,
+                bufferData.at(g).data(), 0,
                 m_groups.at(g).size))
         {
             Logger::get().log(

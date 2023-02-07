@@ -15,24 +15,31 @@ class RaytracePipeline : public Pipeline
 
   protected:
     Properties m_properties{};
-    vk::RayTracingPipelineCreateInfoKHR m_createInfo{};
+    std::vector<vk::PipelineShaderStageCreateInfo> m_shaderStages;
+    std::vector<vk::RayTracingShaderGroupCreateInfoKHR> m_shaderGroups;
 
     bool build() override;
 
   public:
     explicit RaytracePipeline(const Device *device,
                               const RenderPass *renderPass,
-                              const Shader *shader,
-                              Properties properties);
+                              const Shader *shader, Properties properties);
     ~RaytracePipeline() override;
 
     RaytracePipeline(const RaytracePipeline &pipeline) = delete;
     RaytracePipeline &operator=(const RaytracePipeline &pipeline) = delete;
 
-    [[nodiscard]] inline const vk::RayTracingPipelineCreateInfoKHR &
-    getCreateInfo() const
+    [[nodiscard]] inline const std::vector<vk::PipelineShaderStageCreateInfo>
+        &getShaderStagesInfo() const
     {
-        return m_createInfo;
+        return m_shaderStages;
+    }
+
+    [[nodiscard]] inline const std::vector<
+        vk::RayTracingShaderGroupCreateInfoKHR>
+        &getShaderGroupsInfo() const
+    {
+        return m_shaderGroups;
     }
 };
 } // namespace kirana::viewport::vulkan

@@ -31,7 +31,8 @@ bool kirana::viewport::vulkan::AccelerationStructure::
         ASData *accelerationStructure) const
 {
     if (m_allocator->allocateBuffer(
-            &accelerationStructure->buffer, sizeInfo.accelerationStructureSize,
+            &(accelerationStructure->buffer),
+            sizeInfo.accelerationStructureSize,
             vk::BufferUsageFlagBits::eAccelerationStructureStorageKHR |
                 vk::BufferUsageFlagBits::eShaderDeviceAddress,
             Allocator::AllocationType::GPU_READ_ONLY))
@@ -39,7 +40,7 @@ bool kirana::viewport::vulkan::AccelerationStructure::
         accelerationStructure->as =
             m_device->current.createAccelerationStructureKHR(
                 vk::AccelerationStructureCreateInfoKHR(
-                    {}, *accelerationStructure->buffer.buffer, 0,
+                    {}, *(accelerationStructure->buffer.buffer), 0,
                     sizeInfo.accelerationStructureSize, type));
         return true;
     }
@@ -60,12 +61,12 @@ void kirana::viewport::vulkan::AccelerationStructure::createBLAS(
     for (const auto &m : sceneData.getSceneMeshes())
     {
         const vk::AccelerationStructureGeometryTrianglesDataKHR triangles{
-            vk::Format::eR32G32B32Sfloat,
+            vk::Format::eR32G32B32A32Sfloat,
             sceneData.getVertexBufferAddress(m.vertexBufferIndex),
             sizeof(scene::Vertex),
             static_cast<uint32_t>(m.vertexCount),
             vk::IndexType::eUint32,
-            sceneData.getVertexBufferAddress(m.indexBufferIndex),
+            sceneData.getIndexBufferAddress(m.indexBufferIndex),
             {},
         };
 
@@ -79,7 +80,7 @@ void kirana::viewport::vulkan::AccelerationStructure::createBLAS(
             static_cast<uint32_t>(m.vertexOffset), 0};
 
         // TODO: Add multiple geometries in a single BLAS.
-        BLASData blasData;
+        BLASData blasData{};
         blasData.geometries.emplace_back(geo);
         blasData.offsets.emplace_back(offset);
 
@@ -163,9 +164,6 @@ bool kirana::viewport::vulkan::AccelerationStructure::buildBLAS(
 
     m_device->setDebugObjectName(*scratchBuffer.buffer, "BLAS_ScratchBuffer");
 
-    const vk::DeviceAddress scratchBufferAddress =
-        m_device->getBufferAddress(*scratchBuffer.buffer);
-
     // Query the compacted size of Acceleration Structure.
     vk::QueryPool compactionQueryPool = nullptr;
     if (numCompactions > 0 && numCompactions == m_BLASData.size())
@@ -210,7 +208,7 @@ bool kirana::viewport::vulkan::AccelerationStructure::buildBLAS(
                 m_BLASData[i].buildInfo.dstAccelerationStructure =
                     m_BLASData[i].accelStruct.as;
                 m_BLASData[i].buildInfo.scratchData = m_device->alignSize(
-                    static_cast<vk::DeviceSize>(scratchBufferAddress),
+                    static_cast<vk::DeviceSize>(scratchBuffer.address),
                     static_cast<vk::DeviceSize>(
                         m_device->accelStructProperties
                             .minAccelerationStructureScratchOffsetAlignment));
@@ -238,8 +236,8 @@ bool kirana::viewport::vulkan::AccelerationStructure::buildBLAS(
 
     if (commandBuffersBuilt)
     {
-        m_device->graphicsSubmit(commandBuffers->current);
-        m_device->graphicsWait();
+        m_device->transferSubmit(commandBuffers->current);
+        m_device->transferWait();
 
         if (compactionQueryPool)
         {
@@ -296,8 +294,8 @@ bool kirana::viewport::vulkan::AccelerationStructure::buildTLAS(
             vk::BufferUsageFlagBits::eShaderDeviceAddress |
                 vk::BufferUsageFlagBits::
                     eAccelerationStructureBuildInputReadOnlyKHR,
-            Allocator::AllocationType::GPU_WRITEABLE, m_TLASInstanceData.data(), 0,
-            bufferSize))
+            Allocator::AllocationType::GPU_WRITEABLE, m_TLASInstanceData.data(),
+            0, bufferSize))
     {
         Logger::get().log(constants::LOG_CHANNEL_VULKAN, LogSeverity::info,
                           "Failed to create buffer for Top-Level Acceleration "
@@ -352,7 +350,7 @@ bool kirana::viewport::vulkan::AccelerationStructure::buildTLAS(
                 update ? sizeInfo.updateScratchSize : sizeInfo.buildScratchSize,
                 vk::BufferUsageFlagBits::eStorageBuffer |
                     vk::BufferUsageFlagBits::eShaderDeviceAddress,
-                Allocator::AllocationType::GPU_WRITEABLE))
+                Allocator::AllocationType::WRITEABLE))
         {
 
             Logger::get().log(constants::LOG_CHANNEL_VULKAN, LogSeverity::info,
@@ -381,9 +379,9 @@ bool kirana::viewport::vulkan::AccelerationStructure::buildTLAS(
                                                    compactionPool, 0, false);
         commandBuffers->end();
 
-        m_device->graphicsSubmit(commandBuffers->current);
-        m_device->graphicsWait();
 
+        m_device->transferSubmit(commandBuffers->current);
+        m_device->transferWait();
         m_allocator->free(scratchBuffer);
     }
 
@@ -399,8 +397,9 @@ kirana::viewport::vulkan::AccelerationStructure::AccelerationStructure(
     const SceneData &sceneData)
     : m_isInitialized{false}, m_device{device}, m_allocator{allocator},
       m_commandPool{
-          new CommandPool(m_device, m_device->queueFamilyIndices.graphics)}
+          new CommandPool(m_device, m_device->queueFamilyIndices.transfer)}
 {
+    m_commandFence = m_device->current.createFence(vk::FenceCreateInfo{});
     createBLAS(sceneData);
     m_isInitialized = buildBLAS();
     if (m_isInitialized)
@@ -419,12 +418,6 @@ kirana::viewport::vulkan::AccelerationStructure::AccelerationStructure(
 
 kirana::viewport::vulkan::AccelerationStructure::~AccelerationStructure()
 {
-    if (m_commandPool)
-    {
-        delete m_commandPool;
-        m_commandPool = nullptr;
-    }
-
     if (m_TLASData.buffer.buffer)
     {
         m_allocator->free(m_TLASData.buffer);
@@ -435,6 +428,17 @@ kirana::viewport::vulkan::AccelerationStructure::~AccelerationStructure()
     {
         m_allocator->free(b.accelStruct.buffer);
         m_device->current.destroyAccelerationStructureKHR(b.accelStruct.as);
+    }
+
+    if (m_commandFence)
+    {
+        m_device->current.destroyFence(m_commandFence);
+    }
+
+    if (m_commandPool)
+    {
+        delete m_commandPool;
+        m_commandPool = nullptr;
     }
     Logger::get().log(constants::LOG_CHANNEL_VULKAN, LogSeverity::trace,
                       "Raytrace Acceleration Structure destroyed");

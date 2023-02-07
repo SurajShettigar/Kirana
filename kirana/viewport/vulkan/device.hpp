@@ -17,6 +17,8 @@ class Device
     QueueFamilyIndices m_queueFamilyIndices;
     vk::Queue m_graphicsQueue;
     vk::Queue m_presentationQueue;
+    vk::Queue m_transferQueue;
+    vk::Queue m_computeQueue;
     vk::PhysicalDeviceAccelerationStructurePropertiesKHR
         m_accelStructProperties;
     vk::PhysicalDeviceRayTracingPipelinePropertiesKHR m_raytracingProperties;
@@ -86,11 +88,11 @@ class Device
                         const vk::CommandBuffer &commandBuffer,
                         const vk::Semaphore &signalSemaphore,
                         const vk::Fence &fence) const;
-    void graphicsSubmit(const vk::CommandBuffer &commandBuffer,
-                        const vk::Fence &fence) const;
-    void graphicsSubmit(
+    void transferSubmit(
         const std::vector<vk::CommandBuffer> &commandBuffers) const;
-    void graphicsWait() const;
+    void transferSubmit(const std::vector<vk::CommandBuffer> &commandBuffers,
+                        const vk::Fence &fence) const;
+    void transferWait() const;
     [[nodiscard]] vk::Result present(const vk::Semaphore &semaphore,
                                      const vk::SwapchainKHR &swapchain,
                                      uint32_t imageIndex) const;

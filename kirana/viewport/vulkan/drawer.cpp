@@ -155,18 +155,17 @@ void kirana::viewport::vulkan::Drawer::rasterizeMeshes(const FrameData &frame,
                                               m.getGlobalInstanceIndex(i));
 
             // TODO: Find better way to render outline
-            //            if (*m.instances[0].selected)
-            //            {
-            //                const auto outline =
-            //                m_scene->getOutlineMaterial();
-            //                frame.commandBuffers->bindPipeline(outline->current);
-            //                lastPipeline = outline->name;
-            //
-            //                frame.commandBuffers->drawIndexed(m.indexCount, 1,
-            //                m.firstIndex,
-            //                                                  m.vertexOffset,
-            //                                                  m.getGlobalInstanceIndex(i));
-            //            }
+
+            if (*m.instances[0].selected)
+            {
+                const auto outline = m_scene->getOutlineMaterial();
+                frame.commandBuffers->bindPipeline(outline->current);
+                lastPipeline = outline->name;
+
+                frame.commandBuffers->drawIndexed(m.indexCount, 1, m.firstIndex,
+                                                  m.vertexOffset,
+                                                  m.getGlobalInstanceIndex(i));
+            }
         }
     }
 }
@@ -240,8 +239,7 @@ void kirana::viewport::vulkan::Drawer::raytrace(const FrameData &frame,
     frame.commandBuffers->bindPipeline(rPipeline,
                                        vk::PipelineBindPoint::eRayTracingKHR);
     frame.commandBuffers->bindDescriptorSets(
-        rPipelineLayout, descSets, {0, 0},
-        vk::PipelineBindPoint::eRayTracingKHR);
+        rPipelineLayout, descSets, {}, vk::PipelineBindPoint::eRayTracingKHR);
 
     frame.commandBuffers->pushConstants<PushConstantRaytrace>(rPipelineLayout,
                                                               pushConstantData);
@@ -263,6 +261,13 @@ void kirana::viewport::vulkan::Drawer::draw()
     if (!m_scene || !m_scene->isInitialized)
         return;
 
+    const vulkan::ShadingPipeline &currShadingPipeline =
+        m_scene->getCurrentShadingPipeline();
+
+    if (currShadingPipeline == ShadingPipeline::RAYTRACE &&
+        !m_scene->isRaytracingInitialized)
+        return;
+
     const FrameData &frame = getCurrentFrame();
     const uint32_t frameIndex = getCurrentFrameIndex();
 
@@ -282,8 +287,6 @@ void kirana::viewport::vulkan::Drawer::draw()
     m_device->current.resetFences(frame.renderFence);
 
     const uint32_t imgIndex = imgValue.value;
-    const vulkan::ShadingPipeline &currShadingPipeline =
-        m_scene->getCurrentShadingPipeline();
     if (currShadingPipeline == ShadingPipeline::RAYTRACE)
     {
         raytrace(frame, imgIndex);

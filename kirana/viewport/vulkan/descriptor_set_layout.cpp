@@ -102,17 +102,6 @@ kirana::viewport::vulkan::DescriptorBindingInfo kirana::viewport::vulkan::
                    : DescriptorBindingInfo{DescriptorLayoutType::GLOBAL, 3,
                                            vk::DescriptorType::eStorageImage,
                                            vk::ShaderStageFlagBits::eRaygenKHR};
-    case DescriptorBindingDataType::MATERIAL_DATA:
-        return shadingPipeline == ShadingPipeline::RASTER
-                   ? DescriptorBindingInfo{DescriptorLayoutType::MATERIAL, 0,
-                                           vk::DescriptorType::
-                                               eStorageBufferDynamic,
-                                           vk::ShaderStageFlagBits::eFragment}
-                   : DescriptorBindingInfo{
-                         DescriptorLayoutType::MATERIAL, 0,
-                         vk::DescriptorType::eStorageBuffer,
-                         vk::ShaderStageFlagBits::eClosestHitKHR |
-                             vk::ShaderStageFlagBits::eAnyHitKHR};
     case DescriptorBindingDataType::OBJECT_DATA:
         return shadingPipeline == ShadingPipeline::RASTER
                    ? DescriptorBindingInfo{DescriptorLayoutType::OBJECT, 0,
@@ -124,6 +113,8 @@ kirana::viewport::vulkan::DescriptorBindingInfo kirana::viewport::vulkan::
                          vk::DescriptorType::eStorageBuffer,
                          vk::ShaderStageFlagBits::eClosestHitKHR |
                              vk::ShaderStageFlagBits::eAnyHitKHR};
+    default:
+        return DescriptorBindingInfo{};
     }
 }
 
@@ -151,17 +142,13 @@ bool kirana::viewport::vulkan::DescriptorSetLayout::getDefaultDescriptorLayout(
         layout = new DescriptorSetLayout(device, globalDescriptors);
         return layout->m_isInitialized;
     }
-    case DescriptorLayoutType::MATERIAL: {
-        layout = new DescriptorSetLayout(
-            device, {getBindingInfoForData(
-                        DescriptorBindingDataType::MATERIAL_DATA, pipeline)});
-        return layout->m_isInitialized;
-    }
     case DescriptorLayoutType::OBJECT: {
         layout = new DescriptorSetLayout(
             device, {getBindingInfoForData(
                         DescriptorBindingDataType::OBJECT_DATA, pipeline)});
         return layout->m_isInitialized;
     }
+    default:
+        return false;
     }
 }

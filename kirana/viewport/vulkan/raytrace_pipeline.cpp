@@ -20,14 +20,14 @@ bool kirana::viewport::vulkan::RaytracePipeline::build()
         return false;
     }
 
-    std::vector<vk::PipelineShaderStageCreateInfo> shaderStages;
-    std::vector<vk::RayTracingShaderGroupCreateInfoKHR> shaderGroups;
+    m_shaderStages.clear();
+    m_shaderGroups.clear();
     uint32_t stageIndex = 0;
     for (const auto &stage : m_shader->getAllModules())
     {
         for (const auto &m : stage.second)
         {
-            shaderStages.emplace_back(vk::PipelineShaderStageCreateInfo(
+            m_shaderStages.emplace_back(vk::PipelineShaderStageCreateInfo(
                 {}, stage.first, m, constants::VULKAN_SHADER_MAIN_FUNC_NAME));
 
             switch (stage.first)
@@ -35,28 +35,28 @@ bool kirana::viewport::vulkan::RaytracePipeline::build()
             case vk::ShaderStageFlagBits::eRaygenKHR:
             case vk::ShaderStageFlagBits::eMissKHR:
             case vk::ShaderStageFlagBits::eCallableKHR: {
-                shaderGroups.emplace_back(
+                m_shaderGroups.emplace_back(
                     vk::RayTracingShaderGroupTypeKHR::eGeneral, stageIndex++,
                     VK_SHADER_UNUSED_KHR, VK_SHADER_UNUSED_KHR,
                     VK_SHADER_UNUSED_KHR);
             }
             break;
             case vk::ShaderStageFlagBits::eClosestHitKHR: {
-                shaderGroups.emplace_back(
+                m_shaderGroups.emplace_back(
                     vk::RayTracingShaderGroupTypeKHR::eTrianglesHitGroup,
                     VK_SHADER_UNUSED_KHR, stageIndex++, VK_SHADER_UNUSED_KHR,
                     VK_SHADER_UNUSED_KHR);
             }
             break;
             case vk::ShaderStageFlagBits::eAnyHitKHR: {
-                shaderGroups.emplace_back(
+                m_shaderGroups.emplace_back(
                     vk::RayTracingShaderGroupTypeKHR::eTrianglesHitGroup,
                     VK_SHADER_UNUSED_KHR, VK_SHADER_UNUSED_KHR, stageIndex++,
                     VK_SHADER_UNUSED_KHR);
             }
             break;
             case vk::ShaderStageFlagBits::eIntersectionKHR: {
-                shaderGroups.emplace_back(
+                m_shaderGroups.emplace_back(
                     vk::RayTracingShaderGroupTypeKHR::eProceduralHitGroup,
                     VK_SHADER_UNUSED_KHR, VK_SHADER_UNUSED_KHR,
                     VK_SHADER_UNUSED_KHR, stageIndex++);
@@ -68,15 +68,15 @@ bool kirana::viewport::vulkan::RaytracePipeline::build()
         }
     }
 
-    m_createInfo =
+    vk::RayTracingPipelineCreateInfoKHR createInfo =
         vk::RayTracingPipelineCreateInfoKHR{{},
-                                            shaderStages,
-                                            shaderGroups,
+                                            m_shaderStages,
+                                            m_shaderGroups,
                                             m_properties.maxRecursionDepth};
-    m_createInfo.layout = m_shader->getPipelineLayout().current;
+    createInfo.layout = m_shader->getPipelineLayout().current;
 
     auto result =
-        m_device->current.createRayTracingPipelineKHR({}, {}, m_createInfo);
+        m_device->current.createRayTracingPipelineKHR({}, {}, createInfo);
     if (result.result != vk::Result::eSuccess)
     {
         Logger::get().log(constants::LOG_CHANNEL_VULKAN, LogSeverity::error,
@@ -94,7 +94,7 @@ kirana::viewport::vulkan::RaytracePipeline::RaytracePipeline(
     const Device *const device, const RenderPass *const renderPass,
     const Shader *const shader, Properties properties)
     : Pipeline(device, renderPass, shader, vulkan::ShadingPipeline::RAYTRACE),
-      m_properties{std::move(properties)}
+      m_properties{properties}
 {
     m_isInitialized = build();
     if (m_isInitialized)

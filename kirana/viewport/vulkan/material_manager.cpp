@@ -62,6 +62,8 @@ vk::Format kirana::viewport::vulkan::MaterialManager::
             return vk::Format::eR32G32B32A32Sfloat;
         }
     }
+    else
+        return vk::Format::eR32G32B32A32Sfloat;
 }
 
 kirana::viewport::vulkan::MaterialManager::VertexInputDescription kirana::

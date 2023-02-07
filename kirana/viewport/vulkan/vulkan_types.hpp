@@ -46,6 +46,8 @@ struct QueueFamilyIndices
 {
     uint32_t graphics = std::numeric_limits<uint32_t>::max();
     uint32_t presentation = std::numeric_limits<uint32_t>::max();
+    uint32_t transfer = std::numeric_limits<uint32_t>::max();
+    uint32_t compute = std::numeric_limits<uint32_t>::max();
 
     inline bool isGraphicsSupported() const
     {
@@ -57,6 +59,16 @@ struct QueueFamilyIndices
         return presentation != std::numeric_limits<uint32_t>::max();
     }
 
+    inline bool isTransferSupported() const
+    {
+        return transfer != std::numeric_limits<uint32_t>::max();
+    }
+
+    inline bool isComputeSupported() const
+    {
+        return compute != std::numeric_limits<uint32_t>::max();
+    }
+
     inline bool isGraphicsAndPresentSame() const
     {
         return graphics == presentation;
@@ -65,10 +77,10 @@ struct QueueFamilyIndices
     inline std::set<uint32_t> getIndices() const
     {
         return std::set<uint32_t>(
-            {graphics,
-             presentation}); // Set is used so that each value is unique.
-                             // Graphics and presentation queue family can be
-                             // same, so this step is necessary.
+            {graphics, presentation, transfer,
+             compute}); // Set is used so that each value is unique.
+                        // Graphics and presentation queue family can be
+                        // same, so this step is necessary.
     }
 };
 
@@ -118,8 +130,7 @@ struct AllocateImage
 enum class DescriptorLayoutType
 {
     GLOBAL = 0,
-    MATERIAL = 1,
-    OBJECT = 2
+    OBJECT = 1
 };
 
 enum class DescriptorBindingDataType

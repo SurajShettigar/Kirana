@@ -53,7 +53,7 @@ kirana::viewport::vulkan::Allocator::Allocator(const Instance *instance,
         m_commandFence = m_device->current.createFence(
             vk::FenceCreateInfo(vk::FenceCreateFlagBits::eSignaled));
         m_commandPool =
-            new CommandPool(m_device, m_device->queueFamilyIndices.graphics);
+            new CommandPool(m_device, m_device->queueFamilyIndices.transfer);
         m_commandPool->allocateCommandBuffers(m_commandBuffers);
 
         displayMemoryInfo();
@@ -207,7 +207,7 @@ bool kirana::viewport::vulkan::Allocator::allocateImage(
             vk::ImageLayout::eUndefined, layout, *image->image,
             subresourceRange);
         m_commandBuffers->end();
-        m_device->graphicsSubmit(m_commandBuffers->current[0], m_commandFence);
+        m_device->transferSubmit(m_commandBuffers->current, m_commandFence);
         VK_HANDLE_RESULT(m_device->current.waitForFences(
                              m_commandFence, true,
                              constants::VULKAN_COPY_BUFFER_WAIT_TIMEOUT),
@@ -246,6 +246,7 @@ bool kirana::viewport::vulkan::Allocator::copyDataToBuffer(
                        reinterpret_cast<char *>(allocInfo.pMappedData) +
                        dataOffset),
                    data, dataSize);
+            return true;
         }
         else
         {
@@ -264,13 +265,15 @@ bool kirana::viewport::vulkan::Allocator::copyDataToBuffer(
             memcpy(stagingAllocInfo.pMappedData, data, dataSize);
             m_current->flushAllocation(stagingBufferData.second, 0,
                                        VK_WHOLE_SIZE);
-            bool result = copyBuffer(stagingBufferData.first, *buffer.buffer,
-                                     dataSize, 0, dataOffset);
+            const bool result =
+                copyBuffer(stagingBufferData.first, *buffer.buffer, dataSize, 0,
+                           dataOffset);
 
             m_current->destroyBuffer(stagingBufferData.first,
                                      stagingBufferData.second);
+
+            return result;
         }
-        return true;
     }
     catch (...)
     {
@@ -285,21 +288,17 @@ bool kirana::viewport::vulkan::Allocator::copyBuffer(
     vk::DeviceSize dstOffset) const
 {
     // TODO: Use pipeline barriers instead of fence.
-    VK_HANDLE_RESULT(
-        m_device->current.waitForFences(
-            m_commandFence, true, constants::VULKAN_COPY_BUFFER_WAIT_TIMEOUT),
-        "Failed to wait for copy fence")
     m_device->current.resetFences(m_commandFence);
     m_commandPool->reset();
     m_commandBuffers->begin();
     vk::BufferCopy region(srcOffset, dstOffset, size);
     m_commandBuffers->copyBuffer(stagingBuffer, destBuffer, {region});
     m_commandBuffers->end();
-    m_device->graphicsSubmit(m_commandBuffers->current[0], m_commandFence);
+    m_device->transferSubmit(m_commandBuffers->current, m_commandFence);
 
     VK_HANDLE_RESULT(
         m_device->current.waitForFences(
-            m_commandFence, true, constants::VULKAN_COPY_BUFFER_WAIT_TIMEOUT),
+            m_commandFence, false, constants::VULKAN_COPY_BUFFER_WAIT_TIMEOUT),
         "Failed to wait for copy fence")
     return true;
 }

@@ -86,7 +86,7 @@ void kirana::viewport::vulkan::SceneData::createWorldDataBuffer()
         m_worldDataBuffer.descInfo = vk::DescriptorBufferInfo(
             *m_worldDataBuffer.buffer, 0, sizeof(scene::WorldData));
 
-        m_device->setDebugObjectName(*m_cameraBuffer.buffer, "WorldBuffer");
+        m_device->setDebugObjectName(*m_worldDataBuffer.buffer, "WorldBuffer");
 
         const auto &bindingInfo = DescriptorSetLayout::getBindingInfoForData(
             DescriptorBindingDataType::WORLD, ShadingPipeline::RASTER);
@@ -333,11 +333,12 @@ kirana::viewport::vulkan::SceneData::SceneData(
     const DescriptorPool *const descriptorPool, const RenderPass *renderPass,
     RaytraceData *raytraceData, const scene::ViewportScene &scene,
     vulkan::ShadingPipeline pipeline, vulkan::ShadingType type)
-    : m_isInitialized{false}, m_device{device}, m_allocator{allocator},
-      m_descriptorPool{descriptorPool}, m_renderPass{renderPass},
-      m_raytraceData{raytraceData}, m_scene{scene}, m_raytracedFrameCount{0},
-      m_materialManager{
-          new MaterialManager(m_device, m_allocator, m_descriptorPool)}
+    : m_isInitialized{false},
+      m_isRaytracingInitialized{false}, m_device{device},
+      m_allocator{allocator}, m_descriptorPool{descriptorPool},
+      m_renderPass{renderPass}, m_raytraceData{raytraceData}, m_scene{scene},
+      m_raytracedFrameCount{0}, m_materialManager{new MaterialManager(
+                                    m_device, m_allocator, m_descriptorPool)}
 {
     m_isInitialized = PipelineLayout::getDefaultPipelineLayout(
         m_device, ShadingPipeline::RASTER, m_rasterPipelineLayout);
@@ -435,15 +436,22 @@ void kirana::viewport::vulkan::SceneData::setShadingPipeline(
     vulkan::ShadingPipeline pipeline)
 {
     m_currentShadingPipeline = pipeline;
-    if (m_currentShadingPipeline == ShadingPipeline::RAYTRACE &&
-        !m_raytraceData->isInitialized)
-        m_raytraceData->initialize(*this);
+    if (m_currentShadingPipeline == ShadingPipeline::RAYTRACE)
+        m_isRaytracingInitialized = m_raytraceData->initialize(*this);
 }
 
 void kirana::viewport::vulkan::SceneData::setShadingType(
     vulkan::ShadingType type)
 {
     m_currentShadingType = type;
+    const uint32_t matIndex = m_materialManager->getMaterialIndexFromName(
+        scene::Material::DEFAULT_MATERIAL_BASIC_SHADED.getName());
+    const Pipeline *pipeline = m_materialManager->getPipeline(
+        matIndex, vulkan::ShadingPipeline::RAYTRACE);
+    const ShaderBindingTable *sbt =
+        m_materialManager->getShaderBindingTable(matIndex);
+    m_raytraceData->setPipeline(
+        reinterpret_cast<const RaytracePipeline *>(pipeline), sbt);
 }
 
 const kirana::viewport::vulkan::Pipeline &kirana::viewport::vulkan::SceneData::

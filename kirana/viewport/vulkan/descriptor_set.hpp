@@ -13,6 +13,8 @@ class DescriptorSet
   private:
     vk::DescriptorSet m_current;
     const DescriptorSetLayout *m_layout = nullptr;
+    mutable std::vector<vk::WriteDescriptorSetAccelerationStructureKHR>
+        m_accelStructWrites;
     mutable std::vector<vk::WriteDescriptorSet> m_writes;
 
   public:
@@ -28,6 +30,7 @@ class DescriptorSet
         {
             m_current = descriptorSet.m_current;
             m_layout = descriptorSet.m_layout;
+            m_accelStructWrites = descriptorSet.m_accelStructWrites;
             m_writes = descriptorSet.m_writes;
         }
     }
@@ -37,6 +40,7 @@ class DescriptorSet
         {
             m_current = descriptorSet.m_current;
             m_layout = descriptorSet.m_layout;
+            m_accelStructWrites = descriptorSet.m_accelStructWrites;
             m_writes = descriptorSet.m_writes;
         }
         return *this;
@@ -63,6 +67,7 @@ class DescriptorSet
     inline void clearWrites() const
     {
         m_writes.clear();
+        m_accelStructWrites.clear();
     }
 
     bool bindBuffer(const DescriptorBindingInfo &bindPoint,

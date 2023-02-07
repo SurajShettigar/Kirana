@@ -126,11 +126,11 @@ class MaterialManager
     //                         getShaderNameForMaterial(materialIndex));
     //    }
 
-    [[nodiscard]] inline const ShaderBindingTable &getShaderBindingTable(
+    [[nodiscard]] inline const ShaderBindingTable *getShaderBindingTable(
         uint32_t materialIndex)
     {
         // TODO: Return default SBT if none exists
-        return *m_SBTs[m_materials[materialIndex].sbtIndex];
+        return m_SBTs[m_materials[materialIndex].sbtIndex];
     }
 };
 } // namespace kirana::viewport::vulkan

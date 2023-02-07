@@ -31,6 +31,7 @@ class SceneData
 {
   private:
     bool m_isInitialized = false;
+    bool m_isRaytracingInitialized = false;
     const Device *const m_device;
     const Allocator *const m_allocator;
     const DescriptorPool *const m_descriptorPool;
@@ -95,6 +96,7 @@ class SceneData
     SceneData(const SceneData &sceneData) = delete;
 
     const bool &isInitialized = m_isInitialized;
+    const bool &isRaytracingInitialized = m_isRaytracingInitialized;
 
     [[nodiscard]] inline const RaytraceData &getRaytraceData() const
     {

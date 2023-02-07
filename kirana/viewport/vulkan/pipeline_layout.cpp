@@ -71,9 +71,6 @@ bool kirana::viewport::vulkan::PipelineLayout::getDefaultPipelineLayout(
     std::vector<const DescriptorSetLayout *> descLayouts(2);
     DescriptorSetLayout::getDefaultDescriptorLayout(
         device, DescriptorLayoutType::GLOBAL, shadingPipeline, descLayouts[0]);
-    //    DescriptorSetLayout::getDefaultDescriptorLayout(
-    //        device, DescriptorLayoutType::MATERIAL, shadingPipeline,
-    //        descLayouts[1]);
     DescriptorSetLayout::getDefaultDescriptorLayout(
         device, DescriptorLayoutType::OBJECT, shadingPipeline, descLayouts[1]);
 

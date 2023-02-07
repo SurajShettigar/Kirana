@@ -19,6 +19,7 @@ bool kirana::viewport::vulkan::DescriptorSet::bindBuffer(
     }
     m_writes.emplace_back(m_current, bindPoint.binding, 0, 1, bindPoint.type,
                           nullptr, &buffer.descInfo);
+    return true;
 }
 
 bool kirana::viewport::vulkan::DescriptorSet::bindImage(
@@ -33,6 +34,7 @@ bool kirana::viewport::vulkan::DescriptorSet::bindImage(
     }
     m_writes.emplace_back(m_current, bindPoint.binding, 0, 1, bindPoint.type,
                           &image.getDescriptorImageInfo());
+    return true;
 }
 
 bool kirana::viewport::vulkan::DescriptorSet::bindAccelerationStructure(
@@ -46,8 +48,9 @@ bool kirana::viewport::vulkan::DescriptorSet::bindAccelerationStructure(
                           "given binding point");
         return false;
     }
-    vk::WriteDescriptorSetAccelerationStructureKHR accelStructWrite{
-        accelStruct.getAccelerationStructure()};
+    m_accelStructWrites.emplace_back(accelStruct.getAccelerationStructure());
     m_writes.emplace_back(m_current, bindPoint.binding, 0, 1, bindPoint.type,
-                          nullptr, nullptr, nullptr, &accelStructWrite);
+                          nullptr, nullptr, nullptr,
+                          &m_accelStructWrites.back());
+    return true;
 }

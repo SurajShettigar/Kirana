@@ -20,19 +20,20 @@ class ShaderBindingTable
         CALLABLE = 3,
         GROUP_TYPE_MAX = 4
     };
+
   private:
     struct Group
     {
-        GroupType type;
+        GroupType type = GroupType::RAY_GEN;
         std::vector<uint32_t>
             recordIndices; // Used to get handles from pipeline. Index value is
                            // determined by the stage index when the pipeline is
                            // created.
-        uint32_t recordCount;
-        uint32_t stride;
-        uint32_t size;
+        uint32_t recordCount = 0;
+        uint32_t stride = 0;
+        uint32_t size = 0;
         AllocatedBuffer buffer;
-        vk::DeviceAddress bufferAddress;
+        vk::DeviceAddress bufferAddress = 0;
 
         explicit operator std::string() const
         {
@@ -54,10 +55,13 @@ class ShaderBindingTable
         [[nodiscard]] inline vk::StridedDeviceAddressRegionKHR getRegion(
             uint32_t indexOffset = 0) const
         {
-            return vk::StridedDeviceAddressRegionKHR{
-                bufferAddress +
-                    static_cast<vk::DeviceAddress>(indexOffset * stride),
-                stride, type == GroupType::RAY_GEN ? stride : size};
+            if (bufferAddress == 0)
+                return vk::StridedDeviceAddressRegionKHR{};
+            else
+                return vk::StridedDeviceAddressRegionKHR{
+                    bufferAddress +
+                        static_cast<vk::DeviceAddress>(indexOffset * stride),
+                    stride, type == GroupType::RAY_GEN ? stride : size};
         }
     };
 
