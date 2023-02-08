@@ -133,7 +133,7 @@ const kirana::scene::Material
         MaterialProperties{
             RasterPipelineData{CullMode::FRONT,
                                SurfaceType::OPAQUE,
-                               false,
+                               true,
                                true,
                                CompareOperation::LESS_OR_EQUAL,
                                {true, CompareOperation::NOT_EQUAL,
@@ -156,7 +156,13 @@ const kirana::scene::Material
 const kirana::scene::Material
     kirana::scene::Material::DEFAULT_MATERIAL_BASIC_SHADED{
         constants::VULKAN_SHADER_BASIC_SHADED_NAME, "",
-        MaterialProperties{RasterPipelineData{}, RaytracePipelineData{},
+        MaterialProperties{RasterPipelineData{CullMode::BACK,
+                                              SurfaceType::OPAQUE,
+                                              true,
+                                              true,
+                                              CompareOperation::LESS_OR_EQUAL,
+                                              {true}},
+                           RaytracePipelineData{},
                            std::make_unique<BasicShadedMaterialData>(
                                DEFAULT_BASIC_SHADED_MATERIAL_DATA)}};
 
@@ -164,14 +170,24 @@ const kirana::scene::Material
     kirana::scene::Material::DEFAULT_MATERIAL_WIREFRAME{
         getMaterialNameFromShaderName(constants::VULKAN_SHADER_WIREFRAME_NAME),
         constants::VULKAN_SHADER_WIREFRAME_NAME,
-        MaterialProperties{
-            RasterPipelineData{CullMode::BACK, SurfaceType::WIREFRAME},
-            RaytracePipelineData{},
-            std::make_unique<WireframeMaterialData>(
-                DEFAULT_WIREFRAME_MATERIAL_DATA)}};
+        MaterialProperties{RasterPipelineData{CullMode::BACK,
+                                              SurfaceType::WIREFRAME,
+                                              true,
+                                              true,
+                                              CompareOperation::LESS_OR_EQUAL,
+                                              {true}},
+                           RaytracePipelineData{},
+                           std::make_unique<WireframeMaterialData>(
+                               DEFAULT_WIREFRAME_MATERIAL_DATA)}};
 
 const kirana::scene::Material kirana::scene::Material::DEFAULT_MATERIAL_SHADED{
     constants::VULKAN_SHADER_PRINCIPLED_NAME, "",
-    MaterialProperties{RasterPipelineData{}, RaytracePipelineData{},
+    MaterialProperties{RasterPipelineData{CullMode::BACK,
+                                          SurfaceType::OPAQUE,
+                                          true,
+                                          true,
+                                          CompareOperation::LESS_OR_EQUAL,
+                                          {true}},
+                       RaytracePipelineData{},
                        std::make_unique<PrincipledMaterialData>(
                            DEFAULT_PRINCIPLED_MATERIAL_DATA)}};

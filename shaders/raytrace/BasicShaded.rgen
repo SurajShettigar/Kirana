@@ -70,7 +70,7 @@ void main()
     finalColor.rgb = finalColor.rbg / globalConstants.g.antiAliasSamples;
 
     // Accumulate color
-    if (globalConstants.g.frameIndex > 0)
+    if (globalConstants.g.frameIndex >= 0)
     {
         const float t = 1.0f / (globalConstants.g.frameIndex + 1);
         const vec3 oldColor = imageLoad(image, ivec2(gl_LaunchIDEXT.xy)).xyz;

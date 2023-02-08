@@ -150,10 +150,8 @@ void kirana::viewport::vulkan::RaytraceData::setPipeline(
     m_currentSBT = sbt;
 }
 
-void kirana::viewport::vulkan::RaytraceData::rebuildRenderTarget(
-    const Swapchain *newSwapchain)
+void kirana::viewport::vulkan::RaytraceData::rebuildRenderTarget()
 {
-    m_swapchain = newSwapchain;
     if (m_renderTarget)
     {
         delete m_renderTarget;

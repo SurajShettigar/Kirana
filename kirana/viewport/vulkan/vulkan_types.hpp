@@ -235,7 +235,7 @@ struct PushConstantRaytrace
 {
     uint32_t frameIndex;
     uint32_t maxBounces;
-    uint32_t maxSamples;
+    uint32_t aaMultiplier;
 };
 
 static const vk::ShaderStageFlags PUSH_CONSTANT_RASTER_SHADER_STAGES =

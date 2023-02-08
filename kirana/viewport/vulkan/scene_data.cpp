@@ -26,6 +26,7 @@ void kirana::viewport::vulkan::SceneData::onWorldChanged()
                                       &m_scene.getWorldData(), paddedSize * i,
                                       sizeof(scene::WorldData));
     }
+    m_onSceneDataChange();
 }
 
 void kirana::viewport::vulkan::SceneData::onCameraChanged()
@@ -39,6 +40,7 @@ void kirana::viewport::vulkan::SceneData::onCameraChanged()
                                       paddedSize * i,
                                       sizeof(scene::CameraData));
     }
+    m_onSceneDataChange();
 }
 
 void kirana::viewport::vulkan::SceneData::onSceneLoaded(bool result)
@@ -49,6 +51,7 @@ void kirana::viewport::vulkan::SceneData::onSceneLoaded(bool result)
         createMeshes(false);
         createObjectBuffer();
     }
+    m_onSceneDataChange();
 }
 
 
@@ -70,6 +73,7 @@ void kirana::viewport::vulkan::SceneData::onObjectChanged()
     }
     m_allocator->copyDataToBuffer(m_objectDataBuffer, objData.data(), 0,
                                   sizeof(vulkan::ObjectData) * objData.size());
+    m_onSceneDataChange();
 }
 
 void kirana::viewport::vulkan::SceneData::createWorldDataBuffer()
@@ -337,8 +341,8 @@ kirana::viewport::vulkan::SceneData::SceneData(
       m_isRaytracingInitialized{false}, m_device{device},
       m_allocator{allocator}, m_descriptorPool{descriptorPool},
       m_renderPass{renderPass}, m_raytraceData{raytraceData}, m_scene{scene},
-      m_raytracedFrameCount{0}, m_materialManager{new MaterialManager(
-                                    m_device, m_allocator, m_descriptorPool)}
+      m_materialManager{
+          new MaterialManager(m_device, m_allocator, m_descriptorPool)}
 {
     m_isInitialized = PipelineLayout::getDefaultPipelineLayout(
         m_device, ShadingPipeline::RASTER, m_rasterPipelineLayout);
@@ -428,6 +432,9 @@ kirana::viewport::vulkan::SceneData::~SceneData()
         delete m_materialManager;
         m_materialManager = nullptr;
     }
+
+    m_onSceneDataChange.removeAllListeners();
+
     Logger::get().log(constants::LOG_CHANNEL_VULKAN, LogSeverity::trace,
                       "Scene data destroyed");
 }
@@ -436,8 +443,10 @@ void kirana::viewport::vulkan::SceneData::setShadingPipeline(
     vulkan::ShadingPipeline pipeline)
 {
     m_currentShadingPipeline = pipeline;
-    if (m_currentShadingPipeline == ShadingPipeline::RAYTRACE)
+    if (m_currentShadingPipeline == ShadingPipeline::RAYTRACE &&
+        !m_isRaytracingInitialized)
         m_isRaytracingInitialized = m_raytraceData->initialize(*this);
+    m_onSceneDataChange();
 }
 
 void kirana::viewport::vulkan::SceneData::setShadingType(
@@ -452,6 +461,7 @@ void kirana::viewport::vulkan::SceneData::setShadingType(
         m_materialManager->getShaderBindingTable(matIndex);
     m_raytraceData->setPipeline(
         reinterpret_cast<const RaytracePipeline *>(pipeline), sbt);
+    m_onSceneDataChange();
 }
 
 const kirana::viewport::vulkan::Pipeline &kirana::viewport::vulkan::SceneData::
@@ -534,5 +544,7 @@ kirana::viewport::vulkan::PushConstant<
 kirana::viewport::vulkan::SceneData::getPushConstantRaytraceData() const
 {
     return PushConstant<PushConstantRaytrace>(
-        {}, vulkan::PUSH_CONSTANT_RAYTRACE_SHADER_STAGES);
+        {0, constants::VULKAN_RAYTRACING_MAX_BOUNCES,
+         constants::VULKAN_RAYTRACING_AA_MULTIPLIER},
+        vulkan::PUSH_CONSTANT_RAYTRACE_SHADER_STAGES);
 }

@@ -7,8 +7,6 @@
 namespace kirana::viewport::vulkan
 {
 class Device;
-class Allocator;
-class DescriptorPool;
 class Swapchain;
 class RenderPass;
 class SceneData;
@@ -19,13 +17,12 @@ class Drawer
     bool m_isInitialized = false;
     uint64_t m_currentFrameNumber = 0;
 
-    std::vector<FrameData> m_frames;
-
     const Device *const m_device;
-    const Allocator *const m_allocator;
-    const DescriptorPool *const m_descriptorPool;
     const Swapchain *m_swapchain;
     const RenderPass *m_renderPass;
+
+    std::vector<FrameData> m_frames;
+    uint32_t m_onSceneDataChangeListener;
 
     const SceneData *const m_scene;
 
@@ -38,8 +35,7 @@ class Drawer
     void raytrace(const FrameData &frame, uint32_t swapchainImgIndex);
 
   public:
-    explicit Drawer(const Device *device, const Allocator *allocator,
-                    const DescriptorPool *descriptorPool,
+    explicit Drawer(const Device *device,
                     const Swapchain *swapchain, const RenderPass *renderPass,
                     const SceneData *scene);
     ~Drawer();
@@ -51,8 +47,6 @@ class Drawer
     /// The Vulkan draw calls and synchronization between them are executed
     /// here.
     void draw();
-
-    void reinitialize(const Swapchain *swapchain, const RenderPass *renderPass);
 };
 } // namespace kirana::viewport::vulkan
 

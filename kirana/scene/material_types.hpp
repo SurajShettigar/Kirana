@@ -144,7 +144,7 @@ enum class StencilOperation
 
 struct StencilProperties
 {
-    bool enableTest = true;
+    bool enableTest = false;
     CompareOperation compareOp = CompareOperation::ALWAYS;
     StencilOperation failOp = StencilOperation::REPLACE;
     StencilOperation depthFailOp = StencilOperation::REPLACE;

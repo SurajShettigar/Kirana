@@ -57,7 +57,7 @@ class RaytraceData
     void setPipeline(const RaytracePipeline *pipeline,
                      const ShaderBindingTable *sbt);
 
-    void rebuildRenderTarget(const Swapchain *newSwapchain);
+    void rebuildRenderTarget();
 
     [[nodiscard]] inline const RaytracePipeline &getCurrentPipeline() const
     {

@@ -3,10 +3,6 @@
 #include "command_pool.hpp"
 #include "command_buffers.hpp"
 #include "device.hpp"
-#include <vk_mem_alloc.hpp>
-#include "allocator.hpp"
-#include "descriptor_pool.hpp"
-#include "descriptor_set_layout.hpp"
 #include "descriptor_set.hpp"
 #include "swapchain.hpp"
 #include "renderpass.hpp"
@@ -35,12 +31,10 @@ uint32_t kirana::viewport::vulkan::Drawer::getCurrentFrameIndex() const
 }
 
 kirana::viewport::vulkan::Drawer::Drawer(
-    const Device *const device, const Allocator *const allocator,
-    const DescriptorPool *const descriptorPool,
+    const Device *const device,
     const Swapchain *const swapchain, const RenderPass *const renderPass,
     const SceneData *const scene)
     : m_isInitialized{false}, m_currentFrameNumber{0}, m_device{device},
-      m_allocator{allocator}, m_descriptorPool{descriptorPool},
       m_swapchain{swapchain}, m_renderPass{renderPass}, m_scene{scene}
 {
     m_frames.resize(utils::constants::VULKAN_FRAME_OVERLAP_COUNT);
@@ -69,10 +63,13 @@ kirana::viewport::vulkan::Drawer::Drawer(
             handleVulkanException();
         }
     }
+    m_onSceneDataChangeListener = m_scene->addOnSceneDataChangeListener(
+        [&]() { m_currentFrameNumber = 0; });
 }
 
 kirana::viewport::vulkan::Drawer::~Drawer()
 {
+    m_scene->removeOnSceneDataChangeListener(m_onSceneDataChangeListener);
     if (m_device)
     {
         if (!m_frames.empty())
@@ -187,7 +184,7 @@ void kirana::viewport::vulkan::Drawer::rasterize(const FrameData &frame,
     clearColor.setColor(vk::ClearColorValue(color));
 
     vk::ClearValue clearDepth;
-    clearDepth.setDepthStencil(vk::ClearDepthStencilValue(1.0f, 0));
+    clearDepth.setDepthStencil(vk::ClearDepthStencilValue(1.0f, 0.0));
 
     frame.commandBuffers->reset();
     frame.commandBuffers->begin();
@@ -229,7 +226,7 @@ void kirana::viewport::vulkan::Drawer::raytrace(const FrameData &frame,
     std::vector<vk::DescriptorSet> descSets(rDescSets.size());
     for (int i = 0; i < rDescSets.size(); i++)
         descSets[i] = rDescSets[i].current;
-    const auto &pushConstantData = m_scene->getPushConstantRaytraceData();
+    auto pushConstantData = m_scene->getPushConstantRaytraceData();
     const auto &sbt = m_scene->getRaytraceData().getCurrentSBT();
     const auto &renderTarget = m_scene->getRaytraceData().getRenderTarget();
 
@@ -241,6 +238,9 @@ void kirana::viewport::vulkan::Drawer::raytrace(const FrameData &frame,
     frame.commandBuffers->bindDescriptorSets(
         rPipelineLayout, descSets, {}, vk::PipelineBindPoint::eRayTracingKHR);
 
+    auto pcData = pushConstantData.get();
+    pcData.frameIndex = m_currentFrameNumber;
+    pushConstantData.set(pcData);
     frame.commandBuffers->pushConstants<PushConstantRaytrace>(rPipelineLayout,
                                                               pushConstantData);
 
@@ -264,12 +264,20 @@ void kirana::viewport::vulkan::Drawer::draw()
     const vulkan::ShadingPipeline &currShadingPipeline =
         m_scene->getCurrentShadingPipeline();
 
-    if (currShadingPipeline == ShadingPipeline::RAYTRACE &&
-        !m_scene->isRaytracingInitialized)
-        return;
+    if (currShadingPipeline == ShadingPipeline::RAYTRACE)
+    {
+        if (!m_scene->isRaytracingInitialized ||
+            m_currentFrameNumber > constants::VULKAN_RAYTRACING_MAX_SAMPLES)
+            return;
+    }
+    else if (currShadingPipeline == ShadingPipeline::RASTER)
+    {
+        if (constants::VULKAN_MAX_IDLE_FRAME_COUNT > 0 &&
+            m_currentFrameNumber > constants::VULKAN_MAX_IDLE_FRAME_COUNT)
+            return;
+    }
 
     const FrameData &frame = getCurrentFrame();
-    const uint32_t frameIndex = getCurrentFrameIndex();
 
     VK_HANDLE_RESULT(
         m_device->current.waitForFences(frame.renderFence, true,

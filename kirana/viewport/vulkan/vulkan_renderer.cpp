@@ -55,8 +55,8 @@ void kirana::viewport::vulkan::VulkanRenderer::init(
     }
     if (m_descriptorPool && m_descriptorPool->isInitialized)
     {
-        m_drawer = new Drawer(m_device, m_allocator, m_descriptorPool,
-                              m_swapchain, m_renderpass, m_currentScene);
+        m_drawer =
+            new Drawer(m_device, m_swapchain, m_renderpass, m_currentScene);
     }
     m_isInitialized = m_drawer->isInitialized;
     m_currentFrame = 0;
@@ -161,8 +161,11 @@ void kirana::viewport::vulkan::VulkanRenderer::rebuildSwapchain()
     if (m_surface && m_surface->isInitialized)
         m_swapchain->initialize();
     if (m_swapchain && m_swapchain->isInitialized)
+    {
         Texture::createDepthTexture(m_device, m_allocator, m_window->resolution,
                                     m_depthTexture);
+        m_raytraceData->rebuildRenderTarget();
+    }
     if (m_depthTexture && m_depthTexture->isInitialized)
         m_renderpass->initialize(m_depthTexture);
 

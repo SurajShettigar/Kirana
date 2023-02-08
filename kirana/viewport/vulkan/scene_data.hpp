@@ -30,6 +30,8 @@ template <typename> class PushConstant;
 class SceneData
 {
   private:
+    mutable utils::Event<> m_onSceneDataChange;
+
     bool m_isInitialized = false;
     bool m_isRaytracingInitialized = false;
     const Device *const m_device;
@@ -38,7 +40,6 @@ class SceneData
     const RenderPass *m_renderPass;
     RaytraceData *const m_raytraceData;
     const scene::ViewportScene &m_scene;
-    uint32_t m_raytracedFrameCount = 0;
 
     // TODO: Switch to per-shader pipeline layout using shader reflection.
     const PipelineLayout *m_rasterPipelineLayout = nullptr;
@@ -97,6 +98,17 @@ class SceneData
 
     const bool &isInitialized = m_isInitialized;
     const bool &isRaytracingInitialized = m_isRaytracingInitialized;
+
+    [[nodiscard]] inline uint32_t addOnSceneDataChangeListener(
+        const std::function<void()> &callback) const
+    {
+        return m_onSceneDataChange.addListener(callback);
+    }
+
+    inline void removeOnSceneDataChangeListener(uint32_t callbackId) const
+    {
+        m_onSceneDataChange.removeListener(callbackId);
+    }
 
     [[nodiscard]] inline const RaytraceData &getRaytraceData() const
     {

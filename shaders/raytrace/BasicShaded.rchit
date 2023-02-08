@@ -74,7 +74,7 @@ void main()
     getCoordinateFrame(worldNormal, tangent, binormal);
 
     const vec3 reflectedDirection = normalize(randomHemispherical(payload.seed, vec3[3](tangent, binormal, worldNormal)));
-    const vec3 matColor = vec3(1.0);
+    const vec3 matColor = vec3(0.85);
     vec3 brdf = matColor / PI;
 
     payload.rayOrigin = worldPos;
