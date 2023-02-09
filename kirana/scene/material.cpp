@@ -3,6 +3,7 @@
 #include <constants.h>
 #include <file_system.hpp>
 
+#include <random>
 #include <utility>
 
 namespace constants = kirana::utils::constants;
@@ -74,16 +75,25 @@ void kirana::scene::Material::setShaderData()
     }
 }
 
+static std::default_random_engine randomEngine;
+
 kirana::scene::Material::Material()
     : m_shaderName{constants::DEFAULT_SCENE_MATERIAL_SHADER_NAME},
       m_name{getMaterialNameFromShaderName(m_shaderName)},
       m_properties{MaterialProperties{
-          RasterPipelineData{CullMode::BACK, SurfaceType::WIREFRAME},
-          RaytracePipelineData{},
-          std::make_unique<WireframeMaterialData>(
-              DEFAULT_WIREFRAME_MATERIAL_DATA)}},
+          RasterPipelineData{CullMode::BACK,
+                             SurfaceType::OPAQUE,
+                             true,
+                             true,
+                             CompareOperation::LESS_OR_EQUAL,
+                             {true}},
+          RaytracePipelineData{}, DEFAULT_PRINCIPLED_MATERIAL_PARAMETERS}},
       m_isEditorMaterial{false}
 {
+    std::uniform_real_distribution<float> dist(0.0f, 1.0f);
+    m_properties.parameters["_BaseColor"].value = math::Vector4(
+        dist(randomEngine), dist(randomEngine), dist(randomEngine), 1.0f);
+
     setShaderData();
 }
 
@@ -139,9 +149,7 @@ const kirana::scene::Material
                                {true, CompareOperation::NOT_EQUAL,
                                 StencilOperation::KEEP, StencilOperation::KEEP,
                                 StencilOperation::REPLACE, 1}},
-            RaytracePipelineData{},
-            std::make_unique<OutlineMaterialData>(
-                DEFAULT_OUTLINE_MATERIAL_DATA)},
+            RaytracePipelineData{}, DEFAULT_OUTLINE_MATERIAL_PARAMETERS},
         true};
 
 const kirana::scene::Material
@@ -150,7 +158,8 @@ const kirana::scene::Material
         MaterialProperties{RasterPipelineData{CullMode::BACK,
                                               SurfaceType::TRANSPARENT, true,
                                               false},
-                           RaytracePipelineData{}, nullptr},
+                           RaytracePipelineData{},
+                           {}},
         true};
 
 const kirana::scene::Material
@@ -163,8 +172,7 @@ const kirana::scene::Material
                                               CompareOperation::LESS_OR_EQUAL,
                                               {true}},
                            RaytracePipelineData{},
-                           std::make_unique<BasicShadedMaterialData>(
-                               DEFAULT_BASIC_SHADED_MATERIAL_DATA)}};
+                           DEFAULT_BASIC_SHADED_MATERIAL_PARAMETERS}};
 
 const kirana::scene::Material
     kirana::scene::Material::DEFAULT_MATERIAL_WIREFRAME{
@@ -177,8 +185,7 @@ const kirana::scene::Material
                                               CompareOperation::LESS_OR_EQUAL,
                                               {true}},
                            RaytracePipelineData{},
-                           std::make_unique<WireframeMaterialData>(
-                               DEFAULT_WIREFRAME_MATERIAL_DATA)}};
+                           DEFAULT_WIREFRAME_MATERIAL_PARAMETERS}};
 
 const kirana::scene::Material kirana::scene::Material::DEFAULT_MATERIAL_SHADED{
     constants::VULKAN_SHADER_PRINCIPLED_NAME, "",
@@ -189,5 +196,4 @@ const kirana::scene::Material kirana::scene::Material::DEFAULT_MATERIAL_SHADED{
                                           CompareOperation::LESS_OR_EQUAL,
                                           {true}},
                        RaytracePipelineData{},
-                       std::make_unique<PrincipledMaterialData>(
-                           DEFAULT_PRINCIPLED_MATERIAL_DATA)}};
+                       DEFAULT_PRINCIPLED_MATERIAL_PARAMETERS}};

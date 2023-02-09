@@ -1,10 +1,11 @@
 #ifndef MATERIAL_TYPES_HPP
 #define MATERIAL_TYPES_HPP
 
+#include <array>
 #include <unordered_map>
+#include <any>
 #include <string>
 #include <utility>
-#include <iostream>
 #include "scene_types.hpp"
 
 namespace kirana::scene
@@ -218,61 +219,12 @@ struct RaytracePipelineData : MaterialDataBase
     VertexInfo vertexInfo = Vertex::getLargestVertexInfo();
     uint32_t maxRecursionDepth = 2;
 
-    explicit RaytracePipelineData(CullMode cull = CullMode::NONE,
-                         VertexInfo vertexInfo = Vertex::getLargestVertexInfo(),
-                         uint32_t maxRecursionDepth = 2)
+    explicit RaytracePipelineData(
+        CullMode cull = CullMode::NONE,
+        VertexInfo vertexInfo = Vertex::getLargestVertexInfo(),
+        uint32_t maxRecursionDepth = 2)
         : MaterialDataBase(), cull{cull}, vertexInfo{vertexInfo},
           maxRecursionDepth{maxRecursionDepth}
-    {
-    }
-
-    [[nodiscard]] inline size_t size() const override
-    {
-        return sizeof(*this);
-    }
-    inline void *data() override
-    {
-        return this;
-    }
-
-    inline const void *data() const override
-    {
-        return this;
-    };
-};
-
-struct BasicShadedMaterialData : MaterialDataBase
-{
-    math::Vector4 color = math::Vector4::ONE;
-
-    explicit BasicShadedMaterialData(const math::Vector4 &color = math::Vector4::ONE)
-        : color{color}
-    {
-    }
-
-    [[nodiscard]] inline size_t size() const override
-    {
-        return sizeof(*this);
-    }
-    inline void *data() override
-    {
-        return this;
-    }
-
-    inline const void *data() const override
-    {
-        return this;
-    };
-};
-
-struct OutlineMaterialData : MaterialDataBase
-{
-    math::Vector4 color = math::Vector4::ONE;
-    alignas(4) float thickness = 0.01f;
-
-    explicit OutlineMaterialData(const math::Vector4 &color = math::Vector4::ONE,
-                        float thickness = 0.01f)
-        : color{color}, thickness{thickness}
     {
     }
 
@@ -295,7 +247,8 @@ struct WireframeMaterialData : MaterialDataBase
 {
     math::Vector4 color = math::Vector4::ONE;
 
-    explicit WireframeMaterialData(const math::Vector4 &color = math::Vector4::ONE)
+    explicit WireframeMaterialData(
+        const math::Vector4 &color = math::Vector4::ONE)
         : color{color}
     {
     }
@@ -342,67 +295,48 @@ struct SingleShadedWireframeMaterialData : MaterialDataBase
     };
 };
 
-struct PrincipledMaterialData : MaterialDataBase
+
+enum class MaterialParameterType
 {
-    math::Vector4 baseColor = math::Vector4::ONE;
-    alignas(4) float subSurface = 0.0f;
-    alignas(4) float metallic = 0.0f;
-    alignas(4) float specular = 0.0f;
-    alignas(4) float specularTint = 0.0f;
-    alignas(4) float roughness = 0.5f;
-    alignas(4) float anisotropic = 0.0f;
-    alignas(4) float sheen = 0.0f;
-    alignas(4) float sheenTint = 0.0f;
-    alignas(4) float clearCoat = 0.0f;
-    alignas(4) float clearCoatGloss = 0.0f;
-    alignas(4) float transmission = 0.0f;
-    alignas(4) float ior = 1.0f;
+    BOOL = 0,
+    INT = 1,
+    UINT = 2,
+    FLOAT = 3,
+    TEX_1D = 4,
+    TEX_2D = 5,
+    TEX_3D = 6,
+    INT64 = 7,
+    UINT64 = 8,
+    DOUBLE = 9,
+    VEC_2 = 10,
+    VEC_3 = 11,
+    VEC_4 = 12,
+    MAT_2x2 = 13,
+    MAT_3x3 = 14,
+    MAT_3x4 = 15,
+    MAT_4x4 = 16,
+};
 
-    explicit PrincipledMaterialData(const math::Vector4 &baseColor = math::Vector4::ONE,
-                           float subSurface = 0.0f, float metallic = 0.0f,
-                           float specular = 0.0f, float specularTint = 0.0f,
-                           float roughness = 0.5f, float anisotropic = 0.0f,
-                           float sheen = 0.0f, float sheenTint = 0.0f,
-                           float clearCoat = 0.0f, float clearCoatGloss = 0.0f,
-                           float transmission = 0.0f, float ior = 1.0f)
-        : baseColor{baseColor}, subSurface{subSurface}, metallic{metallic},
-          specular{specular}, specularTint{specularTint}, roughness{roughness},
-          anisotropic{anisotropic}, sheen{sheen}, sheenTint{sheenTint},
-          clearCoat{clearCoat}, clearCoatGloss{clearCoatGloss},
-          transmission{transmission}, ior{ior}
-    {
-    }
-
-    [[nodiscard]] inline size_t size() const override
-    {
-        return sizeof(*this);
-    }
-    inline void *data() override
-    {
-        return this;
-    }
-
-    inline const void *data() const override
-    {
-        return this;
-    };
+struct MaterialParameter
+{
+    std::string id;
+    MaterialParameterType type;
+    std::any value;
 };
 
 struct MaterialProperties
 {
     RasterPipelineData rasterData{};
     RaytracePipelineData raytraceData{};
-    std::unique_ptr<MaterialDataBase> materialData = nullptr;
+    std::unordered_map<std::string, MaterialParameter> parameters;
 
     MaterialProperties() = default;
 
-    MaterialProperties(RasterPipelineData rasterData,
-                       RaytracePipelineData raytraceData,
-                       std::unique_ptr<MaterialDataBase> &&materialData)
-        : rasterData{std::move(rasterData)}, raytraceData{std::move(
-                                                 raytraceData)},
-          materialData{materialData != nullptr ? std::move(materialData)
-                                               : nullptr}
+    MaterialProperties(
+        RasterPipelineData rasterData, RaytracePipelineData raytraceData,
+        const std::unordered_map<std::string, MaterialParameter> &parameters)
+        : rasterData{std::move(rasterData)},
+          raytraceData{std::move(raytraceData)}, parameters{parameters}
     {
     }
 
@@ -414,8 +348,7 @@ struct MaterialProperties
         {
             rasterData = properties.rasterData;
             raytraceData = properties.raytraceData;
-            materialData =
-                std::make_unique<MaterialDataBase>(*properties.materialData);
+            parameters = properties.parameters;
         }
     }
 
@@ -425,8 +358,7 @@ struct MaterialProperties
         {
             rasterData = properties.rasterData;
             raytraceData = properties.raytraceData;
-            materialData =
-                std::make_unique<MaterialDataBase>(*properties.materialData);
+            parameters = properties.parameters;
         }
         return *this;
     }
@@ -434,7 +366,7 @@ struct MaterialProperties
     MaterialProperties(MaterialProperties &&properties) noexcept
         : rasterData{std::move(properties.rasterData)},
           raytraceData{std::move(properties.raytraceData)},
-          materialData{std::move(properties.materialData)}
+          parameters{std::move(properties.parameters)}
     {
     }
 
@@ -442,22 +374,190 @@ struct MaterialProperties
     {
         rasterData = std::move(properties.rasterData);
         raytraceData = std::move(properties.raytraceData);
-        materialData = std::move(properties.materialData);
+        parameters = std::move(properties.parameters);
         return *this;
+    }
+
+    void getParametersData(std::vector<uint8_t> *dataBuffer) const
+    {
+        const auto &align = [](size_t size, size_t alignment) {
+            return alignment > 0 ? (size + alignment - 1) & ~(alignment - 1)
+                                 : size;
+        };
+
+        dataBuffer->resize(sizeof(uint8_t));
+
+        size_t bufferSize = 0;
+        for (const auto &p : parameters)
+        {
+            const int type = static_cast<int>(p.second.type);
+
+            size_t alignment = 4;
+            if (type > 6 && type < 10)
+                alignment = 8;
+            else if (type == 10)
+                alignment = sizeof(math::Vector2);
+            else if (type > 11)
+                alignment = sizeof(math::Vector4);
+
+
+            size_t bufferOffset = align(bufferSize, alignment);
+            bufferSize = bufferOffset + alignment;
+            dataBuffer->resize(bufferSize);
+
+            void *bufferPtr =
+                reinterpret_cast<void *>(dataBuffer->data() + bufferOffset);
+            switch (p.second.type)
+            {
+            case MaterialParameterType::BOOL:
+                memcpy(bufferPtr, std::any_cast<bool>(&p.second.value),
+                       sizeof(bool));
+                break;
+            case MaterialParameterType::INT:
+                memcpy(bufferPtr, std::any_cast<int>(&p.second.value),
+                       sizeof(int));
+                break;
+            case MaterialParameterType::UINT:
+                memcpy(bufferPtr, std::any_cast<uint32_t>(&p.second.value),
+                       sizeof(uint32_t));
+                break;
+            case MaterialParameterType::FLOAT:
+                memcpy(bufferPtr, std::any_cast<float>(&p.second.value),
+                       sizeof(float));
+                break;
+            case MaterialParameterType::TEX_1D:
+            case MaterialParameterType::TEX_2D:
+            case MaterialParameterType::TEX_3D:
+                memcpy(bufferPtr, std::any_cast<uint32_t>(&p.second.value),
+                       sizeof(uint32_t));
+                break;
+            case MaterialParameterType::INT64:
+                memcpy(bufferPtr, std::any_cast<int64_t>(&p.second.value),
+                       sizeof(int64_t));
+                break;
+            case MaterialParameterType::UINT64:
+                memcpy(bufferPtr, std::any_cast<uint64_t>(&p.second.value),
+                       sizeof(uint64_t));
+                break;
+            case MaterialParameterType::DOUBLE:
+                memcpy(bufferPtr, std::any_cast<double>(&p.second.value),
+                       sizeof(double));
+                break;
+            case MaterialParameterType::VEC_2:
+                memcpy(bufferPtr,
+                       std::any_cast<math::Vector2>(&p.second.value)->data(),
+                       sizeof(math::Vector2));
+                break;
+            case MaterialParameterType::VEC_3:
+                memcpy(bufferPtr,
+                       std::any_cast<math::Vector3>(&p.second.value)->data(),
+                       sizeof(math::Vector3));
+                break;
+            case MaterialParameterType::VEC_4:
+                memcpy(bufferPtr,
+                       std::any_cast<math::Vector4>(&p.second.value)->data(),
+                       sizeof(math::Vector4));
+                break;
+            case MaterialParameterType::MAT_2x2:
+                // TODO: Matrix 2x2 not yet implemented
+                memcpy(bufferPtr,
+                       std::any_cast<std::array<std::array<float, 2>, 2>>(
+                           &p.second.value)
+                           ->data(),
+                       sizeof(float) * 4);
+                break;
+            case MaterialParameterType::MAT_3x3:
+                // TODO: Matrix 3x3 not yet implemented
+                memcpy(bufferPtr,
+                       std::any_cast<std::array<std::array<float, 3>, 3>>(
+                           &p.second.value)
+                           ->data(),
+                       sizeof(float) * 9);
+                break;
+            case MaterialParameterType::MAT_3x4:
+                // TODO: Matrix 3x4 not yet implemented
+                memcpy(bufferPtr,
+                       std::any_cast<std::array<std::array<float, 3>, 4>>(
+                           &p.second.value)
+                           ->data(),
+                       sizeof(float) * 12);
+                break;
+            case MaterialParameterType::MAT_4x4:
+                // TODO: Matrix 4x4 implement data pointer
+                std::array<std::array<float, 4>, 4> mat;
+                const auto *m4x4 =
+                    std::any_cast<math::Matrix4x4>(&p.second.value);
+                for (int i = 0; i < 4; i++)
+                    for (int j = 0; j < 4; j++)
+                        mat[i][j] = (*m4x4)[i][j];
+                memcpy(bufferPtr, mat.data(), mat.size());
+                break;
+            }
+        }
     }
 };
 
-static const BasicShadedMaterialData DEFAULT_BASIC_SHADED_MATERIAL_DATA{
-    math::Vector4{0.65f, 0.65f, 0.65f, 1.0f}};
+static const std::unordered_map<std::string, MaterialParameter>
+    DEFAULT_BASIC_SHADED_MATERIAL_PARAMETERS{
+        {"_BaseColor",
+         MaterialParameter{"_BaseColor", MaterialParameterType::VEC_4,
+                           math::Vector4(0.65f, 0.65f, 0.65f, 1.0f)}}};
 
-static const OutlineMaterialData DEFAULT_OUTLINE_MATERIAL_DATA{
-    math::Vector4{1.0f, 1.0f, 1.0f, 1.0f}, 0.01f};
+static const std::unordered_map<std::string, MaterialParameter>
+    DEFAULT_OUTLINE_MATERIAL_PARAMETERS{
+        {"_BaseColor",
+         MaterialParameter{"_BaseColor", MaterialParameterType::VEC_4,
+                           math::Vector4(1.0f, 1.0f, 0.0f, 1.0f)}},
+        {"_Thickness",
+         MaterialParameter{"_Thickness", MaterialParameterType::FLOAT, 0.02f}}};
 
-static const WireframeMaterialData DEFAULT_WIREFRAME_MATERIAL_DATA{
-    math::Vector4{0.0f, 0.0f, 0.0f, 0.0f}};
+static const std::unordered_map<std::string, MaterialParameter>
+    DEFAULT_WIREFRAME_MATERIAL_PARAMETERS{
+        {"_BaseColor",
+         MaterialParameter{"_BaseColor", MaterialParameterType::VEC_4,
+                           math::Vector4(0.0f, 0.0f, 0.0f, 1.0f)}}};
 
-static const PrincipledMaterialData DEFAULT_PRINCIPLED_MATERIAL_DATA{
-    math::Vector4{0.65f, 0.65f, 0.65f, 1.0f}};
+static const std::unordered_map<std::string, MaterialParameter>
+    DEFAULT_BASIC_SHADED_WIREFRAME_MATERIAL_PARAMETERS{
+        {"_BaseColor",
+         MaterialParameter{"_BaseColor", MaterialParameterType::VEC_4,
+                           math::Vector4(0.65f, 0.65f, 0.65f, 1.0f)}},
+        {"_WireframeColor",
+         MaterialParameter{"_WireframeColor", MaterialParameterType::VEC_4,
+                           math::Vector4(0.0f, 0.0f, 0.0f, 1.0f)}}};
+
+static const std::unordered_map<std::string, MaterialParameter>
+    DEFAULT_PRINCIPLED_MATERIAL_PARAMETERS{
+        {"_BaseColor",
+         MaterialParameter{"_BaseColor", MaterialParameterType::VEC_4,
+                           math::Vector4(0.85f, 0.85f, 0.85f, 1.0f)}},
+        {"_SubSurface",
+         MaterialParameter{"_SubSurface", MaterialParameterType::FLOAT, 0.0f}},
+        {"_Metallic",
+         MaterialParameter{"_Metallic", MaterialParameterType::FLOAT, 0.0f}},
+        {"_Specular",
+         MaterialParameter{"_Specular", MaterialParameterType::FLOAT, 0.0f}},
+        {"_SpecularTint",
+         MaterialParameter{"_SpecularTint", MaterialParameterType::FLOAT,
+                           0.0f}},
+        {"_Roughness",
+         MaterialParameter{"_Roughness", MaterialParameterType::FLOAT, 0.5f}},
+        {"_Anisotropic",
+         MaterialParameter{"_Anisotropic", MaterialParameterType::FLOAT, 0.0f}},
+        {"_Sheen",
+         MaterialParameter{"_Sheen", MaterialParameterType::FLOAT, 0.0f}},
+        {"_SheenTint",
+         MaterialParameter{"_SheenTint", MaterialParameterType::FLOAT, 0.0f}},
+        {"_ClearCoat",
+         MaterialParameter{"_ClearCoat", MaterialParameterType::FLOAT, 0.0f}},
+        {"_ClearCoatGloss",
+         MaterialParameter{"_ClearCoatGloss", MaterialParameterType::FLOAT,
+                           0.0f}},
+        {"_Transmission",
+         MaterialParameter{"_Transmission", MaterialParameterType::FLOAT,
+                           0.0f}},
+        {"_Ior",
+         MaterialParameter{"_Ior", MaterialParameterType::FLOAT, 1.0f}}};
 
 } // namespace kirana::scene
 

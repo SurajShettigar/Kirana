@@ -14,8 +14,8 @@ function(buildShader SHADER_SOURCE_FILE)
             -o ${OUTPUT_PATH}
             --target-env ${VULKAN_GLSLANG_VALIDATOR_TARGET}
             "$<$<CONFIG:Debug>:-g>"
-            DEPENDS ${INPUT_PATH}
-            IMPLICIT_DEPENDS CXX ${INPUT_PATH})
+            DEPENDS ${SHADER_SOURCE_FILE}
+            IMPLICIT_DEPENDS CXX ${SHADER_SOURCE_FILE})
     set_source_files_properties(${OUTPUT_PATH} PROPERTIES GENERATED TRUE)
     target_sources(Shaders PRIVATE ${OUTPUT_PATH})
 endfunction()

@@ -178,13 +178,14 @@ int kirana::viewport::vulkan::MaterialManager::createPipeline(
 }
 
 
-int kirana::viewport::vulkan::MaterialManager::copyMaterialDataToBuffer(
-    const std::string &shaderName, const scene::MaterialDataBase *matData)
+int kirana::viewport::vulkan::MaterialManager::copyMaterialDataToBuffer(const scene::Material &material)
 {
-    // TODO: Create a device local material data buffer
-
+    const auto &shaderName = material.getShaderName();
     auto &shaderDataBuffers = m_materialDataBuffers[shaderName];
-    const size_t dataSize = matData->size();
+
+    std::vector<uint8_t> matData;
+    material.getMaterialParameterData(&matData);
+    const size_t dataSize = matData.size();
 
     bool sizeExceeded =
         !shaderDataBuffers.empty() &&
@@ -195,6 +196,7 @@ int kirana::viewport::vulkan::MaterialManager::copyMaterialDataToBuffer(
     {
         const size_t bufferSize = std::max(
             dataSize, constants::VULKAN_MATERIAL_DATA_BUFFER_BATCH_SIZE_LIMIT);
+
         BatchBufferData buffer{};
         if (!m_allocator->allocateBuffer(
                 &buffer.buffer, bufferSize,
@@ -218,7 +220,7 @@ int kirana::viewport::vulkan::MaterialManager::copyMaterialDataToBuffer(
     }
 
     auto &buffer = shaderDataBuffers.back();
-    m_allocator->copyDataToBuffer(buffer.buffer, matData->data(),
+    m_allocator->copyDataToBuffer(buffer.buffer, matData.data(),
                                   buffer.currentSize, dataSize);
     buffer.currentSize += dataSize;
     buffer.currentDataCount++;
@@ -324,7 +326,7 @@ uint32_t kirana::viewport::vulkan::MaterialManager::addMaterial(
 
     Material m{};
     m.dataBufferIndex =
-        copyMaterialDataToBuffer(shaderName, material.getMaterialData());
+        copyMaterialDataToBuffer(material);
     m.materialDataIndex =
         m.dataBufferIndex > -1
             ? static_cast<int>(

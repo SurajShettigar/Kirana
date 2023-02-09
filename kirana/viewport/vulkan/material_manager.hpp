@@ -70,8 +70,7 @@ class MaterialManager
     int createPipeline(vulkan::ShadingPipeline shadingPipeline,
                        const RenderPass &renderPass, const Shader *shader,
                        const scene::Material &material);
-    int copyMaterialDataToBuffer(const std::string &shaderName,
-                                 const scene::MaterialDataBase *matData);
+    int copyMaterialDataToBuffer(const scene::Material &material);
     void createDescriptorSets(const Shader *shader,
                               vulkan::ShadingPipeline pipeline);
     int createSBT(const RaytracePipeline *pipeline);

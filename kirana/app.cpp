@@ -41,6 +41,8 @@ void kirana::Application::onKeyboardInput(KeyboardInput input)
             m_viewport.setShading(viewport::ShadingPipeline::RAYTRACE);
         if (input.key == Key::T)
             m_viewport.setShading(viewport::ShadingPipeline::REALTIME);
+        if (input.key == Key::P)
+            m_viewport.setShadingType(viewport::ShadingType::PBR);
     }
 }
 

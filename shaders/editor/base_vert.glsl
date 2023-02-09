@@ -1,5 +1,3 @@
-#extension GL_EXT_buffer_reference2: enable
-
 #include "base_raster.glsl"
 
 layout(location = 0) in vec3 vPosition;

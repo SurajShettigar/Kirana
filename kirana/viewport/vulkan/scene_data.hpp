@@ -148,10 +148,11 @@ class SceneData
         return m_sceneMeshes;
     }
 
-    const Pipeline &getCurrentPipeline(bool isEditorMesh,
+    [[nodiscard]] uint32_t getCurrentMaterialIndex(bool isEditorMesh, bool outline,
                                        uint32_t meshIndex) const;
 
-    [[nodiscard]] const Pipeline *getOutlineMaterial() const;
+    const Pipeline &getCurrentPipeline(bool isEditorMesh, bool outline,
+                                       uint32_t meshIndex) const;
 
     [[nodiscard]] const scene::WorldData &getWorldData() const;
 
@@ -209,7 +210,7 @@ class SceneData
     }
 
     [[nodiscard]] PushConstant<PushConstantRaster> getPushConstantRasterData(
-        bool isEditor, uint32_t meshIndex, uint32_t instanceIndex) const;
+        bool isEditor, bool outline, uint32_t meshIndex, uint32_t instanceIndex) const;
     [[nodiscard]] PushConstant<PushConstantRaytrace>
     getPushConstantRaytraceData() const;
 };

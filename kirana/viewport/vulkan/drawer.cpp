@@ -30,10 +30,10 @@ uint32_t kirana::viewport::vulkan::Drawer::getCurrentFrameIndex() const
     return m_currentFrameNumber % utils::constants::VULKAN_FRAME_OVERLAP_COUNT;
 }
 
-kirana::viewport::vulkan::Drawer::Drawer(
-    const Device *const device,
-    const Swapchain *const swapchain, const RenderPass *const renderPass,
-    const SceneData *const scene)
+kirana::viewport::vulkan::Drawer::Drawer(const Device *const device,
+                                         const Swapchain *const swapchain,
+                                         const RenderPass *const renderPass,
+                                         const SceneData *const scene)
     : m_isInitialized{false}, m_currentFrameNumber{0}, m_device{device},
       m_swapchain{swapchain}, m_renderPass{renderPass}, m_scene{scene}
 {
@@ -133,7 +133,7 @@ void kirana::viewport::vulkan::Drawer::rasterizeMeshes(const FrameData &frame,
             lastIndexBufferIndex = m.indexBufferIndex;
         }
         const auto &pipeline =
-            m_scene->getCurrentPipeline(drawEditorMeshes, m.index);
+            m_scene->getCurrentPipeline(drawEditorMeshes, false, m.index);
         if (lastPipeline != pipeline.name)
         {
             frame.commandBuffers->bindPipeline(pipeline.current);
@@ -143,7 +143,7 @@ void kirana::viewport::vulkan::Drawer::rasterizeMeshes(const FrameData &frame,
         for (uint32_t i = 0; i < m.instances.size(); i++)
         {
             const auto &pushConstantData = m_scene->getPushConstantRasterData(
-                drawEditorMeshes, m.index, i);
+                drawEditorMeshes, false, m.index, i);
             frame.commandBuffers->pushConstants<PushConstantRaster>(
                 rPipelineLayout, pushConstantData);
 
@@ -152,12 +152,17 @@ void kirana::viewport::vulkan::Drawer::rasterizeMeshes(const FrameData &frame,
                                               m.getGlobalInstanceIndex(i));
 
             // TODO: Find better way to render outline
-
             if (*m.instances[0].selected)
             {
-                const auto outline = m_scene->getOutlineMaterial();
-                frame.commandBuffers->bindPipeline(outline->current);
-                lastPipeline = outline->name;
+                const auto &outline = m_scene->getCurrentPipeline(
+                    drawEditorMeshes, true, m.index);
+                frame.commandBuffers->bindPipeline(outline.current);
+                lastPipeline = outline.name;
+
+                const auto &outlinePC = m_scene->getPushConstantRasterData(
+                    drawEditorMeshes, true, m.index, i);
+                frame.commandBuffers->pushConstants<PushConstantRaster>(
+                    rPipelineLayout, outlinePC);
 
                 frame.commandBuffers->drawIndexed(m.indexCount, 1, m.firstIndex,
                                                   m.vertexOffset,

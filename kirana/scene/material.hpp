@@ -67,18 +67,33 @@ class Material
     {
         return m_properties.raytraceData;
     }
-    [[nodiscard]] inline const MaterialDataBase *getMaterialData() const
-    {
-        return m_properties.materialData.get();
-    }
 
     inline void setName(const std::string &name)
     {
         m_name = name;
     }
-    inline void setMaterialData(const MaterialDataBase *data)
+
+    [[nodiscard]] inline const MaterialParameter &getMaterialParameter(
+        const std::string &parameter) const
     {
-        *m_properties.materialData = *data;
+        return m_properties.parameters.at(parameter);
+    }
+
+    inline void getMaterialParameterData(
+        std::vector<uint8_t> *dataBuffer) const
+    {
+        m_properties.getParametersData(dataBuffer);
+    }
+
+    bool setMaterialParameter(const std::string &parameter,
+                              const std::any &value)
+    {
+        if (m_properties.parameters.find(parameter) ==
+            m_properties.parameters.end())
+            return false;
+        // TODO: Check type of parameter value.
+        m_properties.parameters.at(parameter).value = value;
+        return true;
     }
 
   private:

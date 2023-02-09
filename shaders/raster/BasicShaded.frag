@@ -14,9 +14,9 @@ layout (set = 0, binding = 1) uniform _WorldData {
 } worldBuffer;
 
 void main() {
-    vec3 color = vec3(0.5f, 0.5f, 0.5f);
+    vec3 color = inColor.rgb;
     color += worldBuffer.w.ambientColor.rgb;
-    color *= max(dot(inWorldNormal, normalize(- worldBuffer.w.sunDirection)), 0.05f)
+    color *= max(dot(inWorldNormal, normalize(- worldBuffer.w.sunDirection)), 0.075f)
     * worldBuffer.w.sunColor.rgb
     * worldBuffer.w.sunIntensity;
     outFragColor = vec4(color, 1.0);

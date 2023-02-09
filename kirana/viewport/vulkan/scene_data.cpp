@@ -464,39 +464,36 @@ void kirana::viewport::vulkan::SceneData::setShadingType(
     m_onSceneDataChange();
 }
 
-const kirana::viewport::vulkan::Pipeline &kirana::viewport::vulkan::SceneData::
-    getCurrentPipeline(bool isEditorMesh, uint32_t meshIndex) const
+uint32_t kirana::viewport::vulkan::SceneData::getCurrentMaterialIndex(
+    bool isEditorMesh, bool outline, uint32_t meshIndex) const
 {
     if (isEditorMesh)
-        return *m_materialManager->getPipeline(
-            m_editorMeshes[meshIndex].materialIndex, m_currentShadingPipeline);
+        return m_editorMeshes[meshIndex].materialIndex;
+    if (outline)
+        return m_materialManager->getMaterialIndexFromName(
+            scene::Material::DEFAULT_MATERIAL_EDITOR_OUTLINE.getName());
 
     switch (m_currentShadingType)
     {
     case ShadingType::PBR:
-        return *m_materialManager->getPipeline(
-            m_sceneMeshes[meshIndex].materialIndex, m_currentShadingPipeline);
+        return m_sceneMeshes[meshIndex].materialIndex;
     case ShadingType::WIREFRAME:
-        return *m_materialManager->getPipeline(
-            m_materialManager->getMaterialIndexFromName(
-                scene::Material::DEFAULT_MATERIAL_WIREFRAME.getName()),
-            m_currentShadingPipeline);
+        return m_materialManager->getMaterialIndexFromName(
+            scene::Material::DEFAULT_MATERIAL_WIREFRAME.getName());
     default:
     case ShadingType::BASIC:
-        return *m_materialManager->getPipeline(
-            m_materialManager->getMaterialIndexFromName(
-                scene::Material::DEFAULT_MATERIAL_BASIC_SHADED.getName()),
-            m_currentShadingPipeline);
+        return m_materialManager->getMaterialIndexFromName(
+            scene::Material::DEFAULT_MATERIAL_BASIC_SHADED.getName());
     }
 }
 
-const kirana::viewport::vulkan::Pipeline *kirana::viewport::vulkan::SceneData::
-    getOutlineMaterial() const
+const kirana::viewport::vulkan::Pipeline &kirana::viewport::vulkan::SceneData::
+    getCurrentPipeline(bool isEditorMesh, bool outline,
+                       uint32_t meshIndex) const
 {
-    return m_materialManager->getPipeline(
-        m_materialManager->getMaterialIndexFromName(
-            scene::Material::DEFAULT_MATERIAL_EDITOR_OUTLINE.getName()),
-        m_currentShadingPipeline);
+    const uint32_t matIndex =
+        getCurrentMaterialIndex(isEditorMesh, outline, meshIndex);
+    return *m_materialManager->getPipeline(matIndex, m_currentShadingPipeline);
 }
 
 const kirana::scene::WorldData &kirana::viewport::vulkan::SceneData::
@@ -522,18 +519,20 @@ uint32_t kirana::viewport::vulkan::SceneData::getWorldDataBufferOffset(
 kirana::viewport::vulkan::PushConstant<
     kirana::viewport::vulkan::PushConstantRaster>
 kirana::viewport::vulkan::SceneData::getPushConstantRasterData(
-    bool isEditor, uint32_t meshIndex, uint32_t instanceIndex) const
+    bool isEditor, bool outline, uint32_t meshIndex,
+    uint32_t instanceIndex) const
 {
     const MeshData &meshData =
         isEditor ? m_editorMeshes[meshIndex] : m_sceneMeshes[meshIndex];
+    const uint32_t matIndex =
+        getCurrentMaterialIndex(isEditor, outline, meshIndex);
 
     return PushConstant<PushConstantRaster>(
         {meshData.instances[instanceIndex].transform->getMatrix(),
          getVertexBufferAddress(meshData.vertexBufferIndex),
          getIndexBufferAddress(meshData.indexBufferIndex),
-         m_materialManager->getMaterialDataBufferAddress(
-             meshData.materialIndex),
-         m_materialManager->getMaterialDataIndex(meshData.materialIndex),
+         m_materialManager->getMaterialDataBufferAddress(matIndex),
+         m_materialManager->getMaterialDataIndex(matIndex),
          meshData.getGlobalInstanceIndex(instanceIndex), meshData.firstIndex,
          meshData.vertexOffset},
         vulkan::PUSH_CONSTANT_RASTER_SHADER_STAGES);

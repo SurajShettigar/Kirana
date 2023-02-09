@@ -1,8 +1,9 @@
 #version 460
 
-layout(location = 0) out vec4 outFragColor;
+layout (location = 0) out vec4 outFragColor;
+
+layout (location = 0) in vec4 inColor;
 
 void main() {
-    // TODO: Take color from input buffer
-    outFragColor = vec4(1.0);
+    outFragColor = inColor;
 }
