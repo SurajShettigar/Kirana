@@ -21,7 +21,7 @@ layout (buffer_reference) readonly buffer IndexData {
 };
 
 layout(buffer_reference) readonly buffer MaterialData {
-    BasicShadedData b[];
+    PrincipledData p[];
 };
 
 layout (push_constant) uniform _GlobalData {
@@ -66,7 +66,7 @@ void main()
     VertexData vBuffer = VertexData(objBuffer.o[gl_InstanceCustomIndexEXT].vertexBufferAddress);
     IndexData iBuffer = IndexData(objBuffer.o[gl_InstanceCustomIndexEXT].indexBufferAddress);
     MaterialData mBuffer = MaterialData(objBuffer.o[gl_InstanceCustomIndexEXT].materialDataBufferAddress);
-    BasicShadedData basicShaded = mBuffer.b[objBuffer.o[gl_InstanceCustomIndexEXT].materialDataIndex];
+    PrincipledData principled = mBuffer.p[objBuffer.o[gl_InstanceCustomIndexEXT].materialDataIndex];
 
     const u32vec3 indices = getTriangleIndices(iBuffer);
     Vertex v[3] = getTriangles(vBuffer, indices);
@@ -80,7 +80,7 @@ void main()
     getCoordinateFrame(worldNormal, tangent, binormal);
 
     const vec3 reflectedDirection = normalize(randomHemispherical(payload.seed, vec3[3](tangent, binormal, worldNormal)));
-    const vec3 matColor = basicShaded.color.rgb;
+    const vec3 matColor = principled.color.rgb;
     vec3 brdf = matColor / PI;
 
     payload.rayOrigin = worldPos;

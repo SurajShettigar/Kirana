@@ -24,6 +24,8 @@ layout (buffer_reference) readonly buffer MaterialData {
 };
 
 layout (location = 0) out vec4 outColor;
+layout (location = 1) out vec3 outWorldNormal;
+layout (location = 2) out vec3 outCamPos;
 
 void main() {
     MaterialData mat = MaterialData(pushConstants.p.materialDataBufferAddress);
@@ -32,4 +34,6 @@ void main() {
     gl_Position = getWorldPosition();
 
     outColor = principled.color;
+    outWorldNormal = getWorldNormal();
+    outCamPos = camBuffer.c.position;
 }

@@ -9,9 +9,7 @@
 #include "shader_binding_table.hpp"
 #include "push_constant.hpp"
 #include "pipeline_layout.hpp"
-#include "descriptor_pool.hpp"
 #include "descriptor_set_layout.hpp"
-#include "descriptor_set.hpp"
 
 #include "vulkan_utils.hpp"
 
@@ -187,6 +185,9 @@ int kirana::viewport::vulkan::MaterialManager::copyMaterialDataToBuffer(const sc
     material.getMaterialParameterData(&matData);
     const size_t dataSize = matData.size();
 
+    if(dataSize == 0)
+        return -1;
+
     bool sizeExceeded =
         !shaderDataBuffers.empty() &&
         (dataSize + shaderDataBuffers.back().currentSize) >
@@ -227,26 +228,6 @@ int kirana::viewport::vulkan::MaterialManager::copyMaterialDataToBuffer(const sc
     return static_cast<int>(shaderDataBuffers.size() - 1);
 }
 
-
-void kirana::viewport::vulkan::MaterialManager::createDescriptorSets(
-    const Shader *shader, vulkan::ShadingPipeline pipeline)
-{
-    //    auto &descSets = pipeline == ShadingPipeline::RAYTRACE ?
-    //    m_raytraceDescSets
-    //                                                           :
-    //                                                           m_rasterDescSets;
-    //    if (descSets.find(shader->name) != descSets.end())
-    //        return;
-    //
-    //    const auto &descLayouts =
-    //        shader->getPipelineLayout().getDescriptorSetLayouts();
-    //
-    //    std::vector<DescriptorSet> &sets = descSets[shader->name];
-    //    sets.reserve(descLayouts.size());
-    //    m_descriptorPool->allocateDescriptorSets(descLayouts, &sets);
-    // TODO: Create descriptor sets based on the pipeline layout of each shader.
-}
-
 int kirana::viewport::vulkan::MaterialManager::createSBT(
     const RaytracePipeline *pipeline)
 {
@@ -270,22 +251,16 @@ int kirana::viewport::vulkan::MaterialManager::createSBT(
 }
 
 kirana::viewport::vulkan::MaterialManager::MaterialManager(
-    const Device *const device, const Allocator *const allocator,
-    const DescriptorPool *descriptorPool)
-    : m_device{device}, m_allocator{allocator}, m_descriptorPool{descriptorPool}
+    const Device *const device, const Allocator *const allocator)
+    : m_device{device}, m_allocator{allocator}
 {
 }
 
 kirana::viewport::vulkan::MaterialManager::~MaterialManager()
 {
     for (auto &m : m_materialDataBuffers)
-    {
         for (auto &b : m.second)
-        {
-            if (b.buffer.buffer)
                 m_allocator->free(b.buffer);
-        }
-    }
     for (auto &s : m_SBTs)
     {
         if (s)

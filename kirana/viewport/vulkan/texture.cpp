@@ -75,8 +75,10 @@ kirana::viewport::vulkan::Texture::Texture(const Device *const device,
         m_device->setDebugObjectName(m_image, "Image_" + m_name);
         m_isInitialized = createImageView();
         if (m_isInitialized)
+        {
             Logger::get().log(constants::LOG_CHANNEL_VULKAN, LogSeverity::trace,
                               "Texture created: " + m_name);
+        }
     }
     else
     {
@@ -110,7 +112,7 @@ kirana::viewport::vulkan::Texture::~Texture()
             m_device->current.destroySampler(m_descInfo.sampler);
         if (m_imageView)
             m_device->current.destroyImageView(m_imageView);
-        if (m_allocator && m_allocatedImage.image)
+        if (m_allocator)
             m_allocator->free(m_allocatedImage);
         Logger::get().log(constants::LOG_CHANNEL_VULKAN, LogSeverity::trace,
                           "Texture Destroyed: " + m_name);

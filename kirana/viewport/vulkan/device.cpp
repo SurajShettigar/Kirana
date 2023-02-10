@@ -19,7 +19,9 @@ kirana::viewport::vulkan::QueueFamilyIndices kirana::viewport::vulkan::Device::
     {
         if (q.queueFlags & vk::QueueFlagBits::eGraphics)
             indices.graphics = i;
-        if (q.queueFlags & vk::QueueFlagBits::eTransfer)
+        if ((q.queueFlags & vk::QueueFlagBits::eTransfer) &&
+            !(q.queueFlags & vk::QueueFlagBits::eCompute) &&
+            !(q.queueFlags & vk::QueueFlagBits::eGraphics))
             indices.transfer = i;
         if (q.queueFlags & vk::QueueFlagBits::eCompute)
             indices.compute = i;
@@ -31,7 +33,12 @@ kirana::viewport::vulkan::QueueFamilyIndices kirana::viewport::vulkan::Device::
     if (isPresentSupported)
         indices.presentation = indices.graphics;
     if (!indices.isTransferSupported())
-        indices.transfer = indices.graphics;
+    {
+        if (indices.isComputeSupported())
+            indices.transfer = indices.compute;
+        else
+            indices.transfer = indices.graphics;
+    }
     if (!indices.isComputeSupported())
         indices.compute = indices.compute;
 
@@ -274,16 +281,27 @@ void kirana::viewport::vulkan::Device::transferSubmit(
     m_transferQueue.submit(vk::SubmitInfo({}, {}, commandBuffers, {}), fence);
 }
 
+void kirana::viewport::vulkan::Device::computeSubmit(
+    const std::vector<vk::CommandBuffer> &commandBuffers) const
+{
+    m_computeQueue.submit(vk::SubmitInfo({}, {}, commandBuffers));
+}
+
+void kirana::viewport::vulkan::Device::computeSubmit(
+    const std::vector<vk::CommandBuffer> &commandBuffers,
+    const vk::Fence &fence) const
+{
+    m_computeQueue.submit(vk::SubmitInfo({}, {}, commandBuffers, {}), fence);
+}
+
 void kirana::viewport::vulkan::Device::transferWait() const
 {
-    //    try
-    //    {
     m_transferQueue.waitIdle();
-    //    }
-    //    catch (...)
-    //    {
-    //        handleVulkanException();
-    //    }
+}
+
+void kirana::viewport::vulkan::Device::computeWait() const
+{
+    m_computeQueue.waitIdle();
 }
 
 vk::Result kirana::viewport::vulkan::Device::present(

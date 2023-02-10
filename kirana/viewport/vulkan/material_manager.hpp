@@ -17,8 +17,6 @@ namespace kirana::viewport::vulkan
 {
 class Device;
 class Allocator;
-class DescriptorPool;
-class DescriptorSet;
 class Pipeline;
 class RaytracePipeline;
 class Shader;
@@ -45,7 +43,6 @@ class MaterialManager
 
     const Device *const m_device;
     const Allocator *const m_allocator;
-    const DescriptorPool *const m_descriptorPool;
 
     std::vector<const Shader *> m_shaders;
     std::vector<const Pipeline *> m_pipelines;
@@ -54,10 +51,6 @@ class MaterialManager
     std::unordered_map<std::string, std::string> m_materialShaderTable;
     std::unordered_map<std::string, uint32_t> m_materialIndexTable;
     std::vector<Material> m_materials;
-    //    std::unordered_map<std::string, std::vector<DescriptorSet>>
-    //        m_rasterDescSets;
-    //    std::unordered_map<std::string, std::vector<DescriptorSet>>
-    //        m_raytraceDescSets;
     std::unordered_map<std::string, std::vector<BatchBufferData>>
         m_materialDataBuffers;
 
@@ -71,13 +64,10 @@ class MaterialManager
                        const RenderPass &renderPass, const Shader *shader,
                        const scene::Material &material);
     int copyMaterialDataToBuffer(const scene::Material &material);
-    void createDescriptorSets(const Shader *shader,
-                              vulkan::ShadingPipeline pipeline);
     int createSBT(const RaytracePipeline *pipeline);
 
   public:
-    MaterialManager(const Device *device, const Allocator *allocator,
-                    const DescriptorPool *descriptorPool);
+    MaterialManager(const Device *device, const Allocator *allocator);
     ~MaterialManager();
     MaterialManager(const MaterialManager &materialData) = delete;
     MaterialManager &operator=(const MaterialManager &materialData) = delete;
@@ -113,17 +103,6 @@ class MaterialManager
         return m_pipelines[m_materials[materialIndex].pipelineIndices
                                [static_cast<int>(shadingPipeline)]];
     }
-
-    //    [[nodiscard]] inline const std::vector<DescriptorSet>
-    //    &getDescriptorSets(
-    //        uint32_t materialIndex, vulkan::ShadingPipeline shadingPipeline)
-    //    {
-    //        return shadingPipeline == vulkan::ShadingPipeline::RASTER
-    //                   ? m_rasterDescSets.at(
-    //                         getShaderNameForMaterial(materialIndex))
-    //                   : m_raytraceDescSets.at(
-    //                         getShaderNameForMaterial(materialIndex));
-    //    }
 
     [[nodiscard]] inline const ShaderBindingTable *getShaderBindingTable(
         uint32_t materialIndex)

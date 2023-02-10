@@ -158,7 +158,7 @@ kirana::viewport::vulkan::ShaderBindingTable::~ShaderBindingTable()
 {
     for (auto &g : m_groups)
     {
-        if (g.buffer.buffer)
+        if(g.buffer.buffer)
             m_allocator->free(g.buffer);
     }
 

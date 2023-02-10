@@ -8,9 +8,7 @@
 #define VMA_IMPLEMENTATION
 #include <vk_mem_alloc.hpp>
 #include "vulkan_utils.hpp"
-#include "vulkan_types.hpp"
 
-#include <scene.hpp>
 #include <utility>
 
 void kirana::viewport::vulkan::Allocator::displayMemoryInfo()
@@ -306,12 +304,12 @@ bool kirana::viewport::vulkan::Allocator::copyBuffer(
 void kirana::viewport::vulkan::Allocator::free(
     const AllocatedBuffer &buffer) const
 {
-    if (buffer.buffer)
+    if (buffer.buffer && buffer.allocation)
         m_current->destroyBuffer(*buffer.buffer, *buffer.allocation);
 }
 
 void kirana::viewport::vulkan::Allocator::free(const AllocateImage &image) const
 {
-    if (image.image)
+    if (image.image && image.allocation)
         m_current->destroyImage(*image.image, *image.allocation);
 }

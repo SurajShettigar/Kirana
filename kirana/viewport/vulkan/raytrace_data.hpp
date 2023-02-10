@@ -9,8 +9,6 @@ class Device;
 class Allocator;
 class DescriptorPool;
 class Swapchain;
-class RaytracePipeline;
-class ShaderBindingTable;
 class AccelerationStructure;
 class PipelineLayout;
 class DescriptorSet;
@@ -28,8 +26,6 @@ class RaytraceData
     const Allocator *const m_allocator;
     const DescriptorPool *const m_descriptorPool;
     const Swapchain *m_swapchain;
-    const RaytracePipeline *m_currentPipeline = nullptr;
-    const ShaderBindingTable *m_currentSBT = nullptr;
     AccelerationStructure *m_accelStruct = nullptr;
     Texture *m_renderTarget = nullptr;
     // TODO: Switch to per-shader pipeline layout using shader reflection.
@@ -54,22 +50,7 @@ class RaytraceData
     bool initialize(const SceneData &sceneData);
     void updateDescriptors(int setIndex = -1);
 
-    void setPipeline(const RaytracePipeline *pipeline,
-                     const ShaderBindingTable *sbt);
-
     void rebuildRenderTarget();
-
-    [[nodiscard]] inline const RaytracePipeline &getCurrentPipeline() const
-    {
-        assert(m_currentPipeline != nullptr);
-        return *m_currentPipeline;
-    }
-
-    [[nodiscard]] inline const ShaderBindingTable &getCurrentSBT() const
-    {
-        assert(m_currentSBT != nullptr);
-        return *m_currentSBT;
-    }
 
     [[nodiscard]] inline const AccelerationStructure &getAccelerationStructure()
         const

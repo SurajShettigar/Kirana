@@ -224,7 +224,7 @@ void kirana::viewport::vulkan::Drawer::raytrace(const FrameData &frame,
                                                 uint32_t swapchainImgIndex)
 {
     const auto &rPipeline =
-        m_scene->getRaytraceData().getCurrentPipeline().current;
+        m_scene->getCurrentPipeline(false, false, 0).current;
     const auto &rPipelineLayout =
         m_scene->getRaytraceData().getRaytracePipelineLayout().current;
     const auto &rDescSets = m_scene->getRaytraceData().getDescriptorSets();
@@ -232,7 +232,7 @@ void kirana::viewport::vulkan::Drawer::raytrace(const FrameData &frame,
     for (int i = 0; i < rDescSets.size(); i++)
         descSets[i] = rDescSets[i].current;
     auto pushConstantData = m_scene->getPushConstantRaytraceData();
-    const auto &sbt = m_scene->getRaytraceData().getCurrentSBT();
+    const auto &sbt = m_scene->getCurrentSBT(0);
     const auto &renderTarget = m_scene->getRaytraceData().getRenderTarget();
 
     frame.commandBuffers->reset();

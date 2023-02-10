@@ -37,6 +37,26 @@ struct Vertex {
     vec4 color;
 };
 
+struct BasicShadedData {
+  vec4 color;
+};
+
+struct PrincipledData {
+    vec4 color;
+    float subSurface;
+    float metallic;
+    float specular;
+    float specularTint;
+    float roughness;
+    float anisotropic;
+    float sheen;
+    float sheenTint;
+    float clearCoat;
+    float clearCoatGloss;
+    float transmission;
+    float ior;
+};
+
 struct Object {
     uint64_t vertexBufferAddress;
     uint64_t indexBufferAddress;

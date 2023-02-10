@@ -44,6 +44,7 @@ static vk::PhysicalDeviceBufferDeviceAddressFeatures
 static vk::PhysicalDeviceShaderClockFeaturesKHR DEVICE_SHADER_CLOCK_FEATURES{
     true, true};
 
+#ifndef VK_HANDLE_RESULT
 #define VK_HANDLE_RESULT(f, err)                                               \
     {                                                                          \
         vk::Result result = f;                                                 \
@@ -53,6 +54,7 @@ static vk::PhysicalDeviceShaderClockFeaturesKHR DEVICE_SHADER_CLOCK_FEATURES{
                               LogSeverity::error, err);                        \
         }                                                                      \
     }
+#endif
 
 /**
  * @brief Use it in catch(...) blocks of try-catch methods surrounding Vulkan

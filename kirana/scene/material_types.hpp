@@ -494,6 +494,8 @@ struct MaterialProperties
                 break;
             }
         }
+        bufferSize = align(bufferSize, 16);
+        dataBuffer->resize(bufferSize);
     }
 };
 

@@ -70,13 +70,6 @@ bool kirana::viewport::vulkan::Swapchain::createSwapchain()
             ? vk::SharingMode::eExclusive
             : vk::SharingMode::eConcurrent;
 
-//    std::vector<uint32_t> queueFamilyIndices;
-//    if (sharingMode == vk::SharingMode::eConcurrent)
-//    {
-//        queueFamilyIndices.push_back(m_device->queueFamilyIndices.graphics);
-//        queueFamilyIndices.push_back(m_device->queueFamilyIndices.presentation);
-//    }
-
     vk::SwapchainCreateInfoKHR createInfo(
         vk::SwapchainCreateFlagsKHR(), m_surface->current, m_imageCount,
         m_surfaceFormat.format, m_surfaceFormat.colorSpace, m_extent, 1,
@@ -106,7 +99,6 @@ bool kirana::viewport::vulkan::Swapchain::createSwapchain()
     std::vector<vk::Image> swapchainImages =
         m_device->current.getSwapchainImagesKHR(m_current);
 
-    m_images.clear();
     for (uint32_t i = 0; i < swapchainImages.size(); i++)
     {
         const Texture::Properties properties{
@@ -118,7 +110,7 @@ bool kirana::viewport::vulkan::Swapchain::createSwapchain()
             false,
             vk::ImageLayout::ePresentSrcKHR};
         m_images.emplace_back(std::move(
-            std::make_unique<Texture>(m_device, swapchainImages[i], properties,
+            new Texture(m_device, swapchainImages[i], properties,
                                       "Swapchain_" + std::to_string(i))));
     }
     return true;
@@ -134,7 +126,14 @@ bool kirana::viewport::vulkan::Swapchain::initialize()
                           "Swapchain destroyed");
     }
     if (!m_images.empty())
+    {
+        for(auto &t: m_images)
+        {
+            delete t;
+            t = nullptr;
+        }
         m_images.clear();
+    }
     return createSwapchain();
 }
 
@@ -156,6 +155,15 @@ kirana::viewport::vulkan::Swapchain::Swapchain(const Device *const device,
 kirana::viewport::vulkan::Swapchain::~Swapchain()
 {
     m_onSwapchainOutOfDate.removeAllListeners();
+    if (!m_images.empty())
+    {
+        for(auto &t: m_images)
+        {
+            delete t;
+            t = nullptr;
+        }
+        m_images.clear();
+    }
     if (m_device)
     {
         if (m_current)

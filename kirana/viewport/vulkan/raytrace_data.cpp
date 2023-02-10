@@ -7,11 +7,11 @@
 #include "descriptor_pool.hpp"
 #include "descriptor_set_layout.hpp"
 #include "descriptor_set.hpp"
-#include "raytrace_pipeline.hpp"
-#include "shader_binding_table.hpp"
 #include "acceleration_structure.hpp"
 #include "texture.hpp"
 #include "scene_data.hpp"
+
+#include "vulkan_utils.hpp"
 
 const vk::BufferUsageFlagBits
     kirana::viewport::vulkan::RaytraceData::VERTEX_INDEX_BUFFER_USAGE_FLAGS =
@@ -101,21 +101,25 @@ kirana::viewport::vulkan::RaytraceData::RaytraceData(
 
 kirana::viewport::vulkan::RaytraceData::~RaytraceData()
 {
+    Logger::get().log(constants::LOG_CHANNEL_VULKAN, LogSeverity::trace,
+                      "Destroying raytrace data...");
+    if (m_renderTarget != nullptr)
+    {
+        delete m_renderTarget;
+        m_renderTarget = nullptr;
+    }
     if (m_accelStruct)
     {
         delete m_accelStruct;
         m_accelStruct = nullptr;
-    }
-    if (m_renderTarget)
-    {
-        delete m_renderTarget;
-        m_renderTarget = nullptr;
     }
     if (m_raytracePipelineLayout)
     {
         delete m_raytracePipelineLayout;
         m_raytracePipelineLayout = nullptr;
     }
+    Logger::get().log(constants::LOG_CHANNEL_VULKAN, LogSeverity::trace,
+                      "Raytrace data destroyed");
 }
 
 bool kirana::viewport::vulkan::RaytraceData::initialize(
@@ -123,13 +127,18 @@ bool kirana::viewport::vulkan::RaytraceData::initialize(
 {
     bindDescriptorSets(sceneData);
     m_isInitialized = createAccelerationStructure(sceneData);
-    if(!m_isInitialized)
-        return false;
-    m_isInitialized = createRenderTarget();
-    if(!m_isInitialized)
-        return false;
-    updateDescriptors();
-    m_isInitialized = true;
+    if (m_isInitialized)
+        m_isInitialized = createRenderTarget();
+    if (m_isInitialized)
+        updateDescriptors();
+
+    if (m_isInitialized)
+        Logger::get().log(constants::LOG_CHANNEL_VULKAN, LogSeverity::trace,
+                          "Raytrace data initialized");
+    else
+        Logger::get().log(constants::LOG_CHANNEL_VULKAN, LogSeverity::error,
+                          "Failed to initialize Raytrace data");
+
 
     return m_isInitialized;
 }
@@ -143,20 +152,22 @@ void kirana::viewport::vulkan::RaytraceData::updateDescriptors(int setIndex)
         m_descriptorPool->writeDescriptorSet(m_descSets[setIndex]);
 }
 
-void kirana::viewport::vulkan::RaytraceData::setPipeline(
-    const RaytracePipeline *pipeline, const ShaderBindingTable *sbt)
-{
-    m_currentPipeline = pipeline;
-    m_currentSBT = sbt;
-}
-
 void kirana::viewport::vulkan::RaytraceData::rebuildRenderTarget()
 {
-    if (m_renderTarget)
+    if (m_renderTarget != nullptr)
     {
         delete m_renderTarget;
         m_renderTarget = nullptr;
     }
-    createRenderTarget();
-    updateDescriptors(static_cast<int>(vulkan::DescriptorLayoutType::GLOBAL));
+    bool reinit = createRenderTarget();
+    if (reinit)
+    {
+        Logger::get().log(constants::LOG_CHANNEL_VULKAN, LogSeverity::trace,
+                          "Raytrace render target re-initialized");
+        updateDescriptors(
+            static_cast<int>(vulkan::DescriptorLayoutType::GLOBAL));
+    }
+    else
+        Logger::get().log(constants::LOG_CHANNEL_VULKAN, LogSeverity::error,
+                          "Failed to reinitialize render target");
 }

@@ -236,8 +236,8 @@ bool kirana::viewport::vulkan::AccelerationStructure::buildBLAS(
 
     if (commandBuffersBuilt)
     {
-        m_device->transferSubmit(commandBuffers->current);
-        m_device->transferWait();
+        m_device->computeSubmit(commandBuffers->current);
+        m_device->computeWait();
 
         if (compactionQueryPool)
         {
@@ -380,8 +380,8 @@ bool kirana::viewport::vulkan::AccelerationStructure::buildTLAS(
         commandBuffers->end();
 
 
-        m_device->transferSubmit(commandBuffers->current);
-        m_device->transferWait();
+        m_device->computeSubmit(commandBuffers->current);
+        m_device->computeWait();
         m_allocator->free(scratchBuffer);
     }
 
@@ -397,7 +397,7 @@ kirana::viewport::vulkan::AccelerationStructure::AccelerationStructure(
     const SceneData &sceneData)
     : m_isInitialized{false}, m_device{device}, m_allocator{allocator},
       m_commandPool{
-          new CommandPool(m_device, m_device->queueFamilyIndices.transfer)}
+          new CommandPool(m_device, m_device->queueFamilyIndices.compute)}
 {
     m_commandFence = m_device->current.createFence(vk::FenceCreateInfo{});
     createBLAS(sceneData);

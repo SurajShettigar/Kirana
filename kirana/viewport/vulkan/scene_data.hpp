@@ -24,6 +24,7 @@ class Allocator;
 class DescriptorPool;
 class RenderPass;
 class RaytraceData;
+class ShaderBindingTable;
 class MaterialManager;
 class PipelineLayout;
 template <typename> class PushConstant;
@@ -153,6 +154,8 @@ class SceneData
 
     const Pipeline &getCurrentPipeline(bool isEditorMesh, bool outline,
                                        uint32_t meshIndex) const;
+
+    const ShaderBindingTable &getCurrentSBT(uint32_t meshIndex) const;
 
     [[nodiscard]] const scene::WorldData &getWorldData() const;
 

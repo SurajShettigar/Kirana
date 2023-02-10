@@ -92,7 +92,12 @@ class Device
         const std::vector<vk::CommandBuffer> &commandBuffers) const;
     void transferSubmit(const std::vector<vk::CommandBuffer> &commandBuffers,
                         const vk::Fence &fence) const;
+    void computeSubmit(
+        const std::vector<vk::CommandBuffer> &commandBuffers) const;
+    void computeSubmit(const std::vector<vk::CommandBuffer> &commandBuffers,
+                        const vk::Fence &fence) const;
     void transferWait() const;
+    void computeWait() const;
     [[nodiscard]] vk::Result present(const vk::Semaphore &semaphore,
                                      const vk::SwapchainKHR &swapchain,
                                      uint32_t imageIndex) const;

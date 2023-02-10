@@ -60,19 +60,22 @@ void kirana::viewport::vulkan::SceneData::onObjectChanged()
     std::vector<vulkan::ObjectData> objData;
     for (const auto &m : m_sceneMeshes)
     {
+        const uint32_t matIndex =
+            getCurrentMaterialIndex(false, false, m.index);
         for (const auto &i : m.instances)
         {
             objData.emplace_back(ObjectData{
                 getVertexBufferAddress(m.vertexBufferIndex),
                 getIndexBufferAddress(m.indexBufferIndex),
-                m_materialManager->getMaterialDataBufferAddress(
-                    m.materialIndex),
-                m_materialManager->getMaterialDataIndex(m.materialIndex),
-                m.firstIndex, m.vertexOffset});
+                m_materialManager->getMaterialDataBufferAddress(matIndex),
+                m_materialManager->getMaterialDataIndex(matIndex), m.firstIndex,
+                m.vertexOffset});
         }
     }
-    m_allocator->copyDataToBuffer(m_objectDataBuffer, objData.data(), 0,
-                                  sizeof(vulkan::ObjectData) * objData.size());
+    if (!objData.empty())
+        m_allocator->copyDataToBuffer(m_objectDataBuffer, objData.data(), 0,
+                                      sizeof(vulkan::ObjectData) *
+                                          objData.size());
     m_onSceneDataChange();
 }
 
@@ -341,8 +344,7 @@ kirana::viewport::vulkan::SceneData::SceneData(
       m_isRaytracingInitialized{false}, m_device{device},
       m_allocator{allocator}, m_descriptorPool{descriptorPool},
       m_renderPass{renderPass}, m_raytraceData{raytraceData}, m_scene{scene},
-      m_materialManager{
-          new MaterialManager(m_device, m_allocator, m_descriptorPool)}
+      m_materialManager{new MaterialManager(m_device, m_allocator)}
 {
     m_isInitialized = PipelineLayout::getDefaultPipelineLayout(
         m_device, ShadingPipeline::RASTER, m_rasterPipelineLayout);
@@ -396,19 +398,20 @@ kirana::viewport::vulkan::SceneData::SceneData(
 
 kirana::viewport::vulkan::SceneData::~SceneData()
 {
+
+    Logger::get().log(constants::LOG_CHANNEL_VULKAN, LogSeverity::trace,
+                      "Destroying scene data...");
     m_scene.removeOnSceneLoadedEventListener(m_sceneLoadListener);
     m_scene.removeOnWorldChangeEventListener(m_worldChangeListener);
     m_scene.removeOnCameraChangeEventListener(m_cameraChangeListener);
 
     for (auto &v : m_vertexBuffers)
     {
-        if (v.buffer.buffer)
-            m_allocator->free(v.buffer);
+        m_allocator->free(v.buffer);
     }
     for (auto &i : m_indexBuffers)
     {
-        if (i.buffer.buffer)
-            m_allocator->free(i.buffer);
+        m_allocator->free(i.buffer);
     }
     if (m_objectDataBuffer.buffer)
     {
@@ -453,15 +456,7 @@ void kirana::viewport::vulkan::SceneData::setShadingType(
     vulkan::ShadingType type)
 {
     m_currentShadingType = type;
-    const uint32_t matIndex = m_materialManager->getMaterialIndexFromName(
-        scene::Material::DEFAULT_MATERIAL_BASIC_SHADED.getName());
-    const Pipeline *pipeline = m_materialManager->getPipeline(
-        matIndex, vulkan::ShadingPipeline::RAYTRACE);
-    const ShaderBindingTable *sbt =
-        m_materialManager->getShaderBindingTable(matIndex);
-    m_raytraceData->setPipeline(
-        reinterpret_cast<const RaytracePipeline *>(pipeline), sbt);
-    m_onSceneDataChange();
+    onObjectChanged();
 }
 
 uint32_t kirana::viewport::vulkan::SceneData::getCurrentMaterialIndex(
@@ -494,6 +489,13 @@ const kirana::viewport::vulkan::Pipeline &kirana::viewport::vulkan::SceneData::
     const uint32_t matIndex =
         getCurrentMaterialIndex(isEditorMesh, outline, meshIndex);
     return *m_materialManager->getPipeline(matIndex, m_currentShadingPipeline);
+}
+
+const kirana::viewport::vulkan::ShaderBindingTable &kirana::viewport::vulkan::
+    SceneData::getCurrentSBT(uint32_t meshIndex) const
+{
+    const uint32_t matIndex = getCurrentMaterialIndex(false, false, meshIndex);
+    return *m_materialManager->getShaderBindingTable(matIndex);
 }
 
 const kirana::scene::WorldData &kirana::viewport::vulkan::SceneData::

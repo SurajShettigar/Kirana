@@ -25,7 +25,7 @@ class Swapchain
 
     vk::SwapchainKHR m_prevSwapchain = nullptr;
     vk::SwapchainKHR m_current = nullptr;
-    std::vector<std::unique_ptr<Texture>> m_images;
+    std::vector<const Texture *> m_images;
 
     const Device *const m_device = nullptr;
     const Surface *const m_surface;
@@ -63,7 +63,7 @@ class Swapchain
         const vk::Fence &fence = {}) const;
     [[nodiscard]] std::array<uint32_t, 2> getSurfaceResolution() const;
 
-    inline const std::vector<std::unique_ptr<Texture>> &getImages() const
+    inline const std::vector<const Texture *> &getImages() const
     {
         return m_images;
     }
