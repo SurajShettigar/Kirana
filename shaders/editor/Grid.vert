@@ -12,7 +12,7 @@ vec3 vertices[4] = vec3[4](
 
 vec3 clipToWorldSpace(vec3 clipPos)
 {
-    vec4 pos = vec4(clipPos, 1.0f) * camData.invViewProj;
+    vec4 pos = vec4(clipPos, 1.0f) * camBuffer.c.invViewProj;
     return (pos.xyz / pos.w);
 }
 
@@ -27,11 +27,11 @@ layout(location=0) out VSOut {
 
 void main() {
     vec3 pos = vertices[gl_VertexIndex];
-    vsOut.viewProj = camData.viewProj;
+    vsOut.viewProj = camBuffer.c.viewProj;
     vsOut.nearPos = clipToWorldSpace(vec3(pos.x, pos.y, 0.0));
     vsOut.farPos = clipToWorldSpace(vec3(pos.x, pos.y, 1.0));
-    vsOut.camNear = camData.nearPlane;
-    vsOut.camFar = camData.farPlane;
-    vsOut.camPos = camData.position;
+    vsOut.camNear = camBuffer.c.nearPlane;
+    vsOut.camFar = camBuffer.c.farPlane;
+    vsOut.camPos = camBuffer.c.position;
     gl_Position = vec4(pos, 1.0f);
 }

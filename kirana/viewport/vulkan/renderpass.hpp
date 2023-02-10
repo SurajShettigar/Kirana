@@ -13,12 +13,12 @@ class RenderPass
 {
   private:
     bool m_isInitialized = false;
-    vk::RenderPass m_current;
+    vk::RenderPass m_current = nullptr;
     std::vector<vk::Framebuffer> m_framebuffers;
 
     const Device *const m_device;
     const Swapchain *const m_swapchain;
-    const Texture *const m_depthTexture;
+    const Texture  *m_depthTexture;
 
   public:
     explicit RenderPass(const Device *device, const Swapchain *swapchain,
@@ -30,6 +30,9 @@ class RenderPass
     const bool &isInitialized = m_isInitialized;
     const vk::RenderPass &current = m_current;
     const std::vector<vk::Framebuffer> &framebuffers = m_framebuffers;
+
+    bool initialize(const Texture *depthTexture);
+
     [[nodiscard]] std::array<uint32_t, 2> getSurfaceResolution() const;
 };
 } // namespace kirana::viewport::vulkan

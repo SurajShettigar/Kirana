@@ -9,7 +9,7 @@
 
 void kirana::viewport::vulkan::Swapchain::initializeSwapchainData()
 {
-    m_supportInfo = m_device->swapchainSupportInfo;
+    m_supportInfo = m_device->getSwapchainSupportInfo();
 
     // Select surface resolution
     if (m_supportInfo.capabilities.currentExtent.width !=
@@ -65,7 +65,7 @@ void kirana::viewport::vulkan::Swapchain::initializeSwapchainData()
 
 bool kirana::viewport::vulkan::Swapchain::createSwapchain()
 {
-    vk::SharingMode sharingMode =
+    const vk::SharingMode sharingMode =
         m_device->queueFamilyIndices.isGraphicsAndPresentSame()
             ? vk::SharingMode::eExclusive
             : vk::SharingMode::eConcurrent;
@@ -75,8 +75,9 @@ bool kirana::viewport::vulkan::Swapchain::createSwapchain()
         m_surfaceFormat.format, m_surfaceFormat.colorSpace, m_extent, 1,
         vk::ImageUsageFlagBits::eColorAttachment |
             vk::ImageUsageFlagBits::eTransferDst,
-        sharingMode, {}, m_transform, vk::CompositeAlphaFlagBitsKHR::eOpaque,
-        m_presentMode, true, m_prevSwapchain);
+        sharingMode, {}, m_transform,
+        vk::CompositeAlphaFlagBitsKHR::eOpaque, m_presentMode, true,
+        m_prevSwapchain);
 
     if (sharingMode == vk::SharingMode::eConcurrent)
     {
@@ -98,7 +99,6 @@ bool kirana::viewport::vulkan::Swapchain::createSwapchain()
     std::vector<vk::Image> swapchainImages =
         m_device->current.getSwapchainImagesKHR(m_current);
 
-    m_images.clear();
     for (uint32_t i = 0; i < swapchainImages.size(); i++)
     {
         const Texture::Properties properties{
@@ -110,10 +110,31 @@ bool kirana::viewport::vulkan::Swapchain::createSwapchain()
             false,
             vk::ImageLayout::ePresentSrcKHR};
         m_images.emplace_back(std::move(
-            std::make_unique<Texture>(m_device, swapchainImages[i], properties,
+            new Texture(m_device, swapchainImages[i], properties,
                                       "Swapchain_" + std::to_string(i))));
     }
     return true;
+}
+
+bool kirana::viewport::vulkan::Swapchain::initialize()
+{
+    initializeSwapchainData();
+    if (m_device && m_current)
+    {
+        m_device->current.destroySwapchainKHR(m_current);
+        Logger::get().log(constants::LOG_CHANNEL_VULKAN, LogSeverity::trace,
+                          "Swapchain destroyed");
+    }
+    if (!m_images.empty())
+    {
+        for(auto &t: m_images)
+        {
+            delete t;
+            t = nullptr;
+        }
+        m_images.clear();
+    }
+    return createSwapchain();
 }
 
 kirana::viewport::vulkan::Swapchain::Swapchain(const Device *const device,
@@ -121,8 +142,9 @@ kirana::viewport::vulkan::Swapchain::Swapchain(const Device *const device,
     : m_isInitialized{false},
       m_prevSwapchain{nullptr}, m_device{device}, m_surface{surface}
 {
-    initializeSwapchainData();
-    if (createSwapchain())
+
+    m_isInitialized = initialize();
+    if (m_isInitialized)
     {
         Logger::get().log(constants::LOG_CHANNEL_VULKAN, LogSeverity::trace,
                           "Swapchain created");
@@ -132,6 +154,16 @@ kirana::viewport::vulkan::Swapchain::Swapchain(const Device *const device,
 
 kirana::viewport::vulkan::Swapchain::~Swapchain()
 {
+    m_onSwapchainOutOfDate.removeAllListeners();
+    if (!m_images.empty())
+    {
+        for(auto &t: m_images)
+        {
+            delete t;
+            t = nullptr;
+        }
+        m_images.clear();
+    }
     if (m_device)
     {
         if (m_current)
@@ -156,6 +188,9 @@ vk::ResultValue<uint32_t> kirana::viewport::vulkan::Swapchain::acquireNextImage(
                               static_cast<VkSwapchainKHR>(m_current), timeout,
                               static_cast<VkSemaphore>(semaphore),
                               static_cast<VkFence>(fence), &imgIndex);
+
+    if (vk::Result(result) == vk::Result::eErrorOutOfDateKHR)
+        m_onSwapchainOutOfDate();
 
     return {vk::Result(result), imgIndex};
 }

@@ -1,7 +1,7 @@
 #include "plane.hpp"
 #include "../mesh.hpp"
 #include "../material.hpp"
-#include "scene_utils.hpp"
+#include "scene_types.hpp"
 
 kirana::scene::primitives::Plane::Plane(
     const std::shared_ptr<Material> &material)

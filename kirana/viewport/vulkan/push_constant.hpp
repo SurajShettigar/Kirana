@@ -11,6 +11,8 @@ class PushConstantBase
   public:
     [[nodiscard]] virtual inline const vk::PushConstantRange &getRange()
         const = 0;
+    virtual ~PushConstantBase() = default;
+    ;
 };
 
 template <typename T> class PushConstant : public PushConstantBase
@@ -24,7 +26,7 @@ template <typename T> class PushConstant : public PushConstantBase
     PushConstant(const T &data, vk::ShaderStageFlags stageFlags)
         : m_current{data}, m_range{vk::PushConstantRange{stageFlags, 0,
                                                          sizeof(T)}} {};
-    ~PushConstant() = default;
+    ~PushConstant() override = default;
 
     PushConstant(const PushConstant<T> &p)
     {

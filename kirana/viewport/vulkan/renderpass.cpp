@@ -4,12 +4,23 @@
 #include "texture.hpp"
 #include "vulkan_utils.hpp"
 
-kirana::viewport::vulkan::RenderPass::RenderPass(
-    const Device *const device, const Swapchain *const swapchain,
-    const Texture *const depthTexture)
-    : m_isInitialized{false}, m_device{device}, m_swapchain{swapchain},
-      m_depthTexture{depthTexture}
+bool kirana::viewport::vulkan::RenderPass::initialize(
+    const Texture *depthTexture)
 {
+    m_depthTexture = depthTexture;
+    if (m_current)
+    {
+        m_device->current.destroyRenderPass(m_current);
+        Logger::get().log(constants::LOG_CHANNEL_VULKAN, LogSeverity::trace,
+                          "Renderpass destroyed");
+    }
+    if (!m_framebuffers.empty())
+    {
+        for (const auto &f : m_framebuffers)
+            m_device->current.destroyFramebuffer(f);
+        m_framebuffers.clear();
+    }
+
     std::vector<vk::AttachmentDescription> attachments;
 
     // Description of the image render pass will be writing into.
@@ -68,7 +79,7 @@ kirana::viewport::vulkan::RenderPass::RenderPass(
 
     try
     {
-        m_current = device->current.createRenderPass(createInfo);
+        m_current = m_device->current.createRenderPass(createInfo);
         Logger::get().log(constants::LOG_CHANNEL_VULKAN, LogSeverity::trace,
                           "Renderpass created");
 
@@ -76,24 +87,33 @@ kirana::viewport::vulkan::RenderPass::RenderPass(
             vk::FramebufferCreateFlags(), m_current, {},
             m_swapchain->imageExtent.width, m_swapchain->imageExtent.height, 1);
 
-        m_framebuffers.clear();
-
         for (const auto &i : m_swapchain->getImages())
         {
             std::vector<vk::ImageView> framebufferAttachments{
                 i->getImageView(), m_depthTexture->getImageView()};
             frameBufferInfo.setAttachments(framebufferAttachments);
             m_framebuffers.emplace_back(
-                device->current.createFramebuffer(frameBufferInfo));
+                m_device->current.createFramebuffer(frameBufferInfo));
         }
-        m_isInitialized = true;
         Logger::get().log(constants::LOG_CHANNEL_VULKAN, LogSeverity::trace,
                           "Framebuffers created");
+        return true;
     }
     catch (...)
     {
         handleVulkanException();
     }
+    return false;
+}
+
+
+kirana::viewport::vulkan::RenderPass::RenderPass(
+    const Device *const device, const Swapchain *const swapchain,
+    const Texture *const depthTexture)
+    : m_isInitialized{false}, m_device{device}, m_swapchain{swapchain},
+      m_depthTexture{depthTexture}
+{
+    m_isInitialized = initialize(m_depthTexture);
 }
 
 kirana::viewport::vulkan::RenderPass::~RenderPass()

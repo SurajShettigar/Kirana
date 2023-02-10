@@ -10,8 +10,8 @@ layout (set = 0, binding = 0) uniform _CameraData {
     CameraData c;
 } camBuffer;
 
-layout (set = 1, binding = 0) uniform accelerationStructureEXT topLevelAS;
-layout (rgba32f, set = 1, binding = 1) uniform image2D image;
+layout (set = 0, binding = 2) uniform accelerationStructureEXT topLevelAS;
+layout (rgba32f, set = 0, binding = 3) uniform image2D image;
 
 layout (push_constant) uniform _GlobalData {
     GlobalData g;
@@ -67,10 +67,10 @@ void main()
         }
         finalColor.rgb += rayColor;
     }
-    finalColor.rgb = finalColor.rbg / globalConstants.g.antiAliasSamples;
+    finalColor.rgb = finalColor.rgb / globalConstants.g.antiAliasSamples;
 
     // Accumulate color
-    if (globalConstants.g.frameIndex > 0)
+    if (globalConstants.g.frameIndex >= 0)
     {
         const float t = 1.0f / (globalConstants.g.frameIndex + 1);
         const vec3 oldColor = imageLoad(image, ivec2(gl_LaunchIDEXT.xy)).xyz;

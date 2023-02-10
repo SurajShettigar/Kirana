@@ -1,16 +1,6 @@
-#extension GL_EXT_ray_tracing : require
 #extension GL_EXT_nonuniform_qualifier : enable
 #extension GL_EXT_shader_explicit_arithmetic_types_int32 : require
 #extension GL_EXT_shader_explicit_arithmetic_types_int64 : require
-
-struct HitInfo {
-    vec3 color;
-    uint seed;
-    uint depth;
-    vec3 rayOrigin;
-    vec3 rayDirection;
-    vec3 weight;
-};
 
 struct CameraData {
     mat4 view; // Row-major storage
@@ -31,23 +21,19 @@ struct WorldData
     vec4 sunColor;
 };
 
-struct GlobalData {
-    uint64_t vertexBufferAddress;
-    uint64_t indexBufferAddress;
-    uint32_t frameIndex;
-    uint32_t maxBounces;
-    uint32_t antiAliasSamples;
-};
-
 struct Vertex {
     vec3 position;
     vec3 normal;
     vec4 color;
 };
 
-struct Object {
+struct PushConstantData {
+    mat4x4 modelMatrix;
+    uint64_t vertexBufferAddress;
+    uint64_t indexBufferAddress;
+    uint64_t materialDataBufferAddress;
+    int materialDataIndex;
+    uint32_t objectIndex;
     uint32_t firstIndex;
     uint32_t vertexOffset;
 };
-
-

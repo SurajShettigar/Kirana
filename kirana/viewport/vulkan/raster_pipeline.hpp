@@ -10,6 +10,8 @@ class RasterPipeline : public Pipeline
   public:
     struct Properties
     {
+        std::vector<vk::VertexInputBindingDescription> vertexBindings;
+        std::vector<vk::VertexInputAttributeDescription> vertexAttributes;
         vk::PrimitiveTopology primitiveType =
             vk::PrimitiveTopology::eTriangleList;
         vk::PolygonMode polygonMode = vk::PolygonMode::eFill;
@@ -28,18 +30,13 @@ class RasterPipeline : public Pipeline
         uint32_t stencilReference = 1;
     };
   protected:
-    const VertexInputDescription m_vertexInputDesc{};
     const Properties m_properties{};
 
     bool build() override;
 
   public:
     explicit RasterPipeline(
-        const Device *device, const RenderPass *renderPass,
-        const std::vector<const DescriptorSetLayout *> &descriptorSetLayouts,
-        const std::vector<const PushConstantBase *> &pushConstants,
-        std::string name, std::string shaderName,
-        VertexInputDescription vertexInputDesc, Properties properties);
+        const Device *device, const RenderPass *renderPass, const Shader *shader, Properties properties);
     ~RasterPipeline() override;
 
     RasterPipeline(const RasterPipeline &pipeline) = delete;

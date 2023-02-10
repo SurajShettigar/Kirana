@@ -10,6 +10,7 @@ class Device;
 class Allocator;
 class CommandPool;
 class CommandBuffers;
+class SceneData;
 class AccelerationStructure
 {
   private:
@@ -24,6 +25,7 @@ class AccelerationStructure
     const Device *const m_device;
     const Allocator *const m_allocator;
     const CommandPool *m_commandPool;
+    vk::Fence m_commandFence;
 
     static vk::TransformMatrixKHR getVulkanTransformMatrix(
         const math::Matrix4x4 &matrix);
@@ -34,9 +36,7 @@ class AccelerationStructure
         ASData *accelerationStructure) const;
     [[nodiscard]] vk::DeviceAddress getBLASAddress(uint32_t meshIndex) const;
 
-    void createBLAS(const std::vector<MeshData> &meshes,
-                    const vk::DeviceAddress &vertexBufferAddress,
-                    const vk::DeviceAddress &indexBufferAddress);
+    void createBLAS(const SceneData &sceneData);
 
     bool buildBLAS(
         vk::BuildAccelerationStructureFlagsKHR flags =
@@ -51,9 +51,7 @@ class AccelerationStructure
 
   public:
     AccelerationStructure(const Device *device, const Allocator *allocator,
-                          const std::vector<MeshData> &meshes,
-                          const vk::DeviceAddress &vertexBufferAddress,
-                          const vk::DeviceAddress &indexBufferAddress);
+                          const SceneData &sceneData);
     ~AccelerationStructure();
     AccelerationStructure(const AccelerationStructure &as) = delete;
     AccelerationStructure &operator=(const AccelerationStructure &as) = delete;

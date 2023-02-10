@@ -183,8 +183,12 @@ void kirana::viewport::vulkan::CommandBuffers::traceRays(
     const ShaderBindingTable &sbt, const std::array<uint32_t, 3> &size,
     uint32_t index) const
 {
-    m_current[index].traceRaysKHR(sbt.rayGenRegion, sbt.missRegion,
-                                  sbt.hitRegion, {}, size[0], size[1], size[2]);
+    m_current[index].traceRaysKHR(
+        sbt.getGroupRegion(ShaderBindingTable::GroupType::RAY_GEN),
+        sbt.getGroupRegion(ShaderBindingTable::GroupType::MISS),
+        sbt.getGroupRegion(ShaderBindingTable::GroupType::HIT),
+        sbt.getGroupRegion(ShaderBindingTable::GroupType::CALLABLE), size[0],
+        size[1], size[2]);
 }
 
 void kirana::viewport::vulkan::CommandBuffers::copyBuffer(

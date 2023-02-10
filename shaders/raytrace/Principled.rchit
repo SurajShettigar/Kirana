@@ -1,6 +1,6 @@
 #version 460
 #extension GL_GOOGLE_include_directive: enable
-#extension  GL_EXT_buffer_reference2: enable
+#extension GL_EXT_buffer_reference2: enable
 
 #include "base_raytrace.glsl"
 #include "raytrace_utils.glsl"
@@ -9,8 +9,7 @@ layout (set = 0, binding = 1) uniform _WorldData {
     WorldData w;
 } worldBuffer;
 
-layout (set = 1, binding = 0) uniform accelerationStructureEXT topLevelAS;
-layout (set = 1, binding = 2) readonly buffer ObjectData {
+layout (set = 1, binding = 0) readonly buffer ObjectData {
     Object o[];
 } objBuffer;
 
@@ -19,6 +18,10 @@ layout (buffer_reference) readonly buffer VertexData {
 };
 layout (buffer_reference) readonly buffer IndexData {
     uint32_t i[];
+};
+
+layout(buffer_reference) readonly buffer MaterialData {
+    PrincipledData p[];
 };
 
 layout (push_constant) uniform _GlobalData {
@@ -54,14 +57,16 @@ vec3 getWorldPosition(const vec3[3] vPositions, const vec3 barycentrics)
 vec3 getWorldNormal(const vec3[3] vNormals, vec3 barycentrics)
 {
     const vec3 normal = vNormals[0] * barycentrics.x + vNormals[1] * barycentrics.y + vNormals[2] * barycentrics.z;
-    return vec3(normalize(normal * gl_WorldToObjectEXT));
+    return normalize(vec3(normal * gl_WorldToObjectEXT));
 }
 
 void main()
 {
     const float PI = 3.141592;
-    VertexData vBuffer = VertexData(globalConstants.g.vertexBufferAddress);
-    IndexData iBuffer = IndexData(globalConstants.g.indexBufferAddress);
+    VertexData vBuffer = VertexData(objBuffer.o[gl_InstanceCustomIndexEXT].vertexBufferAddress);
+    IndexData iBuffer = IndexData(objBuffer.o[gl_InstanceCustomIndexEXT].indexBufferAddress);
+    MaterialData mBuffer = MaterialData(objBuffer.o[gl_InstanceCustomIndexEXT].materialDataBufferAddress);
+    PrincipledData principled = mBuffer.p[objBuffer.o[gl_InstanceCustomIndexEXT].materialDataIndex];
 
     const u32vec3 indices = getTriangleIndices(iBuffer);
     Vertex v[3] = getTriangles(vBuffer, indices);
@@ -75,7 +80,7 @@ void main()
     getCoordinateFrame(worldNormal, tangent, binormal);
 
     const vec3 reflectedDirection = normalize(randomHemispherical(payload.seed, vec3[3](tangent, binormal, worldNormal)));
-    const vec3 matColor = vec3(1.0);
+    const vec3 matColor = principled.color.rgb;
     vec3 brdf = matColor / PI;
 
     payload.rayOrigin = worldPos;

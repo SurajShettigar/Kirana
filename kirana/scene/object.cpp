@@ -1,6 +1,6 @@
 #include "object.hpp"
 #include "mesh.hpp"
-#include "scene_utils.hpp"
+#include "scene_types.hpp"
 
 #include <assimp/scene.h>
 #include <algorithm>

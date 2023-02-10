@@ -7,11 +7,7 @@ namespace kirana::viewport::vulkan
 {
 class Device;
 class RenderPass;
-class DescriptorSetLayout;
-class PushConstantBase;
 class Shader;
-class PipelineLayout;
-struct VertexInputDescription;
 
 class Pipeline
 {
@@ -20,35 +16,28 @@ class Pipeline
 
     const Device *const m_device;
     const RenderPass *const m_renderPass;
+    const Shader *const m_shader;
 
-    PipelineLayout *m_pipelineLayout;
-    std::string m_name = "Material";
-    std::string m_shaderName = "MatCap";
+    std::string m_name = "MatCap";
+    vulkan::ShadingPipeline m_shadingPipeline = vulkan::ShadingPipeline::RASTER;
 
     vk::Pipeline m_current;
 
     virtual bool build() = 0;
 
   public:
-    explicit Pipeline(
-        const Device *device, const RenderPass *renderPass,
-        const std::vector<const DescriptorSetLayout *> &descriptorSetLayouts,
-        const std::vector<const PushConstantBase *> &pushConstants,
-        std::string name, std::string shaderName);
+    explicit Pipeline(const Device *device, const RenderPass *renderPass,
+                      const Shader *shader,
+                      vulkan::ShadingPipeline shadingPipeline);
     virtual ~Pipeline();
     Pipeline(const Pipeline &pipeline) = delete;
     Pipeline &operator=(const Pipeline &pipeline) = delete;
 
     const bool &isInitialized = m_isInitialized;
     const std::string &name = m_name;
-    const std::string &shaderName = m_shaderName;
+    const vulkan::ShadingPipeline &shadingPipeline = m_shadingPipeline;
 
     const vk::Pipeline &current = m_current;
-
-    [[nodiscard]] inline const PipelineLayout &getLayout() const
-    {
-        return *m_pipelineLayout;
-    }
 };
 } // namespace kirana::viewport::vulkan
 #endif

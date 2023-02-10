@@ -1,7 +1,7 @@
 #ifndef KIRANA_VULKAN_RENDERER_HPP
 #define KIRANA_VULKAN_RENDERER_HPP
 
-#include <vector>
+#include "vulkan_types.hpp"
 
 namespace kirana::scene
 {
@@ -11,11 +11,6 @@ class ViewportScene;
 namespace kirana::window
 {
 class Window;
-}
-
-namespace kirana::viewport
-{
-enum class Shading;
 }
 
 namespace kirana::viewport::vulkan
@@ -31,6 +26,7 @@ class DescriptorSetLayout;
 class DescriptorPool;
 class Drawer;
 class SceneData;
+class RaytraceData;
 
 class VulkanRenderer
 {
@@ -45,13 +41,14 @@ class VulkanRenderer
     Surface *m_surface = nullptr;
     Device *m_device = nullptr;
     Swapchain *m_swapchain = nullptr;
+    uint32_t m_swapchainOutOfDateListener =
+        std::numeric_limits<unsigned int>::max();
     const Texture *m_depthTexture = nullptr;
     RenderPass *m_renderpass = nullptr;
     DescriptorPool *m_descriptorPool = nullptr;
     Drawer *m_drawer = nullptr;
-    uint32_t m_swapchainOutOfDateListener =
-        std::numeric_limits<unsigned int>::max();
 
+    RaytraceData *m_raytraceData = nullptr;
     SceneData *m_currentScene = nullptr;
 
     VulkanRenderer() = default;
@@ -72,7 +69,7 @@ class VulkanRenderer
 
     /// Initializes vulkan.
     void init(const window::Window *window, const scene::ViewportScene &scene,
-              viewport::Shading shading);
+              vulkan::ShadingPipeline pipeline, vulkan::ShadingType type);
     /// Updates the transforms.
     void update();
     /// Executes vulkan draw calls.
@@ -80,13 +77,8 @@ class VulkanRenderer
     /// Deletes vulkan objects.
     void clean();
 
-    /// Switches the current pipeline to support the required shading.
-    void setShading(viewport::Shading shading);
-    /**
-     * Convert Scene object into vulkan SceneData object.
-     * @param scene The Scene object to be converted.
-     */
-    //    void loadScene(const scene::Scene &scene);
+    void setShadingPipeline(vulkan::ShadingPipeline pipeline);
+    void setShadingType(vulkan::ShadingType type);
 };
 } // namespace kirana::viewport::vulkan
 

@@ -3,141 +3,159 @@
 
 #include <vector>
 #include <unordered_map>
-#include <execution>
 #include "vulkan_types.hpp"
-#include "../viewport_types.hpp"
 
 namespace kirana::scene
 {
 struct Vertex;
+struct CameraData;
 struct WorldData;
 class ViewportScene;
 class Material;
+struct SceneInfo;
 struct Renderable;
+typedef uint32_t INDEX_TYPE;
 } // namespace kirana::scene
 
 namespace kirana::viewport::vulkan
 {
-class Shader;
 class Device;
-class RenderPass;
 class Allocator;
-class DescriptorSetLayout;
-template <typename T> class PushConstant;
-class AccelerationStructure;
-class RaytracePipeline;
+class DescriptorPool;
+class RenderPass;
+class RaytraceData;
 class ShaderBindingTable;
+class MaterialManager;
+class PipelineLayout;
+template <typename> class PushConstant;
 class SceneData
 {
   private:
-    bool m_isInitialized = false;
-    uint32_t m_raytracedFrameCount = 0;
-    viewport::Shading m_currentShading = viewport::Shading::BASIC;
+    mutable utils::Event<> m_onSceneDataChange;
 
+    bool m_isInitialized = false;
+    bool m_isRaytracingInitialized = false;
     const Device *const m_device;
     const Allocator *const m_allocator;
+    const DescriptorPool *const m_descriptorPool;
     const RenderPass *m_renderPass;
-    const DescriptorSetLayout *m_globalDescSetLayout;
-    const DescriptorSetLayout *m_objectDescSetLayout;
-    const DescriptorSetLayout *m_raytraceDescSetLayout;
-    PushConstant<RaytracedGlobalData> *m_raytraceGlobalData = nullptr;
+    RaytraceData *const m_raytraceData;
+    const scene::ViewportScene &m_scene;
 
-    VertexInputDescription m_vertexDesc;
-    mutable std::unordered_map<std::string, std::unique_ptr<Pipeline>>
-        m_materials;
-    std::vector<MeshData> m_meshes;
-    size_t m_totalInstanceCount;
+    // TODO: Switch to per-shader pipeline layout using shader reflection.
+    const PipelineLayout *m_rasterPipelineLayout = nullptr;
+    // TODO: Switch to per-shader descriptor set using shader reflection.
+    std::vector<DescriptorSet> m_rasterDescSets;
 
-    CameraData m_cameraData;
+    vulkan::ShadingPipeline m_currentShadingPipeline =
+        vulkan::ShadingPipeline::RASTER;
+    vulkan::ShadingType m_currentShadingType = vulkan::ShadingType::BASIC;
+
+    MaterialManager *m_materialManager = nullptr;
+
+    std::vector<MeshData> m_editorMeshes;
+    std::vector<MeshData> m_sceneMeshes;
+
     AllocatedBuffer m_cameraBuffer;
     AllocatedBuffer m_worldDataBuffer;
-    AllocatedBuffer m_vertexBuffer;
-    AllocatedBuffer m_indexBuffer;
-    AllocatedBuffer m_objectBuffer;
-    // Raytracing data
-    AccelerationStructure *m_accelStructure = nullptr;
-    RaytracePipeline *m_raytracePipeline = nullptr;
-    ShaderBindingTable *m_shaderBindingTable = nullptr;
-    AllocatedBuffer m_raytracedObjectBuffer;
+    AllocatedBuffer m_objectDataBuffer;
+    std::vector<BatchBufferData> m_vertexBuffers;
+    std::vector<BatchBufferData> m_indexBuffers;
 
-    const scene::ViewportScene &m_scene;
     uint32_t m_cameraChangeListener;
     uint32_t m_worldChangeListener;
-
-    void setVertexDescription();
+    uint32_t m_sceneLoadListener;
 
     void onWorldChanged();
     void onCameraChanged();
+    void onSceneLoaded(bool result);
     void onObjectChanged();
 
     void createWorldDataBuffer();
     void createCameraBuffer();
-    bool createVertexAndIndexBuffer(const std::vector<scene::Vertex> &vertices,
-                                    const std::vector<uint32_t> &indices);
 
-    std::unique_ptr<Pipeline> getPipelineForMaterial(
-        const scene::Material &material);
-    void createMaterials();
-    const std::unique_ptr<Pipeline> &findMaterial(
-        const std::string &materialName, bool overrideShading = false);
-    bool hasMeshData(const std::string &meshName, uint32_t *meshIndex) const;
-    bool createMeshes();
-    bool createObjectBuffer();
-    bool initializeRaytracing();
+    std::pair<int, int> createVertexAndIndexBuffer(
+        const std::vector<scene::Vertex> &vertices,
+        const std::vector<scene::INDEX_TYPE> &indices);
+
+
+    void createEditorMaterials();
+    void createSceneMaterials();
+    static bool hasMeshData(const std::vector<MeshData> &meshes,
+                            const std::string &meshName, uint32_t *meshIndex);
+    bool createMeshes(bool isEditor = false);
+    void createObjectBuffer();
 
   public:
-    SceneData(const Device *device, const Allocator *allocator,
-              const RenderPass *renderPass, const scene::ViewportScene &scene,
-              viewport::Shading shading = viewport::Shading::BASIC);
+    SceneData(
+        const Device *device, const Allocator *allocator,
+        const DescriptorPool *descriptorPool, const RenderPass *renderPass,
+        RaytraceData *raytraceData, const scene::ViewportScene &scene,
+        vulkan::ShadingPipeline pipeline = vulkan::ShadingPipeline::RASTER,
+        vulkan::ShadingType type = vulkan::ShadingType::BASIC);
     ~SceneData();
 
     SceneData(const SceneData &sceneData) = delete;
 
     const bool &isInitialized = m_isInitialized;
+    const bool &isRaytracingInitialized = m_isRaytracingInitialized;
 
-    void updateRaytracedFrameCount(bool reset = false);
-
-    inline bool shouldRenderOutline() const
+    [[nodiscard]] inline uint32_t addOnSceneDataChangeListener(
+        const std::function<void()> &callback) const
     {
-        return m_currentShading == viewport::Shading::BASIC;
+        return m_onSceneDataChange.addListener(callback);
     }
 
-    inline void setShading(viewport::Shading shading)
+    inline void removeOnSceneDataChangeListener(uint32_t callbackId) const
     {
-        m_currentShading = shading;
-    };
-    inline viewport::Shading getCurrentShading() const
-    {
-        return m_currentShading;
+        m_onSceneDataChange.removeListener(callbackId);
     }
 
-    [[nodiscard]] inline const DescriptorSetLayout *
-    getGlobalDescriptorSetLayout() const
+    [[nodiscard]] inline const RaytraceData &getRaytraceData() const
     {
-        return m_globalDescSetLayout;
+        return *m_raytraceData;
     }
 
-    [[nodiscard]] inline const DescriptorSetLayout *
-    getObjectDescriptorSetLayout() const
+    [[nodiscard]] inline const PipelineLayout &getRasterPipelineLayout() const
     {
-        return m_objectDescSetLayout;
+        return *m_rasterPipelineLayout;
     }
 
-    [[nodiscard]] inline const DescriptorSetLayout *
-    getRaytraceDescriptorSetLayout() const
+    [[nodiscard]] inline const std::vector<DescriptorSet>
+        &getRasterDescriptorSets() const
     {
-        return m_raytraceDescSetLayout;
+        return m_rasterDescSets;
     }
 
-    [[nodiscard]] const PushConstant<RaytracedGlobalData>
-        &getRaytracedGlobalData() const;
-
-    [[nodiscard]] inline const std::vector<MeshData> &getMeshData() const
+    [[nodiscard]] inline vulkan::ShadingPipeline getCurrentShadingPipeline()
+        const
     {
-        return m_meshes;
+        return m_currentShadingPipeline;
+    }
+    [[nodiscard]] inline vulkan::ShadingType getCurrentShadingType() const
+    {
+        return m_currentShadingType;
+    }
+    void setShadingPipeline(vulkan::ShadingPipeline pipeline);
+    void setShadingType(vulkan::ShadingType type);
+
+    [[nodiscard]] inline const std::vector<MeshData> &getEditorMeshes() const
+    {
+        return m_editorMeshes;
     }
 
-    [[nodiscard]] const Pipeline *getOutlineMaterial() const;
+    [[nodiscard]] inline const std::vector<MeshData> &getSceneMeshes() const
+    {
+        return m_sceneMeshes;
+    }
+
+    [[nodiscard]] uint32_t getCurrentMaterialIndex(bool isEditorMesh, bool outline,
+                                       uint32_t meshIndex) const;
+
+    const Pipeline &getCurrentPipeline(bool isEditorMesh, bool outline,
+                                       uint32_t meshIndex) const;
+
+    const ShaderBindingTable &getCurrentSBT(uint32_t meshIndex) const;
 
     [[nodiscard]] const scene::WorldData &getWorldData() const;
 
@@ -153,38 +171,51 @@ class SceneData
     }
     [[nodiscard]] uint32_t getWorldDataBufferOffset(uint32_t offsetIndex) const;
 
-    [[nodiscard]] inline const AllocatedBuffer &getVertexBuffer() const
+
+    [[nodiscard]] inline const AllocatedBuffer &getObjectDataBuffer() const
     {
-        return m_vertexBuffer;
-    }
-    [[nodiscard]] inline const AllocatedBuffer &getIndexBuffer() const
-    {
-        return m_indexBuffer;
+        return m_objectDataBuffer;
     }
 
-    [[nodiscard]] inline const AllocatedBuffer &getObjectBuffer() const
+    inline const vk::Buffer &getVertexBuffer(bool isEditorMesh,
+                                             uint32_t meshIndex) const
     {
-        return m_objectBuffer;
-    }
-    [[nodiscard]] uint32_t getObjectBufferOffset(uint32_t offsetIndex) const;
-
-    [[nodiscard]] const vk::AccelerationStructureKHR &getAccelerationStructure()
-        const;
-
-    [[nodiscard]] inline const RaytracePipeline &getRaytracePipeline() const
-    {
-        return *m_raytracePipeline;
+        return isEditorMesh ? *m_vertexBuffers[m_editorMeshes[meshIndex]
+                                                   .vertexBufferIndex]
+                                   .buffer.buffer
+                            : *m_vertexBuffers[m_sceneMeshes[meshIndex]
+                                                   .vertexBufferIndex]
+                                   .buffer.buffer;
     }
 
-    [[nodiscard]] inline const ShaderBindingTable &getShaderBindingTable() const
+    inline const vk::Buffer &getIndexBuffer(bool isEditorMesh,
+                                            uint32_t meshIndex) const
     {
-        return *m_shaderBindingTable;
+        return isEditorMesh
+                   ? *m_indexBuffers[m_editorMeshes[meshIndex].indexBufferIndex]
+                          .buffer.buffer
+                   : *m_indexBuffers[m_sceneMeshes[meshIndex].indexBufferIndex]
+                          .buffer.buffer;
     }
 
-    [[nodiscard]] inline const AllocatedBuffer &getRaytracedObjectBuffer() const
+    [[nodiscard]] inline vk::DeviceAddress getVertexBufferAddress(
+        int bufferIndex) const
     {
-        return m_raytracedObjectBuffer;
+        return bufferIndex == -1 ? 0
+                                 : m_vertexBuffers[bufferIndex].buffer.address;
     }
+
+    [[nodiscard]] inline vk::DeviceAddress getIndexBufferAddress(
+        int bufferIndex) const
+    {
+        return bufferIndex == -1 ? 0
+                                 : m_indexBuffers[bufferIndex].buffer.address;
+    }
+
+    [[nodiscard]] PushConstant<PushConstantRaster> getPushConstantRasterData(
+        bool isEditor, bool outline, uint32_t meshIndex, uint32_t instanceIndex) const;
+    [[nodiscard]] PushConstant<PushConstantRaytrace>
+    getPushConstantRaytraceData() const;
 };
 } // namespace kirana::viewport::vulkan
 #endif

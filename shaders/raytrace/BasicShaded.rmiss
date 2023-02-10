@@ -12,6 +12,6 @@ layout (location = 0) rayPayloadInEXT HitInfo payload;
 
 void main()
 {
-    payload.color = vec3(4.0, 4.0, 4.0);
+    payload.color = vec3(3.0, 3.0, 3.0);
     payload.depth = 999;
 }

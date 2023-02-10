@@ -44,6 +44,7 @@ static vk::PhysicalDeviceBufferDeviceAddressFeatures
 static vk::PhysicalDeviceShaderClockFeaturesKHR DEVICE_SHADER_CLOCK_FEATURES{
     true, true};
 
+#ifndef VK_HANDLE_RESULT
 #define VK_HANDLE_RESULT(f, err)                                               \
     {                                                                          \
         vk::Result result = f;                                                 \
@@ -51,9 +52,9 @@ static vk::PhysicalDeviceShaderClockFeaturesKHR DEVICE_SHADER_CLOCK_FEATURES{
         {                                                                      \
             Logger::get().log(constants::LOG_CHANNEL_VULKAN,                   \
                               LogSeverity::error, err);                        \
-            abort();                                                           \
         }                                                                      \
     }
+#endif
 
 /**
  * @brief Use it in catch(...) blocks of try-catch methods surrounding Vulkan
@@ -291,6 +292,43 @@ static bool hasRequiredValidationLayers()
         });
 
     return missingLayers == REQUIRED_VALIDATION_LAYERS.end();
+}
+
+static std::string shaderStageToString(vk::ShaderStageFlagBits stage)
+{
+    switch (stage)
+    {
+    case vk::ShaderStageFlagBits::eVertex:
+        return "VERTEX";
+    case vk::ShaderStageFlagBits::eTessellationControl:
+        return "TESSELLATION_CONTROL";
+    case vk::ShaderStageFlagBits::eTessellationEvaluation:
+        return "TESSELLATION_EVALUATION";
+    case vk::ShaderStageFlagBits::eGeometry:
+        return "GEOMETRY";
+    case vk::ShaderStageFlagBits::eFragment:
+        return "FRAGMENT";
+    case vk::ShaderStageFlagBits::eCompute:
+        return "COMPUTE";
+    case vk::ShaderStageFlagBits::eAllGraphics:
+        return "ALL_GRAPHICS";
+    case vk::ShaderStageFlagBits::eAll:
+        return "ALL";
+    case vk::ShaderStageFlagBits::eRaygenKHR:
+        return "RAY_GEN";
+    case vk::ShaderStageFlagBits::eAnyHitKHR:
+        return "ANY_HIT";
+    case vk::ShaderStageFlagBits::eClosestHitKHR:
+        return "CLOSEST_HIT";
+    case vk::ShaderStageFlagBits::eMissKHR:
+        return "MISS";
+    case vk::ShaderStageFlagBits::eIntersectionKHR:
+        return "INTERSECTION";
+    case vk::ShaderStageFlagBits::eCallableKHR:
+        return "CALLABLE";
+    default:
+        return "UNKNOWN";
+    }
 }
 } // namespace kirana::viewport::vulkan
 
