@@ -1,7 +1,5 @@
 #include "mesh.hpp"
-#include "scene_utils.hpp"
 #include "material.hpp"
-
 #include <assimp/scene.h>
 #include <constants.h>
 #include <logger.hpp>
@@ -11,11 +9,11 @@ typedef kirana::utils::Logger Logger;
 typedef kirana::utils::LogSeverity LogSeverity;
 namespace constants = kirana::utils::constants;
 
-kirana::scene::Mesh::Mesh(const std::string &name, const math::Bounds3 &bounds,
+kirana::scene::Mesh::Mesh(std::string name, const math::Bounds3 &bounds,
                           const std::vector<Vertex> &vertices,
-                          const std::vector<uint32_t> &indices,
+                          const std::vector<scene::INDEX_TYPE> &indices,
                           const std::shared_ptr<Material> &material)
-    : m_name{name}, m_bounds{bounds}, m_vertices{vertices}, m_indices{indices},
+    : m_name{std::move(name)}, m_bounds{bounds}, m_vertices{vertices}, m_indices{indices},
       m_material{material}
 {
 }
@@ -37,9 +35,9 @@ kirana::scene::Mesh::Mesh(const aiMesh *mesh,
         for (size_t i = 0; i < mesh->mNumFaces; i++)
         {
             const aiFace &face = mesh->mFaces[i];
-            const uint32_t v1 = face.mIndices[0];
-            const uint32_t v2 = face.mIndices[1];
-            const uint32_t v3 = face.mIndices[2];
+            const scene::INDEX_TYPE v1 = face.mIndices[0];
+            const scene::INDEX_TYPE v2 = face.mIndices[1];
+            const scene::INDEX_TYPE v3 = face.mIndices[2];
             m_indices.push_back(v1);
             m_indices.push_back(v2);
             m_indices.push_back(v3);
@@ -76,18 +74,21 @@ kirana::scene::Mesh::Mesh(const aiMesh *mesh,
                 m_vertices[v1].color[0] = mesh->mColors[v1]->r;
                 m_vertices[v1].color[1] = mesh->mColors[v1]->g;
                 m_vertices[v1].color[2] = mesh->mColors[v1]->b;
+                m_vertices[v1].color[3] = mesh->mColors[v1]->a;
             }
             if (mesh->HasVertexColors(v2))
             {
                 m_vertices[v2].color[0] = mesh->mColors[v2]->r;
                 m_vertices[v2].color[1] = mesh->mColors[v2]->g;
                 m_vertices[v2].color[2] = mesh->mColors[v2]->b;
+                m_vertices[v2].color[3] = mesh->mColors[v2]->a;
             }
             if (mesh->HasVertexColors(v3))
             {
                 m_vertices[v3].color[0] = mesh->mColors[v3]->r;
                 m_vertices[v3].color[1] = mesh->mColors[v3]->g;
                 m_vertices[v3].color[2] = mesh->mColors[v3]->b;
+                m_vertices[v3].color[3] = mesh->mColors[v3]->a;
             }
         }
     }

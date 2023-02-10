@@ -19,12 +19,28 @@ kirana::viewport::vulkan::QueueFamilyIndices kirana::viewport::vulkan::Device::
     {
         if (q.queueFlags & vk::QueueFlagBits::eGraphics)
             indices.graphics = i;
+        if ((q.queueFlags & vk::QueueFlagBits::eTransfer) &&
+            !(q.queueFlags & vk::QueueFlagBits::eCompute) &&
+            !(q.queueFlags & vk::QueueFlagBits::eGraphics))
+            indices.transfer = i;
+        if (q.queueFlags & vk::QueueFlagBits::eCompute)
+            indices.compute = i;
+        i++;
     }
 
     vk::Bool32 isPresentSupported =
         gpu.getSurfaceSupportKHR(indices.graphics, surface);
     if (isPresentSupported)
         indices.presentation = indices.graphics;
+    if (!indices.isTransferSupported())
+    {
+        if (indices.isComputeSupported())
+            indices.transfer = indices.compute;
+        else
+            indices.transfer = indices.graphics;
+    }
+    if (!indices.isComputeSupported())
+        indices.compute = indices.compute;
 
     return indices;
 }
@@ -39,6 +55,28 @@ kirana::viewport::vulkan::SwapchainSupportInfo kirana::viewport::vulkan::
     supportInfo.presentModes = gpu.getSurfacePresentModesKHR(surface);
 
     return supportInfo;
+}
+
+vk::PhysicalDeviceAccelerationStructurePropertiesKHR kirana::viewport::vulkan::
+    Device::getAccelerationStructureProperties(const vk::PhysicalDevice &gpu)
+{
+    vk::PhysicalDeviceAccelerationStructurePropertiesKHR accelStructProps;
+    vk::PhysicalDeviceProperties2 props;
+    props.pNext = &accelStructProps;
+    gpu.getProperties2(&props);
+    return *reinterpret_cast<
+        vk::PhysicalDeviceAccelerationStructurePropertiesKHR *>(props.pNext);
+}
+
+vk::PhysicalDeviceRayTracingPipelinePropertiesKHR kirana::viewport::vulkan::
+    Device::getRaytracingProperties(const vk::PhysicalDevice &gpu)
+{
+    vk::PhysicalDeviceRayTracingPipelinePropertiesKHR raytraceProps;
+    vk::PhysicalDeviceProperties2 props;
+    props.pNext = &raytraceProps;
+    gpu.getProperties2(&props);
+    return *reinterpret_cast<
+        vk::PhysicalDeviceRayTracingPipelinePropertiesKHR *>(props.pNext);
 }
 
 bool kirana::viewport::vulkan::Device::selectIdealGPU()
@@ -88,19 +126,6 @@ bool kirana::viewport::vulkan::Device::selectIdealGPU()
         return false;
     }
 
-    // Check if the device supports necessary features.
-    vk::PhysicalDeviceShaderDrawParametersFeatures shaderDrawFeature{};
-    vk::PhysicalDeviceFeatures2 features{};
-    features.pNext = &shaderDrawFeature;
-    m_gpu.getFeatures2(&features);
-    if (!features.features.fillModeNonSolid || !features.features.wideLines ||
-        !features.features.logicOp || !shaderDrawFeature.shaderDrawParameters)
-    {
-        Logger::get().log(constants::LOG_CHANNEL_VULKAN, LogSeverity::error,
-                          "Failed to find GPU with necessary features");
-        return false;
-    }
-
     // Check if the device has the necessary queue families.
     m_queueFamilyIndices = getQueueFamilyIndices(m_gpu, m_surface->current);
     if (!(m_queueFamilyIndices.isGraphicsSupported() &&
@@ -113,7 +138,7 @@ bool kirana::viewport::vulkan::Device::selectIdealGPU()
 
     // Check if device has the required extensions.
     if (!hasRequiredExtensions(m_gpu.enumerateDeviceExtensionProperties(),
-                               DEVICE_EXTENSIONS))
+                               REQUIRED_DEVICE_EXTENSIONS))
     {
         Logger::get().log(constants::LOG_CHANNEL_VULKAN, LogSeverity::error,
                           "Failed to find GPU with required device extensions");
@@ -121,13 +146,28 @@ bool kirana::viewport::vulkan::Device::selectIdealGPU()
     }
 
     // Check if device has swapchain capabilities.
-    m_swapchainSupportInfo = getSwapchainSupportInfo(m_gpu, m_surface->current);
-    if (!m_swapchainSupportInfo.isSupported())
+    const SwapchainSupportInfo swapInfo =
+        getSwapchainSupportInfo(m_gpu, m_surface->current);
+    if (!swapInfo.isSupported())
     {
         Logger::get().log(constants::LOG_CHANNEL_VULKAN, LogSeverity::error,
                           "Failed to find GPU with swapchain capabilities");
         return false;
     }
+
+    // Check if the device supports necessary features.
+    vk::PhysicalDeviceFeatures2 features = vulkan::getRequiredDeviceFeatures();
+    m_gpu.getFeatures2(&features);
+    if (!vulkan::hasRequiredDeviceFeatures(features))
+    {
+        Logger::get().log(constants::LOG_CHANNEL_VULKAN, LogSeverity::error,
+                          "Failed to find GPU with the necessary feature set");
+        return false;
+    }
+
+    // Set Extension properties.
+    m_accelStructProperties = getAccelerationStructureProperties(m_gpu);
+    m_raytracingProperties = getRaytracingProperties(m_gpu);
 
     Logger::get().log(constants::LOG_CHANNEL_VULKAN, LogSeverity::debug,
                       "Selected GPU: " +
@@ -137,25 +177,22 @@ bool kirana::viewport::vulkan::Device::selectIdealGPU()
 
 bool kirana::viewport::vulkan::Device::createLogicalDevice()
 {
-    std::set<uint32_t> indices = m_queueFamilyIndices.getIndices();
+    const std::set<uint32_t> indices = m_queueFamilyIndices.getIndices();
 
     std::vector<vk::DeviceQueueCreateInfo> queueCreateInfos;
-    float priority = 1.0f;
+    const float priority = 1.0f;
     for (auto i : indices)
     {
-        vk::DeviceQueueCreateInfo createInfo(vk::DeviceQueueCreateFlags(), i, 1,
-                                             &priority);
+        const vk::DeviceQueueCreateInfo createInfo(vk::DeviceQueueCreateFlags(),
+                                                   i, 1, &priority);
         queueCreateInfos.push_back(createInfo);
     }
 
-    vk::PhysicalDeviceShaderDrawParametersFeatures shaderDrawFeature{true};
-    vk::PhysicalDeviceFeatures deviceFeatures{};
-    deviceFeatures.fillModeNonSolid = true;
-    deviceFeatures.wideLines = true;
-    deviceFeatures.logicOp = true;
-    vk::DeviceCreateInfo createInfo({}, queueCreateInfos, VALIDATION_LAYERS,
-                                    DEVICE_EXTENSIONS, &deviceFeatures,
-                                    &shaderDrawFeature);
+    const vk::PhysicalDeviceFeatures2 reqFeatures =
+        vulkan::getRequiredDeviceFeatures();
+    const vk::DeviceCreateInfo createInfo(
+        {}, queueCreateInfos, REQUIRED_VALIDATION_LAYERS,
+        REQUIRED_DEVICE_EXTENSIONS, &reqFeatures.features, reqFeatures.pNext);
 
     try
     {
@@ -189,6 +226,10 @@ kirana::viewport::vulkan::Device::Device(const Instance *const instance,
                 m_current.getQueue(m_queueFamilyIndices.graphics, 0);
             m_presentationQueue =
                 m_current.getQueue(m_queueFamilyIndices.presentation, 0);
+            m_transferQueue =
+                m_current.getQueue(m_queueFamilyIndices.transfer, 0);
+            m_computeQueue =
+                m_current.getQueue(m_queueFamilyIndices.compute, 0);
             m_isInitialized = true;
             Logger::get().log(constants::LOG_CHANNEL_VULKAN, LogSeverity::trace,
                               "Device initialized");
@@ -206,10 +247,10 @@ kirana::viewport::vulkan::Device::~Device()
     }
 }
 
-
-void kirana::viewport::vulkan::Device::reinitializeSwapchainInfo()
+kirana::viewport::vulkan::SwapchainSupportInfo kirana::viewport::vulkan::
+    Device::getSwapchainSupportInfo() const
 {
-    m_swapchainSupportInfo = getSwapchainSupportInfo(m_gpu, m_surface->current);
+    return Device::getSwapchainSupportInfo(m_gpu, m_surface->current);
 }
 
 void kirana::viewport::vulkan::Device::waitUntilIdle() const
@@ -227,10 +268,40 @@ void kirana::viewport::vulkan::Device::graphicsSubmit(
                            fence);
 }
 
-void kirana::viewport::vulkan::Device::graphicsSubmit(
-    const vk::CommandBuffer &commandBuffer, const vk::Fence &fence) const
+void kirana::viewport::vulkan::Device::transferSubmit(
+    const std::vector<vk::CommandBuffer> &commandBuffers) const
 {
-    m_graphicsQueue.submit(vk::SubmitInfo({}, {}, commandBuffer, {}), fence);
+    m_transferQueue.submit(vk::SubmitInfo({}, {}, commandBuffers));
+}
+
+void kirana::viewport::vulkan::Device::transferSubmit(
+    const std::vector<vk::CommandBuffer> &commandBuffers,
+    const vk::Fence &fence) const
+{
+    m_transferQueue.submit(vk::SubmitInfo({}, {}, commandBuffers, {}), fence);
+}
+
+void kirana::viewport::vulkan::Device::computeSubmit(
+    const std::vector<vk::CommandBuffer> &commandBuffers) const
+{
+    m_computeQueue.submit(vk::SubmitInfo({}, {}, commandBuffers));
+}
+
+void kirana::viewport::vulkan::Device::computeSubmit(
+    const std::vector<vk::CommandBuffer> &commandBuffers,
+    const vk::Fence &fence) const
+{
+    m_computeQueue.submit(vk::SubmitInfo({}, {}, commandBuffers, {}), fence);
+}
+
+void kirana::viewport::vulkan::Device::transferWait() const
+{
+    m_transferQueue.waitIdle();
+}
+
+void kirana::viewport::vulkan::Device::computeWait() const
+{
+    m_computeQueue.waitIdle();
 }
 
 vk::Result kirana::viewport::vulkan::Device::present(
@@ -252,4 +323,63 @@ vk::Result kirana::viewport::vulkan::Device::present(
         static_cast<VkQueue>(m_presentationQueue), &presentInfo);
 
     return vk::Result(result);
+}
+
+vk::DeviceAddress kirana::viewport::vulkan::Device::getBufferAddress(
+    const vk::Buffer &buffer) const
+{
+    return m_current.getBufferAddress(vk::BufferDeviceAddressInfo(buffer));
+}
+void kirana::viewport::vulkan::Device::setDebugObjectName(
+    vk::ObjectType type, uint64_t handle, const std::string &name) const
+{
+#if DEBUG
+    m_current.setDebugUtilsObjectNameEXT(
+        vk::DebugUtilsObjectNameInfoEXT(type, handle, name.c_str()));
+#endif
+}
+
+void kirana::viewport::vulkan::Device::setDebugObjectName(
+    const vk::Buffer &buffer, const std::string &name) const
+{
+    setDebugObjectName(vk::ObjectType::eBuffer,
+                       (uint64_t) static_cast<VkBuffer>(buffer), name);
+}
+
+void kirana::viewport::vulkan::Device::setDebugObjectName(
+    const vk::ShaderModule &shaderModule, const std::string &name) const
+{
+    setDebugObjectName(vk::ObjectType::eShaderModule,
+                       (uint64_t) static_cast<VkShaderModule>(shaderModule),
+                       name);
+}
+
+void kirana::viewport::vulkan::Device::setDebugObjectName(
+    const vk::Pipeline &pipeline, const std::string &name) const
+{
+    setDebugObjectName(vk::ObjectType::ePipeline,
+                       (uint64_t) static_cast<VkPipeline>(pipeline), name);
+}
+
+void kirana::viewport::vulkan::Device::setDebugObjectName(
+    const vk::Image &image, const std::string &name) const
+{
+    setDebugObjectName(vk::ObjectType::eImage,
+                       (uint64_t) static_cast<VkImage>(image), name);
+}
+
+void kirana::viewport::vulkan::Device::setDebugObjectName(
+    const vk::ImageView &imageView, const std::string &name) const
+{
+    setDebugObjectName(vk::ObjectType::eImageView,
+                       (uint64_t) static_cast<VkImageView>(imageView), name);
+}
+
+void kirana::viewport::vulkan::Device::setDebugObjectName(
+    const vk::AccelerationStructureKHR &accelStruct,
+    const std::string &name) const
+{
+    setDebugObjectName(
+        vk::ObjectType::eAccelerationStructureKHR,
+        (uint64_t) static_cast<VkAccelerationStructureKHR>(accelStruct), name);
 }

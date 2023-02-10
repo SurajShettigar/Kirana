@@ -1,7 +1,7 @@
 #include "scene_manager.hpp"
 
 #include "scene_importer.hpp"
-#include "scene_utils.hpp"
+#include "scene_types.hpp"
 #include <file_system.hpp>
 #include <logger.hpp>
 #include <constants.h>

@@ -3,19 +3,20 @@
 #include "command_pool.hpp"
 #include "command_buffers.hpp"
 #include "device.hpp"
-#include <vk_mem_alloc.hpp>
-#include "allocator.hpp"
-#include "descriptor_pool.hpp"
-#include "descriptor_set_layout.hpp"
 #include "descriptor_set.hpp"
 #include "swapchain.hpp"
 #include "renderpass.hpp"
 #include "pipeline_layout.hpp"
-#include "pipeline.hpp"
+#include "raytrace_pipeline.hpp"
 #include "scene_data.hpp"
 #include "vulkan_utils.hpp"
+#include "push_constant.hpp"
+#include "raytrace_data.hpp"
+#include "texture.hpp"
 
+#include <scene.hpp>
 #include <constants.h>
+
 
 const kirana::viewport::vulkan::FrameData &kirana::viewport::vulkan::Drawer::
     getCurrentFrame() const
@@ -29,13 +30,11 @@ uint32_t kirana::viewport::vulkan::Drawer::getCurrentFrameIndex() const
     return m_currentFrameNumber % utils::constants::VULKAN_FRAME_OVERLAP_COUNT;
 }
 
-kirana::viewport::vulkan::Drawer::Drawer(
-    const Device *const device, const Allocator *const allocator,
-    const DescriptorPool *const descriptorPool,
-    const Swapchain *const swapchain, const RenderPass *const renderPass,
-    const SceneData *const scene)
+kirana::viewport::vulkan::Drawer::Drawer(const Device *const device,
+                                         const Swapchain *const swapchain,
+                                         const RenderPass *const renderPass,
+                                         const SceneData *const scene)
     : m_isInitialized{false}, m_currentFrameNumber{0}, m_device{device},
-      m_allocator{allocator}, m_descriptorPool{descriptorPool},
       m_swapchain{swapchain}, m_renderPass{renderPass}, m_scene{scene}
 {
     m_frames.resize(utils::constants::VULKAN_FRAME_OVERLAP_COUNT);
@@ -43,26 +42,6 @@ kirana::viewport::vulkan::Drawer::Drawer(
     {
         try
         {
-            bool setAllocated = m_descriptorPool->allocateDescriptorSets(
-                {&m_frames[i].globalDescriptorSet,
-                 &m_frames[i].objectDescriptorSet},
-                {m_scene->getGlobalDescriptorSetLayout(),
-                 m_scene->getObjectDescriptorSetLayout()});
-
-            if (setAllocated)
-            {
-                m_frames[i].globalDescriptorSet->writeBuffer(
-                    m_scene->getCameraBuffer().descInfo,
-                    vk::DescriptorType::eUniformBufferDynamic, 0);
-                m_frames[i].globalDescriptorSet->writeBuffer(
-                    m_scene->getWorldDataBuffer().descInfo,
-                    vk::DescriptorType::eUniformBufferDynamic, 1);
-
-                m_frames[i].objectDescriptorSet->writeBuffer(
-                    m_scene->getObjectBuffer().descInfo,
-                    vk::DescriptorType::eStorageBufferDynamic, 0);
-            }
-
             m_frames[i].renderFence = m_device->current.createFence(
                 vk::FenceCreateInfo(vk::FenceCreateFlagBits::eSignaled));
             m_frames[i].renderSemaphore =
@@ -84,11 +63,13 @@ kirana::viewport::vulkan::Drawer::Drawer(
             handleVulkanException();
         }
     }
+    m_onSceneDataChangeListener = m_scene->addOnSceneDataChangeListener(
+        [&]() { m_currentFrameNumber = 0; });
 }
 
 kirana::viewport::vulkan::Drawer::~Drawer()
 {
-    m_onSwapchainOutOfDate.removeAllListeners();
+    m_scene->removeOnSceneDataChangeListener(m_onSceneDataChangeListener);
     if (m_device)
     {
         if (!m_frames.empty())
@@ -100,8 +81,6 @@ kirana::viewport::vulkan::Drawer::~Drawer()
                                          f.renderFence, true,
                                          constants::VULKAN_FRAME_SYNC_TIMEOUT),
                                      "Failed to wait for render fence");
-                if (f.globalDescriptorSet)
-                    delete f.globalDescriptorSet;
                 if (f.renderFence)
                     m_device->current.destroyFence(f.renderFence);
                 if (f.renderSemaphore)
@@ -126,131 +105,217 @@ kirana::viewport::vulkan::Drawer::~Drawer()
     }
 }
 
-void kirana::viewport::vulkan::Drawer::draw()
+
+void kirana::viewport::vulkan::Drawer::rasterizeMeshes(const FrameData &frame,
+                                                       bool drawEditorMeshes)
 {
-    const FrameData &frame = getCurrentFrame();
-    const uint32_t frameIndex = getCurrentFrameIndex();
-    VK_HANDLE_RESULT(
-        m_device->current.waitForFences(frame.renderFence, true,
-                                        constants::VULKAN_FRAME_SYNC_TIMEOUT),
-        "Failed to wait for render fence")
-    m_device->current.resetFences(frame.renderFence);
+    const auto &rPipelineLayout = m_scene->getRasterPipelineLayout().current;
+    const auto &meshes = drawEditorMeshes ? m_scene->getEditorMeshes()
+                                          : m_scene->getSceneMeshes();
 
-    vk::ResultValue<uint32_t> imgValue = m_swapchain->acquireNextImage(
-        constants::VULKAN_FRAME_SYNC_TIMEOUT, frame.presentSemaphore, nullptr);
-    if (imgValue.result == vk::Result::eErrorOutOfDateKHR)
+    std::string lastPipeline = "";
+    int lastVertexBufferIndex = -1;
+    int lastIndexBufferIndex = -1;
+    for (const auto &m : meshes)
     {
-        m_device->waitUntilIdle();
-        m_onSwapchainOutOfDate();
-    }
-    else if (imgValue.result != vk::Result::eSuccess &&
-             imgValue.result != vk::Result::eSuboptimalKHR)
-        VK_HANDLE_RESULT(imgValue.result, "Failed to acquire swapchain image")
+        if (m.vertexBufferIndex > -1 &&
+            m.vertexBufferIndex != lastVertexBufferIndex)
+        {
+            frame.commandBuffers->bindVertexBuffer(
+                m_scene->getVertexBuffer(drawEditorMeshes, m.index), 0);
+            lastVertexBufferIndex = m.vertexBufferIndex;
+        }
+        if (m.indexBufferIndex > -1 &&
+            m.indexBufferIndex != lastIndexBufferIndex)
+        {
+            frame.commandBuffers->bindIndexBuffer(
+                m_scene->getIndexBuffer(drawEditorMeshes, m.index), 0);
+            lastIndexBufferIndex = m.indexBufferIndex;
+        }
+        const auto &pipeline =
+            m_scene->getCurrentPipeline(drawEditorMeshes, false, m.index);
+        if (lastPipeline != pipeline.name)
+        {
+            frame.commandBuffers->bindPipeline(pipeline.current);
+            lastPipeline = pipeline.name;
+        }
 
-    const uint32_t imgIndex = imgValue.value;
+        for (uint32_t i = 0; i < m.instances.size(); i++)
+        {
+            const auto &pushConstantData = m_scene->getPushConstantRasterData(
+                drawEditorMeshes, false, m.index, i);
+            frame.commandBuffers->pushConstants<PushConstantRaster>(
+                rPipelineLayout, pushConstantData);
+
+            frame.commandBuffers->drawIndexed(m.indexCount, 1, m.firstIndex,
+                                              m.vertexOffset,
+                                              m.getGlobalInstanceIndex(i));
+
+            // TODO: Find better way to render outline
+            if (*m.instances[0].selected)
+            {
+                const auto &outline = m_scene->getCurrentPipeline(
+                    drawEditorMeshes, true, m.index);
+                frame.commandBuffers->bindPipeline(outline.current);
+                lastPipeline = outline.name;
+
+                const auto &outlinePC = m_scene->getPushConstantRasterData(
+                    drawEditorMeshes, true, m.index, i);
+                frame.commandBuffers->pushConstants<PushConstantRaster>(
+                    rPipelineLayout, outlinePC);
+
+                frame.commandBuffers->drawIndexed(m.indexCount, 1, m.firstIndex,
+                                                  m.vertexOffset,
+                                                  m.getGlobalInstanceIndex(i));
+            }
+        }
+    }
+}
+
+
+void kirana::viewport::vulkan::Drawer::rasterize(const FrameData &frame,
+                                                 uint32_t swapchainImgIndex)
+{
+    const auto &rPipelineLayout = m_scene->getRasterPipelineLayout().current;
+    const auto &rDescSets = m_scene->getRasterDescriptorSets();
+    std::vector<vk::DescriptorSet> descSets(rDescSets.size());
+    for (int i = 0; i < rDescSets.size(); i++)
+        descSets[i] = rDescSets[i].current;
 
     vk::ClearValue clearColor;
-    std::array<float, 4> color = {{0.05f, 0.05f, 0.05f, 1.0f}};
+    const math::Vector4 ambientColor = m_scene->getWorldData().ambientColor;
+    std::array<float, 4> color = {ambientColor[0], ambientColor[1],
+                                  ambientColor[2], ambientColor[3]};
     clearColor.setColor(vk::ClearColorValue(color));
 
     vk::ClearValue clearDepth;
-    clearDepth.setDepthStencil(vk::ClearDepthStencilValue(1.0f, 0));
+    clearDepth.setDepthStencil(vk::ClearDepthStencilValue(1.0f, 0.0));
 
     frame.commandBuffers->reset();
     frame.commandBuffers->begin();
+
     frame.commandBuffers->beginRenderPass(
-        m_renderPass->current, m_renderPass->framebuffers[imgIndex],
+        m_renderPass->current, m_renderPass->framebuffers[swapchainImgIndex],
         m_swapchain->imageExtent,
         std::vector<vk::ClearValue>{clearColor, clearDepth});
 
-    if (m_scene)
-    {
-        MeshPushConstants meshConstants;
-        std::string lastMaterial;
-        // TODO: Bind Vertex Buffers together and draw them at once.
-        size_t meshIndex = 0;
-        for (const auto &m : m_scene->getMeshData())
-        {
-            if (lastMaterial != m.second.material->name)
-            {
-                frame.commandBuffers->bindPipeline(
-                    m.second.material->pipeline->current);
-                frame.commandBuffers->bindDescriptorSets(
-                    m.second.material->layout->current,
-                    {frame.globalDescriptorSet->current,
-                     frame.objectDescriptorSet->current},
-                    {m_scene->getCameraBufferOffset(frameIndex),
-                     m_scene->getWorldDataBufferOffset(frameIndex),
-                     m_scene->getObjectBufferOffset(frameIndex)});
-                lastMaterial = m.second.material->name;
-            }
+    const auto &size = m_swapchain->getSurfaceResolution();
+    const vk::Viewport viewport{
+        0.0f, 0.0f, static_cast<float>(size[0]), static_cast<float>(size[1]),
+        0.0f, 1.0f};
+    const vk::Rect2D scissor{{0, 0}, {size[0], size[1]}};
+    frame.commandBuffers->setViewportScissor(viewport, scissor);
 
-            frame.commandBuffers->bindVertexBuffer(
-                *(m.second.vertexBuffer.buffer), 0);
-            frame.commandBuffers->bindIndexBuffer(
-                *(m.second.indexBuffer.buffer), 0);
+    frame.commandBuffers->bindDescriptorSets(rPipelineLayout, descSets, {0, 0});
 
-            // TODO: Implement instancing
-            for (size_t i = 0; i < m.second.instances.size(); i++)
-            {
-                frame.commandBuffers->drawIndexed(
-                    static_cast<uint32_t>(m.second.indexCount), 1, 0, 0,
-                    i + meshIndex);
-
-                // TODO: Find better way to render outline
-                if (*m.second.instances[0].selected &&
-                    m_scene->shouldRenderOutline())
-                {
-                    const MaterialData &outline = m_scene->getOutlineMaterial();
-                    frame.commandBuffers->bindPipeline(
-                        outline.pipeline->current);
-                    lastMaterial = outline.name;
-
-                    frame.commandBuffers->drawIndexed(
-                        static_cast<uint32_t>(m.second.indexCount), 1, 0, 0,
-                        i + meshIndex);
-                }
-            }
-            meshIndex++;
-        }
-    }
+    rasterizeMeshes(frame, true);
+    rasterizeMeshes(frame, false);
 
     frame.commandBuffers->endRenderPass();
     frame.commandBuffers->end();
-
     vk::PipelineStageFlags pipelineFlags(
         vk::PipelineStageFlagBits::eColorAttachmentOutput);
     m_device->graphicsSubmit(frame.presentSemaphore, pipelineFlags,
                              frame.commandBuffers->current[0],
                              frame.renderSemaphore, frame.renderFence);
+}
+
+void kirana::viewport::vulkan::Drawer::raytrace(const FrameData &frame,
+                                                uint32_t swapchainImgIndex)
+{
+    const auto &rPipeline =
+        m_scene->getCurrentPipeline(false, false, 0).current;
+    const auto &rPipelineLayout =
+        m_scene->getRaytraceData().getRaytracePipelineLayout().current;
+    const auto &rDescSets = m_scene->getRaytraceData().getDescriptorSets();
+    std::vector<vk::DescriptorSet> descSets(rDescSets.size());
+    for (int i = 0; i < rDescSets.size(); i++)
+        descSets[i] = rDescSets[i].current;
+    auto pushConstantData = m_scene->getPushConstantRaytraceData();
+    const auto &sbt = m_scene->getCurrentSBT(0);
+    const auto &renderTarget = m_scene->getRaytraceData().getRenderTarget();
+
+    frame.commandBuffers->reset();
+    frame.commandBuffers->begin();
+
+    frame.commandBuffers->bindPipeline(rPipeline,
+                                       vk::PipelineBindPoint::eRayTracingKHR);
+    frame.commandBuffers->bindDescriptorSets(
+        rPipelineLayout, descSets, {}, vk::PipelineBindPoint::eRayTracingKHR);
+
+    auto pcData = pushConstantData.get();
+    pcData.frameIndex = m_currentFrameNumber;
+    pushConstantData.set(pcData);
+    frame.commandBuffers->pushConstants<PushConstantRaytrace>(rPipelineLayout,
+                                                              pushConstantData);
+
+    frame.commandBuffers->traceRays(sbt, renderTarget.getProperties().size);
+    frame.commandBuffers->copyImage(
+        renderTarget, *m_swapchain->getImages()[swapchainImgIndex],
+        renderTarget.getProperties().size);
+    frame.commandBuffers->end();
+    vk::PipelineStageFlags pipelineFlags(
+        vk::PipelineStageFlagBits::eColorAttachmentOutput);
+    m_device->graphicsSubmit(frame.presentSemaphore, pipelineFlags,
+                             frame.commandBuffers->current[0],
+                             frame.renderSemaphore, frame.renderFence);
+}
+
+void kirana::viewport::vulkan::Drawer::draw()
+{
+    if (!m_scene || !m_scene->isInitialized)
+        return;
+
+    const vulkan::ShadingPipeline &currShadingPipeline =
+        m_scene->getCurrentShadingPipeline();
+
+    if (currShadingPipeline == ShadingPipeline::RAYTRACE)
+    {
+        if (!m_scene->isRaytracingInitialized ||
+            m_currentFrameNumber > constants::VULKAN_RAYTRACING_MAX_SAMPLES)
+            return;
+    }
+    else if (currShadingPipeline == ShadingPipeline::RASTER)
+    {
+        if (constants::VULKAN_MAX_IDLE_FRAME_COUNT > 0 &&
+            m_currentFrameNumber > constants::VULKAN_MAX_IDLE_FRAME_COUNT)
+            return;
+    }
+
+    const FrameData &frame = getCurrentFrame();
+
+    VK_HANDLE_RESULT(
+        m_device->current.waitForFences(frame.renderFence, true,
+                                        constants::VULKAN_FRAME_SYNC_TIMEOUT),
+        "Failed to wait for render fence")
+
+    const vk::ResultValue<uint32_t> imgValue = m_swapchain->acquireNextImage(
+        constants::VULKAN_FRAME_SYNC_TIMEOUT, frame.presentSemaphore, nullptr);
+    if (imgValue.result == vk::Result::eErrorOutOfDateKHR)
+        return;
+    else if (imgValue.result != vk::Result::eSuccess &&
+             imgValue.result != vk::Result::eSuboptimalKHR)
+        VK_HANDLE_RESULT(imgValue.result, "Failed to acquire swapchain image")
+
+    m_device->current.resetFences(frame.renderFence);
+
+    const uint32_t imgIndex = imgValue.value;
+    if (currShadingPipeline == ShadingPipeline::RAYTRACE)
+    {
+        raytrace(frame, imgIndex);
+    }
+    else
+    {
+        rasterize(frame, imgIndex);
+    }
 
     vk::Result presentResult = m_device->present(
         frame.renderSemaphore, m_swapchain->current, imgIndex);
     if (presentResult == vk::Result::eErrorOutOfDateKHR)
-    {
-        m_device->waitUntilIdle();
-        m_onSwapchainOutOfDate();
-    }
+        return;
     else if (presentResult != vk::Result::eSuccess &&
              presentResult != vk::Result::eSuboptimalKHR)
         VK_HANDLE_RESULT(presentResult, "Failed to present rendered image")
 
     m_currentFrameNumber++;
 }
-
-void kirana::viewport::vulkan::Drawer::reinitialize(
-    const Swapchain *const swapchain, const RenderPass *const renderPass)
-{
-    m_swapchain = swapchain;
-    m_renderPass = renderPass;
-}
-
-/*void kirana::viewport::vulkan::Drawer::loadScene(SceneData *scene)
-{
-    VK_HANDLE_RESULT(
-        m_device->current.waitForFences(m_renderFence, true,
-                                        constants::VULKAN_FRAME_SYNC_TIMEOUT),
-        "Failed to wait for render fence");
-    m_scene = scene;
-    m_trianglePipeline->rebuild(m_scene->vertexDesc);
-}*/

@@ -61,3 +61,9 @@ void kirana::viewport::vulkan::CommandPool::reset(
 {
     m_device->current.resetCommandPool(m_current, resetFlags);
 }
+
+void kirana::viewport::vulkan::CommandPool::freeCommandBuffers(
+    const CommandBuffers *&buffers) const
+{
+    m_device->current.freeCommandBuffers(m_current, buffers->current);
+}

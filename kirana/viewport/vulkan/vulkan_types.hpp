@@ -21,6 +21,24 @@ class CommandBuffers;
 class Pipeline;
 class PipelineLayout;
 
+enum class ShadingPipeline
+{
+    RASTER = 0,
+    RAYTRACE = 1,
+    SHADING_MAX = 2,
+};
+
+enum class ShadingType
+{
+    BASIC = 0,
+    UNLIT = 1,
+    WIREFRAME = 2,
+    BASIC_SHADED_WIREFRAME = 3,
+    PBR = 4,
+    AO = 5,
+    SHADING_TYPE_MAX = 6
+};
+
 /**
  * Index of queue families of the selected device.
  */
@@ -28,6 +46,8 @@ struct QueueFamilyIndices
 {
     uint32_t graphics = std::numeric_limits<uint32_t>::max();
     uint32_t presentation = std::numeric_limits<uint32_t>::max();
+    uint32_t transfer = std::numeric_limits<uint32_t>::max();
+    uint32_t compute = std::numeric_limits<uint32_t>::max();
 
     inline bool isGraphicsSupported() const
     {
@@ -39,6 +59,16 @@ struct QueueFamilyIndices
         return presentation != std::numeric_limits<uint32_t>::max();
     }
 
+    inline bool isTransferSupported() const
+    {
+        return transfer != std::numeric_limits<uint32_t>::max();
+    }
+
+    inline bool isComputeSupported() const
+    {
+        return compute != std::numeric_limits<uint32_t>::max();
+    }
+
     inline bool isGraphicsAndPresentSame() const
     {
         return graphics == presentation;
@@ -47,10 +77,10 @@ struct QueueFamilyIndices
     inline std::set<uint32_t> getIndices() const
     {
         return std::set<uint32_t>(
-            {graphics,
-             presentation}); // Set is used so that each value is unique.
-                             // Graphics and presentation queue family can be
-                             // same, so this step is necessary.
+            {graphics, presentation, transfer,
+             compute}); // Set is used so that each value is unique.
+                        // Graphics and presentation queue family can be
+                        // same, so this step is necessary.
     }
 };
 
@@ -75,10 +105,17 @@ struct SwapchainSupportInfo
  */
 struct AllocatedBuffer
 {
-    std::unique_ptr<vk::Buffer> buffer;
+    std::unique_ptr<vk::Buffer> buffer = nullptr;
     std::unique_ptr<vma::Allocation> allocation;
-    void *memoryPointer = nullptr;
+    vk::DeviceAddress address;
     vk::DescriptorBufferInfo descInfo;
+};
+
+struct BatchBufferData
+{
+    AllocatedBuffer buffer;
+    size_t currentSize = 0;
+    size_t currentDataCount = 0;
 };
 
 /**
@@ -88,78 +125,52 @@ struct AllocateImage
 {
     std::unique_ptr<vk::Image> image;
     std::unique_ptr<vma::Allocation> allocation;
-    vk::DescriptorImageInfo descInfo;
 };
 
-/**
- * Holds list of bindings and attributes of vertices to define vertices to the
- * vulkan pipeline.
- */
-struct VertexInputDescription
+enum class DescriptorLayoutType
 {
-    std::vector<vk::VertexInputBindingDescription> bindings;
-    std::vector<vk::VertexInputAttributeDescription> attributes;
+    GLOBAL = 0,
+    OBJECT = 1
 };
 
-struct PipelineProperties
+enum class DescriptorBindingDataType
 {
-    vk::PrimitiveTopology primitiveType = vk::PrimitiveTopology::eTriangleList;
-    vk::PolygonMode polygonMode = vk::PolygonMode::eFill;
-    vk::CullModeFlags cullMode = vk::CullModeFlagBits::eBack;
-    float lineWidth = 1.0f;
-    vk::SampleCountFlagBits msaaLevel = vk::SampleCountFlagBits::e1;
-    bool alphaBlending = false;
-    bool enableDepth = true;
-    bool writeDepth = true;
-    vk::CompareOp depthCompareOp = vk::CompareOp::eLessOrEqual;
-    bool stencilTest = false;
-    vk::CompareOp stencilCompareOp = vk::CompareOp::eAlways;
-    vk::StencilOp stencilFailOp = vk::StencilOp::eReplace;
-    vk::StencilOp stencilDepthFailOp = vk::StencilOp::eReplace;
-    vk::StencilOp stencilPassOp = vk::StencilOp::eReplace;
-    uint32_t stencilReference = 1;
+    CAMERA = 0,
+    WORLD = 1,
+    RAYTRACE_ACCEL_STRUCT = 2,
+    RAYTRACE_RENDER_TARGET = 3,
+    MATERIAL_DATA = 4,
+    OBJECT_DATA = 5,
 };
 
-// TODO: Remove it once descriptor set is implemented.
-struct MeshPushConstants
+struct DescriptorBindingInfo
 {
-    math::Matrix4x4 renderMatrix;
-};
+    DescriptorLayoutType layoutType;
+    uint32_t binding;
+    vk::DescriptorType type;
+    vk::ShaderStageFlags stages;
+    uint32_t descriptorCount = 1;
 
-/**
- * Holds the Camera view and projection matrix.
- */
-struct CameraData
-{
-    math::Matrix4x4 viewMatrix;
-    math::Matrix4x4 projectionMatrix;
-    math::Matrix4x4 viewProjectionMatrix;
-    math::Vector3 position;
-    alignas(16) math::Vector3 direction;
-    float nearPlane;
-    alignas(4) float farPlane;
-};
+    bool operator==(const DescriptorBindingInfo &bindingInfo) const
+    {
+        return layoutType == bindingInfo.layoutType &&
+               binding == bindingInfo.binding && type == bindingInfo.type &&
+               stages == bindingInfo.stages &&
+               descriptorCount == bindingInfo.descriptorCount;
+    }
 
-/**
- * Holds the mesh material data such as shader, pipeline layout and pipeline
- * for each mesh.
- */
-struct MaterialData
-{
-    std::string name;
-    std::string shaderName;
-    PipelineProperties properties;
-    std::unique_ptr<PipelineLayout> layout;
-    std::unique_ptr<Pipeline> pipeline;
-};
-
-struct ObjectData {
-    math::Matrix4x4 modelMatrix;
+    bool operator!=(const DescriptorBindingInfo &bindingInfo) const
+    {
+        return !(*this == bindingInfo);
+    }
 };
 
 struct InstanceData
 {
+    uint32_t index;
     const math::Transform *transform;
+    const bool *viewportVisible;
+    const bool *renderVisible;
     const bool *selected;
 };
 
@@ -168,12 +179,22 @@ struct InstanceData
  */
 struct MeshData
 {
-    AllocatedBuffer vertexBuffer;
-    AllocatedBuffer indexBuffer;
-    size_t vertexCount;
-    size_t indexCount;
+    uint32_t index;
+    std::string name;
+    bool render;
+    uint32_t vertexCount;
+    uint32_t indexCount;
+    int vertexBufferIndex;
+    int indexBufferIndex;
+    uint32_t firstIndex;
+    uint32_t vertexOffset;
+    uint32_t materialIndex;
     std::vector<InstanceData> instances;
-    MaterialData *material;
+
+    inline uint32_t getGlobalInstanceIndex(uint32_t instanceIndex) const
+    {
+        return index + instances[instanceIndex].index;
+    }
 };
 
 /**
@@ -181,13 +202,70 @@ struct MeshData
  */
 struct FrameData
 {
-    const DescriptorSet *globalDescriptorSet = nullptr;
-    const DescriptorSet *objectDescriptorSet = nullptr;
     vk::Fence renderFence;
     vk::Semaphore renderSemaphore;
     vk::Semaphore presentSemaphore;
     const CommandPool *commandPool = nullptr;
     const CommandBuffers *commandBuffers = nullptr;
+};
+
+struct ObjectData
+{
+    uint64_t vertexBufferAddress;
+    uint64_t indexBufferAddress;
+    uint64_t materialDataBufferAddress;
+    int materialDataIndex;
+    uint32_t firstIndex;
+    uint32_t vertexOffset;
+};
+
+struct PushConstantRaster
+{
+    math::Matrix4x4 modelMatrix;
+    uint64_t vertexBufferAddress;
+    uint64_t indexBufferAddress;
+    uint64_t materialDataBufferAddress;
+    int materialDataIndex;
+    uint32_t objectIndex;
+    uint32_t firstIndex;
+    uint32_t vertexOffset;
+};
+
+struct PushConstantRaytrace
+{
+    uint32_t frameIndex;
+    uint32_t maxBounces;
+    uint32_t aaMultiplier;
+};
+
+static const vk::ShaderStageFlags PUSH_CONSTANT_RASTER_SHADER_STAGES =
+    vk::ShaderStageFlagBits::eVertex | vk::ShaderStageFlagBits::eFragment;
+static const vk::ShaderStageFlags PUSH_CONSTANT_RAYTRACE_SHADER_STAGES =
+    vk::ShaderStageFlagBits::eRaygenKHR |
+    vk::ShaderStageFlagBits::eClosestHitKHR |
+    vk::ShaderStageFlagBits::eAnyHitKHR;
+
+
+/**
+ * Raytracing Acceleration Structure
+ */
+struct ASData
+{
+    vk::AccelerationStructureKHR as;
+    AllocatedBuffer buffer;
+};
+
+/**
+ * Raytracing Bottom-Level Acceleration Structure
+ */
+struct BLASData
+{
+    std::vector<vk::AccelerationStructureGeometryKHR> geometries;
+    std::vector<vk::AccelerationStructureBuildRangeInfoKHR> offsets;
+    vk::BuildAccelerationStructureFlagsKHR flags;
+    vk::AccelerationStructureBuildGeometryInfoKHR buildInfo;
+    vk::AccelerationStructureBuildSizesInfoKHR sizeInfo;
+    ASData accelStruct;
 };
 
 } // namespace kirana::viewport::vulkan

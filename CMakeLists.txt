@@ -17,6 +17,11 @@ include(GNUInstallDirs)
 find_package(Vulkan COMPONENTS glslangValidator REQUIRED)
 if (${Vulkan_FOUND})
     message("Found Vulkan: " ${Vulkan_VERSION})
+    string(REPLACE "." ";" Vulkan_VERSION_LIST ${Vulkan_VERSION})
+    list(GET Vulkan_VERSION_LIST 0 Vulkan_VERSION_MAJOR)
+    list(GET Vulkan_VERSION_LIST 1 Vulkan_VERSION_MINOR)
+    set(VULKAN_GLSLANG_VALIDATOR_TARGET "vulkan${Vulkan_VERSION_MAJOR}.${Vulkan_VERSION_MINOR}")
+    message("GLSL Validator Target: " ${VULKAN_GLSLANG_VALIDATOR_TARGET})
 endif ()
 
 # Setup python

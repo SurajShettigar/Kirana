@@ -5,6 +5,7 @@
 #include <vector>
 #include <string>
 #include <memory>
+#include "scene_types.hpp"
 
 struct aiMesh;
 
@@ -18,14 +19,14 @@ class Mesh
     std::string m_name;
     math::Bounds3 m_bounds;
     std::vector<Vertex> m_vertices;
-    std::vector<uint32_t> m_indices;
+    std::vector<scene::INDEX_TYPE> m_indices;
     std::shared_ptr<Material> m_material;
 
   public:
     Mesh() = default;
-    Mesh(const std::string &name, const math::Bounds3 &bounds,
+    Mesh(std::string name, const math::Bounds3 &bounds,
          const std::vector<Vertex> &vertices,
-         const std::vector<uint32_t> &indices,
+         const std::vector<scene::INDEX_TYPE> &indices,
          const std::shared_ptr<Material> &material);
     Mesh(const aiMesh *mesh, std::shared_ptr<Material> material);
     virtual ~Mesh() = default;
@@ -40,7 +41,7 @@ class Mesh
     {
         return m_vertices;
     }
-    [[nodiscard]] inline const std::vector<uint32_t> &getIndices() const
+    [[nodiscard]] inline const std::vector<scene::INDEX_TYPE> &getIndices() const
     {
         return m_indices;
     }

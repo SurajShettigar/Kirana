@@ -7,9 +7,10 @@
 #include "device.hpp"
 #include "allocator.hpp"
 #include "swapchain.hpp"
-#include "depth_buffer.hpp"
+#include "texture.hpp"
 #include "renderpass.hpp"
 #include "descriptor_pool.hpp"
+#include "raytrace_data.hpp"
 #include "scene_data.hpp"
 #include "drawer.hpp"
 
@@ -18,7 +19,7 @@
 
 void kirana::viewport::vulkan::VulkanRenderer::init(
     const window::Window *const window, const scene::ViewportScene &scene,
-    uint16_t shadingIndex)
+    vulkan::ShadingPipeline pipeline, vulkan::ShadingType type)
 {
     m_window = window;
     m_instance = new Instance(m_window->getReqInstanceExtensionsForVulkan());
@@ -30,12 +31,15 @@ void kirana::viewport::vulkan::VulkanRenderer::init(
     {
         m_allocator = new Allocator(m_instance, m_device);
         m_swapchain = new Swapchain(m_device, m_surface);
+        m_swapchainOutOfDateListener =
+            m_swapchain->addOnSwapchainOutOfDateListener(
+                [&]() { this->rebuildSwapchain(); });
     }
     if (m_swapchain && m_swapchain->isInitialized)
-        m_depthBuffer =
-            new DepthBuffer(m_device, m_allocator, m_window->resolution);
-    if (m_depthBuffer && m_depthBuffer->isInitialized)
-        m_renderpass = new RenderPass(m_device, m_swapchain, m_depthBuffer);
+        Texture::createDepthTexture(m_device, m_allocator, m_window->resolution,
+                                    m_depthTexture);
+    if (m_depthTexture && m_depthTexture->isInitialized)
+        m_renderpass = new RenderPass(m_device, m_swapchain, m_depthTexture);
 
     if (m_renderpass && m_renderpass->isInitialized)
     {
@@ -43,26 +47,34 @@ void kirana::viewport::vulkan::VulkanRenderer::init(
     }
     if (m_descriptorPool && m_descriptorPool->isInitialized)
     {
+        m_raytraceData = new RaytraceData(m_device, m_allocator,
+                                          m_descriptorPool, m_swapchain);
         m_currentScene =
-            new SceneData(m_device, m_allocator, m_renderpass, scene, shadingIndex);
+            new SceneData(m_device, m_allocator, m_descriptorPool, m_renderpass,
+                          m_raytraceData, scene, pipeline, type);
     }
     if (m_descriptorPool && m_descriptorPool->isInitialized)
     {
-        m_drawer = new Drawer(m_device, m_allocator, m_descriptorPool, m_swapchain, m_renderpass,
-                              m_currentScene);
-        m_swapchainOutOfDateListener =
-            m_drawer->addOnSwapchainOutOfDateListener(
-                [&]() { this->rebuildSwapchain(); });
+        m_drawer =
+            new Drawer(m_device, m_swapchain, m_renderpass, m_currentScene);
     }
+    m_isInitialized = m_drawer->isInitialized;
+    m_currentFrame = 0;
 }
 
 void kirana::viewport::vulkan::VulkanRenderer::update()
 {
-
+    if (m_allocator)
+        m_allocator->setCurrentFrameIndex(m_currentFrame);
+    //    if (m_currentScene)
+    //        m_currentScene->updateRaytracedFrameCount();
+    m_currentFrame++;
 }
 
 void kirana::viewport::vulkan::VulkanRenderer::render()
 {
+    if (!m_isInitialized)
+        return;
     if (!m_isMinimized)
         m_drawer->draw();
     else if (m_window->resolution[0] != 0 && m_window->resolution[1] != 0)
@@ -73,8 +85,6 @@ void kirana::viewport::vulkan::VulkanRenderer::clean()
 {
     if (m_drawer)
     {
-        m_drawer->removeOnSwapchainOutOfDateListener(
-            m_swapchainOutOfDateListener);
         delete m_drawer;
         m_drawer = nullptr;
     }
@@ -82,6 +92,11 @@ void kirana::viewport::vulkan::VulkanRenderer::clean()
     {
         delete m_currentScene;
         m_currentScene = nullptr;
+    }
+    if (m_raytraceData)
+    {
+        delete m_raytraceData;
+        m_raytraceData = nullptr;
     }
     if (m_descriptorPool)
     {
@@ -93,13 +108,15 @@ void kirana::viewport::vulkan::VulkanRenderer::clean()
         delete m_renderpass;
         m_renderpass = nullptr;
     }
-    if (m_depthBuffer)
+    if (m_depthTexture)
     {
-        delete m_depthBuffer;
-        m_depthBuffer = nullptr;
+        delete m_depthTexture;
+        m_depthTexture = nullptr;
     }
     if (m_swapchain)
     {
+        m_swapchain->removeOnSwapchainOutOfDateListener(
+            m_swapchainOutOfDateListener);
         delete m_swapchain;
         m_swapchain = nullptr;
     }
@@ -127,6 +144,7 @@ void kirana::viewport::vulkan::VulkanRenderer::clean()
 
 void kirana::viewport::vulkan::VulkanRenderer::rebuildSwapchain()
 {
+    m_device->waitUntilIdle();
     if (m_window->resolution[0] == 0 || m_window->resolution[1] == 0)
     {
         m_isMinimized = true;
@@ -134,60 +152,37 @@ void kirana::viewport::vulkan::VulkanRenderer::rebuildSwapchain()
     }
     m_isMinimized = false;
 
-    if (m_renderpass)
+    if (m_depthTexture)
     {
-        delete m_renderpass;
-        m_renderpass = nullptr;
+        delete m_depthTexture;
+        m_depthTexture = nullptr;
     }
-    if (m_depthBuffer)
-    {
-        delete m_depthBuffer;
-        m_depthBuffer = nullptr;
-    }
-    if (m_swapchain)
-    {
-        delete m_swapchain;
-        m_swapchain = nullptr;
-    }
-    m_device->reinitializeSwapchainInfo();
+
     if (m_surface && m_surface->isInitialized)
-        m_swapchain = new Swapchain(m_device, m_surface);
+        m_swapchain->initialize();
     if (m_swapchain && m_swapchain->isInitialized)
-        m_depthBuffer =
-            new DepthBuffer(m_device, m_allocator, m_window->resolution);
-    if (m_depthBuffer && m_depthBuffer->isInitialized)
-        m_renderpass = new RenderPass(m_device, m_swapchain, m_depthBuffer);
-    if (m_renderpass && m_renderpass->isInitialized)
-        m_currentScene->rebuildPipeline(m_renderpass);
-    m_drawer->reinitialize(m_swapchain, m_renderpass);
+    {
+        Texture::createDepthTexture(m_device, m_allocator, m_window->resolution,
+                                    m_depthTexture);
+        m_raytraceData->rebuildRenderTarget();
+    }
+    if (m_depthTexture && m_depthTexture->isInitialized)
+        m_renderpass->initialize(m_depthTexture);
+
     utils::Logger::get().log(utils::constants::LOG_CHANNEL_VULKAN,
                              utils::LogSeverity::trace, "Swapchain rebuilt");
 }
 
-void kirana::viewport::vulkan::VulkanRenderer::setShading(uint16_t shadingIndex)
+void kirana::viewport::vulkan::VulkanRenderer::setShadingPipeline(
+    vulkan::ShadingPipeline pipeline)
 {
     m_device->waitUntilIdle();
-    m_currentScene->setShading(shadingIndex);
-    /*switch (shadingIndex)
-    {
-    case 0:
-        break;
-    case 1:
-        break;
-    case 2:
-        break;
-    case 3:
-        break;
-    default:
-        break;
-    }*/
+    m_currentScene->setShadingPipeline(pipeline);
 }
 
-/*
-void kirana::viewport::vulkan::VulkanRenderer::loadScene(
-    const scene::Scene &scene)
+void kirana::viewport::vulkan::VulkanRenderer::setShadingType(
+    vulkan::ShadingType type)
 {
-    m_currentScene = new SceneData(m_allocator, scene);
-    if (m_currentScene->isInitialized)
-        m_drawer->loadScene(m_currentScene);
-}*/
+    m_device->waitUntilIdle();
+    m_currentScene->setShadingType(type);
+}

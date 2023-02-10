@@ -3,89 +3,40 @@
 
 #include <string>
 #include <vector>
+#include <array>
+#include "material_types.hpp"
 
 namespace kirana::scene
 {
 class Material
 {
   public:
-    enum class CullMode
-    {
-        NONE = 0,
-        FRONT = 1,
-        BACK = 2,
-        BOTH = 3
-    };
-
-    enum class SurfaceType
-    {
-        OPAQUE = 0,
-        TRANSPARENT = 1,
-    };
-
-    enum class CompareOperation
-    {
-        NEVER = 0,
-        LESS = 1,
-        EQUAL = 2,
-        LESS_OR_EQUAL = 3,
-        GREATER = 4,
-        NOT_EQUAL = 5,
-        GREATER_OR_EQUAL = 6,
-        ALWAYS = 7
-    };
-
-    enum class StencilOperation
-    {
-        KEEP = 0,
-        ZERO = 1,
-        REPLACE = 2,
-        INCREMENT_AND_CLAMP = 3,
-        DECREMENT_AND_CLAMP = 4,
-        INVERT = 5,
-        INCREMENT_AND_WRAP = 6,
-        DECREMENT_AND_WRAP = 7
-    };
-
-    struct StencilProperties
-    {
-        bool enableTest = false;
-        CompareOperation compareOp = CompareOperation::ALWAYS;
-        StencilOperation failOp = StencilOperation::REPLACE;
-        StencilOperation depthFailOp = StencilOperation::REPLACE;
-        StencilOperation passOp = StencilOperation::REPLACE;
-        uint32_t reference = 1;
-    };
-    static const StencilProperties STENCIL_PROPERTIES_WRITE;
-    static const StencilProperties STENCIL_PROPERTIES_READ;
-
-    struct MaterialProperties
-    {
-        bool renderWireframe = false;
-        float wireframeWidth = 1.0f;
-        CullMode cullMode = CullMode::BACK;
-        SurfaceType surfaceType = SurfaceType::OPAQUE;
-        bool enableDepth = true;
-        bool writeDepth = true;
-        CompareOperation depthCompareOp = CompareOperation::LESS_OR_EQUAL;
-        StencilProperties stencil;
-    };
-
     // Static Materials
-    static const Material DEFAULT_MATERIAL_MAT_CAP;
+    static const Material DEFAULT_MATERIAL_EDITOR_OUTLINE;
+    static const Material DEFAULT_MATERIAL_EDITOR_GRID;
+
+    static const Material DEFAULT_MATERIAL_BASIC_SHADED;
     static const Material DEFAULT_MATERIAL_WIREFRAME;
-    static const Material DEFAULT_MATERIAL_GRID;
-    static const Material DEFAULT_MATERIAL_CAMERA;
-    static const Material DEFAULT_MATERIAL_LIGHT;
-    static const Material DEFAULT_MATERIAL_OUTLINE;
-    static const Material DEFAULT_MATERIAL_SCENE;
+    static const Material DEFAULT_MATERIAL_SHADED;
+
+    // Static functions
+    inline static std::vector<Material> getEditorMaterials()
+    {
+        return {DEFAULT_MATERIAL_EDITOR_OUTLINE, DEFAULT_MATERIAL_EDITOR_GRID};
+    }
+    inline static std::vector<Material> getDefaultMaterials()
+    {
+        return {DEFAULT_MATERIAL_BASIC_SHADED, DEFAULT_MATERIAL_WIREFRAME,
+                DEFAULT_MATERIAL_SHADED};
+    }
 
     // Events
     // TODO: Add Material change event
 
-    Material() = default;
-    explicit Material(const std::string &name, const std::string &shader,
-                      const MaterialProperties &properties);
+    Material();
+    explicit Material(std::string shaderName, std::string materialName,
+                      MaterialProperties properties,
+                      bool isEditorMaterial = false);
     ~Material() = default;
 
     Material(const Material &material);
@@ -96,33 +47,67 @@ class Material
     {
         return m_name;
     }
-    [[nodiscard]] inline const std::string &getShader() const
+    [[nodiscard]] inline const std::string &getShaderName() const
     {
-        return m_shader;
+        return m_shaderName;
     }
-    [[nodiscard]] inline const MaterialProperties &getProperties() const
+    [[nodiscard]] inline const ShaderData &getShaderData(
+        ShadingPipeline currentPipeline) const
     {
-        return m_properties;
+        return m_isEditorMaterial
+                   ? m_shaderData[0]
+                   : m_shaderData[static_cast<int>(currentPipeline)];
     }
-    // TODO: Add setters and call material change event
-    inline void setProperties(const MaterialProperties &properties)
+    [[nodiscard]] inline const RasterPipelineData &getRasterPipelineData() const
     {
-        m_properties = properties;
+        return m_properties.rasterData;
+    }
+    [[nodiscard]] inline const RaytracePipelineData &getRaytracePipelineData()
+        const
+    {
+        return m_properties.raytraceData;
     }
 
-    // Static functions
-    inline static std::vector<Material> getDefaultMaterials()
+    inline void setName(const std::string &name)
     {
-        return {DEFAULT_MATERIAL_MAT_CAP, DEFAULT_MATERIAL_WIREFRAME,
-                DEFAULT_MATERIAL_GRID,    DEFAULT_MATERIAL_CAMERA,
-                DEFAULT_MATERIAL_LIGHT,   DEFAULT_MATERIAL_OUTLINE,
-                DEFAULT_MATERIAL_SCENE};
+        m_name = name;
+    }
+
+    [[nodiscard]] inline const MaterialParameter &getMaterialParameter(
+        const std::string &parameter) const
+    {
+        return m_properties.parameters.at(parameter);
+    }
+
+    inline void getMaterialParameterData(
+        std::vector<uint8_t> *dataBuffer) const
+    {
+        m_properties.getParametersData(dataBuffer);
+    }
+
+    bool setMaterialParameter(const std::string &parameter,
+                              const std::any &value)
+    {
+        if (m_properties.parameters.find(parameter) ==
+            m_properties.parameters.end())
+            return false;
+        // TODO: Check type of parameter value.
+        m_properties.parameters.at(parameter).value = value;
+        return true;
     }
 
   private:
-    std::string m_name = "Material";
-    std::string m_shader = "MatCap";
+    std::string m_shaderName = "";
+    std::string m_name = "";
     MaterialProperties m_properties;
+    bool m_isEditorMaterial = false;
+    std::array<ShaderData,
+               static_cast<int>(ShadingPipeline::SHADING_PIPELINE_MAX)>
+        m_shaderData;
+
+    void setShaderData();
+    static std::string getMaterialNameFromShaderName(
+        const std::string &shaderName);
 };
 } // namespace kirana::scene
 

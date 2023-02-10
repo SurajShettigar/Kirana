@@ -8,40 +8,36 @@ namespace kirana::viewport::vulkan
 class Device;
 class RenderPass;
 class Shader;
-class PipelineLayout;
-struct VertexInputDescription;
 
 class Pipeline
 {
-  private:
+  protected:
     bool m_isInitialized = false;
-    vk::Pipeline m_current;
 
     const Device *const m_device;
     const RenderPass *const m_renderPass;
     const Shader *const m_shader;
-    const PipelineLayout *const m_pipelineLayout;
 
-    bool build(
-        const std::vector<vk::VertexInputBindingDescription> &vertexBindings,
-        const std::vector<vk::VertexInputAttributeDescription>
-            &vertexAttributes,
-        const PipelineProperties &properties);
+    std::string m_name = "MatCap";
+    vulkan::ShadingPipeline m_shadingPipeline = vulkan::ShadingPipeline::RASTER;
+
+    vk::Pipeline m_current;
+
+    virtual bool build() = 0;
 
   public:
     explicit Pipeline(const Device *device, const RenderPass *renderPass,
                       const Shader *shader,
-                      const PipelineLayout *pipelineLayout,
-                      const VertexInputDescription &vertexInputDesc,
-                      const PipelineProperties &pipelineProperties);
-    ~Pipeline();
+                      vulkan::ShadingPipeline shadingPipeline);
+    virtual ~Pipeline();
     Pipeline(const Pipeline &pipeline) = delete;
     Pipeline &operator=(const Pipeline &pipeline) = delete;
 
     const bool &isInitialized = m_isInitialized;
-    const vk::Pipeline &current = m_current;
+    const std::string &name = m_name;
+    const vulkan::ShadingPipeline &shadingPipeline = m_shadingPipeline;
 
-    //    bool rebuild(const VertexInputDescription &vertexInputDesc);
+    const vk::Pipeline &current = m_current;
 };
 } // namespace kirana::viewport::vulkan
 #endif

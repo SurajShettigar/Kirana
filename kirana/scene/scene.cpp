@@ -1,11 +1,9 @@
 #include "scene.hpp"
 
 #include "material.hpp"
-#include "primitives/plane.hpp"
 
 
 #include <assimp/scene.h>
-#include <algorithm>
 #include <constants.h>
 #include <logger.hpp>
 
@@ -49,7 +47,7 @@ void kirana::scene::Scene::initializeChildObjects(
             children[i], meshes, objectBounds,
             parent != nullptr ? parent->m_transform.get() : nullptr));
 
-        if(parent != nullptr)
+        if (parent != nullptr)
             parent->m_addHierarchyBounds(objectBounds);
 
         if (children[i]->mNumChildren > 0)
@@ -74,10 +72,8 @@ void kirana::scene::Scene::initFromAiScene(const aiScene *scene)
     m_materials.resize(scene->mNumMaterials);
     for (size_t i = 0; i < scene->mNumMaterials; i++)
     {
-        m_materials[i] = std::move(std::make_shared<Material>(
-            scene->mMaterials[i]->GetName().C_Str(),
-            constants::DEFAULT_SCENE_MATERIAL_SHADER_NAME,
-            Material::MaterialProperties{}));
+        m_materials[i] = std::move(std::make_shared<Material>());
+        m_materials[i]->setName(scene->mMaterials[i]->GetName().C_Str());
     }
 
     Logger::get().log(constants::LOG_CHANNEL_SCENE, LogSeverity::debug,

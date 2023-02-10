@@ -22,6 +22,9 @@ kirana::viewport::vulkan::Instance::Instance(
 #endif
 
     auto extensions = reqInstanceExtensions;
+    extensions.insert(extensions.end(),
+                      vulkan::REQUIRED_INSTANCE_EXTENSIONS.begin(),
+                      vulkan::REQUIRED_INSTANCE_EXTENSIONS.end());
     if (constants::VULKAN_USE_VALIDATION_LAYERS)
         extensions.push_back(VK_EXT_DEBUG_UTILS_EXTENSION_NAME);
 
@@ -36,11 +39,11 @@ kirana::viewport::vulkan::Instance::Instance(
 
     if (constants::VULKAN_USE_VALIDATION_LAYERS)
     {
-        if (!hasRequiredValidationLayers()) // Check for validation layers.
+        if (!hasRequiredValidationLayers()) // Check for validation numLayers.
         {
             Logger::get().log(
                 constants::LOG_CHANNEL_VULKAN, LogSeverity::error,
-                "Vulkan does not have the required validation layers");
+                "Vulkan does not have the required validation numLayers");
             m_isInitialized = false;
             return;
         }
@@ -53,7 +56,7 @@ kirana::viewport::vulkan::Instance::Instance(
         "Vulkan", VK_MAKE_VERSION(1, 0, 0), VK_API_VERSION_1_3);
 
     // Create Vulkan Instance
-    vk::InstanceCreateInfo createInfo({}, &appInfo, VALIDATION_LAYERS,
+    vk::InstanceCreateInfo createInfo({}, &appInfo, REQUIRED_VALIDATION_LAYERS,
                                       extensions);
     try
     {

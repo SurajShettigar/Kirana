@@ -15,13 +15,15 @@ kirana::viewport::Viewport::Viewport()
 
 void kirana::viewport::Viewport::init(const window::Window *window,
                                       const scene::ViewportScene &scene,
-                                      Shading shading)
+                                      ShadingPipeline pipeline,
+                                      ShadingType type)
 {
     m_window = window;
-    m_prevShading = m_currentShading;
-    m_currentShading = shading;
+    m_currentPipeline = pipeline;
+    m_currentShadingType = type;
     m_renderer.init(m_window, scene,
-                    static_cast<uint16_t>(m_currentShading));
+                    static_cast<vulkan::ShadingPipeline>(m_currentPipeline),
+                    static_cast<vulkan::ShadingType>(m_currentShadingType));
 }
 
 void kirana::viewport::Viewport::update()
@@ -39,30 +41,16 @@ void kirana::viewport::Viewport::clean()
     m_renderer.clean();
 }
 
-void kirana::viewport::Viewport::setShading(Shading shading)
+void kirana::viewport::Viewport::setShading(ShadingPipeline pipeline)
 {
-    m_prevShading = m_currentShading;
-    m_currentShading = shading;
-    m_renderer.setShading(static_cast<uint16_t>(m_currentShading));
+    m_currentPipeline = pipeline;
+    m_renderer.setShadingPipeline(
+        static_cast<vulkan::ShadingPipeline>(m_currentPipeline));
 }
 
-void kirana::viewport::Viewport::toggleWireframe()
+void kirana::viewport::Viewport::setShadingType(ShadingType type)
 {
-    if (m_currentShading != Shading::WIREFRAME)
-        setShading(Shading::WIREFRAME);
-    else
-        setShading(m_prevShading);
+    m_currentShadingType = type;
+    m_renderer.setShadingType(
+        static_cast<vulkan::ShadingType>(m_currentShadingType));
 }
-
-void kirana::viewport::Viewport::togglePBR()
-{
-    if (m_currentShading != Shading::REALTIME_PBR)
-        setShading(Shading::REALTIME_PBR);
-    else
-        setShading(m_prevShading);
-}
-
-/*void kirana::viewport::Viewport::loadScene(const scene::Scene &scene)
-{
-    m_renderer.loadScene(scene);
-}*/

@@ -32,6 +32,8 @@ class CommandPool
         vk::CommandBufferLevel level = vk::CommandBufferLevel::ePrimary) const;
     void reset(vk::CommandPoolResetFlags resetFlags =
                    vk::CommandPoolResetFlagBits::eReleaseResources) const;
+    void freeCommandBuffers(
+        const CommandBuffers *&buffers) const;
 };
 } // namespace kirana::viewport::vulkan
 #endif

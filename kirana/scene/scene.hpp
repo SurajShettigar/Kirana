@@ -5,7 +5,6 @@
 #include "mesh.hpp"
 #include "material.hpp"
 #include "camera.hpp"
-#include "scene_utils.hpp"
 
 #include <memory>
 #include <vector>
