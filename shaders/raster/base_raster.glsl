@@ -37,3 +37,6 @@ struct PushConstantData {
     uint32_t firstIndex;
     uint32_t vertexOffset;
 };
+
+const float PI = 3.141592;
+const float EPSILON = 0.00001;

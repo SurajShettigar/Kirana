@@ -91,7 +91,7 @@ kirana::scene::Material::Material()
       m_isEditorMaterial{false}
 {
     std::uniform_real_distribution<float> dist(0.0f, 1.0f);
-    m_properties.parameters["_BaseColor"].value = math::Vector4(
+    m_properties.parameters[0].value = math::Vector4(
         dist(randomEngine), dist(randomEngine), dist(randomEngine), 1.0f);
 
     setShaderData();

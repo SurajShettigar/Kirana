@@ -23,17 +23,19 @@ layout (buffer_reference) readonly buffer MaterialData {
     PrincipledData p[];
 };
 
-layout (location = 0) out vec4 outColor;
-layout (location = 1) out vec3 outWorldNormal;
-layout (location = 2) out vec3 outCamPos;
+layout (location = 0) out _VSOut {
+    vec3 worldPosition;
+    vec3 worldNormal;
+    vec3 viewDirection;
+    PrincipledData matData;
+} VSOut;
 
 void main() {
-    MaterialData mat = MaterialData(pushConstants.p.materialDataBufferAddress);
-    PrincipledData principled = mat.p[pushConstants.p.materialDataIndex];
+    vec4 worldPos = getWorldPosition();
+    gl_Position = worldPos;
 
-    gl_Position = getWorldPosition();
-
-    outColor = principled.color;
-    outWorldNormal = getWorldNormal();
-    outCamPos = camBuffer.c.position;
+    VSOut.worldPosition = worldPos.xyz;
+    VSOut.worldNormal = getWorldNormal();
+    VSOut.viewDirection = camBuffer.c.direction;
+    VSOut.matData = MaterialData(pushConstants.p.materialDataBufferAddress).p[pushConstants.p.materialDataIndex];
 }

@@ -76,11 +76,14 @@ class Material
     [[nodiscard]] inline const MaterialParameter &getMaterialParameter(
         const std::string &parameter) const
     {
-        return m_properties.parameters.at(parameter);
+        return *std::find_if(m_properties.parameters.begin(),
+                             m_properties.parameters.end(),
+                             [&parameter](const MaterialParameter &p) {
+                                 return parameter == p.id;
+                             });
     }
 
-    inline void getMaterialParameterData(
-        std::vector<uint8_t> *dataBuffer) const
+    inline void getMaterialParameterData(std::vector<uint8_t> *dataBuffer) const
     {
         m_properties.getParametersData(dataBuffer);
     }
@@ -88,11 +91,15 @@ class Material
     bool setMaterialParameter(const std::string &parameter,
                               const std::any &value)
     {
-        if (m_properties.parameters.find(parameter) ==
-            m_properties.parameters.end())
-            return false;
+        auto it = std::find_if(m_properties.parameters.begin(),
+                               m_properties.parameters.end(),
+                               [&parameter](const MaterialParameter &p) {
+                                   return parameter == p.id;
+                               });
         // TODO: Check type of parameter value.
-        m_properties.parameters.at(parameter).value = value;
+        if (it == m_properties.parameters.end())
+            return false;
+        it->value = value;
         return true;
     }
 

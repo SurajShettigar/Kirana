@@ -47,10 +47,10 @@ vec3 randomHemispherical(inout uint seed, in vec3[3] coordinateFrame) {
     return value;
 }
 
-void getCoordinateFrame(in vec3 normal, out vec3 tangent, out vec3 binormal) {
+void getCoordinateFrame(in vec3 normal, out vec3 tangent, out vec3 bitangent) {
     if (abs(normal.x) > abs(normal.y))
-    tangent = vec3(normal.z, 0, - normal.x) / sqrt(normal.x * normal.x + normal.z * normal.z);
+    tangent = normalize(vec3(normal.z, 0, - normal.x) / sqrt(normal.x * normal.x + normal.z * normal.z));
     else
     tangent = vec3(0, - normal.z, normal.y) / sqrt(normal.y * normal.y + normal.z * normal.z);
-    binormal = cross(normal, tangent);
+    bitangent = normalize(cross(normal, tangent));
 }

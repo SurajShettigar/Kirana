@@ -3,13 +3,10 @@
 #extension GL_EXT_shader_explicit_arithmetic_types_int32 : require
 #extension GL_EXT_shader_explicit_arithmetic_types_int64 : require
 
-struct HitInfo {
-    vec3 color;
-    uint seed;
-    uint depth;
-    vec3 rayOrigin;
-    vec3 rayDirection;
-    vec3 weight;
+struct Vertex {
+    vec3 position;
+    vec3 normal;
+    vec4 color;
 };
 
 struct CameraData {
@@ -31,33 +28,7 @@ struct WorldData
     vec4 sunColor;
 };
 
-struct Vertex {
-    vec3 position;
-    vec3 normal;
-    vec4 color;
-};
-
-struct BasicShadedData {
-  vec4 color;
-};
-
-struct PrincipledData {
-    vec4 color;
-    float subSurface;
-    float metallic;
-    float specular;
-    float specularTint;
-    float roughness;
-    float anisotropic;
-    float sheen;
-    float sheenTint;
-    float clearCoat;
-    float clearCoatGloss;
-    float transmission;
-    float ior;
-};
-
-struct Object {
+struct ObjectData {
     uint64_t vertexBufferAddress;
     uint64_t indexBufferAddress;
     uint64_t materialDataBufferAddress;
@@ -71,5 +42,28 @@ struct GlobalData {
     uint32_t maxBounces;
     uint32_t antiAliasSamples;
 };
+
+struct Ray {
+    vec3 origin;
+    vec3 direction;
+};
+
+struct PathtracePayload {
+    Ray ray;
+    vec3 color;
+    vec3 weight;
+    uint seed;
+    uint depth;
+};
+
+struct HitPoint {
+    vec3 position;
+    vec3 tangent;
+    vec3 bitangent;
+    vec3 normal;
+};
+
+const float PI = 3.141592;
+const float EPSILON = 0.00001;
 
 
