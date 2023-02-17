@@ -37,6 +37,30 @@ float random(inout uint seed)
     return float(lcg(seed)) / float(0x01000000);
 }
 
+vec3 randomSpherical_Rejection(inout uint seed)
+{
+    while (true) {
+        vec3 rand = vec3(0.0);
+        rand.x = random(seed);
+        rand.y = random(seed);
+        rand.z = random(seed);
+        rand = 2.0 * rand - 1.0;
+        float lSq = rand.x * rand.x + rand.y * rand.y + rand.z * rand.z;
+        if (lSq >= 1)
+        continue;
+        return rand;
+    }
+}
+
+vec3 randomHemispherical_Rejection(inout uint seed, in vec3 normal)
+{
+    vec3 rand = randomSpherical_Rejection(seed);
+    if (dot(normal, rand) > 0)
+    return rand;
+    else
+    return -rand;
+}
+
 vec3 randomHemispherical(inout uint seed, in vec3[3] coordinateFrame) {
     const float PI = 3.141592;
     const float rand1 = random(seed);
@@ -48,9 +72,22 @@ vec3 randomHemispherical(inout uint seed, in vec3[3] coordinateFrame) {
 }
 
 void getCoordinateFrame(in vec3 normal, out vec3 tangent, out vec3 bitangent) {
-    if (abs(normal.x) > abs(normal.y))
-    tangent = normalize(vec3(normal.z, 0, - normal.x) / sqrt(normal.x * normal.x + normal.z * normal.z));
-    else
-    tangent = vec3(0, - normal.z, normal.y) / sqrt(normal.y * normal.y + normal.z * normal.z);
-    bitangent = normalize(cross(normal, tangent));
+    float zSign = sign(normal.z);
+    const float a = -1.0 / (zSign + normal.z);
+    const float b = normal.x * normal.y * a;
+    tangent = vec3(b, zSign + normal.y * normal.y * a, - normal.y);
+    bitangent = vec3(1.0 + zSign * normal.x * normal.x * a, zSign * b, -zSign * normal.x);
+}
+
+void getCoordinateFrame_Frisvad(in vec3 normal, out vec3 tangent, out vec3 bitangent) {
+    if (normal.z < -0.9999)
+    {
+        tangent = vec3(-1.0, 0.0, 0.0);
+        bitangent = vec3(0.0, -1.0, 0.0);
+        return;
+    }
+    const float a = 1.0 / (1.0 + normal.z);
+    const float b = - normal.x * normal.y * a;
+    tangent = vec3(b, 1.0 - normal.y * normal.y * a, - normal.y);
+    bitangent = vec3(1.0 - normal.x * normal.x * a, b, - normal.x);
 }

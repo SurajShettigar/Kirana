@@ -21,7 +21,7 @@ in CameraData camera)
 
     vec3 luminance = vec3(0.0);
     vec3 currWeight = vec3(1.0);
-    for (; _globalPayload.depth < maxDepth; _globalPayload.depth++) {
+    for (; _globalPayload.depth < 2; _globalPayload.depth++) {
         traceRayEXT(_globalAccelStruct, // Acceleration Structure
         rayFlags, // Ray flags
         0xFF, // Culling Mask. ANDed with mask set in acceleration structure.

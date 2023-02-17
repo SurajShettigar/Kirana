@@ -12,6 +12,6 @@ layout (location = 0) rayPayloadInEXT PathtracePayload payload;
 
 void main()
 {
-    payload.color = worldBuffer.w.ambientColor.rgb * 2.0;
+    payload.color = worldBuffer.w.ambientColor.rgb * 8.0;
     payload.depth = 999;
 }

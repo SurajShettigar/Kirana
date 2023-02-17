@@ -90,9 +90,11 @@ kirana::scene::Material::Material()
           RaytracePipelineData{}, DEFAULT_PRINCIPLED_MATERIAL_PARAMETERS}},
       m_isEditorMaterial{false}
 {
-    std::uniform_real_distribution<float> dist(0.0f, 1.0f);
+    std::uniform_real_distribution<float> colorDist(0.5f, 1.0f);
+    std::uniform_real_distribution<float> dist(0.5f, 1.0f);
     m_properties.parameters[0].value = math::Vector4(
-        dist(randomEngine), dist(randomEngine), dist(randomEngine), 1.0f);
+        colorDist(randomEngine), colorDist(randomEngine), colorDist(randomEngine), 1.0f);
+    m_properties.parameters[5].value = dist(randomEngine);
 
     setShaderData();
 }

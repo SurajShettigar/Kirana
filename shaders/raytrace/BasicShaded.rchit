@@ -41,8 +41,7 @@ void main()
     BasicShadedData matData = mBuffer.b[obj.materialDataIndex];
 
     vec3 rayOrigin = hitpoint.position + hitpoint.normal * EPSILON;
-    vec3 reflectedDirection = normalize(randomHemispherical(payload.seed,
-    vec3[3](hitpoint.tangent, hitpoint.bitangent, hitpoint.normal)));
+    vec3 reflectedDirection = normalize(randomHemispherical_Rejection(payload.seed,hitpoint.normal));
 
     payload.ray = Ray(rayOrigin, reflectedDirection);
     payload.color = vec3(0.0); // Light emmitted
