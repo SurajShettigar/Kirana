@@ -1,6 +1,7 @@
 #ifndef MATERIAL_MANAGER_HPP
 #define MATERIAL_MANAGER_HPP
 
+#include <any>
 #include "vulkan_types.hpp"
 
 namespace kirana::scene
@@ -9,7 +10,7 @@ struct VertexInfo;
 class Material;
 struct ShaderData;
 struct RasterPipelineData;
-struct MaterialDataBase;
+class MaterialProperties;
 
 } // namespace kirana::scene
 
@@ -39,6 +40,7 @@ class MaterialManager
         int dataBufferIndex = -1; // Index used to fetch appropriate data buffer
         int materialDataIndex = -1; // Index local to data buffer
         int sbtIndex = -1;
+        uint32_t materialChangeListener;
     };
 
     const Device *const m_device;
@@ -65,6 +67,9 @@ class MaterialManager
                        const scene::Material &material);
     int copyMaterialDataToBuffer(const scene::Material &material);
     int createSBT(const RaytracePipeline *pipeline);
+
+    void onMaterialChanged(const std::string &materialName, const scene::MaterialProperties &properties,
+                           const std::string &param, const std::any &value);
 
   public:
     MaterialManager(const Device *device, const Allocator *allocator);

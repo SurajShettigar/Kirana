@@ -70,8 +70,10 @@ static const char *const DEFAULT_SCENE_MATERIAL_SHADER_NAME =
     VULKAN_SHADER_PRINCIPLED_NAME;
 
 static const char *const DATA_DIR_PATH = DATA_DIR;
-static const char *const DEFAULT_MODEL_NAME = "Quad_Model.fbx";
+//static const char *const DEFAULT_MODEL_NAME = "Quad_Model.fbx";
 // static const char *const DEFAULT_MODEL_NAME = "Large_Model.fbx";
+ static const char *const DEFAULT_MODEL_NAME = "Cornell_Box.fbx";
+
 
 static const float VIEWPORT_SELECTED_OBJECT_OUTLINE_WIDTH = 0.025f;
 static const std::array<float, 3> VIEWPORT_SELECTED_OBJECT_OUTLINE_COLOR = {

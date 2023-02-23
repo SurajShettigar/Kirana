@@ -36,6 +36,6 @@ void main() {
 
     VSOut.worldPosition = worldPos.xyz;
     VSOut.worldNormal = getWorldNormal();
-    VSOut.viewDirection = camBuffer.c.direction;
+    VSOut.viewDirection = normalize(camBuffer.c.position - worldPos.xyz);
     VSOut.matData = MaterialData(pushConstants.p.materialDataBufferAddress).p[pushConstants.p.materialDataIndex];
 }

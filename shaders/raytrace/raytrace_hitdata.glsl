@@ -38,6 +38,6 @@ HitPoint getHitPoint(ObjectData objData, vec2 hitAttribs)
     hitPoint.position = getWorldPosition(localPositions, barycentrics);
     hitPoint.normal = getWorldNormal(localNormals, barycentrics);
 
-    getCoordinateFrame(hitPoint.normal, hitPoint.tangent, hitPoint.bitangent);
+    getCoordinateFrame_Frisvad(hitPoint.normal, hitPoint.tangent, hitPoint.bitangent);
     return hitPoint;
 }

@@ -71,23 +71,23 @@ vec3 randomHemispherical(inout uint seed, in vec3[3] coordinateFrame) {
     return value;
 }
 
-void getCoordinateFrame(in vec3 normal, out vec3 tangent, out vec3 bitangent) {
+void getCoordinateFrame(in vec3 normal, out vec3 tangent, out vec3 binormal) {
     float zSign = sign(normal.z);
     const float a = -1.0 / (zSign + normal.z);
     const float b = normal.x * normal.y * a;
     tangent = vec3(b, zSign + normal.y * normal.y * a, - normal.y);
-    bitangent = vec3(1.0 + zSign * normal.x * normal.x * a, zSign * b, -zSign * normal.x);
+    binormal = vec3(1.0 + zSign * normal.x * normal.x * a, zSign * b, -zSign * normal.x);
 }
 
-void getCoordinateFrame_Frisvad(in vec3 normal, out vec3 tangent, out vec3 bitangent) {
+void getCoordinateFrame_Frisvad(in vec3 normal, out vec3 tangent, out vec3 binormal) {
     if (normal.z < -0.9999)
     {
         tangent = vec3(-1.0, 0.0, 0.0);
-        bitangent = vec3(0.0, -1.0, 0.0);
+        binormal = vec3(0.0, -1.0, 0.0);
         return;
     }
     const float a = 1.0 / (1.0 + normal.z);
     const float b = - normal.x * normal.y * a;
     tangent = vec3(b, 1.0 - normal.y * normal.y * a, - normal.y);
-    bitangent = vec3(1.0 - normal.x * normal.x * a, b, - normal.x);
+    binormal = vec3(1.0 - normal.x * normal.x * a, b, - normal.x);
 }

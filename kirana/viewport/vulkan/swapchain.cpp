@@ -43,7 +43,7 @@ void kirana::viewport::vulkan::Swapchain::initializeSwapchainData()
     auto format = std::find_if(
         m_supportInfo.surfaceFormats.begin(),
         m_supportInfo.surfaceFormats.end(), [](const vk::SurfaceFormatKHR &f) {
-            return f.format == vk::Format::eR32G32B32A32Sfloat &&
+            return f.format == vk::Format::eR8G8B8A8Srgb &&
                    f.colorSpace == vk::ColorSpaceKHR::eSrgbNonlinear;
         });
     if (format != m_supportInfo.surfaceFormats.end())

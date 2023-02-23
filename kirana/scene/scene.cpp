@@ -72,8 +72,8 @@ void kirana::scene::Scene::initFromAiScene(const aiScene *scene)
     m_materials.resize(scene->mNumMaterials);
     for (size_t i = 0; i < scene->mNumMaterials; i++)
     {
-        m_materials[i] = std::move(std::make_shared<Material>());
-        m_materials[i]->setName(scene->mMaterials[i]->GetName().C_Str());
+        m_materials[i] =
+            std::move(std::make_shared<Material>(scene->mMaterials[i]));
     }
 
     Logger::get().log(constants::LOG_CHANNEL_SCENE, LogSeverity::debug,

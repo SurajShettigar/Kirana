@@ -253,65 +253,67 @@ bool kirana::viewport::vulkan::SceneData::createMeshes(bool isEditor)
         InstanceData instance{instanceIndex++, r.object->transform,
                               &r.viewportVisible, &r.renderVisible,
                               &r.selected};
-        for (const auto &m : r.object->getMeshes())
+        auto &objMeshes = r.object->getMeshes();
+        if (!objMeshes.empty())
         {
-            const std::string &meshName = m->getName();
+            const std::string &meshName = objMeshes[0]->getName();
             uint32_t index = meshIndex;
+            // TODO: Fix Multi-mesh objects.
             // If there is already a mesh, we just store the instance.
             if (hasMeshData(meshes, meshName, &index))
                 meshes[index].instances.emplace_back(instance);
             else
             {
-                MeshData meshData{};
-                meshData.index = meshIndex++;
-                meshData.name = m->getName();
-                meshData.render = false; // Make it non-renderable at first
-
-                const auto &meshVertices = m->getVertices();
-                const auto &meshIndices = m->getIndices();
-                meshData.vertexCount =
-                    static_cast<uint32_t>(meshVertices.size());
-                meshData.indexCount = static_cast<uint32_t>(meshIndices.size());
-
-                auto bufferIndices =
-                    createVertexAndIndexBuffer(meshVertices, meshIndices);
-                if (bufferIndices.first == -1 || bufferIndices.second == -1)
-                {
-                    Logger::get().log(
-                        constants::LOG_CHANNEL_VULKAN, LogSeverity::trace,
-                        "Failed to put data in vertex/index buffer for mesh: " +
-                            m->getName());
-                }
-                meshData.vertexBufferIndex = bufferIndices.first;
-                meshData.indexBufferIndex = bufferIndices.second;
-
-                // Get the offset into the global vertex and index buffer.
-                meshData.vertexOffset = static_cast<uint32_t>(
-                    m_vertexBuffers[bufferIndices.first].currentDataCount -
-                    meshData.vertexCount);
-                meshData.firstIndex = static_cast<uint32_t>(
-                    m_indexBuffers[bufferIndices.second].currentDataCount -
-                    meshData.indexCount);
-
-                int matIndex = m_materialManager->getMaterialIndexFromName(
-                    m->getMaterial()->getName());
-                if (matIndex == -1)
-                {
-                    matIndex = m_materialManager->getMaterialIndexFromName(
-                        scene::Material::DEFAULT_MATERIAL_BASIC_SHADED
-                            .getName());
-                }
-                meshData.materialIndex = static_cast<uint32_t>(matIndex);
-
                 instanceIndex = 0;
                 instance.index = instanceIndex;
-                meshData.instances.emplace_back(instance);
+                for (const auto &m : objMeshes)
+                {
+                    MeshData meshData{};
+                    meshData.index = meshIndex++;
+                    meshData.name = m->getName();
+                    meshData.render = false; // Make it non-renderable at first
 
-                meshes.emplace_back(std::move(meshData));
+                    const auto &meshVertices = m->getVertices();
+                    const auto &meshIndices = m->getIndices();
+                    meshData.vertexCount = static_cast<uint32_t>(meshVertices.size());
+                    meshData.indexCount = static_cast<uint32_t>(meshIndices.size());
+
+                    auto bufferIndices =
+                        createVertexAndIndexBuffer(meshVertices, meshIndices);
+                    if (bufferIndices.first == -1 || bufferIndices.second == -1)
+                    {
+                        Logger::get().log(
+                            constants::LOG_CHANNEL_VULKAN, LogSeverity::trace,
+                            "Failed to put data in vertex/index buffer for mesh: " +
+                                m->getName());
+                    }
+                    meshData.vertexBufferIndex = bufferIndices.first;
+                    meshData.indexBufferIndex = bufferIndices.second;
+
+                    // Get the offset into the global vertex and index buffer.
+                    meshData.vertexOffset = static_cast<uint32_t>(
+                        m_vertexBuffers[bufferIndices.first].currentDataCount -
+                        meshData.vertexCount);
+                    meshData.firstIndex = static_cast<uint32_t>(
+                        m_indexBuffers[bufferIndices.second].currentDataCount -
+                        meshData.indexCount);
+
+                    int matIndex = m_materialManager->getMaterialIndexFromName(
+                        m->getMaterial()->getName());
+                    if (matIndex == -1)
+                    {
+                        matIndex = m_materialManager->getMaterialIndexFromName(
+                            scene::Material::DEFAULT_MATERIAL_BASIC_SHADED.getName());
+                    }
+                    meshData.materialIndex = static_cast<uint32_t>(matIndex);
+                    meshData.instances.emplace_back(instance);
+
+                    meshes.emplace_back(std::move(meshData));
+                    // If any one of the instance is visible, render it.
+                    if (r.renderVisible)
+                        meshes[index].render = true;
+                }
             }
-            // If any one of the instance is visible, render it.
-            if (r.renderVisible)
-                meshes[index].render = true;
         }
     }
     return true;
