@@ -110,63 +110,72 @@ void kirana::viewport::vulkan::Drawer::rasterizeMeshes(const FrameData &frame,
                                                        bool drawEditorMeshes)
 {
     const auto &rPipelineLayout = m_scene->getRasterPipelineLayout().current;
-    const auto &meshes = drawEditorMeshes ? m_scene->getEditorMeshes()
-                                          : m_scene->getSceneMeshes();
+    const auto &meshObjects = drawEditorMeshes ? m_scene->getEditorMeshes()
+                                               : m_scene->getSceneMeshes();
 
     std::string lastPipeline = "";
     int lastVertexBufferIndex = -1;
     int lastIndexBufferIndex = -1;
-    for (const auto &m : meshes)
+    for (const auto &mObj : meshObjects)
     {
-        if (m.vertexBufferIndex > -1 &&
-            m.vertexBufferIndex != lastVertexBufferIndex)
+        for (int mIndex = 0; mIndex < mObj.meshes.size(); mIndex++)
         {
-            frame.commandBuffers->bindVertexBuffer(
-                m_scene->getVertexBuffer(drawEditorMeshes, m.index), 0);
-            lastVertexBufferIndex = m.vertexBufferIndex;
-        }
-        if (m.indexBufferIndex > -1 &&
-            m.indexBufferIndex != lastIndexBufferIndex)
-        {
-            frame.commandBuffers->bindIndexBuffer(
-                m_scene->getIndexBuffer(drawEditorMeshes, m.index), 0);
-            lastIndexBufferIndex = m.indexBufferIndex;
-        }
-        const auto &pipeline =
-            m_scene->getCurrentPipeline(drawEditorMeshes, false, m.index);
-        if (lastPipeline != pipeline.name)
-        {
-            frame.commandBuffers->bindPipeline(pipeline.current);
-            lastPipeline = pipeline.name;
-        }
-
-        for (uint32_t i = 0; i < m.instances.size(); i++)
-        {
-            const auto &pushConstantData = m_scene->getPushConstantRasterData(
-                drawEditorMeshes, false, m.index, i);
-            frame.commandBuffers->pushConstants<PushConstantRaster>(
-                rPipelineLayout, pushConstantData);
-
-            frame.commandBuffers->drawIndexed(m.indexCount, 1, m.firstIndex,
-                                              m.vertexOffset,
-                                              m.getGlobalInstanceIndex(i));
-
-            // TODO: Find better way to render outline
-            if (*m.instances[0].selected)
+            const auto &mesh = mObj.meshes[mIndex];
+            if (mesh.vertexBufferIndex > -1 &&
+                mesh.vertexBufferIndex != lastVertexBufferIndex)
             {
-                const auto &outline = m_scene->getCurrentPipeline(
-                    drawEditorMeshes, true, m.index);
-                frame.commandBuffers->bindPipeline(outline.current);
-                lastPipeline = outline.name;
+                frame.commandBuffers->bindVertexBuffer(
+                    m_scene->getVertexBuffer(drawEditorMeshes, mObj.index,
+                                             mesh.index),
+                    0);
+                lastVertexBufferIndex = mesh.vertexBufferIndex;
+            }
+            if (mesh.indexBufferIndex > -1 &&
+                mesh.indexBufferIndex != lastIndexBufferIndex)
+            {
+                frame.commandBuffers->bindIndexBuffer(
+                    m_scene->getIndexBuffer(drawEditorMeshes, mObj.index,
+                                            mesh.index),
+                    0);
+                lastIndexBufferIndex = mesh.indexBufferIndex;
+            }
+            const auto &pipeline = m_scene->getCurrentPipeline(
+                drawEditorMeshes, false, mObj.index, mesh.index);
+            if (lastPipeline != pipeline.name)
+            {
+                frame.commandBuffers->bindPipeline(pipeline.current);
+                lastPipeline = pipeline.name;
+            }
 
-                const auto &outlinePC = m_scene->getPushConstantRasterData(
-                    drawEditorMeshes, true, m.index, i);
+            for (uint32_t i = 0; i < mObj.instances.size(); i++)
+            {
+                const auto &pushConstantData =
+                    m_scene->getPushConstantRasterData(
+                        drawEditorMeshes, false, mObj.index, mesh.index, i);
                 frame.commandBuffers->pushConstants<PushConstantRaster>(
-                    rPipelineLayout, outlinePC);
+                    rPipelineLayout, pushConstantData);
 
-                frame.commandBuffers->drawIndexed(m.indexCount, 1, m.firstIndex,
-                                                  m.vertexOffset,
-                                                  m.getGlobalInstanceIndex(i));
+                frame.commandBuffers->drawIndexed(
+                    mesh.indexCount, 1, mesh.firstIndex, mesh.vertexOffset,
+                    mObj.getGlobalInstanceIndex(i));
+
+                // TODO: Find better way to render outline
+                if (*mObj.instances[0].selected)
+                {
+                    const auto &outline = m_scene->getCurrentPipeline(
+                        drawEditorMeshes, true, mObj.index, mesh.index);
+                    frame.commandBuffers->bindPipeline(outline.current);
+                    lastPipeline = outline.name;
+
+                    const auto &outlinePC = m_scene->getPushConstantRasterData(
+                        drawEditorMeshes, true, mObj.index, mesh.index, i);
+                    frame.commandBuffers->pushConstants<PushConstantRaster>(
+                        rPipelineLayout, outlinePC);
+
+                    frame.commandBuffers->drawIndexed(
+                        mesh.indexCount, 1, mesh.firstIndex, mesh.vertexOffset,
+                        mObj.getGlobalInstanceIndex(i));
+                }
             }
         }
     }
@@ -224,7 +233,7 @@ void kirana::viewport::vulkan::Drawer::raytrace(const FrameData &frame,
                                                 uint32_t swapchainImgIndex)
 {
     const auto &rPipeline =
-        m_scene->getCurrentPipeline(false, false, 0).current;
+        m_scene->getCurrentPipeline(false, false, 0, 0).current;
     const auto &rPipelineLayout =
         m_scene->getRaytraceData().getRaytracePipelineLayout().current;
     const auto &rDescSets = m_scene->getRaytraceData().getDescriptorSets();
@@ -232,7 +241,7 @@ void kirana::viewport::vulkan::Drawer::raytrace(const FrameData &frame,
     for (int i = 0; i < rDescSets.size(); i++)
         descSets[i] = rDescSets[i].current;
     auto pushConstantData = m_scene->getPushConstantRaytraceData();
-    const auto &sbt = m_scene->getCurrentSBT(0);
+    const auto &sbt = m_scene->getCurrentSBT(0, 0);
     const auto &renderTarget = m_scene->getRaytraceData().getRenderTarget();
 
     frame.commandBuffers->reset();

@@ -66,17 +66,17 @@ vec3 randomHemispherical(inout uint seed, in vec3[3] coordinateFrame) {
     const float rand1 = random(seed);
     const float rand2 = random(seed);
     const float sq = sqrt(1.0 - rand2);
-    vec3 value = vec3(cos(2.0 * PI * rand1) * sq, sin(2.0 * PI * rand2) * sq, sqrt(rand2));
+    vec3 value = vec3(cos(2.0 * PI * rand1) * sq, sin(2.0 * PI * rand1) * sq, sqrt(rand2));
     value = value.x * coordinateFrame[0] + value.y * coordinateFrame[1] + value.z * coordinateFrame[2];
     return value;
 }
 
-void getCoordinateFrame(in vec3 normal, out vec3 tangent, out vec3 binormal) {
-    float zSign = sign(normal.z);
-    const float a = -1.0 / (zSign + normal.z);
-    const float b = normal.x * normal.y * a;
-    tangent = vec3(b, zSign + normal.y * normal.y * a, - normal.y);
-    binormal = vec3(1.0 + zSign * normal.x * normal.x * a, zSign * b, -zSign * normal.x);
+void getCoordinateFrame_Duff(in vec3 normal, out vec3 tangent, out vec3 binormal) {
+        float zSign = normal.z >= 0.0 ? 1.0 : -1.0;
+        const float a = -1.0 / (zSign + normal.z);
+        const float b = normal.x * normal.y * a;
+        tangent = vec3(b, zSign + normal.y * normal.y * a, - normal.y);
+        binormal = vec3(1.0 + zSign * normal.x * normal.x * a, zSign * b, -zSign * normal.x);
 }
 
 void getCoordinateFrame_Frisvad(in vec3 normal, out vec3 tangent, out vec3 binormal) {
@@ -90,4 +90,12 @@ void getCoordinateFrame_Frisvad(in vec3 normal, out vec3 tangent, out vec3 binor
     const float b = - normal.x * normal.y * a;
     tangent = vec3(b, 1.0 - normal.y * normal.y * a, - normal.y);
     binormal = vec3(1.0 - normal.x * normal.x * a, b, - normal.x);
+}
+
+void getCoordinateFrame_Moller(in vec3 normal, out vec3 tangent, out vec3 binormal) {
+    if (abs(normal.x) > abs(normal.y))
+    tangent = vec3(normal.z, 0, - normal.x) / sqrt(normal.x * normal.x + normal.z * normal.z);
+    else
+    tangent = vec3(0, - normal.z, normal.y) / sqrt(normal.y * normal.y + normal.z * normal.z);
+    binormal = cross(normal, tangent);
 }

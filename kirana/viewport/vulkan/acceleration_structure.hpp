@@ -42,7 +42,7 @@ class AccelerationStructure
         vk::BuildAccelerationStructureFlagsKHR flags =
             vk::BuildAccelerationStructureFlagBitsKHR::ePreferFastTrace);
 
-    void createTLAS(const std::vector<MeshData> &meshes);
+    void createTLAS(const std::vector<MeshObjectData> &meshObjects);
 
     bool buildTLAS(
         vk::BuildAccelerationStructureFlagsKHR flags =

@@ -86,6 +86,8 @@ void kirana::scene::Material::setShaderData()
     }
 }
 
+static std::default_random_engine randomEngine;
+
 void kirana::scene::Material::setParametersFromAiMaterial(
     const aiMaterial *material)
 {
@@ -98,23 +100,23 @@ void kirana::scene::Material::setParametersFromAiMaterial(
 
     aiColor3D emissiveColor{0.0f, 0.0f, 0.0f};
     material->Get(AI_MATKEY_COLOR_EMISSIVE, emissiveColor);
-    setParameter(
-        "_EmissiveColor",
-        math::Vector4(emissiveColor.r, emissiveColor.g, emissiveColor.b, 1.0f));
+    math::Vector4 emissiveFactor =
+        math::Vector4(emissiveColor.r, emissiveColor.g, emissiveColor.b, 1.0f);
+    setParameter("_EmissiveColor", math::Vector4::normalize(emissiveFactor));
+    setParameter("_EmissiveIntensity", emissiveFactor.length());
 
     float opacity{1.0f};
     material->Get(AI_MATKEY_OPACITY, opacity);
     setParameter("_Transmission", opacity);
 
     float gloss{0.0f};
-    material->Get(AI_MATKEY_SHININESS, gloss);
-    setParameter("_Roughness", math::clampf(1.0f - gloss, 0.0f, 1.0f));
+    material->Get(AI_MATKEY_SHININESS_STRENGTH, gloss);
+    gloss = math::clampf(std::sqrtf(gloss), 0.0f, 1.0f);
+    setParameter("_Roughness", 1.0f - gloss);
     float ior{1.0f};
     material->Get(AI_MATKEY_REFRACTI, ior);
     setParameter("_Ior", ior);
 }
-
-static std::default_random_engine randomEngine;
 
 kirana::scene::Material::Material()
     : MaterialProperties{RasterPipelineData{CullMode::BACK,
@@ -129,14 +131,6 @@ kirana::scene::Material::Material()
       m_name{getMaterialNameFromShaderName(m_shaderName)}, m_isEditorMaterial{
                                                                false}
 {
-    const std::uniform_real_distribution<float> colorDist(0.75f, 1.0f);
-    const std::uniform_real_distribution<float> dist(0.5f, 1.0f);
-    m_parameters[0].value =
-        math::Vector4(colorDist(randomEngine), colorDist(randomEngine),
-                      colorDist(randomEngine), 1.0f);
-    m_parameters[2].value = 0.0f;
-    m_parameters[5].value = 0.75f;
-
     setShaderData();
 }
 

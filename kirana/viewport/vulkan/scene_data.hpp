@@ -14,6 +14,7 @@ class ViewportScene;
 class Material;
 struct SceneInfo;
 struct Renderable;
+class Mesh;
 typedef uint32_t INDEX_TYPE;
 } // namespace kirana::scene
 
@@ -53,8 +54,8 @@ class SceneData
 
     MaterialManager *m_materialManager = nullptr;
 
-    std::vector<MeshData> m_editorMeshes;
-    std::vector<MeshData> m_sceneMeshes;
+    std::vector<MeshObjectData> m_editorMeshes;
+    std::vector<MeshObjectData> m_sceneMeshes;
 
     AllocatedBuffer m_cameraBuffer;
     AllocatedBuffer m_worldDataBuffer;
@@ -81,8 +82,9 @@ class SceneData
 
     void createEditorMaterials();
     void createSceneMaterials();
-    static bool hasMeshData(const std::vector<MeshData> &meshes,
-                            const std::string &meshName, uint32_t *meshIndex);
+    static int getMeshObject(
+        const std::vector<MeshObjectData> &meshObjects,
+        const std::vector<std::shared_ptr<scene::Mesh>> &meshes);
     bool createMeshes(bool isEditor = false);
     void createObjectBuffer();
 
@@ -139,23 +141,28 @@ class SceneData
     void setShadingPipeline(vulkan::ShadingPipeline pipeline);
     void setShadingType(vulkan::ShadingType type);
 
-    [[nodiscard]] inline const std::vector<MeshData> &getEditorMeshes() const
+    [[nodiscard]] inline const std::vector<MeshObjectData> &getEditorMeshes()
+        const
     {
         return m_editorMeshes;
     }
 
-    [[nodiscard]] inline const std::vector<MeshData> &getSceneMeshes() const
+    [[nodiscard]] inline const std::vector<MeshObjectData> &getSceneMeshes()
+        const
     {
         return m_sceneMeshes;
     }
 
-    [[nodiscard]] uint32_t getCurrentMaterialIndex(bool isEditorMesh, bool outline,
-                                       uint32_t meshIndex) const;
+    [[nodiscard]] uint32_t getCurrentMaterialIndex(bool isEditorMesh,
+                                                   bool outline,
+                                                   uint32_t objIndex,
+                                                   uint32_t meshIndex) const;
 
     const Pipeline &getCurrentPipeline(bool isEditorMesh, bool outline,
+                                       uint32_t objIndex,
                                        uint32_t meshIndex) const;
 
-    const ShaderBindingTable &getCurrentSBT(uint32_t meshIndex) const;
+    const ShaderBindingTable &getCurrentSBT(uint32_t objIndex, uint32_t meshIndex) const;
 
     [[nodiscard]] const scene::WorldData &getWorldData() const;
 
@@ -178,24 +185,31 @@ class SceneData
     }
 
     inline const vk::Buffer &getVertexBuffer(bool isEditorMesh,
+                                             uint32_t objectIndex,
                                              uint32_t meshIndex) const
     {
-        return isEditorMesh ? *m_vertexBuffers[m_editorMeshes[meshIndex]
+        return isEditorMesh ? *m_vertexBuffers[m_editorMeshes[objectIndex]
+                                                   .meshes[meshIndex]
                                                    .vertexBufferIndex]
                                    .buffer.buffer
-                            : *m_vertexBuffers[m_sceneMeshes[meshIndex]
+                            : *m_vertexBuffers[m_sceneMeshes[objectIndex]
+                                                   .meshes[meshIndex]
                                                    .vertexBufferIndex]
                                    .buffer.buffer;
     }
 
     inline const vk::Buffer &getIndexBuffer(bool isEditorMesh,
+                                            uint32_t objectIndex,
                                             uint32_t meshIndex) const
     {
-        return isEditorMesh
-                   ? *m_indexBuffers[m_editorMeshes[meshIndex].indexBufferIndex]
-                          .buffer.buffer
-                   : *m_indexBuffers[m_sceneMeshes[meshIndex].indexBufferIndex]
-                          .buffer.buffer;
+        return isEditorMesh ? *m_indexBuffers[m_editorMeshes[objectIndex]
+                                                  .meshes[meshIndex]
+                                                  .indexBufferIndex]
+                                   .buffer.buffer
+                            : *m_indexBuffers[m_sceneMeshes[objectIndex]
+                                                  .meshes[meshIndex]
+                                                  .indexBufferIndex]
+                                   .buffer.buffer;
     }
 
     [[nodiscard]] inline vk::DeviceAddress getVertexBufferAddress(
@@ -213,7 +227,8 @@ class SceneData
     }
 
     [[nodiscard]] PushConstant<PushConstantRaster> getPushConstantRasterData(
-        bool isEditor, bool outline, uint32_t meshIndex, uint32_t instanceIndex) const;
+        bool isEditor, bool outline,uint32_t objIndex, uint32_t meshIndex,
+        uint32_t instanceIndex) const;
     [[nodiscard]] PushConstant<PushConstantRaytrace>
     getPushConstantRaytraceData() const;
 };

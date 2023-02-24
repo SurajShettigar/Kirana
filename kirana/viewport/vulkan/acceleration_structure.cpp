@@ -48,42 +48,44 @@ bool kirana::viewport::vulkan::AccelerationStructure::
 }
 
 vk::DeviceAddress kirana::viewport::vulkan::AccelerationStructure::
-    getBLASAddress(uint32_t meshIndex) const
+    getBLASAddress(uint32_t meshObjectIndex) const
 {
     return m_device->current.getAccelerationStructureAddressKHR(
         vk::AccelerationStructureDeviceAddressInfoKHR(
-            m_BLASData[meshIndex].accelStruct.as));
+            m_BLASData[meshObjectIndex].accelStruct.as));
 }
 
 void kirana::viewport::vulkan::AccelerationStructure::createBLAS(
     const SceneData &sceneData)
 {
-    for (const auto &m : sceneData.getSceneMeshes())
+    m_BLASData.clear();
+    for (const auto &mObj : sceneData.getSceneMeshes())
     {
-        const vk::AccelerationStructureGeometryTrianglesDataKHR triangles{
-            vk::Format::eR32G32B32A32Sfloat,
-            sceneData.getVertexBufferAddress(m.vertexBufferIndex),
-            sizeof(scene::Vertex),
-            static_cast<uint32_t>(m.vertexCount),
-            vk::IndexType::eUint32,
-            sceneData.getIndexBufferAddress(m.indexBufferIndex),
-            {},
-        };
-
-        const vk::AccelerationStructureGeometryKHR geo{
-            vk::GeometryTypeKHR::eTriangles, triangles,
-            vk::GeometryFlagsKHR(vk::GeometryFlagBitsKHR::eOpaque)};
-
-        const vk::AccelerationStructureBuildRangeInfoKHR offset{
-            static_cast<uint32_t>(m.indexCount / 3),
-            static_cast<uint32_t>(m.firstIndex * sizeof(uint32_t)),
-            static_cast<uint32_t>(m.vertexOffset), 0};
-
-        // TODO: Add multiple geometries in a single BLAS.
         BLASData blasData{};
-        blasData.geometries.emplace_back(geo);
-        blasData.offsets.emplace_back(offset);
+        for (const auto &m : mObj.meshes)
+        {
+            const vk::AccelerationStructureGeometryTrianglesDataKHR triangles{
+                vk::Format::eR32G32B32A32Sfloat,
+                sceneData.getVertexBufferAddress(m.vertexBufferIndex),
+                sizeof(scene::Vertex),
+                static_cast<uint32_t>(m.vertexCount),
+                vk::IndexType::eUint32,
+                sceneData.getIndexBufferAddress(m.indexBufferIndex),
+                {},
+            };
 
+            const vk::AccelerationStructureGeometryKHR geo{
+                vk::GeometryTypeKHR::eTriangles, triangles,
+                vk::GeometryFlagsKHR(vk::GeometryFlagBitsKHR::eOpaque)};
+
+            const vk::AccelerationStructureBuildRangeInfoKHR offset{
+                static_cast<uint32_t>(m.indexCount / 3),
+                static_cast<uint32_t>(m.firstIndex * sizeof(uint32_t)),
+                static_cast<uint32_t>(m.vertexOffset), 0};
+
+            blasData.geometries.emplace_back(geo);
+            blasData.offsets.emplace_back(offset);
+        }
         m_BLASData.emplace_back(std::move(blasData));
     }
 }
@@ -258,20 +260,22 @@ bool kirana::viewport::vulkan::AccelerationStructure::buildBLAS(
 }
 
 void kirana::viewport::vulkan::AccelerationStructure::createTLAS(
-    const std::vector<MeshData> &meshes)
+    const std::vector<MeshObjectData> &meshObjects)
 {
-    for (const auto &m : meshes)
+    uint32_t prevMeshCount = 0;
+    for (const auto &mObj : meshObjects)
     {
-        for (const auto &i : m.instances)
+        for (const auto &i : mObj.instances)
         {
             m_TLASInstanceData.emplace_back(
                 vk::AccelerationStructureInstanceKHR{
                     getVulkanTransformMatrix(i.transform->getMatrix()),
-                    m.getGlobalInstanceIndex(i.index),
-                    static_cast<uint32_t>(m.render ? 0xFF : 0x00), 0,
+                    prevMeshCount,
+                    static_cast<uint32_t>(i.renderVisible ? 0xFF : 0x00), 0,
                     vk::GeometryInstanceFlagBitsKHR::eTriangleCullDisable,
-                    getBLASAddress(m.index)});
+                    getBLASAddress(mObj.index)});
         }
+        prevMeshCount += static_cast<uint32_t>(mObj.meshes.size());
     }
 }
 

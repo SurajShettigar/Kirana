@@ -14,5 +14,6 @@ void main()
 {
     float yVal = clamp((1.0 - float(gl_LaunchIDEXT.y) / float(gl_LaunchSizeEXT.y)) * 1.5, 0.0, 1.0);
     payload.color = mix(vec3(0.2, 0.1, 0.0), vec3(0.85, 0.9, 0.95), yVal);
+//    payload.color = worldBuffer.w.ambientColor.rgb * 3.0;
     payload.depth = 999;
 }

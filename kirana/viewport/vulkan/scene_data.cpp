@@ -58,12 +58,12 @@ void kirana::viewport::vulkan::SceneData::onSceneLoaded(bool result)
 void kirana::viewport::vulkan::SceneData::onObjectChanged()
 {
     std::vector<vulkan::ObjectData> objData;
-    for (const auto &m : m_sceneMeshes)
+    for (const auto &mObj : m_sceneMeshes)
     {
-        const uint32_t matIndex =
-            getCurrentMaterialIndex(false, false, m.index);
-        for (const auto &i : m.instances)
+        for (const auto &m : mObj.meshes)
         {
+            const uint32_t matIndex =
+                getCurrentMaterialIndex(false, false, mObj.index, m.index);
             objData.emplace_back(ObjectData{
                 getVertexBufferAddress(m.vertexBufferIndex),
                 getIndexBufferAddress(m.indexBufferIndex),
@@ -219,101 +219,112 @@ void kirana::viewport::vulkan::SceneData::createSceneMaterials()
 }
 
 
-bool kirana::viewport::vulkan::SceneData::hasMeshData(
-    const std::vector<MeshData> &meshes, const std::string &meshName,
-    uint32_t *meshIndex)
+int kirana::viewport::vulkan::SceneData::getMeshObject(
+    const std::vector<MeshObjectData> &meshObjects,
+    const std::vector<std::shared_ptr<scene::Mesh>> &meshes)
 {
-    if (meshes.empty())
-        return false;
+    const auto it =
+        std::find_if(meshObjects.begin(), meshObjects.end(),
+                     [&meshes](const MeshObjectData &mObj) {
+                         if (mObj.meshes.size() != meshes.size())
+                             return false;
+                         for (uint32_t i = 0; i < meshes.size(); i++)
+                             if (mObj.meshes[i].name != meshes[i]->getName())
+                                 return false;
+                         return true;
+                     });
 
-    const auto it = std::find_if(
-        meshes.begin(), meshes.end(),
-        [meshName](const MeshData &m) { return m.name == meshName; });
+    if (it == meshObjects.end())
+        return -1;
 
-    if (it != meshes.end())
-    {
-        *meshIndex = it->index;
-        return true;
-    }
-    return false;
+    return static_cast<int>(it->index);
 }
 
 bool kirana::viewport::vulkan::SceneData::createMeshes(bool isEditor)
 {
-    uint32_t meshIndex = 0;
-    uint32_t instanceIndex = 0;
-
-    std::vector<MeshData> &meshes = isEditor ? m_editorMeshes : m_sceneMeshes;
+    std::vector<MeshObjectData> &currMeshObjects =
+        isEditor ? m_editorMeshes : m_sceneMeshes;
 
     const std::vector<scene::Renderable> &renderables =
         isEditor ? m_scene.getEditorRenderables()
                  : m_scene.getSceneRenderables();
-    for (const auto &r : renderables)
+    uint32_t meshObjIndex = 0;
+    for (uint32_t rIndex = 0; rIndex < renderables.size(); rIndex++)
     {
-        InstanceData instance{instanceIndex++, r.object->transform,
-                              &r.viewportVisible, &r.renderVisible,
-                              &r.selected};
-        auto &objMeshes = r.object->getMeshes();
-        if (!objMeshes.empty())
+        auto &renderable = renderables[rIndex];
+        auto &meshes = renderable.object->getMeshes();
+
+        if (meshes.empty()) // Ignore empty objects
+            continue;
+
+        const int foundMeshObjIndex = getMeshObject(currMeshObjects, meshes);
+        if (foundMeshObjIndex > -1)
         {
-            const std::string &meshName = objMeshes[0]->getName();
-            uint32_t index = meshIndex;
-            // TODO: Fix Multi-mesh objects.
-            // If there is already a mesh, we just store the instance.
-            if (hasMeshData(meshes, meshName, &index))
-                meshes[index].instances.emplace_back(instance);
-            else
+            // If there's already an existing MeshObject with same meshes,
+            // create a new instance.
+            const uint32_t instanceIndex =
+                currMeshObjects[foundMeshObjIndex].instances.size();
+            currMeshObjects[foundMeshObjIndex].instances.emplace_back(
+                InstanceData{instanceIndex, renderable.object->transform,
+                             &renderable.viewportVisible,
+                             &renderable.renderVisible, &renderable.selected});
+        }
+        else
+        {
+            MeshObjectData meshObject;
+            meshObject.index = meshObjIndex++;
+            meshObject.name = renderable.object->getName();
+            meshObject.instances.emplace_back(InstanceData{
+                0, renderable.object->transform, &renderable.viewportVisible,
+                &renderable.renderVisible, &renderable.selected});
+
+            for (uint32_t mIndex = 0; mIndex < meshes.size(); mIndex++)
             {
-                instanceIndex = 0;
-                instance.index = instanceIndex;
-                for (const auto &m : objMeshes)
+                auto &mesh = meshes[mIndex];
+                MeshData meshData{};
+                meshData.index = mIndex;
+                meshData.name = mesh->getName();
+
+                const auto &meshVertices = mesh->getVertices();
+                const auto &meshIndices = mesh->getIndices();
+                meshData.vertexCount =
+                    static_cast<uint32_t>(meshVertices.size());
+                meshData.indexCount = static_cast<uint32_t>(meshIndices.size());
+
+                auto bufferIndices =
+                    createVertexAndIndexBuffer(meshVertices, meshIndices);
+                if (bufferIndices.first == -1 || bufferIndices.second == -1)
                 {
-                    MeshData meshData{};
-                    meshData.index = meshIndex++;
-                    meshData.name = m->getName();
-                    meshData.render = false; // Make it non-renderable at first
-
-                    const auto &meshVertices = m->getVertices();
-                    const auto &meshIndices = m->getIndices();
-                    meshData.vertexCount = static_cast<uint32_t>(meshVertices.size());
-                    meshData.indexCount = static_cast<uint32_t>(meshIndices.size());
-
-                    auto bufferIndices =
-                        createVertexAndIndexBuffer(meshVertices, meshIndices);
-                    if (bufferIndices.first == -1 || bufferIndices.second == -1)
-                    {
-                        Logger::get().log(
-                            constants::LOG_CHANNEL_VULKAN, LogSeverity::trace,
-                            "Failed to put data in vertex/index buffer for mesh: " +
-                                m->getName());
-                    }
-                    meshData.vertexBufferIndex = bufferIndices.first;
-                    meshData.indexBufferIndex = bufferIndices.second;
-
-                    // Get the offset into the global vertex and index buffer.
-                    meshData.vertexOffset = static_cast<uint32_t>(
-                        m_vertexBuffers[bufferIndices.first].currentDataCount -
-                        meshData.vertexCount);
-                    meshData.firstIndex = static_cast<uint32_t>(
-                        m_indexBuffers[bufferIndices.second].currentDataCount -
-                        meshData.indexCount);
-
-                    int matIndex = m_materialManager->getMaterialIndexFromName(
-                        m->getMaterial()->getName());
-                    if (matIndex == -1)
-                    {
-                        matIndex = m_materialManager->getMaterialIndexFromName(
-                            scene::Material::DEFAULT_MATERIAL_BASIC_SHADED.getName());
-                    }
-                    meshData.materialIndex = static_cast<uint32_t>(matIndex);
-                    meshData.instances.emplace_back(instance);
-
-                    meshes.emplace_back(std::move(meshData));
-                    // If any one of the instance is visible, render it.
-                    if (r.renderVisible)
-                        meshes[index].render = true;
+                    Logger::get().log(constants::LOG_CHANNEL_VULKAN,
+                                      LogSeverity::trace,
+                                      "Failed to put data in vertex/index "
+                                      "buffer for mesh: " +
+                                          mesh->getName());
                 }
+                meshData.vertexBufferIndex = bufferIndices.first;
+                meshData.indexBufferIndex = bufferIndices.second;
+
+                // Get the offset into the global vertex and index buffer.
+                meshData.vertexOffset = static_cast<uint32_t>(
+                    m_vertexBuffers[bufferIndices.first].currentDataCount -
+                    meshData.vertexCount);
+                meshData.firstIndex = static_cast<uint32_t>(
+                    m_indexBuffers[bufferIndices.second].currentDataCount -
+                    meshData.indexCount);
+
+                int matIndex = m_materialManager->getMaterialIndexFromName(
+                    mesh->getMaterial()->getName());
+                if (matIndex == -1)
+                {
+                    matIndex = m_materialManager->getMaterialIndexFromName(
+                        scene::Material::DEFAULT_MATERIAL_BASIC_SHADED
+                            .getName());
+                }
+                meshData.materialIndex = static_cast<uint32_t>(matIndex);
+
+                meshObject.meshes.emplace_back(std::move(meshData));
             }
+            currMeshObjects.emplace_back(std::move(meshObject));
         }
     }
     return true;
@@ -323,7 +334,7 @@ void kirana::viewport::vulkan::SceneData::createObjectBuffer()
 {
     // TODO: Make Object Data buffer device local.
     const vk::DeviceSize bufferSize =
-        sizeof(vulkan::ObjectData) * m_scene.getSceneInfo().numObjects;
+        sizeof(vulkan::ObjectData) * m_scene.getSceneInfo().numMeshes;
     if (m_allocator->allocateBuffer(&m_objectDataBuffer, bufferSize,
                                     vk::BufferUsageFlagBits::eStorageBuffer,
                                     Allocator::AllocationType::WRITEABLE))
@@ -462,10 +473,11 @@ void kirana::viewport::vulkan::SceneData::setShadingType(
 }
 
 uint32_t kirana::viewport::vulkan::SceneData::getCurrentMaterialIndex(
-    bool isEditorMesh, bool outline, uint32_t meshIndex) const
+    bool isEditorMesh, bool outline, uint32_t objIndex,
+    uint32_t meshIndex) const
 {
     if (isEditorMesh)
-        return m_editorMeshes[meshIndex].materialIndex;
+        return m_editorMeshes[objIndex].meshes[meshIndex].materialIndex;
     if (outline)
         return m_materialManager->getMaterialIndexFromName(
             scene::Material::DEFAULT_MATERIAL_EDITOR_OUTLINE.getName());
@@ -473,7 +485,7 @@ uint32_t kirana::viewport::vulkan::SceneData::getCurrentMaterialIndex(
     switch (m_currentShadingType)
     {
     case ShadingType::PBR:
-        return m_sceneMeshes[meshIndex].materialIndex;
+        return m_sceneMeshes[objIndex].meshes[meshIndex].materialIndex;
     case ShadingType::WIREFRAME:
         return m_materialManager->getMaterialIndexFromName(
             scene::Material::DEFAULT_MATERIAL_WIREFRAME.getName());
@@ -485,18 +497,19 @@ uint32_t kirana::viewport::vulkan::SceneData::getCurrentMaterialIndex(
 }
 
 const kirana::viewport::vulkan::Pipeline &kirana::viewport::vulkan::SceneData::
-    getCurrentPipeline(bool isEditorMesh, bool outline,
+    getCurrentPipeline(bool isEditorMesh, bool outline, uint32_t objIndex,
                        uint32_t meshIndex) const
 {
     const uint32_t matIndex =
-        getCurrentMaterialIndex(isEditorMesh, outline, meshIndex);
+        getCurrentMaterialIndex(isEditorMesh, outline, objIndex, meshIndex);
     return *m_materialManager->getPipeline(matIndex, m_currentShadingPipeline);
 }
 
 const kirana::viewport::vulkan::ShaderBindingTable &kirana::viewport::vulkan::
-    SceneData::getCurrentSBT(uint32_t meshIndex) const
+    SceneData::getCurrentSBT(uint32_t objIndex, uint32_t meshIndex) const
 {
-    const uint32_t matIndex = getCurrentMaterialIndex(false, false, meshIndex);
+    const uint32_t matIndex =
+        getCurrentMaterialIndex(false, false, objIndex, meshIndex);
     return *m_materialManager->getShaderBindingTable(matIndex);
 }
 
@@ -523,22 +536,21 @@ uint32_t kirana::viewport::vulkan::SceneData::getWorldDataBufferOffset(
 kirana::viewport::vulkan::PushConstant<
     kirana::viewport::vulkan::PushConstantRaster>
 kirana::viewport::vulkan::SceneData::getPushConstantRasterData(
-    bool isEditor, bool outline, uint32_t meshIndex,
+    bool isEditor, bool outline, uint32_t objIndex, uint32_t meshIndex,
     uint32_t instanceIndex) const
 {
-    const MeshData &meshData =
-        isEditor ? m_editorMeshes[meshIndex] : m_sceneMeshes[meshIndex];
+    const MeshObjectData &meshObjectData =
+        isEditor ? m_editorMeshes[objIndex] : m_sceneMeshes[objIndex];
+    const MeshData &meshData = meshObjectData.meshes[meshIndex];
     const uint32_t matIndex =
-        getCurrentMaterialIndex(isEditor, outline, meshIndex);
+        getCurrentMaterialIndex(isEditor, outline, objIndex, meshIndex);
 
     return PushConstant<PushConstantRaster>(
-        {meshData.instances[instanceIndex].transform->getMatrix(),
+        {meshObjectData.instances[instanceIndex].transform->getMatrix(),
          getVertexBufferAddress(meshData.vertexBufferIndex),
          getIndexBufferAddress(meshData.indexBufferIndex),
          m_materialManager->getMaterialDataBufferAddress(matIndex),
-         m_materialManager->getMaterialDataIndex(matIndex),
-         meshData.getGlobalInstanceIndex(instanceIndex), meshData.firstIndex,
-         meshData.vertexOffset},
+         m_materialManager->getMaterialDataIndex(matIndex)},
         vulkan::PUSH_CONSTANT_RASTER_SHADER_STAGES);
 }
 

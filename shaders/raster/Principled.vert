@@ -17,6 +17,8 @@ struct PrincipledData {
     float clearCoatGloss;
     float transmission;
     float ior;
+    vec4 emissiveColor;
+    float emissiveIntensity;
 };
 
 layout (buffer_reference) readonly buffer MaterialData {
@@ -36,6 +38,6 @@ void main() {
 
     VSOut.worldPosition = worldPos.xyz;
     VSOut.worldNormal = getWorldNormal();
-    VSOut.viewDirection = normalize(camBuffer.c.position - worldPos.xyz);
+    VSOut.viewDirection = camBuffer.c.direction;
     VSOut.matData = MaterialData(pushConstants.p.materialDataBufferAddress).p[pushConstants.p.materialDataIndex];
 }

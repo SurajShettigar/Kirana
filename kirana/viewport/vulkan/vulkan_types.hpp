@@ -181,7 +181,6 @@ struct MeshData
 {
     uint32_t index;
     std::string name;
-    bool render;
     uint32_t vertexCount;
     uint32_t indexCount;
     int vertexBufferIndex;
@@ -189,8 +188,19 @@ struct MeshData
     uint32_t firstIndex;
     uint32_t vertexOffset;
     uint32_t materialIndex;
+};
+
+struct MeshObjectData
+{
+    uint32_t index;
+    std::string name;
+    std::vector<MeshData> meshes;
     std::vector<InstanceData> instances;
 
+    inline uint32_t getGlobalMeshIndex(uint32_t meshIndex) const
+    {
+        return index + meshes[meshIndex].index;
+    }
     inline uint32_t getGlobalInstanceIndex(uint32_t instanceIndex) const
     {
         return index + instances[instanceIndex].index;
@@ -226,9 +236,6 @@ struct PushConstantRaster
     uint64_t indexBufferAddress;
     uint64_t materialDataBufferAddress;
     int materialDataIndex;
-    uint32_t objectIndex;
-    uint32_t firstIndex;
-    uint32_t vertexOffset;
 };
 
 struct PushConstantRaytrace

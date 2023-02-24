@@ -19,6 +19,8 @@ struct PrincipledData {
     float clearCoatGloss;
     float transmission;
     float ior;
+    vec4 emissiveColor;
+    float emissiveIntensity;
 };
 
 layout (set = 0, binding = 1) uniform _WorldData {
@@ -91,10 +93,10 @@ vec3 principledBRDF(in PrincipledData matData, vec3 lightDirection, vec3 normal,
 }
 
 void main() {
-    vec3 lightDir = -normalize(worldBuffer.w.sunDirection);
+    vec3 lightDir = - normalize(worldBuffer.w.sunDirection);
     vec3 viewDir = normalize(VSIn.viewDirection);
     vec3 brdf = principledBRDF(VSIn.matData, lightDir, VSIn.worldNormal, viewDir);
     vec3 light = worldBuffer.w.sunColor.rgb * worldBuffer.w.sunIntensity * max(0.0, dot(VSIn.worldNormal, lightDir));
-    vec3 luminance = brdf * light;
-    outFragColor = vec4(luminance, 1.0f);
+    vec3 radiance = VSIn.matData.emissiveColor.rgb * VSIn.matData.emissiveIntensity + brdf * light;
+    outFragColor = vec4(radiance, 1.0f);
 }
