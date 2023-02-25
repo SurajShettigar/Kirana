@@ -2,23 +2,29 @@
 #define LOGGER_HPP
 
 #include <string>
-#include <boost/log/trivial.hpp>
-#include <boost/log/sources/severity_channel_logger.hpp>
-#include <boost/log/attributes.hpp>
+#include <memory>
+
+namespace spdlog {
+class logger;
+}
 
 namespace kirana::utils
 {
-typedef boost::log::trivial::severity_level LogSeverity;
-typedef boost::log::attributes::mutable_constant<const char *> LogAttribute;
-typedef boost::log::sources::severity_channel_logger_mt<LogSeverity, const char *>
-    SCLogger;
+enum class LogSeverity
+{
+    trace = 0,
+    debug = 1,
+    info = 2,
+    warning = 3,
+    error = 4,
+    fatal = 5
+};
 
 class Logger
 {
   private:
-    LogAttribute m_channel;
     LogSeverity m_minSeverity;
-    SCLogger m_current;
+    std::shared_ptr<spdlog::logger> m_current;
 
     Logger();
     ~Logger() = default;
@@ -37,10 +43,6 @@ class Logger
         return m_minSeverity;
     }
     void setMinSeverity(LogSeverity severity);
-
-    void log(const char *channel = "DEFAULT",
-             LogSeverity severity = LogSeverity::debug,
-             const char *message = "");
 
     void log(const char *channel = "DEFAULT",
              LogSeverity severity = LogSeverity::debug,
