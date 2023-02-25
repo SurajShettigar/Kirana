@@ -8,14 +8,6 @@ An offline render engine with a realtime viewport made from Vulkan API.
 
 - <b>CMake</b> Version 3.0 or greater
 - <b>Python</b> Version 3.9
-- <b>Boost</b>
-    - Download [Boost 1.76.0](https://boostorg.jfrog.io/artifactory/main/release/1.76.0/source/)
-    - Extract it to `C:\Program Files\boost\boost_1_76_0`
-    - Open Command Prompt from the above directory and run the following commands:
-        ```
-        bootstrap
-        .\b2
-        ```
 
 ### Project Installation
 

@@ -27,5 +27,5 @@ add_subdirectory(assimp)
 add_library(vma-hpp INTERFACE)
 target_include_directories(vma-hpp INTERFACE vma-hpp)
 
-# Add GLM
-add_subdirectory(glm)
+# Add SPDLOG
+add_subdirectory(spdlog)

@@ -57,21 +57,6 @@ else ()
     message(FATAL_ERROR "Failed to find Python virtual environment")
 endif ()
 
-
-if (${BUILD_SHARED_LIBS} STREQUAL ON)
-    set(Boost_USE_STATIC_LIBS OFF)
-    set(Boost_USE_DEBUG_LIBS OFF)
-    set(Boost_USE_RELEASE_LIBS ON)
-else ()
-    set(Boost_USE_STATIC_LIBS ON)
-endif ()
-set(Boost_USE_MULTITHREADED ON)
-set(Boost_USE_STATIC_RUNTIME OFF)
-find_package(Boost 1.76.0 EXACT COMPONENTS log REQUIRED)
-if (${Boost_FOUND})
-    message("Found Boost: " ${Boost_VERSION})
-endif ()
-
 add_subdirectory(external)
 
 # Copy data directory
