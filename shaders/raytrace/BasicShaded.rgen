@@ -1,47 +1,50 @@
 #version 460
 #extension GL_GOOGLE_include_directive: enable
-#extension GL_ARB_shader_clock : enable
-#extension GL_EXT_shader_non_constant_global_initializers: enable
 
-#include "raytrace_types.glsl"
+#include "common/globals.glsl"
+#define CURRENT_SHADING_TYPE  SHADING_TYPE_BASIC
 
 layout (set = 0, binding = 0) uniform _CameraData {
     CameraData c;
 } camBuffer;
+layout (set = 0, binding = 1) uniform _WorldData {
+    WorldData w;
+} worldBuffer;
 
 layout (set = 0, binding = 2) uniform accelerationStructureEXT _globalAccelStruct;
 layout (rgba8, set = 0, binding = 3) uniform image2D image;
 
-layout (push_constant) uniform _GlobalData {
-    GlobalData g;
-} globalConstants;
+layout (push_constant) uniform _PushConstantData {
+    PushConstantData p;
+} pushConstants;
 
 layout (location = 0) rayPayloadEXT PathtracePayload _globalPayload;
 
-#include "raytrace_utils.glsl"
-#include "raytrace_sample.glsl"
+#include "common/pathtrace.glsl"
 
 void main()
 {
-    uint seed = getSeed(gl_LaunchIDEXT.x + gl_LaunchIDEXT.x * gl_LaunchIDEXT.y, uint(clockARB()));
-    vec4 finalColor = vec4(0.0, 0.0, 0.0, 1.0);
-    _globalPayload.seed = seed;
-    for (uint i = 0; i < globalConstants.g.antiAliasSamples; i++)
+    vec4 pixelColor = vec4(0.0, 0.0, 0.0, 1.0);
+
+    _globalPayload.seed = seed(gl_LaunchIDEXT.x + gl_LaunchIDEXT.x * gl_LaunchIDEXT.y, uint(pushConstants.p.frameIndex));
+
+    for (uint i = 0; i < pushConstants.p.maxSamples; i++)
     {
-        finalColor.rgb += samplePixel(vec2(gl_LaunchIDEXT.xy),
+        pixelColor.rgb += samplePixel(vec2(gl_LaunchIDEXT.xy),
         vec2(gl_LaunchSizeEXT.xy),
-        globalConstants.g.maxBounces,
-        camBuffer.c
+        camBuffer.c,
+        worldBuffer.w,
+        PathtraceParameters(pushConstants.p.maxDepth)
         );
     }
-    finalColor.rgb = finalColor.rgb / globalConstants.g.antiAliasSamples;
+    pixelColor.rgb = pixelColor.rgb / pushConstants.p.maxSamples;
 
     // Accumulate color
-    if (globalConstants.g.frameIndex > 0)
+    if (pushConstants.p.frameIndex > 0)
     {
-        const float t = 1.0f / (globalConstants.g.frameIndex + 1);
+        const float t = 1.0f / (pushConstants.p.frameIndex + 1);
         const vec3 oldColor = imageLoad(image, ivec2(gl_LaunchIDEXT.xy)).xyz;
-        finalColor = vec4(mix(oldColor, finalColor.rgb, t), 1.0f);
+        pixelColor = vec4(mix(oldColor, pixelColor.rgb, t), 1.0f);
     }
-    imageStore(image, ivec2(gl_LaunchIDEXT.xy), finalColor);
+    imageStore(image, ivec2(gl_LaunchIDEXT.xy), pixelColor);
 }

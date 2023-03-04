@@ -86,7 +86,8 @@ kirana::viewport::vulkan::DescriptorBindingInfo kirana::viewport::vulkan::
                    : DescriptorBindingInfo{
                          DescriptorLayoutType::GLOBAL, 1,
                          vk::DescriptorType::eUniformBuffer,
-                         vk::ShaderStageFlagBits::eClosestHitKHR |
+                         vk::ShaderStageFlagBits::eRaygenKHR |
+                             vk::ShaderStageFlagBits::eClosestHitKHR |
                              vk::ShaderStageFlagBits::eMissKHR |
                              vk::ShaderStageFlagBits::eAnyHitKHR};
     case DescriptorBindingDataType::RAYTRACE_ACCEL_STRUCT:
@@ -111,6 +112,7 @@ kirana::viewport::vulkan::DescriptorBindingInfo kirana::viewport::vulkan::
                    : DescriptorBindingInfo{
                          DescriptorLayoutType::OBJECT, 0,
                          vk::DescriptorType::eStorageBuffer,
+                         vk::ShaderStageFlagBits::eRaygenKHR |
                          vk::ShaderStageFlagBits::eClosestHitKHR |
                              vk::ShaderStageFlagBits::eAnyHitKHR};
     default:
