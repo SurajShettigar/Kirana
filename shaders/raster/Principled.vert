@@ -33,10 +33,9 @@ layout (location = 0) out _VSOut {
 } VSOut;
 
 void main() {
-    vec4 worldPos = getWorldPosition();
-    gl_Position = worldPos;
+    gl_Position = getClipPosition();
 
-    VSOut.worldPosition = worldPos.xyz;
+    VSOut.worldPosition = getWorldPosition().xyz;
     VSOut.worldNormal = getWorldNormal();
     VSOut.viewDirection = camBuffer.c.direction;
     VSOut.matData = MaterialData(pushConstants.p.materialDataBufferAddress).p[pushConstants.p.materialDataIndex];

@@ -17,6 +17,6 @@ void main() {
     MaterialData mat = MaterialData(pushConstants.p.materialDataBufferAddress);
     WireframeData wireframe = mat.w[pushConstants.p.materialDataIndex];
 
-    gl_Position = getWorldPosition();
+    gl_Position = getClipPosition();
     outColor = wireframe.color;
 }

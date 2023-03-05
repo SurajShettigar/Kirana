@@ -184,6 +184,7 @@ int kirana::viewport::vulkan::MaterialManager::copyMaterialDataToBuffer(
 
     std::vector<uint8_t> matData;
     material.getParametersData(&matData);
+
     const size_t dataSize = matData.size();
 
     if (dataSize == 0)
@@ -220,6 +221,8 @@ int kirana::viewport::vulkan::MaterialManager::copyMaterialDataToBuffer(
         buffer.currentDataCount = 0;
         shaderDataBuffers.emplace_back(std::move(buffer));
     }
+
+
 
     auto &buffer = shaderDataBuffers.back();
     m_allocator->copyDataToBuffer(buffer.buffer, matData.data(),

@@ -42,6 +42,12 @@ void kirana::viewport::vulkan::RaytraceData::bindDescriptorSets(
 
 bool kirana::viewport::vulkan::RaytraceData::createRenderTarget()
 {
+    if (m_renderTarget != nullptr)
+    {
+        delete m_renderTarget;
+        m_renderTarget = nullptr;
+    }
+
     m_renderTarget = new Texture(
         m_device, m_allocator,
         Texture::Properties{{m_swapchain->getSurfaceResolution()[0],
@@ -154,11 +160,9 @@ void kirana::viewport::vulkan::RaytraceData::updateDescriptors(int setIndex)
 
 void kirana::viewport::vulkan::RaytraceData::rebuildRenderTarget()
 {
-    if (m_renderTarget != nullptr)
-    {
-        delete m_renderTarget;
-        m_renderTarget = nullptr;
-    }
+    if (!m_isInitialized)
+        return;
+
     bool reinit = createRenderTarget();
     if (reinit)
     {

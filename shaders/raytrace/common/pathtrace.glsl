@@ -19,7 +19,7 @@
 // Traces ray onto the scene and when hit, the hit information of the closest hit is recorded.
 void closestHit(in Ray ray)
 {
-    uint rayFlags = gl_RayFlagsOpaqueEXT;
+    uint rayFlags = gl_RayFlagsOpaqueEXT | gl_RayFlagsCullBackFacingTrianglesEXT;
 
     _globalPayload.hitDistance = INFINITY;
 
@@ -101,18 +101,36 @@ in PathtraceParameters params)
             vec3 viewDir = - ray.direction;
 
             // TODO: Sample Lights
+            // Indirect light contribution
             vec3 emission = vec3(0.0);
-            vec3 newRayOrigin = intersection.position + intersection.normal * EPSILON;
+            vec3 newRayOrigin = offsetRay(intersection.position, intersection.normal);
             vec3 newRayDirection = ray.direction;
-            float pdf = 1.0f;
+            float pdf = 0.0;
 
             vec3 bxdf = sampleBXDF(_globalPayload.seed, intersection, viewDir, newRayDirection, emission, pdf);
+            radiance += emission * throughput;
+
+            if(pdf < EPSILON)
+                    break;
 
             float NoL = abs(dot(intersection.normal, newRayDirection));
 
-            radiance += emission * throughput;
+            // Direct light contribution
+            // Sun light contribution
+            const vec3 lightDir = normalize(-worldData.sunDirection);
+            Ray shadowRay = Ray(newRayOrigin, lightDir);
+            if(!isHit(shadowRay, 100.0))
+            {
+                const float NoL = abs(dot(intersection.normal, lightDir));
+                const vec3 lightIntensity = worldData.sunIntensity * worldData.sunColor.rgb * 2.0;
+                const float lightPdf = 1.0;
+                vec3 f_emm = vec3(0.0);
+                float f_pdf = 0.0;
+                radiance += evaluateBXDF(_globalPayload.seed, intersection, viewDir, lightDir, f_emm, f_pdf) * lightIntensity * NoL / lightPdf * throughput;
+            }
 
             throughput *= bxdf * NoL / pdf;
+
             ray = Ray(newRayOrigin, newRayDirection);
         }
     }

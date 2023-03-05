@@ -16,13 +16,18 @@ layout (push_constant) uniform _PushConstantData {
 
 vec4 getWorldPosition()
 {
-    return vec4(vPosition, 1.0f) * pushConstants.p.modelMatrix * camBuffer.c.viewProj;
+    return vec4(vPosition, 1.0f) * pushConstants.p.modelMatrix;
+}
+
+vec4 getClipPosition()
+{
+    return getWorldPosition() * camBuffer.c.viewProj;
 }
 
 vec3 getWorldNormal()
 {
     mat4 m = transpose(pushConstants.p.modelMatrix);
-    return mat3(m[1][1] * m[2][2] - m[1][2] * m[2][1],
+    return normalize(mat3(m[1][1] * m[2][2] - m[1][2] * m[2][1],
     m[1][2] * m[2][0] - m[1][0] * m[2][2],
     m[1][0] * m[2][1] - m[1][1] * m[2][0],
     m[0][2] * m[2][1] - m[0][1] * m[2][2],
@@ -30,7 +35,7 @@ vec3 getWorldNormal()
     m[0][1] * m[2][0] - m[0][0] * m[2][1],
     m[0][1] * m[1][2] - m[0][2] * m[1][1],
     m[0][2] * m[1][0] - m[0][0] * m[1][2],
-    m[0][0] * m[1][1] - m[0][1] * m[1][0]) * vNormal;
+    m[0][0] * m[1][1] - m[0][1] * m[1][0]) * vNormal);
 }
 
 vec4 getVertexColor()

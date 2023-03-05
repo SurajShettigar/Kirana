@@ -59,15 +59,17 @@ class MaterialProperties
         if (value.type() != m_parameters[index].value.type())
             return false;
         m_parameters[index].value = value;
-        m_onParameterChange(*this, paramName, value);
+        m_onParameterChange(*this, paramName, m_parameters[index].value);
         return true;
     }
 
     template <typename T>
     inline T getParameter(const std::string &paramName) const
     {
-        return std::any_cast<T>(
-            m_parameters[m_parameterIndices.at(paramName)].value);
+        return m_parameterIndices.find(paramName) != m_parameterIndices.end()
+                   ? std::any_cast<T>(
+                         m_parameters[m_parameterIndices.at(paramName)].value)
+                   : T{};
     }
 
 

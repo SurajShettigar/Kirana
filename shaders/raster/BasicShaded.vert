@@ -19,7 +19,7 @@ void main() {
     MaterialData mat = MaterialData(pushConstants.p.materialDataBufferAddress);
     BasicShadedData basicShaded = mat.b[pushConstants.p.materialDataIndex];
 
-    gl_Position = getWorldPosition();
+    gl_Position = getClipPosition();
 
     outColor = basicShaded.color;
     outWorldNormal = getWorldNormal();
