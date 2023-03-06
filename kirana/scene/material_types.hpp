@@ -320,7 +320,11 @@ static const std::vector<MaterialParameter>
         {MaterialParameter{"_EmissiveColor", MaterialParameterType::VEC_4,
                            math::Vector4(0.0f, 0.0f, 0.0f, 1.0f)}},
         {MaterialParameter{"_EmissiveIntensity", MaterialParameterType::FLOAT,
-                           1.0f}}};
+                           1.0f}},
+        {MaterialParameter{"_BaseMap", MaterialParameterType::TEX_2D, -1}},
+        {MaterialParameter{"_EmissiveMap", MaterialParameterType::TEX_2D, -1}},
+        {MaterialParameter{"_NormalMap", MaterialParameterType::TEX_2D,
+                           -1}}};
 
 } // namespace kirana::scene
 

@@ -56,6 +56,6 @@ bool kirana::scene::SceneImporter::loadSceneFromFile(
         return false;
     }
 
-    scene->initFromAiScene(aiScene);
+    scene->initFromAiScene(path, aiScene);
     return true;
 }

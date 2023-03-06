@@ -39,3 +39,8 @@ add_subdirectory(spdlog)
 message("<----Adding LZ4---->")
 set(LZ4_BUNDLED_MODE ON)
 add_subdirectory(lz4/build/cmake)
+
+# Add STB
+message("<----Adding STB---->")
+add_library(stb INTERFACE)
+target_include_directories(stb INTERFACE stb)

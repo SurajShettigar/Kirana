@@ -19,6 +19,9 @@ struct PrincipledData {
     float ior;
     vec4 emissiveColor;
     float emissiveIntensity;
+    int baseMap;
+    int emissiveMap;
+    int normalMap;
 };
 
 layout (buffer_reference) readonly buffer MaterialData {

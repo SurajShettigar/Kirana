@@ -121,8 +121,8 @@ class MaterialProperties
             case MaterialParameterType::TEX_1D:
             case MaterialParameterType::TEX_2D:
             case MaterialParameterType::TEX_3D:
-                memcpy(bufferPtr, std::any_cast<uint32_t>(&p.value),
-                       sizeof(uint32_t));
+                memcpy(bufferPtr, std::any_cast<int>(&p.value),
+                       sizeof(int));
                 break;
             case MaterialParameterType::INT64:
                 memcpy(bufferPtr, std::any_cast<int64_t>(&p.value),

@@ -21,6 +21,9 @@ struct PrincipledData {
     float ior;
     vec4 emissiveColor;
     float emissiveIntensity;
+    int baseMap;
+    int emissiveMap;
+    int normalMap;
 };
 
 layout (set = 0, binding = 1) uniform _WorldData {

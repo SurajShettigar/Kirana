@@ -35,7 +35,7 @@ class Material : public MaterialProperties
     }
 
     Material();
-    explicit Material(const aiMaterial *material);
+    explicit Material(const std::string &scenePath, const aiMaterial *material);
     explicit Material(std::string shaderName, std::string materialName,
                       const RasterPipelineData &rasterData,
                       const RaytracePipelineData &raytraceData,
@@ -84,7 +84,8 @@ class Material : public MaterialProperties
     static std::string getMaterialNameFromShaderName(
         const std::string &shaderName);
 
-    void setParametersFromAiMaterial(const aiMaterial *material);
+    void setParametersFromAiMaterial(const std::string &scenePath,
+                                     const aiMaterial *material);
 };
 } // namespace kirana::scene
 

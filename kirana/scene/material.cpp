@@ -7,6 +7,9 @@
 #include <random>
 #include <utility>
 #include <assimp/material.h>
+#include <assimp/texture.h>
+
+#include "texture_manager.hpp"
 
 namespace constants = kirana::utils::constants;
 
@@ -89,9 +92,39 @@ void kirana::scene::Material::setShaderData()
 static std::default_random_engine randomEngine;
 
 void kirana::scene::Material::setParametersFromAiMaterial(
-    const aiMaterial *material)
+    const std::string &scenePath, const aiMaterial *material)
 {
     // TODO: Use constant parameter names.
+    auto setTexParam = [&](aiTextureType type) {
+        if (material->GetTextureCount(type) <= 0)
+            return;
+        aiString aiPath;
+        material->GetTexture(type, 0, &aiPath);
+        if (aiPath.length > 0)
+        {
+            const std::string path = utils::filesystem::combinePath(
+                utils::filesystem::getFolder(scenePath), {aiPath.C_Str()});
+            const int texIndex = TextureManager::get().addTexture(path);
+            switch (type)
+            {
+            case aiTextureType_DIFFUSE:
+                setParameter("_BaseMap", texIndex);
+                break;
+            case aiTextureType_EMISSION_COLOR:
+                setParameter("_EmissiveMap", texIndex);
+                break;
+            case aiTextureType_NORMALS:
+                setParameter("_NormalMap", texIndex);
+                break;
+            default:
+                break;
+            }
+        }
+    };
+
+    setTexParam(aiTextureType_DIFFUSE);
+    setTexParam(aiTextureType_EMISSION_COLOR);
+    setTexParam(aiTextureType_NORMALS);
 
     aiColor3D diffuseColor{1.0f, 1.0f, 1.0f};
     material->Get(AI_MATKEY_COLOR_DIFFUSE, diffuseColor);
@@ -100,7 +133,7 @@ void kirana::scene::Material::setParametersFromAiMaterial(
 
     aiColor3D emissiveColor{0.0f, 0.0f, 0.0f};
     material->Get(AI_MATKEY_COLOR_EMISSIVE, emissiveColor);
-    math::Vector4 emissiveFactor =
+    const math::Vector4 emissiveFactor =
         math::Vector4(emissiveColor.r, emissiveColor.g, emissiveColor.b, 1.0f);
     setParameter("_EmissiveColor", math::Vector4::normalize(emissiveFactor));
     setParameter("_EmissiveIntensity", emissiveFactor.length());
@@ -134,7 +167,8 @@ kirana::scene::Material::Material()
     setShaderData();
 }
 
-kirana::scene::Material::Material(const aiMaterial *material)
+kirana::scene::Material::Material(const std::string &scenePath,
+                                  const aiMaterial *material)
     : MaterialProperties{RasterPipelineData{CullMode::BACK,
                                             SurfaceType::OPAQUE,
                                             true,
@@ -147,7 +181,7 @@ kirana::scene::Material::Material(const aiMaterial *material)
       m_name{material->GetName().C_Str()}, m_isEditorMaterial{false}
 {
     setShaderData();
-    setParametersFromAiMaterial(material);
+    setParametersFromAiMaterial(scenePath, material);
 }
 
 kirana::scene::Material::Material(

@@ -2,12 +2,12 @@
 #include <filesystem>
 #include <sys/stat.h>
 
-bool kirana::utils::filesystem::fileExists(const char *path)
+bool kirana::utils::filesystem::fileExists(const std::string &path)
 {
     struct stat buffer
     {
     };
-    return stat(path, &buffer) == 0;
+    return stat(path.c_str(), &buffer) == 0;
 }
 
 std::pair<std::string, std::string> kirana::utils::filesystem::getFilename(
@@ -31,10 +31,15 @@ std::pair<std::string, std::string> kirana::utils::filesystem::getFilename(
             exts.push_back(name.extension().string());
             name = name.stem();
         }
-        for(auto it = exts.rbegin(); it != exts.rend(); it++)
+        for (auto it = exts.rbegin(); it != exts.rend(); it++)
             extension += *it;
     }
     return {name.string(), extension};
+}
+
+std::string kirana::utils::filesystem::getFolder(const std::string &path)
+{
+    return std::filesystem::path(path).parent_path().string();
 }
 
 std::vector<std::string> kirana::utils::filesystem::listFilesInPath(
@@ -62,15 +67,16 @@ std::vector<std::string> kirana::utils::filesystem::listFilesInPath(
 }
 
 std::string kirana::utils::filesystem::combinePath(
-    const char *directory, const std::initializer_list<const char *> &paths,
-    const char *extension)
+    const std::string &directory,
+    const std::initializer_list<std::string> &paths,
+    const std::string &extension)
 {
     std::filesystem::path finalPath(directory);
 
-    for (const char *p : paths)
+    for (const auto &p : paths)
         finalPath = finalPath / std::filesystem::path(p);
 
-    if (*extension != '\0')
+    if (!extension.empty())
         finalPath = finalPath.replace_extension(extension);
 
     return finalPath.string();

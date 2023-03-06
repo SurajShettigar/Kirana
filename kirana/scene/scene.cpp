@@ -56,8 +56,10 @@ void kirana::scene::Scene::initializeChildObjects(
     }
 }
 
-void kirana::scene::Scene::initFromAiScene(const aiScene *scene)
+void kirana::scene::Scene::initFromAiScene(const std::string &path,
+                                           const aiScene *scene)
 {
+    m_path = path;
     // Initialize scene name
     if (scene->mName.length > 0)
         m_name = scene->mName.C_Str();
@@ -73,7 +75,7 @@ void kirana::scene::Scene::initFromAiScene(const aiScene *scene)
     for (size_t i = 0; i < scene->mNumMaterials; i++)
     {
         m_materials[i] =
-            std::move(std::make_shared<Material>(scene->mMaterials[i]));
+            std::move(std::make_shared<Material>(m_path, scene->mMaterials[i]));
     }
 
     Logger::get().log(constants::LOG_CHANNEL_SCENE, LogSeverity::debug,
