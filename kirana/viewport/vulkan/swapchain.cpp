@@ -75,9 +75,8 @@ bool kirana::viewport::vulkan::Swapchain::createSwapchain()
         m_surfaceFormat.format, m_surfaceFormat.colorSpace, m_extent, 1,
         vk::ImageUsageFlagBits::eColorAttachment |
             vk::ImageUsageFlagBits::eTransferDst,
-        sharingMode, {}, m_transform,
-        vk::CompositeAlphaFlagBitsKHR::eOpaque, m_presentMode, true,
-        m_prevSwapchain);
+        sharingMode, {}, m_transform, vk::CompositeAlphaFlagBitsKHR::eOpaque,
+        m_presentMode, true, m_prevSwapchain);
 
     if (sharingMode == vk::SharingMode::eConcurrent)
     {
@@ -107,11 +106,10 @@ bool kirana::viewport::vulkan::Swapchain::createSwapchain()
             vk::ImageUsageFlagBits::eColorAttachment |
                 vk::ImageUsageFlagBits::eTransferDst,
             vk::ImageAspectFlagBits::eColor,
-            false,
             vk::ImageLayout::ePresentSrcKHR};
-        m_images.emplace_back(std::move(
-            new Texture(m_device, swapchainImages[i], properties,
-                                      "Swapchain_" + std::to_string(i))));
+        m_images.emplace_back(
+            std::move(new Texture(m_device, swapchainImages[i], properties,
+                                  nullptr, "Swapchain_" + std::to_string(i))));
     }
     return true;
 }
@@ -127,7 +125,7 @@ bool kirana::viewport::vulkan::Swapchain::initialize()
     }
     if (!m_images.empty())
     {
-        for(auto &t: m_images)
+        for (auto &t : m_images)
         {
             delete t;
             t = nullptr;
@@ -157,7 +155,7 @@ kirana::viewport::vulkan::Swapchain::~Swapchain()
     m_onSwapchainOutOfDate.removeAllListeners();
     if (!m_images.empty())
     {
-        for(auto &t: m_images)
+        for (auto &t : m_images)
         {
             delete t;
             t = nullptr;

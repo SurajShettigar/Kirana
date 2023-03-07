@@ -71,6 +71,8 @@ static std::string shadingStageToString(ShadingStage stage)
         return "INTERSECTION";
     case ShadingStage::CALLABLE:
         return "CALLABLE";
+    default:
+        return "UNKNOWN";
     }
 }
 

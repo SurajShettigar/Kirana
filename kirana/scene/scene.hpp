@@ -3,7 +3,6 @@
 
 #include "object.hpp"
 #include "mesh.hpp"
-#include "texture.hpp"
 #include "material.hpp"
 #include "camera.hpp"
 

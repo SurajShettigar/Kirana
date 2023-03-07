@@ -263,7 +263,7 @@ bool kirana::viewport::vulkan::SceneData::createMeshes(bool isEditor)
             // If there's already an existing MeshObject with same meshes,
             // create a new instance.
             const uint32_t instanceIndex =
-                currMeshObjects[foundMeshObjIndex].instances.size();
+                static_cast<uint32_t>(currMeshObjects[foundMeshObjIndex].instances.size());
             currMeshObjects[foundMeshObjIndex].instances.emplace_back(
                 InstanceData{instanceIndex, renderable.object->transform,
                              &renderable.viewportVisible,

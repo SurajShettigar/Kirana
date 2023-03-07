@@ -56,9 +56,8 @@ bool kirana::viewport::vulkan::RaytraceData::createRenderTarget()
                             vk::ImageUsageFlagBits::eStorage |
                                 vk::ImageUsageFlagBits::eTransferSrc,
                             vk::ImageAspectFlagBits::eColor,
-                            true,
                             vk::ImageLayout::eGeneral},
-        "Raytrace_Target");
+        nullptr, "Raytrace_Target");
 
     if (m_renderTarget->isInitialized)
     {

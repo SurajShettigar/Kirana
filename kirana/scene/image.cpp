@@ -1,4 +1,4 @@
-#include "texture.hpp"
+#include "image.hpp"
 
 #include <assimp/texture.h>
 #define STB_IMAGE_IMPLEMENTATION
@@ -7,7 +7,7 @@
 #include <utility>
 #include <file_system.hpp>
 
-kirana::scene::Texture::Texture(std::string filepath, std::string name)
+kirana::scene::Image::Image(std::string filepath, std::string name)
     : m_filepath{std::move(filepath)}, m_name{std::move(name)}
 {
     if (m_name.empty())
@@ -17,7 +17,7 @@ kirana::scene::Texture::Texture(std::string filepath, std::string name)
     }
 }
 
-kirana::scene::Texture::Texture(const aiTexture *texture)
+kirana::scene::Image::Image(const aiTexture *texture)
     : m_filepath{texture->mFilename.C_Str()}, m_name{""}
 {
     if (m_name.empty())
@@ -27,13 +27,13 @@ kirana::scene::Texture::Texture(const aiTexture *texture)
     }
 }
 
-kirana::scene::Texture::~Texture()
+kirana::scene::Image::~Image()
 {
     free();
 }
 
 
-void *kirana::scene::Texture::load(Channels channels, ColorSpace colorSpace)
+void *kirana::scene::Image::load(Channels channels, ColorSpace colorSpace)
 {
     free();
     if (!utils::filesystem::fileExists(m_filepath))
@@ -57,7 +57,7 @@ void *kirana::scene::Texture::load(Channels channels, ColorSpace colorSpace)
     return m_pixelData;
 }
 
-void kirana::scene::Texture::free()
+void kirana::scene::Image::free()
 {
     if (m_pixelData != nullptr)
         stbi_image_free(m_pixelData);

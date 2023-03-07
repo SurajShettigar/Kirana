@@ -121,7 +121,7 @@ struct BatchBufferData
 /**
  * Holds an image allocated in memory by VMA.
  */
-struct AllocateImage
+struct AllocatedImage
 {
     std::unique_ptr<vk::Image> image;
     std::unique_ptr<vma::Allocation> allocation;

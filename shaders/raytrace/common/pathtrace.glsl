@@ -92,8 +92,13 @@ in PathtraceParameters params)
         if (_globalPayload.hitDistance == INFINITY)
         {
             // TODO: Sample IBL environmnet
+            #if CURRENT_SHADING_TYPE == SHADING_TYPE_PRINCIPLED
+            float yPos = 1.0 - float(gl_LaunchIDEXT.y) / float(gl_LaunchSizeEXT.y);
+            vec3 envRadiance = mix(vec3(1.0), vec3(0.0, 0.47, 0.99), yPos);
+            #else
             vec3 envRadiance = worldData.ambientColor.rgb;
-            return radiance + (envRadiance * throughput);
+            #endif
+            return radiance + (envRadiance * throughput) * (i == 0 ? 1.0 : 0.5);
         }
         else
         {
@@ -110,16 +115,16 @@ in PathtraceParameters params)
             vec3 bxdf = sampleBXDF(_globalPayload.seed, intersection, viewDir, newRayDirection, emission, pdf);
             radiance += emission * throughput;
 
-            if(pdf < EPSILON)
-                    break;
+            if (pdf < EPSILON)
+            break;
 
             float NoL = abs(dot(intersection.normal, newRayDirection));
 
             // Direct light contribution
             // Sun light contribution
-            const vec3 lightDir = normalize(-worldData.sunDirection);
+            const vec3 lightDir = normalize(- worldData.sunDirection);
             Ray shadowRay = Ray(newRayOrigin, lightDir);
-            if(!isHit(shadowRay, 100.0))
+            if (!isHit(shadowRay, 100.0))
             {
                 const float NoL = abs(dot(intersection.normal, lightDir));
                 const vec3 lightIntensity = worldData.sunIntensity * worldData.sunColor.rgb * 2.0;

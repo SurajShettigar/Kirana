@@ -27,6 +27,7 @@ struct Vertex
     math::Vector3 position;
     alignas(16) math::Vector3 normal;
     alignas(16) math::Vector4 color;
+    alignas(8) math::Vector2 texCoords;
 
     /// Vertex attribute information to create vertex bindings.
     static std::vector<VertexInfo> getVertexInfo()
@@ -35,6 +36,7 @@ struct Vertex
             {VertexDataFormat::FLOAT, 3, offsetof(Vertex, position)},
             {VertexDataFormat::FLOAT, 3, offsetof(Vertex, normal)},
             {VertexDataFormat::FLOAT, 4, offsetof(Vertex, color)},
+            {VertexDataFormat::FLOAT, 2, offsetof(Vertex, texCoords)},
         };
     }
 

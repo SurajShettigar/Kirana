@@ -65,7 +65,7 @@ void kirana::viewport::vulkan::ShaderBindingTable::initializeShaderRecords()
             m_groups.at(i).stride * m_groups.at(i).recordCount;
     }
 
-    m_totalGroupCount = shaderGroups.size();
+    m_totalGroupCount = static_cast<uint32_t>(shaderGroups.size());
 }
 
 std::array<std::vector<uint8_t>,

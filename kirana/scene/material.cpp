@@ -9,7 +9,7 @@
 #include <assimp/material.h>
 #include <assimp/texture.h>
 
-#include "texture_manager.hpp"
+#include "image_manager.hpp"
 
 namespace constants = kirana::utils::constants;
 
@@ -104,7 +104,7 @@ void kirana::scene::Material::setParametersFromAiMaterial(
         {
             const std::string path = utils::filesystem::combinePath(
                 utils::filesystem::getFolder(scenePath), {aiPath.C_Str()});
-            const int texIndex = TextureManager::get().addTexture(path);
+            const int texIndex = ImageManager::get().addImage(path);
             switch (type)
             {
             case aiTextureType_DIFFUSE:

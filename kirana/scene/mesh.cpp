@@ -13,8 +13,8 @@ kirana::scene::Mesh::Mesh(std::string name, const math::Bounds3 &bounds,
                           const std::vector<Vertex> &vertices,
                           const std::vector<scene::INDEX_TYPE> &indices,
                           const std::shared_ptr<Material> &material)
-    : m_name{std::move(name)}, m_bounds{bounds}, m_vertices{vertices}, m_indices{indices},
-      m_material{material}
+    : m_name{std::move(name)}, m_bounds{bounds},
+      m_vertices{vertices}, m_indices{indices}, m_material{material}
 {
 }
 
@@ -89,6 +89,24 @@ kirana::scene::Mesh::Mesh(const aiMesh *mesh,
                 m_vertices[v3].color[1] = mesh->mColors[v3]->g;
                 m_vertices[v3].color[2] = mesh->mColors[v3]->b;
                 m_vertices[v3].color[3] = mesh->mColors[v3]->a;
+            }
+
+            if (mesh->HasTextureCoords(v1))
+            {
+                m_vertices[v1].texCoords[0] = mesh->mTextureCoords[v1]->x;
+                m_vertices[v1].texCoords[1] = mesh->mTextureCoords[v1]->y;
+            }
+
+            if (mesh->HasTextureCoords(v2))
+            {
+                m_vertices[v2].texCoords[0] = mesh->mTextureCoords[v2]->x;
+                m_vertices[v2].texCoords[1] = mesh->mTextureCoords[v2]->y;
+            }
+
+            if (mesh->HasTextureCoords(v3))
+            {
+                m_vertices[v3].texCoords[0] = mesh->mTextureCoords[v3]->x;
+                m_vertices[v3].texCoords[1] = mesh->mTextureCoords[v3]->y;
             }
         }
     }

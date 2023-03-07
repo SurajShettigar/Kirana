@@ -55,6 +55,10 @@ class Allocator
     const Device *const m_device;
 
     void displayMemoryInfo();
+    void transitionImageLayout(
+        const vk::Image &image,
+        const vk::ImageSubresourceRange &subresourceRange,
+        vk::ImageLayout oldLayout, vk::ImageLayout newLayout) const;
 
   public:
     explicit Allocator(const Instance *instance, const Device *device);
@@ -74,20 +78,26 @@ class Allocator
         const void *data = nullptr, size_t dataOffset = 0,
         size_t dataSize = 0) const;
     bool allocateImage(
-        AllocateImage *image, vk::ImageCreateInfo imageCreateInfo,
+        AllocatedImage *image, vk::ImageCreateInfo imageCreateInfo,
         vk::ImageLayout layout, vk::ImageSubresourceRange subresourceRange,
         AllocationType allocationType = AllocationType::GPU_WRITEABLE,
-        const void *data = nullptr, size_t dataOffset = 0,
-        size_t dataSize = 0) const;
+        const void *data = nullptr, size_t dataSize = 0,
+        std::array<uint32_t, 3> imageOffset = {0, 0, 0},
+        std::array<uint32_t, 3> imageSize = {0, 0, 0}) const;
     bool copyDataToBuffer(const AllocatedBuffer &buffer, const void *data,
                           size_t dataOffset, size_t dataSize) const;
+    bool copyDataToImage(const AllocatedImage &image, vk::ImageLayout layout,
+                         vk::ImageSubresourceRange subresourceRange,
+                         const void *data, size_t dataSize = 0,
+                         std::array<uint32_t, 3> imageOffset = {0, 0, 0},
+                         std::array<uint32_t, 3> imageSize = {0, 0, 0}) const;
     [[nodiscard]] bool copyBuffer(const vk::Buffer &stagingBuffer,
                                   const vk::Buffer &destBuffer,
                                   vk::DeviceSize size,
                                   vk::DeviceSize srcOffset = 0,
                                   vk::DeviceSize dstOffset = 0) const;
     void free(const AllocatedBuffer &buffer) const;
-    void free(const AllocateImage &image) const;
+    void free(const AllocatedImage &image) const;
 };
 } // namespace kirana::viewport::vulkan
 #endif

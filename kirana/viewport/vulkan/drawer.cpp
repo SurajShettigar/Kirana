@@ -198,7 +198,7 @@ void kirana::viewport::vulkan::Drawer::rasterize(const FrameData &frame,
     clearColor.setColor(vk::ClearColorValue(color));
 
     vk::ClearValue clearDepth;
-    clearDepth.setDepthStencil(vk::ClearDepthStencilValue(1.0f, 0.0));
+    clearDepth.setDepthStencil(vk::ClearDepthStencilValue(1.0f, 0));
 
     frame.commandBuffers->reset();
     frame.commandBuffers->begin();

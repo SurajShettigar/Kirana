@@ -7,6 +7,7 @@ namespace kirana::viewport::vulkan
 {
 class Device;
 class Allocator;
+class TextureSampler;
 class Texture
 {
   public:
@@ -16,7 +17,6 @@ class Texture
         vk::Format format;
         vk::ImageUsageFlags usage;
         vk::ImageAspectFlags aspect;
-        bool generateDescriptorInfo = true;
         vk::ImageLayout layout = vk::ImageLayout::eGeneral;
         vk::ImageType imageType = vk::ImageType::e2D;
         vk::ImageViewType imageViewType = vk::ImageViewType::e2D;
@@ -30,24 +30,28 @@ class Texture
     bool m_isInitialized = false;
     const Device *const m_device;
     const Allocator *const m_allocator;
-
     Properties m_properties;
+    const TextureSampler *const m_sampler = nullptr;
+
     std::string m_name = "Texture";
-    AllocateImage m_allocatedImage;
+    AllocatedImage m_allocatedImage;
     vk::Image m_image;
     vk::ImageSubresourceRange m_subresourceRange;
     vk::ImageView m_imageView;
     vk::DescriptorImageInfo m_descInfo;
 
-    vk::Sampler getSampler() const;
     bool createImageView();
 
   public:
     explicit Texture(const Device *device, const Allocator *allocator,
-                     const Properties &properties, std::string name = "Texture",
-                     const void *pixelData = nullptr);
+                     const Properties &properties,
+                     const TextureSampler *sampler = nullptr,
+                     std::string name = "Texture",
+                     const void *pixelData = nullptr,
+                     size_t pixelDataSize = 0);
     explicit Texture(const Device *device, const vk::Image &image,
                      const Properties &properties,
+                     const TextureSampler *sampler = nullptr,
                      std::string name = "Texture");
     ~Texture();
     Texture(const Texture &texture) = delete;
@@ -70,7 +74,8 @@ class Texture
         return m_imageView;
     }
 
-    [[nodiscard]] inline const vk::ImageSubresourceRange &getImageSubresourceRange() const
+    [[nodiscard]] inline const vk::ImageSubresourceRange &
+    getImageSubresourceRange() const
     {
         return m_subresourceRange;
     }

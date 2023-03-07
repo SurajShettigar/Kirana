@@ -10,7 +10,7 @@ struct aiTexture;
 namespace kirana::scene
 {
 
-class Texture
+class Image
 {
   public:
     enum class Channels
@@ -28,12 +28,12 @@ class Texture
         Linear = 1
     };
 
-    Texture(std::string filepath, std::string name);
-    Texture(const aiTexture *texture);
-    ~Texture();
+    Image(std::string filepath, std::string name);
+    Image(const aiTexture *texture);
+    ~Image();
 
-    Texture(const Texture &texture) = delete;
-    Texture &operator=(const Texture &texture) = delete;
+    Image(const Image &texture) = delete;
+    Image &operator=(const Image &texture) = delete;
 
     void *load(Channels channels = Channels::RGBA,
                ColorSpace colorSpace = ColorSpace::sRGB);

@@ -93,6 +93,11 @@ class CommandBuffers
     void copyBuffer(vk::Buffer srcBuffer, vk::Buffer dstBuffer,
                     const std::vector<vk::BufferCopy> &regions,
                     uint32_t index = 0) const;
+    void copyBufferToImage(vk::Buffer srcBuffer, vk::Image dstImage,
+                           vk::ImageSubresourceRange dstSubRR,
+                           vk::ImageLayout dstImageLayout,
+                           const std::vector<vk::BufferImageCopy> &regions,
+                           uint32_t index = 0) const;
     void copyImage(const Texture &srcImage, const Texture &dstImage,
                    const std::array<uint32_t, 3> &copyExtent,
                    const std::array<int32_t, 3> &srcImageOffset = {0, 0, 0},

@@ -25,6 +25,7 @@ struct Vertex {
     vec3 position;
     vec3 normal;
     vec4 color;
+    vec2 texCoords;
 };
 
 struct PushConstantData {

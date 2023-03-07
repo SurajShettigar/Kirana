@@ -27,6 +27,7 @@ vk::Format kirana::viewport::vulkan::MaterialManager::
         case scene::VertexDataFormat::INT:
             return vk::Format::eR32Sint;
         case scene::VertexDataFormat::FLOAT:
+        default:
             return vk::Format::eR32Sfloat;
         }
     }
@@ -37,6 +38,7 @@ vk::Format kirana::viewport::vulkan::MaterialManager::
         case scene::VertexDataFormat::INT:
             return vk::Format::eR32G32Sint;
         case scene::VertexDataFormat::FLOAT:
+        default:
             return vk::Format::eR32G32Sfloat;
         }
     }
@@ -47,6 +49,7 @@ vk::Format kirana::viewport::vulkan::MaterialManager::
         case scene::VertexDataFormat::INT:
             return vk::Format::eR32G32B32Sint;
         case scene::VertexDataFormat::FLOAT:
+        default:
             return vk::Format::eR32G32B32Sfloat;
         }
     }
@@ -57,6 +60,7 @@ vk::Format kirana::viewport::vulkan::MaterialManager::
         case scene::VertexDataFormat::INT:
             return vk::Format::eR32G32B32A32Sint;
         case scene::VertexDataFormat::FLOAT:
+        default:
             return vk::Format::eR32G32B32A32Sfloat;
         }
     }
