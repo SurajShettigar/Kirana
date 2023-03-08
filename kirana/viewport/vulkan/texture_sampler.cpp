@@ -7,9 +7,25 @@
 #include <utility>
 
 
-kirana::viewport::vulkan::TextureSampler::TextureSampler(
-    const Device *device, Properties properties)
-    : m_isInitialized{false}, m_device{device}, m_properties{std::move(properties)}
+bool kirana::viewport::vulkan::TextureSampler::Properties::operator==(
+    const Properties &props) const
+{
+    return magFilter == props.magFilter && minFilter == props.minFilter &&
+           mipMapFilter == props.mipMapFilter &&
+           uvwWrapMode[0] == props.uvwWrapMode[0] &&
+           uvwWrapMode[1] == props.uvwWrapMode[1] &&
+           uvwWrapMode[2] == props.uvwWrapMode[2] &&
+           math::approximatelyEqual(mipLODBias, props.mipLODBias) &&
+           enableAnisotropicFiltering == props.enableAnisotropicFiltering &&
+           math::approximatelyEqual(anisotropicLevel, props.anisotropicLevel) &&
+           borderColor == props.borderColor &&
+           borderColorCustom == props.borderColorCustom;
+};
+
+kirana::viewport::vulkan::TextureSampler::TextureSampler(const Device *device,
+                                                         Properties properties)
+    : m_isInitialized{false}, m_device{device}, m_properties{
+                                                    std::move(properties)}
 {
     // Check for limits
     const float maxLODBias =

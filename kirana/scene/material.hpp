@@ -12,6 +12,7 @@ struct aiMaterial;
 
 namespace kirana::scene
 {
+class Image;
 class Material : public MaterialProperties
 {
   public:
@@ -64,6 +65,11 @@ class Material : public MaterialProperties
                    : m_shaderData.at(static_cast<int>(currentPipeline));
     }
 
+    [[nodiscard]] inline const std::vector<Image *> &getImages() const
+    {
+        return m_images;
+    }
+
     inline void setName(const std::string &name)
     {
         m_name = name;
@@ -76,6 +82,7 @@ class Material : public MaterialProperties
     std::array<ShaderData,
                static_cast<int>(ShadingPipeline::SHADING_PIPELINE_MAX)>
         m_shaderData;
+    std::vector<Image *> m_images;
 
     [[nodiscard]] ShadingStage getShadingStage(
         const std::string &filePath) const;

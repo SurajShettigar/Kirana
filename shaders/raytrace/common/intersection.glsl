@@ -9,7 +9,7 @@ layout (buffer_reference) readonly buffer IndexData {
     uint32_t i[];
 };
 
-layout (set = 1, binding = 0) readonly buffer _ObjectData {
+layout (set = 2, binding = 0) readonly buffer _ObjectData {
     ObjectData o[];
 } objBuffer;
 
@@ -25,6 +25,11 @@ vec3 getWorldNormal(const vec3[3] vNormals, vec3 barycentrics, const mat4x3 worl
     return normalize(vec3(normal * worldToObjMat));
 }
 
+vec2 getTexCoords(const vec2[3] vTexCoords, vec3 barycentrics)
+{
+    return vTexCoords[0] * barycentrics.x + vTexCoords[1] * barycentrics.y + vTexCoords[2] * barycentrics.z;
+}
+
 IntersectionData getIntesectionData(in PathtracePayload hitInfo)
 {
     ObjectData objData = objBuffer.o[hitInfo.geometryIndex + hitInfo.instanceCustomIndex];
@@ -38,18 +43,20 @@ IntersectionData getIntesectionData(in PathtracePayload hitInfo)
     // Get Vertices
     VertexData vBuffer = VertexData(objData.vertexBufferAddress);
     Vertex vertices[3] = Vertex[3](vBuffer.v[indices.x], vBuffer.v[indices.y], vBuffer.v[indices.z]);
-    vec3[3] localPositions = vec3[3](vertices[0].position, vertices[1].position, vertices[2].position);
-    vec3[3] localNormals = vec3[3](vertices[0].normal, vertices[1].normal, vertices[2].normal);
+    vec3[3] vPositions = vec3[3](vertices[0].position, vertices[1].position, vertices[2].position);
+    vec3[3] vNormals = vec3[3](vertices[0].normal, vertices[1].normal, vertices[2].normal);
+    vec2[3] vTexCoords = vec2[3](vertices[0].texCoords, vertices[1].texCoords, vertices[2].texCoords);
     const vec3 barycentrics = vec3(1.0 - hitInfo.barycentricCoords.x - hitInfo.barycentricCoords.y, hitInfo.barycentricCoords.x, hitInfo.barycentricCoords.y);
 
     IntersectionData intersection;
-    intersection.position = getWorldPosition(localPositions, barycentrics, hitInfo.objectToWorldMat);
-    intersection.normal = getWorldNormal(localNormals, barycentrics, hitInfo.worldToObjectMat);
+    intersection.position = getWorldPosition(vPositions, barycentrics, hitInfo.objectToWorldMat);
+    intersection.normal = getWorldNormal(vNormals, barycentrics, hitInfo.worldToObjectMat);
 
     getCoordinateFrame_Duff(intersection.normal, intersection.tangent, intersection.bitangent);
 
     intersection.materialBufferAddress = objData.materialDataBufferAddress;
     intersection.materialIndex = objData.materialDataIndex;
+    intersection.texCoords = getTexCoords(vTexCoords, barycentrics);
     return intersection;
 }
 

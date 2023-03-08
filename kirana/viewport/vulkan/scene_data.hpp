@@ -27,6 +27,7 @@ class RenderPass;
 class RaytraceData;
 class ShaderBindingTable;
 class MaterialManager;
+class Texture;
 class PipelineLayout;
 template <typename> class PushConstant;
 class SceneData
@@ -80,8 +81,7 @@ class SceneData
         const std::vector<scene::INDEX_TYPE> &indices);
 
 
-    void createEditorMaterials();
-    void createSceneMaterials();
+    void createMaterials(bool isEditor);
     static int getMeshObject(
         const std::vector<MeshObjectData> &meshObjects,
         const std::vector<std::shared_ptr<scene::Mesh>> &meshes);
@@ -152,6 +152,8 @@ class SceneData
     {
         return m_sceneMeshes;
     }
+
+    const std::vector<Texture *> &getTextures() const;
 
     [[nodiscard]] uint32_t getCurrentMaterialIndex(bool isEditorMesh,
                                                    bool outline,

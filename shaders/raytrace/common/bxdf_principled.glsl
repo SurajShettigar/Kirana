@@ -28,6 +28,8 @@ layout (buffer_reference) readonly buffer MaterialData {
     PrincipledData p[];
 };
 
+layout(set = 1, binding = 0) uniform sampler2D matTextures[];
+
 // Based on Disney BRDF.
 // Refer: https://media.disneyanimation.com/uploads/production/publication_asset/48/asset/s2012_pbs_disney_brdf_notes_v3.pdf
 // Refer: https://google.github.io/filament/Filament.html
@@ -84,6 +86,12 @@ vec3 evaluateDiffuse(inout uint seed, in IntersectionData intersection, in Princ
         return vec3(0.0);
 
     vec3 diffuseColor = (1.0 - matData.metallic) * matData.color.rgb;
+
+    if(matData.baseMap > -1)
+    {
+        uint matIndex = uint(matData.baseMap);
+        diffuseColor *= texture(matTextures[matIndex], intersection.texCoords).rgb;
+    }
 
     // Cos weighted diffuse pdf
     pdf = clamp(dot(ffnormal, lightDir), 0.0, 1.0) * ONE_BY_PI;

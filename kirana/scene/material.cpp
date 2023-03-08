@@ -95,36 +95,43 @@ void kirana::scene::Material::setParametersFromAiMaterial(
     const std::string &scenePath, const aiMaterial *material)
 {
     // TODO: Use constant parameter names.
-    auto setTexParam = [&](aiTextureType type) {
+    auto getImage = [&](aiTextureType type) -> Image * {
         if (material->GetTextureCount(type) <= 0)
-            return;
+            return nullptr;
         aiString aiPath;
         material->GetTexture(type, 0, &aiPath);
         if (aiPath.length > 0)
         {
             const std::string path = utils::filesystem::combinePath(
                 utils::filesystem::getFolder(scenePath), {aiPath.C_Str()});
-            const int texIndex = ImageManager::get().addImage(path);
-            switch (type)
-            {
-            case aiTextureType_DIFFUSE:
-                setParameter("_BaseMap", texIndex);
-                break;
-            case aiTextureType_EMISSION_COLOR:
-                setParameter("_EmissiveMap", texIndex);
-                break;
-            case aiTextureType_NORMALS:
-                setParameter("_NormalMap", texIndex);
-                break;
-            default:
-                break;
-            }
+            const int index = ImageManager::get().addImage(path);
+            if (index < 0)
+                return nullptr;
+            else
+                return ImageManager::get().getImage(index);
         }
+        return nullptr;
     };
 
-    setTexParam(aiTextureType_DIFFUSE);
-    setTexParam(aiTextureType_EMISSION_COLOR);
-    setTexParam(aiTextureType_NORMALS);
+    // TODO: Find a better way to handle textures.
+    Image *imgPtr = getImage(aiTextureType_DIFFUSE);
+    if (imgPtr)
+    {
+        setParameter("_BaseMap", static_cast<int>(imgPtr->getIndex()));
+        m_images.push_back(imgPtr);
+    }
+    imgPtr = getImage(aiTextureType_EMISSION_COLOR);
+    if (imgPtr)
+    {
+        setParameter("_EmissiveMap", static_cast<int>(imgPtr->getIndex()));
+        m_images.push_back(imgPtr);
+    }
+    imgPtr = getImage(aiTextureType_NORMALS);
+    if (imgPtr)
+    {
+        setParameter("_NormalMap", static_cast<int>(imgPtr->getIndex()));
+        m_images.push_back(imgPtr);
+    }
 
     aiColor3D diffuseColor{1.0f, 1.0f, 1.0f};
     material->Get(AI_MATKEY_COLOR_DIFFUSE, diffuseColor);

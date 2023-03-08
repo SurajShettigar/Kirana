@@ -3,6 +3,7 @@
 #include "device.hpp"
 #include <vk_mem_alloc.hpp>
 #include "allocator.hpp"
+#include "texture_manager.hpp"
 #include "shader.hpp"
 #include "raster_pipeline.hpp"
 #include "raytrace_pipeline.hpp"
@@ -227,7 +228,6 @@ int kirana::viewport::vulkan::MaterialManager::copyMaterialDataToBuffer(
     }
 
 
-
     auto &buffer = shaderDataBuffers.back();
     m_allocator->copyDataToBuffer(buffer.buffer, matData.data(),
                                   buffer.currentSize, dataSize);
@@ -283,7 +283,8 @@ void kirana::viewport::vulkan::MaterialManager::onMaterialChanged(
 
 kirana::viewport::vulkan::MaterialManager::MaterialManager(
     const Device *const device, const Allocator *const allocator)
-    : m_device{device}, m_allocator{allocator}
+    : m_device{device}, m_allocator{allocator},
+      m_textureManager{new TextureManager(m_device, m_allocator)}
 {
 }
 
@@ -315,6 +316,11 @@ kirana::viewport::vulkan::MaterialManager::~MaterialManager()
             delete s;
             s = nullptr;
         }
+    }
+    if (m_textureManager)
+    {
+        delete m_textureManager;
+        m_textureManager = nullptr;
     }
 }
 
@@ -376,6 +382,9 @@ uint32_t kirana::viewport::vulkan::MaterialManager::addMaterial(
                     : -1;
         }
     }
+    for (const auto &i : material.getImages())
+        m_textureManager->addTexture(i);
+
     m.materialChangeListener = material.addOnParameterChangeEventListener(
         [&](const scene::MaterialProperties &properties,
             const std::string &param, const std::any &value) {
@@ -402,4 +411,10 @@ vk::DeviceAddress kirana::viewport::vulkan::MaterialManager::
         m_materialDataBuffers.at(shader->name)[mat.dataBufferIndex];
 
     return buffer.buffer.address;
+}
+
+const std::vector<kirana::viewport::vulkan::Texture *>
+    &kirana::viewport::vulkan::MaterialManager::getTextures() const
+{
+    return m_textureManager->getTextures();
 }

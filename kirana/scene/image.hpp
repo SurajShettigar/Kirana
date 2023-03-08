@@ -1,9 +1,7 @@
 #ifndef KIRANA_SCENE_TEXTURE_HPP
 #define KIRANA_SCENE_TEXTURE_HPP
 
-#include <string>
-#include <array>
-#include <vector>
+#include "image_types.hpp"
 
 struct aiTexture;
 
@@ -13,30 +11,15 @@ namespace kirana::scene
 class Image
 {
   public:
-    enum class Channels
-    {
-        NONE = 0,
-        GRAYSCALE = 1,
-        GRAYSCALE_ALPHA = 2,
-        RGB = 3,
-        RGBA = 4
-    };
-
-    enum class ColorSpace
-    {
-        sRGB = 0,
-        Linear = 1
-    };
-
-    Image(std::string filepath, std::string name);
-    Image(const aiTexture *texture);
+    Image(std::string filepath, std::string name, uint32_t index,
+          ImageProperties properties);
+    Image(const aiTexture *texture, uint32_t index, ImageProperties properties);
     ~Image();
 
-    Image(const Image &texture) = delete;
-    Image &operator=(const Image &texture) = delete;
+    Image(const Image &image) = delete;
+    Image &operator=(const Image &image) = delete;
 
-    void *load(Channels channels = Channels::RGBA,
-               ColorSpace colorSpace = ColorSpace::sRGB);
+    void *load();
     void free();
 
     [[nodiscard]] inline const std::string &getFilepath() const
@@ -49,19 +32,19 @@ class Image
         return m_name;
     }
 
+    [[nodiscard]] inline const uint32_t getIndex() const
+    {
+        return m_index;
+    }
+
     [[nodiscard]] inline const std::array<int, 2> &getSize() const
     {
         return m_size;
     }
 
-    [[nodiscard]] inline const Channels &getChannels() const
+    [[nodiscard]] inline const ImageProperties &getProperties() const
     {
-        return m_channels;
-    }
-
-    [[nodiscard]] inline ColorSpace getColorSpace() const
-    {
-        return m_colorSpace;
+        return m_properties;
     }
 
     [[nodiscard]] inline const void *getPixelData() const
@@ -72,14 +55,15 @@ class Image
     [[nodiscard]] inline size_t getPixelDataSize() const
     {
         return static_cast<size_t>(m_size[0] * m_size[1]) *
-               static_cast<size_t>(m_channels);
+               static_cast<size_t>(m_properties.channels);
     }
+
   private:
     std::string m_filepath;
     std::string m_name;
+    uint32_t m_index;
     std::array<int, 2> m_size = {0, 0};
-    Channels m_channels = Channels::RGBA;
-    ColorSpace m_colorSpace = ColorSpace::sRGB;
+    ImageProperties m_properties;
 
     void *m_pixelData = nullptr;
 };

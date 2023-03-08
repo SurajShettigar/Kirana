@@ -130,7 +130,9 @@ struct AllocatedImage
 enum class DescriptorLayoutType
 {
     GLOBAL = 0,
-    OBJECT = 1
+    MATERIAL = 1,
+    OBJECT = 2,
+    DESCRIPTOR_LAYOUT_TYPE_MAX = 3
 };
 
 enum class DescriptorBindingDataType
@@ -140,7 +142,9 @@ enum class DescriptorBindingDataType
     RAYTRACE_ACCEL_STRUCT = 2,
     RAYTRACE_RENDER_TARGET = 3,
     MATERIAL_DATA = 4,
-    OBJECT_DATA = 5,
+    TEXTURE_DATA = 5,
+    OBJECT_DATA = 6,
+    DESCRIPTOR_BINDING_DATA_TYPE_MAX = 7
 };
 
 struct DescriptorBindingInfo

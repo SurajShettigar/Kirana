@@ -21,6 +21,9 @@ kirana::viewport::vulkan::DescriptorPool::DescriptorPool(const Device *device)
         vk::DescriptorPoolSize(vk::DescriptorType::eAccelerationStructureKHR,
                                1),
         vk::DescriptorPoolSize(vk::DescriptorType::eStorageImage, 1),
+        vk::DescriptorPoolSize(
+            vk::DescriptorType::eSampledImage,
+            constants::VULKAN_DESCRIPTOR_DEFAULT_SAMPLED_IMAGES_SIZE),
     };
     const vk::DescriptorPoolCreateInfo createInfo(
         {}, constants::VULKAN_DESCRIPTOR_SET_MAX_COUNT, poolSizes);

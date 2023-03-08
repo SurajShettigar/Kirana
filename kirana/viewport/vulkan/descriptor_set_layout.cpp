@@ -83,13 +83,9 @@ kirana::viewport::vulkan::DescriptorBindingInfo kirana::viewport::vulkan::
                                            vk::ShaderStageFlagBits::eVertex |
                                                vk::ShaderStageFlagBits::
                                                    eFragment}
-                   : DescriptorBindingInfo{
-                         DescriptorLayoutType::GLOBAL, 1,
-                         vk::DescriptorType::eUniformBuffer,
-                         vk::ShaderStageFlagBits::eRaygenKHR |
-                             vk::ShaderStageFlagBits::eClosestHitKHR |
-                             vk::ShaderStageFlagBits::eMissKHR |
-                             vk::ShaderStageFlagBits::eAnyHitKHR};
+                   : DescriptorBindingInfo{DescriptorLayoutType::GLOBAL, 1,
+                                           vk::DescriptorType::eUniformBuffer,
+                                           vk::ShaderStageFlagBits::eRaygenKHR};
     case DescriptorBindingDataType::RAYTRACE_ACCEL_STRUCT:
         return shadingPipeline == ShadingPipeline::RASTER
                    ? DescriptorBindingInfo{}
@@ -103,18 +99,29 @@ kirana::viewport::vulkan::DescriptorBindingInfo kirana::viewport::vulkan::
                    : DescriptorBindingInfo{DescriptorLayoutType::GLOBAL, 3,
                                            vk::DescriptorType::eStorageImage,
                                            vk::ShaderStageFlagBits::eRaygenKHR};
+    case DescriptorBindingDataType::TEXTURE_DATA:
+        return shadingPipeline == ShadingPipeline::RASTER
+                   ? DescriptorBindingInfo{DescriptorLayoutType::MATERIAL, 0,
+                                           vk::DescriptorType::
+                                               eCombinedImageSampler,
+                                           vk::ShaderStageFlagBits::eFragment,
+                                           utils::constants::
+                                               VULKAN_DESCRIPTOR_DEFAULT_SAMPLED_IMAGES_SIZE}
+                   : DescriptorBindingInfo{
+                         DescriptorLayoutType::MATERIAL, 0,
+                         vk::DescriptorType::eCombinedImageSampler,
+                         vk::ShaderStageFlagBits::eRaygenKHR,
+                         utils::constants::
+                             VULKAN_DESCRIPTOR_DEFAULT_SAMPLED_IMAGES_SIZE};
     case DescriptorBindingDataType::OBJECT_DATA:
         return shadingPipeline == ShadingPipeline::RASTER
                    ? DescriptorBindingInfo{DescriptorLayoutType::OBJECT, 0,
                                            vk::DescriptorType::
                                                eStorageBufferDynamic,
                                            vk::ShaderStageFlagBits::eVertex, 0}
-                   : DescriptorBindingInfo{
-                         DescriptorLayoutType::OBJECT, 0,
-                         vk::DescriptorType::eStorageBuffer,
-                         vk::ShaderStageFlagBits::eRaygenKHR |
-                         vk::ShaderStageFlagBits::eClosestHitKHR |
-                             vk::ShaderStageFlagBits::eAnyHitKHR};
+                   : DescriptorBindingInfo{DescriptorLayoutType::OBJECT, 0,
+                                           vk::DescriptorType::eStorageBuffer,
+                                           vk::ShaderStageFlagBits::eRaygenKHR};
     default:
         return DescriptorBindingInfo{};
     }
@@ -142,6 +149,12 @@ bool kirana::viewport::vulkan::DescriptorSetLayout::getDefaultDescriptorLayout(
         }
 
         layout = new DescriptorSetLayout(device, globalDescriptors);
+        return layout->m_isInitialized;
+    }
+    case DescriptorLayoutType::MATERIAL: {
+        layout = new DescriptorSetLayout(
+            device, {getBindingInfoForData(
+                        DescriptorBindingDataType::TEXTURE_DATA, pipeline)});
         return layout->m_isInitialized;
     }
     case DescriptorLayoutType::OBJECT: {

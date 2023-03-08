@@ -2,6 +2,7 @@
 #define KIRANA_VIEWPORT_VULKAN_TEXTURE_SAMPLER_HPP
 
 #include "vulkan_types.hpp"
+#include <vector4.hpp>
 
 namespace kirana::viewport::vulkan
 {
@@ -43,17 +44,40 @@ class TextureSampler
     };
     struct Properties
     {
-        Filter magFilter = Filter::NEAREST;
-        Filter minFilter = Filter::NEAREST;
-        MipMapFilter mipMapFilter = MipMapFilter::NEAREST;
+        Filter magFilter = Filter::LINEAR;
+        Filter minFilter = Filter::LINEAR;
+        MipMapFilter mipMapFilter = MipMapFilter::LINEAR;
         std::array<WrapMode, 3> uvwWrapMode = {
             WrapMode::REPEAT, WrapMode::REPEAT, WrapMode::REPEAT};
         float mipLODBias = 0.0f;
-        bool enableAnisotropicFiltering = false;
+        bool enableAnisotropicFiltering = true;
         float anisotropicLevel = std::numeric_limits<float>::max();
-        BorderColor borderColor = BorderColor::FLOAT_TRANSPARENT_BLACK;
-        math::Vector4 borderColorCustom = math::Vector4::ZERO;
+        BorderColor borderColor = BorderColor::INT_OPAQUE_BLACK;
+        math::Vector4 borderColorCustom;
+
+        bool operator==(const Properties &props) const;
+        bool operator!=(const Properties &props) const
+        {
+            return !(*this == props);
+        }
     };
+
+    static inline TextureSampler getDefaultSampler(const Device *const device)
+    {
+        return TextureSampler(device, Properties{});
+    }
+
+    static inline TextureSampler getPointSampler(const Device *const device)
+    {
+        return TextureSampler(
+            device,
+            Properties{Filter::NEAREST,
+                       Filter::NEAREST,
+                       MipMapFilter::NEAREST,
+                       {WrapMode::REPEAT, WrapMode::REPEAT, WrapMode::REPEAT},
+                       0.0f,
+                       false});
+    }
 
     TextureSampler(const Device *device, Properties properties);
     ~TextureSampler();

@@ -34,6 +34,7 @@ class Texture
     const TextureSampler *const m_sampler = nullptr;
 
     std::string m_name = "Texture";
+    uint32_t m_index = 0;
     AllocatedImage m_allocatedImage;
     vk::Image m_image;
     vk::ImageSubresourceRange m_subresourceRange;
@@ -47,17 +48,27 @@ class Texture
                      const Properties &properties,
                      const TextureSampler *sampler = nullptr,
                      std::string name = "Texture",
+                     uint32_t index = 0,
                      const void *pixelData = nullptr,
                      size_t pixelDataSize = 0);
     explicit Texture(const Device *device, const vk::Image &image,
                      const Properties &properties,
                      const TextureSampler *sampler = nullptr,
-                     std::string name = "Texture");
+                     std::string name = "Texture",
+                     uint32_t index = 0);
     ~Texture();
     Texture(const Texture &texture) = delete;
     Texture &operator=(const Texture &texture) = delete;
 
     const bool &isInitialized = m_isInitialized;
+
+    [[nodiscard]] inline const std::string &getName() const{
+        return m_name;
+    }
+
+    [[nodiscard]] inline uint32_t getIndex() const{
+        return m_index;
+    }
 
     [[nodiscard]] inline const Properties &getProperties() const
     {

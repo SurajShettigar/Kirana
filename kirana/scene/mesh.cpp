@@ -69,44 +69,34 @@ kirana::scene::Mesh::Mesh(const aiMesh *mesh,
                 m_vertices[v3].normal[2] = mesh->mNormals[v3].z;
             }
 
-            if (mesh->HasVertexColors(v1))
+            if (mesh->HasVertexColors(0))
             {
-                m_vertices[v1].color[0] = mesh->mColors[v1]->r;
-                m_vertices[v1].color[1] = mesh->mColors[v1]->g;
-                m_vertices[v1].color[2] = mesh->mColors[v1]->b;
-                m_vertices[v1].color[3] = mesh->mColors[v1]->a;
-            }
-            if (mesh->HasVertexColors(v2))
-            {
-                m_vertices[v2].color[0] = mesh->mColors[v2]->r;
-                m_vertices[v2].color[1] = mesh->mColors[v2]->g;
-                m_vertices[v2].color[2] = mesh->mColors[v2]->b;
-                m_vertices[v2].color[3] = mesh->mColors[v2]->a;
-            }
-            if (mesh->HasVertexColors(v3))
-            {
-                m_vertices[v3].color[0] = mesh->mColors[v3]->r;
-                m_vertices[v3].color[1] = mesh->mColors[v3]->g;
-                m_vertices[v3].color[2] = mesh->mColors[v3]->b;
-                m_vertices[v3].color[3] = mesh->mColors[v3]->a;
+                m_vertices[v1].color[0] = mesh->mColors[0][v1].r;
+                m_vertices[v1].color[1] = mesh->mColors[0][v1].g;
+                m_vertices[v1].color[2] = mesh->mColors[0][v1].b;
+                m_vertices[v1].color[3] = mesh->mColors[0][v1].a;
+
+                m_vertices[v2].color[0] = mesh->mColors[0][v2].r;
+                m_vertices[v2].color[1] = mesh->mColors[0][v2].g;
+                m_vertices[v2].color[2] = mesh->mColors[0][v2].b;
+                m_vertices[v2].color[3] = mesh->mColors[0][v2].a;
+
+                m_vertices[v3].color[0] = mesh->mColors[0][v3].r;
+                m_vertices[v3].color[1] = mesh->mColors[0][v3].g;
+                m_vertices[v3].color[2] = mesh->mColors[0][v3].b;
+                m_vertices[v3].color[3] = mesh->mColors[0][v3].a;
             }
 
-            if (mesh->HasTextureCoords(v1))
+            if (mesh->HasTextureCoords(0))
             {
-                m_vertices[v1].texCoords[0] = mesh->mTextureCoords[v1]->x;
-                m_vertices[v1].texCoords[1] = mesh->mTextureCoords[v1]->y;
-            }
+                m_vertices[v1].texCoords[0] = mesh->mTextureCoords[0][v1].x;
+                m_vertices[v1].texCoords[1] = mesh->mTextureCoords[0][v1].y;
 
-            if (mesh->HasTextureCoords(v2))
-            {
-                m_vertices[v2].texCoords[0] = mesh->mTextureCoords[v2]->x;
-                m_vertices[v2].texCoords[1] = mesh->mTextureCoords[v2]->y;
-            }
+                m_vertices[v2].texCoords[0] = mesh->mTextureCoords[0][v2].x;
+                m_vertices[v2].texCoords[1] = mesh->mTextureCoords[0][v2].y;
 
-            if (mesh->HasTextureCoords(v3))
-            {
-                m_vertices[v3].texCoords[0] = mesh->mTextureCoords[v3]->x;
-                m_vertices[v3].texCoords[1] = mesh->mTextureCoords[v3]->y;
+                m_vertices[v3].texCoords[0] = mesh->mTextureCoords[0][v3].x;
+                m_vertices[v3].texCoords[1] = mesh->mTextureCoords[0][v3].y;
             }
         }
     }

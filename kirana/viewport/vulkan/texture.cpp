@@ -31,12 +31,16 @@ bool kirana::viewport::vulkan::Texture::createImageView()
     return false;
 }
 
-kirana::viewport::vulkan::Texture::Texture(
-    const Device *const device, const Allocator *const allocator,
-    const Properties &properties, const TextureSampler *const sampler,
-    std::string name, const void *pixelData, size_t pixelDataSize)
+kirana::viewport::vulkan::Texture::Texture(const Device *const device,
+                                           const Allocator *const allocator,
+                                           const Properties &properties,
+                                           const TextureSampler *const sampler,
+                                           std::string name, uint32_t index,
+                                           const void *pixelData,
+                                           size_t pixelDataSize)
     : m_isInitialized{false}, m_device{device}, m_allocator{allocator},
-      m_properties{properties}, m_sampler{sampler}, m_name{std::move(name)}
+      m_properties{properties}, m_sampler{sampler}, m_name{std::move(name)},
+      m_index{index}
 {
     const vk::Extent3D extent(m_properties.size[0], m_properties.size[1],
                               m_properties.size[2]);
@@ -80,10 +84,10 @@ kirana::viewport::vulkan::Texture::Texture(const Device *device,
                                            const vk::Image &image,
                                            const Properties &properties,
                                            const TextureSampler *const sampler,
-                                           std::string name)
+                                           std::string name, uint32_t index)
     : m_isInitialized{false}, m_device{device}, m_allocator{nullptr},
       m_properties{properties}, m_sampler{sampler}, m_name{std::move(name)},
-      m_image{image}
+      m_index{index}, m_image{image}
 {
     m_subresourceRange = vk::ImageSubresourceRange(m_properties.aspect, 0,
                                                    m_properties.numMipLevels, 0,
@@ -98,8 +102,6 @@ kirana::viewport::vulkan::Texture::~Texture()
 {
     if (m_device)
     {
-        if (m_descInfo.sampler)
-            m_device->current.destroySampler(m_descInfo.sampler);
         if (m_imageView)
             m_device->current.destroyImageView(m_imageView);
         if (m_allocator)

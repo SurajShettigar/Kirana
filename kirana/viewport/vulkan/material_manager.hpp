@@ -23,6 +23,8 @@ class RaytracePipeline;
 class Shader;
 class RenderPass;
 class ShaderBindingTable;
+class TextureManager;
+class Texture;
 
 class MaterialManager
 {
@@ -45,6 +47,7 @@ class MaterialManager
 
     const Device *const m_device;
     const Allocator *const m_allocator;
+    TextureManager *m_textureManager = nullptr;
 
     std::vector<const Shader *> m_shaders;
     std::vector<const Pipeline *> m_pipelines;
@@ -115,6 +118,8 @@ class MaterialManager
         // TODO: Return default SBT if none exists
         return m_SBTs[m_materials[materialIndex].sbtIndex];
     }
+
+    const std::vector<Texture *> &getTextures() const;
 };
 } // namespace kirana::viewport::vulkan
 #endif

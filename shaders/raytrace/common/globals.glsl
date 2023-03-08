@@ -97,6 +97,7 @@ struct IntersectionData {
 
     uint64_t materialBufferAddress;
     int materialIndex;
+    vec2 texCoords;
 };
 
 #endif

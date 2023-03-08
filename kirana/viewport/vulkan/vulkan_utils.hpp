@@ -162,6 +162,7 @@ static inline vk::PhysicalDeviceFeatures2 getRequiredDeviceFeatures()
     features.features.drawIndirectFirstInstance = true;
     features.features.tessellationShader = true;
     features.features.shaderInt64 = true;
+    features.features.samplerAnisotropy = true;
 
     DEVICE_RAYTRACE_PIPELINE_FEATURES.pNext = &DEVICE_RAY_QUERY_FEATURES;
     DEVICE_ACCEL_STRUCT_FEATURES.pNext = &DEVICE_RAYTRACE_PIPELINE_FEATURES;
@@ -181,7 +182,8 @@ static bool hasRequiredDeviceFeatures(
         !reqFeatures.features.wideLines || !reqFeatures.features.logicOp ||
         !reqFeatures.features.drawIndirectFirstInstance ||
         !reqFeatures.features.tessellationShader ||
-        !reqFeatures.features.shaderInt64)
+        !reqFeatures.features.shaderInt64 ||
+        !reqFeatures.features.samplerAnisotropy)
         return false;
 
     auto *shaderClock =

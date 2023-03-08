@@ -7,8 +7,10 @@
 #include <utility>
 #include <file_system.hpp>
 
-kirana::scene::Image::Image(std::string filepath, std::string name)
-    : m_filepath{std::move(filepath)}, m_name{std::move(name)}
+kirana::scene::Image::Image(std::string filepath, std::string name,
+                            uint32_t index, ImageProperties properties)
+    : m_filepath{std::move(filepath)}, m_name{std::move(name)}, m_index{index},
+      m_properties{std::move(properties)}
 {
     if (m_name.empty())
     {
@@ -17,8 +19,10 @@ kirana::scene::Image::Image(std::string filepath, std::string name)
     }
 }
 
-kirana::scene::Image::Image(const aiTexture *texture)
-    : m_filepath{texture->mFilename.C_Str()}, m_name{""}
+kirana::scene::Image::Image(const aiTexture *texture, uint32_t index,
+                            ImageProperties properties)
+    : m_filepath{texture->mFilename.C_Str()}, m_name{""}, m_index{index},
+      m_properties{std::move(properties)}
 {
     if (m_name.empty())
     {
@@ -32,19 +36,15 @@ kirana::scene::Image::~Image()
     free();
 }
 
-
-void *kirana::scene::Image::load(Channels channels, ColorSpace colorSpace)
+void *kirana::scene::Image::load()
 {
     free();
     if (!utils::filesystem::fileExists(m_filepath))
         return m_pixelData;
 
-    m_channels = channels;
-    m_colorSpace = colorSpace;
-
-    const int desiredChannels = static_cast<int>(m_channels);
+    const int desiredChannels = static_cast<int>(m_properties.channels);
     int fileChannels = 0;
-    if (colorSpace == ColorSpace::sRGB)
+    if (m_properties.colorSpace == ColorSpace::sRGB)
         m_pixelData = reinterpret_cast<void *>(
             stbi_load(m_filepath.c_str(), &m_size[0], &m_size[1], &fileChannels,
                       desiredChannels));
@@ -53,12 +53,15 @@ void *kirana::scene::Image::load(Channels channels, ColorSpace colorSpace)
             stbi_loadf(m_filepath.c_str(), &m_size[0], &m_size[1],
                        &fileChannels, desiredChannels));
 
-    m_channels = static_cast<Channels>(fileChannels);
+    m_properties.fileChannels = static_cast<Channels>(fileChannels);
     return m_pixelData;
 }
 
 void kirana::scene::Image::free()
 {
     if (m_pixelData != nullptr)
+    {
         stbi_image_free(m_pixelData);
+        m_pixelData = nullptr;
+    }
 }

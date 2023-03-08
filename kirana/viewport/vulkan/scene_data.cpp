@@ -47,7 +47,7 @@ void kirana::viewport::vulkan::SceneData::onSceneLoaded(bool result)
 {
     if (result)
     {
-        createSceneMaterials();
+        createMaterials(false);
         createMeshes(false);
         createObjectBuffer();
     }
@@ -206,16 +206,19 @@ std::pair<int, int> kirana::viewport::vulkan::SceneData::
             static_cast<int>(m_indexBuffers.size() - 1)};
 }
 
-void kirana::viewport::vulkan::SceneData::createEditorMaterials()
+void kirana::viewport::vulkan::SceneData::createMaterials(bool isEditor)
 {
-    for (const auto &em : m_scene.getEditorMaterials())
+    const auto &mats =
+        isEditor ? m_scene.getEditorMaterials() : m_scene.getSceneMaterials();
+    for (const auto &em : mats)
         m_materialManager->addMaterial(*m_renderPass, *em);
-}
 
-void kirana::viewport::vulkan::SceneData::createSceneMaterials()
-{
-    for (const auto &m : m_scene.getSceneMaterials())
-        m_materialManager->addMaterial(*m_renderPass, *m);
+    const auto &bindingInfo = DescriptorSetLayout::getBindingInfoForData(
+        DescriptorBindingDataType::TEXTURE_DATA, ShadingPipeline::RASTER);
+    m_rasterDescSets[static_cast<int>(bindingInfo.layoutType)].bindTextures(
+        bindingInfo, m_materialManager->getTextures());
+    m_descriptorPool->writeDescriptorSet(
+        m_rasterDescSets[static_cast<int>(bindingInfo.layoutType)]);
 }
 
 
@@ -262,8 +265,8 @@ bool kirana::viewport::vulkan::SceneData::createMeshes(bool isEditor)
         {
             // If there's already an existing MeshObject with same meshes,
             // create a new instance.
-            const uint32_t instanceIndex =
-                static_cast<uint32_t>(currMeshObjects[foundMeshObjIndex].instances.size());
+            const uint32_t instanceIndex = static_cast<uint32_t>(
+                currMeshObjects[foundMeshObjIndex].instances.size());
             currMeshObjects[foundMeshObjIndex].instances.emplace_back(
                 InstanceData{instanceIndex, renderable.object->transform,
                              &renderable.viewportVisible,
@@ -384,7 +387,7 @@ kirana::viewport::vulkan::SceneData::SceneData(
     m_cameraChangeListener = m_scene.addOnCameraChangeEventListener(
         [&]() { this->onCameraChanged(); });
 
-    createEditorMaterials();
+    createMaterials(true);
     m_isInitialized = createMeshes(true);
     if (m_scene.isSceneLoaded())
         onSceneLoaded(true);
@@ -470,6 +473,12 @@ void kirana::viewport::vulkan::SceneData::setShadingType(
 {
     m_currentShadingType = type;
     onObjectChanged();
+}
+
+const std::vector<kirana::viewport::vulkan::Texture *>
+    &kirana::viewport::vulkan::SceneData::getTextures() const
+{
+    return m_materialManager->getTextures();
 }
 
 uint32_t kirana::viewport::vulkan::SceneData::getCurrentMaterialIndex(

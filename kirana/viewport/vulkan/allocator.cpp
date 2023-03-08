@@ -194,6 +194,8 @@ bool kirana::viewport::vulkan::Allocator::allocateImage(
             "GPU_READ_ONLY. Either set it to GPU_WRITEABLE or WRITEABLE");
         return false;
     }
+    if (data != nullptr)
+        imageCreateInfo.usage |= vk::ImageUsageFlagBits::eTransferDst;
 
     vma::AllocationCreateFlags createFlags;
     switch (allocationType)

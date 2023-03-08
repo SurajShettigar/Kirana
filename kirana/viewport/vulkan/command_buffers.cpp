@@ -205,15 +205,14 @@ void kirana::viewport::vulkan::CommandBuffers::copyBufferToImage(
     const std::vector<vk::BufferImageCopy> &regions, uint32_t index) const
 {
     // Transition image layout to something optimal for transferring pixel data.
-    createImageMemoryBarrier(vk::PipelineStageFlagBits::eAllCommands,
-                             vk::PipelineStageFlagBits::eAllCommands, {},
-                             vk::ImageLayout::eUndefined,
-                             vk::ImageLayout::eTransferDstOptimal, dstImage,
-                             dstSubRR);
-    m_current[index].copyBufferToImage(srcBuffer, dstImage, dstImageLayout,
-                                       regions);
+    createImageMemoryBarrier(
+        vk::PipelineStageFlagBits::eTopOfPipe,
+        vk::PipelineStageFlagBits::eTransfer, {}, vk::ImageLayout::eUndefined,
+        vk::ImageLayout::eTransferDstOptimal, dstImage, dstSubRR);
+    m_current[index].copyBufferToImage(
+        srcBuffer, dstImage, vk::ImageLayout::eTransferDstOptimal, regions);
     // Transition image layout to the final layout.
-    createImageMemoryBarrier(vk::PipelineStageFlagBits::eAllCommands,
+    createImageMemoryBarrier(vk::PipelineStageFlagBits::eTransfer,
                              vk::PipelineStageFlagBits::eAllCommands, {},
                              vk::ImageLayout::eTransferDstOptimal,
                              dstImageLayout, dstImage, dstSubRR);

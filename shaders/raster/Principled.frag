@@ -30,13 +30,21 @@ layout (set = 0, binding = 1) uniform _WorldData {
     WorldData w;
 } worldBuffer;
 
+layout (buffer_reference) readonly buffer MaterialData {
+    PrincipledData p[];
+};
+
+layout (set = 1, binding = 0) uniform sampler2D textures[];
+
 layout (location = 0) out vec4 outFragColor;
 
 layout (location = 0) in _VSIn {
     vec3 worldPosition;
     vec3 worldNormal;
     vec3 viewDirection;
-    PrincipledData matData;
+    vec2 texCoords;
+    flat uint64_t matBufferAdd;
+    flat uint matDataIndex;
 } VSIn;
 
 // Based on Disney BRDF.
@@ -88,6 +96,8 @@ vec3 principledBRDF(in PrincipledData matData, vec3 lightDirection, vec3 normal,
     float f90 = 1.0;
 
     vec3 diffuseColor = (1.0 - matData.metallic) * matData.color.rgb;
+    if (matData.baseMap > -1)
+    diffuseColor = texture(textures[uint(matData.baseMap)], VSIn.texCoords).rgb * diffuseColor;
 
     vec3 f_specular = F_Schlick(LoH, f0, f90) * V_SmithGGXCorrelated(NoV, NoL, roughness) * NDF_GGX(NoH, roughness);
     vec3 f_diffuse = diffuseColor * F_Lambert();
@@ -95,11 +105,21 @@ vec3 principledBRDF(in PrincipledData matData, vec3 lightDirection, vec3 normal,
     return f_diffuse + f_specular;
 }
 
+vec3 getEmissiveRadiance(in PrincipledData matData)
+{
+    vec3 eColor = matData.emissiveMap > -1
+    ? texture(textures[uint(matData.emissiveMap)], VSIn.texCoords).rgb
+    : matData.emissiveColor.rgb;
+    return eColor * matData.emissiveIntensity;
+}
+
 void main() {
+
+    PrincipledData matData = MaterialData(VSIn.matBufferAdd).p[VSIn.matDataIndex];
     vec3 lightDir = - normalize(worldBuffer.w.sunDirection);
     vec3 viewDir = normalize(VSIn.viewDirection);
-    vec3 brdf = principledBRDF(VSIn.matData, lightDir, VSIn.worldNormal, viewDir);
+    vec3 brdf = principledBRDF(matData, lightDir, VSIn.worldNormal, viewDir);
     vec3 light = worldBuffer.w.sunColor.rgb * worldBuffer.w.sunIntensity * max(0.0, dot(VSIn.worldNormal, lightDir));
-    vec3 radiance = VSIn.matData.emissiveColor.rgb * VSIn.matData.emissiveIntensity + brdf * light;
+    vec3 radiance = getEmissiveRadiance(matData) + brdf * light;
     outFragColor = vec4(radiance, 1.0f);
 }

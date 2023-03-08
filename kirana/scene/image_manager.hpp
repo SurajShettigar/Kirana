@@ -1,9 +1,5 @@
-#ifndef KIRANA_SCENE_TEXTURE_MANAGER_HPP
-#define KIRANA_SCENE_TEXTURE_MANAGER_HPP
-
-#include <vector>
-#include <unordered_map>
-#include <memory>
+#ifndef KIRANA_SCENE_IMAGE_MANAGER_HPP
+#define KIRANA_SCENE_IMAGE_MANAGER_HPP
 
 #include "image.hpp"
 
@@ -13,7 +9,6 @@ namespace kirana::scene
 {
 class ImageManager
 {
-
   public:
     ImageManager(const ImageManager &textureManager) = delete;
 
@@ -23,21 +18,19 @@ class ImageManager
         return instance;
     }
 
-    [[nodiscard]] inline const Image *getImage(uint32_t index) const
+    [[nodiscard]] inline Image *getImage(uint32_t index)
     {
         return index < m_images.size() ? m_images[index].get() : nullptr;
     }
 
-    [[nodiscard]] inline const Image *getImage(
-        const std::string &path) const
+    [[nodiscard]] inline Image *getImage(const std::string &path)
     {
         return m_imageIndexTable.find(path) != m_imageIndexTable.end()
                    ? getImage(m_imageIndexTable.at(path))
                    : nullptr;
     }
 
-    int addImage(const std::string &filepath,
-                   const std::string &name = "");
+    int addImage(const std::string &filepath, const std::string &name = "", const ImageProperties &properties = {});
 
     void removeImage(uint32_t index)
     {
@@ -64,4 +57,4 @@ class ImageManager
 };
 } // namespace kirana::scene
 
-#endif // KIRANA_SCENE_TEXTURE_MANAGER_HPP
+#endif // KIRANA_SCENE_IMAGE_MANAGER_HPP
