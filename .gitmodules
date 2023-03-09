@@ -12,3 +12,7 @@
 	path = external/spdlog
 	url = https://github.com/gabime/spdlog.git
 	branch = v1.x
+[submodule "external/lz4"]
+	path = external/lz4
+	url = https://github.com/lz4/lz4.git
+	branch = release

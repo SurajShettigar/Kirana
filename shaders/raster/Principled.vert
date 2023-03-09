@@ -3,37 +3,25 @@
 
 #include "base_vert.glsl"
 
-struct PrincipledData {
-    vec4 color;
-    float subSurface;
-    float metallic;
-    float specular;
-    float specularTint;
-    float roughness;
-    float anisotropic;
-    float sheen;
-    float sheenTint;
-    float clearCoat;
-    float clearCoatGloss;
-    float transmission;
-    float ior;
-};
-
-layout (buffer_reference) readonly buffer MaterialData {
-    PrincipledData p[];
-};
-
-layout (location = 0) out vec4 outColor;
-layout (location = 1) out vec3 outWorldNormal;
-layout (location = 2) out vec3 outCamPos;
+layout (location = 0) out _VSOut {
+    vec3 worldPosition;
+    vec3 worldNormal;
+    vec3 worldTangent;
+    vec3 worldBitangent;
+    vec3 viewDirection;
+    vec2 texCoords;
+    flat uint64_t matBufferAdd;
+    flat uint matDataIndex;
+} VSOut;
 
 void main() {
-    MaterialData mat = MaterialData(pushConstants.p.materialDataBufferAddress);
-    PrincipledData principled = mat.p[pushConstants.p.materialDataIndex];
+    gl_Position = getClipPosition();
 
-    gl_Position = getWorldPosition();
-
-    outColor = principled.color;
-    outWorldNormal = getWorldNormal();
-    outCamPos = camBuffer.c.position;
+    VSOut.worldPosition = getWorldPosition().xyz;
+    VSOut.worldNormal = getWorldNormal();
+    getCoordinateFrame(VSOut.worldNormal, VSOut.worldTangent, VSOut.worldBitangent);
+    VSOut.viewDirection = camBuffer.c.direction;
+    VSOut.texCoords = vTexCoords;
+    VSOut.matBufferAdd = pushConstants.p.materialDataBufferAddress;
+    VSOut.matDataIndex = uint(pushConstants.p.materialDataIndex);
 }

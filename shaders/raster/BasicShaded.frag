@@ -17,7 +17,6 @@ void main() {
     vec3 color = inColor.rgb;
     color += worldBuffer.w.ambientColor.rgb;
     color *= max(dot(inWorldNormal, normalize(- worldBuffer.w.sunDirection)), 0.075f)
-    * worldBuffer.w.sunColor.rgb
-    * worldBuffer.w.sunIntensity;
+    * worldBuffer.w.sunColor.rgb;
     outFragColor = vec4(color, 1.0);
 }

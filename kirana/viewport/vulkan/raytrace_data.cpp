@@ -23,25 +23,35 @@ void kirana::viewport::vulkan::RaytraceData::bindDescriptorSets(
     DescriptorBindingInfo bindingInfo =
         DescriptorSetLayout::getBindingInfoForData(
             DescriptorBindingDataType::CAMERA, ShadingPipeline::RAYTRACE);
-
     m_descSets[static_cast<int>(bindingInfo.layoutType)].bindBuffer(
         bindingInfo, sceneData.getCameraBuffer());
 
     bindingInfo = DescriptorSetLayout::getBindingInfoForData(
         DescriptorBindingDataType::WORLD, ShadingPipeline::RAYTRACE);
-
     m_descSets[static_cast<int>(bindingInfo.layoutType)].bindBuffer(
         bindingInfo, sceneData.getWorldDataBuffer());
 
     bindingInfo = DescriptorSetLayout::getBindingInfoForData(
-        DescriptorBindingDataType::OBJECT_DATA, ShadingPipeline::RAYTRACE);
+        DescriptorBindingDataType::TEXTURE_DATA, ShadingPipeline::RAYTRACE);
+    m_descSets[static_cast<int>(bindingInfo.layoutType)].bindTextures(
+        bindingInfo, sceneData.getTextures());
 
+    bindingInfo = DescriptorSetLayout::getBindingInfoForData(
+        DescriptorBindingDataType::OBJECT_DATA, ShadingPipeline::RAYTRACE);
     m_descSets[static_cast<int>(bindingInfo.layoutType)].bindBuffer(
         bindingInfo, sceneData.getObjectDataBuffer());
+
+
 }
 
 bool kirana::viewport::vulkan::RaytraceData::createRenderTarget()
 {
+    if (m_renderTarget != nullptr)
+    {
+        delete m_renderTarget;
+        m_renderTarget = nullptr;
+    }
+
     m_renderTarget = new Texture(
         m_device, m_allocator,
         Texture::Properties{{m_swapchain->getSurfaceResolution()[0],
@@ -50,16 +60,15 @@ bool kirana::viewport::vulkan::RaytraceData::createRenderTarget()
                             vk::ImageUsageFlagBits::eStorage |
                                 vk::ImageUsageFlagBits::eTransferSrc,
                             vk::ImageAspectFlagBits::eColor,
-                            true,
                             vk::ImageLayout::eGeneral},
-        "Raytrace_Target");
+        nullptr, "Raytrace_Target");
 
     if (m_renderTarget->isInitialized)
     {
         const auto &bindingInfo = DescriptorSetLayout::getBindingInfoForData(
             DescriptorBindingDataType::RAYTRACE_RENDER_TARGET,
             ShadingPipeline::RAYTRACE);
-        m_descSets[static_cast<int>(bindingInfo.layoutType)].bindImage(
+        m_descSets[static_cast<int>(bindingInfo.layoutType)].bindTexture(
             bindingInfo, *m_renderTarget);
     }
 
@@ -154,11 +163,9 @@ void kirana::viewport::vulkan::RaytraceData::updateDescriptors(int setIndex)
 
 void kirana::viewport::vulkan::RaytraceData::rebuildRenderTarget()
 {
-    if (m_renderTarget != nullptr)
-    {
-        delete m_renderTarget;
-        m_renderTarget = nullptr;
-    }
+    if (!m_isInitialized)
+        return;
+
     bool reinit = createRenderTarget();
     if (reinit)
     {

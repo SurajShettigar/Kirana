@@ -3,6 +3,7 @@
 #include "device.hpp"
 #include <vk_mem_alloc.hpp>
 #include "allocator.hpp"
+#include "texture_manager.hpp"
 #include "shader.hpp"
 #include "raster_pipeline.hpp"
 #include "raytrace_pipeline.hpp"
@@ -27,6 +28,7 @@ vk::Format kirana::viewport::vulkan::MaterialManager::
         case scene::VertexDataFormat::INT:
             return vk::Format::eR32Sint;
         case scene::VertexDataFormat::FLOAT:
+        default:
             return vk::Format::eR32Sfloat;
         }
     }
@@ -37,6 +39,7 @@ vk::Format kirana::viewport::vulkan::MaterialManager::
         case scene::VertexDataFormat::INT:
             return vk::Format::eR32G32Sint;
         case scene::VertexDataFormat::FLOAT:
+        default:
             return vk::Format::eR32G32Sfloat;
         }
     }
@@ -47,6 +50,7 @@ vk::Format kirana::viewport::vulkan::MaterialManager::
         case scene::VertexDataFormat::INT:
             return vk::Format::eR32G32B32Sint;
         case scene::VertexDataFormat::FLOAT:
+        default:
             return vk::Format::eR32G32B32Sfloat;
         }
     }
@@ -57,6 +61,7 @@ vk::Format kirana::viewport::vulkan::MaterialManager::
         case scene::VertexDataFormat::INT:
             return vk::Format::eR32G32B32A32Sint;
         case scene::VertexDataFormat::FLOAT:
+        default:
             return vk::Format::eR32G32B32A32Sfloat;
         }
     }
@@ -176,16 +181,18 @@ int kirana::viewport::vulkan::MaterialManager::createPipeline(
 }
 
 
-int kirana::viewport::vulkan::MaterialManager::copyMaterialDataToBuffer(const scene::Material &material)
+int kirana::viewport::vulkan::MaterialManager::copyMaterialDataToBuffer(
+    const scene::Material &material)
 {
     const auto &shaderName = material.getShaderName();
     auto &shaderDataBuffers = m_materialDataBuffers[shaderName];
 
     std::vector<uint8_t> matData;
-    material.getMaterialParameterData(&matData);
+    material.getParametersData(&matData);
+
     const size_t dataSize = matData.size();
 
-    if(dataSize == 0)
+    if (dataSize == 0)
         return -1;
 
     bool sizeExceeded =
@@ -220,6 +227,7 @@ int kirana::viewport::vulkan::MaterialManager::copyMaterialDataToBuffer(const sc
         shaderDataBuffers.emplace_back(std::move(buffer));
     }
 
+
     auto &buffer = shaderDataBuffers.back();
     m_allocator->copyDataToBuffer(buffer.buffer, matData.data(),
                                   buffer.currentSize, dataSize);
@@ -250,9 +258,33 @@ int kirana::viewport::vulkan::MaterialManager::createSBT(
     return static_cast<int>(m_SBTs.size() - 1);
 }
 
+
+void kirana::viewport::vulkan::MaterialManager::onMaterialChanged(
+    const std::string &materialName,
+    const scene::MaterialProperties &properties, const std::string &param,
+    const std::any &value)
+{
+    const Material &mat = m_materials[m_materialIndexTable.at(materialName)];
+    if (mat.dataBufferIndex > -1 && mat.materialDataIndex > -1)
+    {
+        auto &buffer = m_materialDataBuffers.at(
+            m_materialShaderTable[materialName])[mat.dataBufferIndex];
+
+        std::vector<uint8_t> matData;
+        properties.getParametersData(&matData);
+        const size_t dataSize = matData.size();
+
+        // TODO: Copy only changed parameter instead of copying entire values.
+        m_allocator->copyDataToBuffer(buffer.buffer, matData.data(),
+                                      mat.materialDataIndex * dataSize,
+                                      dataSize);
+    }
+}
+
 kirana::viewport::vulkan::MaterialManager::MaterialManager(
     const Device *const device, const Allocator *const allocator)
-    : m_device{device}, m_allocator{allocator}
+    : m_device{device}, m_allocator{allocator},
+      m_textureManager{new TextureManager(m_device, m_allocator)}
 {
 }
 
@@ -260,7 +292,7 @@ kirana::viewport::vulkan::MaterialManager::~MaterialManager()
 {
     for (auto &m : m_materialDataBuffers)
         for (auto &b : m.second)
-                m_allocator->free(b.buffer);
+            m_allocator->free(b.buffer);
     for (auto &s : m_SBTs)
     {
         if (s)
@@ -285,6 +317,11 @@ kirana::viewport::vulkan::MaterialManager::~MaterialManager()
             s = nullptr;
         }
     }
+    if (m_textureManager)
+    {
+        delete m_textureManager;
+        m_textureManager = nullptr;
+    }
 }
 
 uint32_t kirana::viewport::vulkan::MaterialManager::addMaterial(
@@ -300,8 +337,7 @@ uint32_t kirana::viewport::vulkan::MaterialManager::addMaterial(
     m_materialShaderTable[materialName] = material.getShaderName();
 
     Material m{};
-    m.dataBufferIndex =
-        copyMaterialDataToBuffer(material);
+    m.dataBufferIndex = copyMaterialDataToBuffer(material);
     m.materialDataIndex =
         m.dataBufferIndex > -1
             ? static_cast<int>(
@@ -346,6 +382,15 @@ uint32_t kirana::viewport::vulkan::MaterialManager::addMaterial(
                     : -1;
         }
     }
+    for (const auto &i : material.getImages())
+        m_textureManager->addTexture(i);
+
+    m.materialChangeListener = material.addOnParameterChangeEventListener(
+        [&](const scene::MaterialProperties &properties,
+            const std::string &param, const std::any &value) {
+            onMaterialChanged(materialName, properties, param, value);
+        });
+
     m_materials.emplace_back(m);
     m_materialIndexTable[materialName] =
         static_cast<uint32_t>(m_materials.size() - 1);
@@ -366,4 +411,10 @@ vk::DeviceAddress kirana::viewport::vulkan::MaterialManager::
         m_materialDataBuffers.at(shader->name)[mat.dataBufferIndex];
 
     return buffer.buffer.address;
+}
+
+const std::vector<kirana::viewport::vulkan::Texture *>
+    &kirana::viewport::vulkan::MaterialManager::getTextures() const
+{
+    return m_textureManager->getTextures();
 }

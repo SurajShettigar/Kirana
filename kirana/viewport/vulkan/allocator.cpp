@@ -34,6 +34,27 @@ void kirana::viewport::vulkan::Allocator::displayMemoryInfo()
     }
 }
 
+void kirana::viewport::vulkan::Allocator::transitionImageLayout(
+    const vk::Image &image, const vk::ImageSubresourceRange &subresourceRange,
+    vk::ImageLayout oldLayout, vk::ImageLayout newLayout) const
+{
+    // TODO: Find a better way to transition layout
+    // Transition the image layout from undefined.
+    m_device->current.resetFences(m_commandFence);
+    m_commandPool->reset();
+    m_commandBuffers->begin();
+    m_commandBuffers->createImageMemoryBarrier(
+        vk::PipelineStageFlagBits::eAllCommands,
+        vk::PipelineStageFlagBits::eAllCommands, {}, oldLayout, newLayout,
+        image, subresourceRange);
+    m_commandBuffers->end();
+    m_device->transferSubmit(m_commandBuffers->current, m_commandFence);
+    VK_HANDLE_RESULT(
+        m_device->current.waitForFences(
+            m_commandFence, false, constants::VULKAN_COPY_BUFFER_WAIT_TIMEOUT),
+        "Failed to wait for image layout transition fence")
+}
+
 kirana::viewport::vulkan::Allocator::Allocator(const Instance *instance,
                                                const Device *device)
     : m_isInitialized{false}, m_instance{instance}, m_device{device}
@@ -159,11 +180,23 @@ bool kirana::viewport::vulkan::Allocator::allocateBuffer(
 }
 
 bool kirana::viewport::vulkan::Allocator::allocateImage(
-    AllocateImage *image, vk::ImageCreateInfo imageCreateInfo,
+    AllocatedImage *image, vk::ImageCreateInfo imageCreateInfo,
     vk::ImageLayout layout, vk::ImageSubresourceRange subresourceRange,
-    AllocationType allocationType, const void *data, size_t dataOffset,
-    size_t dataSize) const
+    AllocationType allocationType, const void *data, size_t dataSize,
+    std::array<uint32_t, 3> imageOffset,
+    std::array<uint32_t, 3> imageSize) const
 {
+    if (data != nullptr && allocationType == AllocationType::GPU_READ_ONLY)
+    {
+        Logger::get().log(
+            constants::LOG_CHANNEL_VULKAN, LogSeverity::error,
+            "You cannot copy data to the image if the allocation type is "
+            "GPU_READ_ONLY. Either set it to GPU_WRITEABLE or WRITEABLE");
+        return false;
+    }
+    if (data != nullptr)
+        imageCreateInfo.usage |= vk::ImageUsageFlagBits::eTransferDst;
+
     vma::AllocationCreateFlags createFlags;
     switch (allocationType)
     {
@@ -181,38 +214,21 @@ bool kirana::viewport::vulkan::Allocator::allocateImage(
         createFlags = vma::AllocationCreateFlagBits::eHostAccessRandom |
                       vma::AllocationCreateFlagBits::eMapped;
     }
-    vma::AllocationCreateInfo allocCreateInfo(createFlags,
-                                              vma::MemoryUsage::eAuto);
+    const vma::AllocationCreateInfo allocCreateInfo(createFlags,
+                                                    vma::MemoryUsage::eAuto);
     try
     {
-        std::pair<vk::Image, vma::Allocation> imgData =
+        const std::pair<vk::Image, vma::Allocation> imgData =
             m_current->createImage(imageCreateInfo, allocCreateInfo);
         image->image = std::make_unique<vk::Image>(imgData.first);
         image->allocation = std::make_unique<vma::Allocation>(imgData.second);
 
-        // TODO: Add a better way to transition image layouts.
-        // Transition the image layout from undefined.
-        VK_HANDLE_RESULT(m_device->current.waitForFences(
-                             m_commandFence, true,
-                             constants::VULKAN_COPY_BUFFER_WAIT_TIMEOUT),
-                         "Failed to wait for copy fence")
-        m_device->current.resetFences(m_commandFence);
-        m_commandPool->reset();
-        m_commandBuffers->begin();
-        m_commandBuffers->createImageMemoryBarrier(
-            vk::PipelineStageFlagBits::eAllCommands,
-            vk::PipelineStageFlagBits::eAllCommands, {},
-            vk::ImageLayout::eUndefined, layout, *image->image,
-            subresourceRange);
-        m_commandBuffers->end();
-        m_device->transferSubmit(m_commandBuffers->current, m_commandFence);
-        VK_HANDLE_RESULT(m_device->current.waitForFences(
-                             m_commandFence, true,
-                             constants::VULKAN_COPY_BUFFER_WAIT_TIMEOUT),
-                         "Failed to wait for copy fence")
-
-        // TODO: Add data copy to image
-
+        if (data == nullptr)
+            transitionImageLayout(*image->image, subresourceRange,
+                                  vk::ImageLayout::eUndefined, layout);
+        else
+            return copyDataToImage(*image, layout, subresourceRange, data,
+                                   dataSize, imageOffset, imageSize);
         return true;
     }
     catch (...)
@@ -279,6 +295,55 @@ bool kirana::viewport::vulkan::Allocator::copyDataToBuffer(
     }
     return false;
 }
+bool kirana::viewport::vulkan::Allocator::copyDataToImage(
+    const AllocatedImage &image, vk::ImageLayout layout,
+    vk::ImageSubresourceRange subresourceRange, const void *data,
+    size_t dataSize, std::array<uint32_t, 3> imageOffset,
+    std::array<uint32_t, 3> imageSize) const
+{
+    vma::AllocationInfo stagingAllocInfo{};
+    auto stagingBufferData = m_current->createBuffer(
+        vk::BufferCreateInfo{{},
+                             dataSize,
+                             vk::BufferUsageFlagBits::eTransferSrc},
+        vma::AllocationCreateInfo{
+            vma::AllocationCreateFlagBits::eHostAccessSequentialWrite |
+                vma::AllocationCreateFlagBits::eMapped,
+            vma::MemoryUsage::eAuto},
+        &stagingAllocInfo);
+
+    memcpy(stagingAllocInfo.pMappedData, data, dataSize);
+    m_current->flushAllocation(stagingBufferData.second, 0, VK_WHOLE_SIZE);
+
+
+    const vk::BufferImageCopy copyRegion{
+        0,
+        0,
+        0,
+        vk::ImageSubresourceLayers{
+            subresourceRange.aspectMask, subresourceRange.baseMipLevel,
+            subresourceRange.baseArrayLayer, subresourceRange.layerCount},
+        vk::Offset3D{static_cast<int32_t>(imageOffset[0]),
+                     static_cast<int32_t>(imageOffset[1]),
+                     static_cast<int32_t>(imageOffset[2])},
+        vk::Extent3D{imageSize[0], imageSize[1], imageSize[2]}};
+
+    // Copy pixel data to image from the staging buffer.
+    m_device->current.resetFences(m_commandFence);
+    m_commandPool->reset();
+    m_commandBuffers->begin();
+    m_commandBuffers->copyBufferToImage(stagingBufferData.first, *image.image,
+                                        subresourceRange, layout, {copyRegion});
+    m_commandBuffers->end();
+    m_device->transferSubmit(m_commandBuffers->current, m_commandFence);
+    VK_HANDLE_RESULT(
+        m_device->current.waitForFences(
+            m_commandFence, false, constants::VULKAN_COPY_BUFFER_WAIT_TIMEOUT),
+        "Failed to wait for image pixel data write fence")
+
+    m_current->destroyBuffer(stagingBufferData.first, stagingBufferData.second);
+    return true;
+}
 
 bool kirana::viewport::vulkan::Allocator::copyBuffer(
     const vk::Buffer &stagingBuffer, const vk::Buffer &destBuffer,
@@ -308,7 +373,8 @@ void kirana::viewport::vulkan::Allocator::free(
         m_current->destroyBuffer(*buffer.buffer, *buffer.allocation);
 }
 
-void kirana::viewport::vulkan::Allocator::free(const AllocateImage &image) const
+void kirana::viewport::vulkan::Allocator::free(
+    const AllocatedImage &image) const
 {
     if (image.image && image.allocation)
         m_current->destroyImage(*image.image, *image.allocation);

@@ -13,6 +13,7 @@ class DescriptorSet
   private:
     vk::DescriptorSet m_current;
     const DescriptorSetLayout *m_layout = nullptr;
+    mutable std::vector<vk::DescriptorImageInfo> m_textureDescInfos;
     mutable std::vector<vk::WriteDescriptorSetAccelerationStructureKHR>
         m_accelStructWrites;
     mutable std::vector<vk::WriteDescriptorSet> m_writes;
@@ -68,12 +69,14 @@ class DescriptorSet
     {
         m_writes.clear();
         m_accelStructWrites.clear();
+        m_textureDescInfos.clear();
     }
 
     bool bindBuffer(const DescriptorBindingInfo &bindPoint,
                     const AllocatedBuffer &buffer);
-    bool bindImage(const DescriptorBindingInfo &bindPoint,
-                   const Texture &image);
+    bool bindTexture(const DescriptorBindingInfo &bindPoint,
+                   const Texture &texture);
+    bool bindTextures(const DescriptorBindingInfo &bindPoint, const std::vector<Texture *> &textures);
     bool bindAccelerationStructure(const DescriptorBindingInfo &bindPoint,
                                    const AccelerationStructure &accelStruct);
 };

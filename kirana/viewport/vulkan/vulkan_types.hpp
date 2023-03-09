@@ -121,7 +121,7 @@ struct BatchBufferData
 /**
  * Holds an image allocated in memory by VMA.
  */
-struct AllocateImage
+struct AllocatedImage
 {
     std::unique_ptr<vk::Image> image;
     std::unique_ptr<vma::Allocation> allocation;
@@ -130,7 +130,9 @@ struct AllocateImage
 enum class DescriptorLayoutType
 {
     GLOBAL = 0,
-    OBJECT = 1
+    MATERIAL = 1,
+    OBJECT = 2,
+    DESCRIPTOR_LAYOUT_TYPE_MAX = 3
 };
 
 enum class DescriptorBindingDataType
@@ -140,7 +142,9 @@ enum class DescriptorBindingDataType
     RAYTRACE_ACCEL_STRUCT = 2,
     RAYTRACE_RENDER_TARGET = 3,
     MATERIAL_DATA = 4,
-    OBJECT_DATA = 5,
+    TEXTURE_DATA = 5,
+    OBJECT_DATA = 6,
+    DESCRIPTOR_BINDING_DATA_TYPE_MAX = 7
 };
 
 struct DescriptorBindingInfo
@@ -181,7 +185,6 @@ struct MeshData
 {
     uint32_t index;
     std::string name;
-    bool render;
     uint32_t vertexCount;
     uint32_t indexCount;
     int vertexBufferIndex;
@@ -189,8 +192,19 @@ struct MeshData
     uint32_t firstIndex;
     uint32_t vertexOffset;
     uint32_t materialIndex;
+};
+
+struct MeshObjectData
+{
+    uint32_t index;
+    std::string name;
+    std::vector<MeshData> meshes;
     std::vector<InstanceData> instances;
 
+    inline uint32_t getGlobalMeshIndex(uint32_t meshIndex) const
+    {
+        return index + meshes[meshIndex].index;
+    }
     inline uint32_t getGlobalInstanceIndex(uint32_t instanceIndex) const
     {
         return index + instances[instanceIndex].index;
@@ -226,9 +240,6 @@ struct PushConstantRaster
     uint64_t indexBufferAddress;
     uint64_t materialDataBufferAddress;
     int materialDataIndex;
-    uint32_t objectIndex;
-    uint32_t firstIndex;
-    uint32_t vertexOffset;
 };
 
 struct PushConstantRaytrace

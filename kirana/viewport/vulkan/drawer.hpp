@@ -15,7 +15,7 @@ class Drawer
 {
   private:
     bool m_isInitialized = false;
-    uint64_t m_currentFrameNumber = 0;
+    uint32_t m_currentFrameNumber = 0;
 
     const Device *const m_device;
     const Swapchain *m_swapchain;

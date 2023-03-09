@@ -68,11 +68,15 @@ bool kirana::viewport::vulkan::PipelineLayout::getDefaultPipelineLayout(
     const Device *const device, vulkan::ShadingPipeline shadingPipeline,
     const PipelineLayout *&layout)
 {
-    std::vector<const DescriptorSetLayout *> descLayouts(2);
+    // TODO: Find a better way to set descriptor count for texture samplers.
+    std::vector<const DescriptorSetLayout *> descLayouts(3);
     DescriptorSetLayout::getDefaultDescriptorLayout(
         device, DescriptorLayoutType::GLOBAL, shadingPipeline, descLayouts[0]);
     DescriptorSetLayout::getDefaultDescriptorLayout(
-        device, DescriptorLayoutType::OBJECT, shadingPipeline, descLayouts[1]);
+        device, DescriptorLayoutType::MATERIAL, shadingPipeline,
+        descLayouts[1]);
+    DescriptorSetLayout::getDefaultDescriptorLayout(
+        device, DescriptorLayoutType::OBJECT, shadingPipeline, descLayouts[2]);
 
     std::vector<const PushConstantBase *> pushConstants(1);
     switch (shadingPipeline)

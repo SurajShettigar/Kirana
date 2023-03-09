@@ -30,8 +30,10 @@ void kirana::scene::ViewportScene::initializeEditorObjects()
         static_cast<uint32_t>(sizeof(scene::INDEX_TYPE));
     for (const auto &m : m_grid->getMeshes())
     {
-        m_editorSceneInfo.numVertices += m->getVertices().size();
-        m_editorSceneInfo.numIndices += m->getIndices().size();
+        m_editorSceneInfo.numVertices +=
+            static_cast<uint32_t>(m->getVertices().size());
+        m_editorSceneInfo.numIndices +=
+            static_cast<uint32_t>(m->getIndices().size());
         m_editorSceneInfo.numMeshes++;
     }
     m_editorSceneInfo.totalVertexSize =
@@ -54,7 +56,8 @@ void kirana::scene::ViewportScene::onSceneLoaded()
         for (uint32_t i = 0; i < sceneObjects.size(); i++)
         {
             const std::string &name = sceneObjects[i]->getName();
-            m_objectIndexTable[name] = m_sceneRenderables.size();
+            m_objectIndexTable[name] =
+                static_cast<uint32_t>(m_sceneRenderables.size());
             m_objectSelectionTable[name] = false;
             m_sceneRenderables.emplace_back(
                 Renderable{sceneObjects[i].get(), true, true, true, false});
@@ -65,8 +68,10 @@ void kirana::scene::ViewportScene::onSceneLoaded()
             static_cast<uint32_t>(sizeof(scene::INDEX_TYPE));
         for (const auto &m : m_currentScene.getMeshes())
         {
-            m_sceneInfo.numVertices += m->getVertices().size();
-            m_sceneInfo.numIndices += m->getIndices().size();
+            m_sceneInfo.numVertices +=
+                static_cast<uint32_t>(m->getVertices().size());
+            m_sceneInfo.numIndices +=
+                static_cast<uint32_t>(m->getIndices().size());
         }
         m_sceneInfo.totalVertexSize =
             static_cast<size_t>(m_sceneInfo.vertexSize) *

@@ -36,6 +36,12 @@ uint32_t kirana::scene::SceneImporter::getPostProcessMask(
         mask |= aiProcess_OptimizeMeshes;
     if(importSettings.generateBoundingBoxes)
         mask |= aiProcess_GenBoundingBoxes;
+    if(importSettings.generateUVs)
+        mask |= aiProcess_GenUVCoords;
+    if(importSettings.transformUVs)
+        mask |= aiProcess_TransformUVCoords;
+    if(importSettings.flipUVs)
+        mask |= aiProcess_FlipUVs;
 
     return mask;
 }
@@ -56,6 +62,6 @@ bool kirana::scene::SceneImporter::loadSceneFromFile(
         return false;
     }
 
-    scene->initFromAiScene(aiScene);
+    scene->initFromAiScene(path, aiScene);
     return true;
 }

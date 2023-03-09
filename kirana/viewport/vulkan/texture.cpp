@@ -1,27 +1,13 @@
 #include "texture.hpp"
 
 #include "device.hpp"
-#include <utility>
 #include <vk_mem_alloc.hpp>
 #include "allocator.hpp"
+#include "texture_sampler.hpp"
 #include "vulkan_utils.hpp"
 
+#include <utility>
 
-vk::Sampler kirana::viewport::vulkan::Texture::getSampler() const
-{
-    // TODO: Add support for different type of samplers.
-    const vk::SamplerCreateInfo createInfo{
-        {},
-        vk::Filter::eNearest,
-        vk::Filter::eNearest,
-        vk::SamplerMipmapMode::eNearest,
-        vk::SamplerAddressMode::eRepeat,
-        vk::SamplerAddressMode::eRepeat,
-        vk::SamplerAddressMode::eRepeat,
-    };
-
-    return m_device->current.createSampler(createInfo);
-}
 
 bool kirana::viewport::vulkan::Texture::createImageView()
 {
@@ -33,9 +19,9 @@ bool kirana::viewport::vulkan::Texture::createImageView()
     {
         m_imageView = m_device->current.createImageView(imgViewCreateInfo);
         m_device->setDebugObjectName(m_imageView, "ImageView_" + m_name);
-        if (m_properties.generateDescriptorInfo)
-            m_descInfo = vk::DescriptorImageInfo{getSampler(), m_imageView,
-                                                 m_properties.layout};
+        m_descInfo = vk::DescriptorImageInfo{
+            m_sampler == nullptr ? nullptr : m_sampler->current, m_imageView,
+            m_properties.layout};
         return true;
     }
     catch (...)
@@ -48,10 +34,13 @@ bool kirana::viewport::vulkan::Texture::createImageView()
 kirana::viewport::vulkan::Texture::Texture(const Device *const device,
                                            const Allocator *const allocator,
                                            const Properties &properties,
-                                           std::string name,
-                                           const void *pixelData)
+                                           const TextureSampler *const sampler,
+                                           std::string name, uint32_t index,
+                                           const void *pixelData,
+                                           size_t pixelDataSize)
     : m_isInitialized{false}, m_device{device}, m_allocator{allocator},
-      m_properties{properties}, m_name{std::move(name)}
+      m_properties{properties}, m_sampler{sampler}, m_name{std::move(name)},
+      m_index{index}
 {
     const vk::Extent3D extent(m_properties.size[0], m_properties.size[1],
                               m_properties.size[2]);
@@ -68,7 +57,10 @@ kirana::viewport::vulkan::Texture::Texture(const Device *const device,
     // TODO: Copy Pixel data if it exits to vk::Image
     allocated = m_allocator->allocateImage(
         &m_allocatedImage, imgCreateInfo, m_properties.layout,
-        m_subresourceRange, Allocator::AllocationType::GPU_READ_ONLY);
+        m_subresourceRange,
+        pixelData == nullptr ? Allocator::AllocationType::GPU_READ_ONLY
+                             : Allocator::AllocationType::GPU_WRITEABLE,
+        pixelData, pixelDataSize, {0, 0, 0}, m_properties.size);
     if (allocated)
     {
         m_image = *m_allocatedImage.image;
@@ -91,9 +83,11 @@ kirana::viewport::vulkan::Texture::Texture(const Device *const device,
 kirana::viewport::vulkan::Texture::Texture(const Device *device,
                                            const vk::Image &image,
                                            const Properties &properties,
-                                           std::string name)
+                                           const TextureSampler *const sampler,
+                                           std::string name, uint32_t index)
     : m_isInitialized{false}, m_device{device}, m_allocator{nullptr},
-      m_properties{properties}, m_name{std::move(name)}, m_image{image}
+      m_properties{properties}, m_sampler{sampler}, m_name{std::move(name)},
+      m_index{index}, m_image{image}
 {
     m_subresourceRange = vk::ImageSubresourceRange(m_properties.aspect, 0,
                                                    m_properties.numMipLevels, 0,
@@ -108,8 +102,6 @@ kirana::viewport::vulkan::Texture::~Texture()
 {
     if (m_device)
     {
-        if (m_descInfo.sampler)
-            m_device->current.destroySampler(m_descInfo.sampler);
         if (m_imageView)
             m_device->current.destroyImageView(m_imageView);
         if (m_allocator)
@@ -131,8 +123,7 @@ bool kirana::viewport::vulkan::Texture::createDepthTexture(
                                vk::ImageUsageFlagBits::eDepthStencilAttachment,
                                vk::ImageAspectFlagBits::eDepth |
                                    vk::ImageAspectFlagBits::eStencil,
-                               false,
                                vk::ImageLayout::eDepthStencilAttachmentOptimal},
-                    "Depth_Texture");
+                    nullptr, "Depth_Texture");
     return depthTexture->m_isInitialized;
 }

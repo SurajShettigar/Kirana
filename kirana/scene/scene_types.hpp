@@ -27,6 +27,7 @@ struct Vertex
     math::Vector3 position;
     alignas(16) math::Vector3 normal;
     alignas(16) math::Vector4 color;
+    math::Vector2 texCoords;
 
     /// Vertex attribute information to create vertex bindings.
     static std::vector<VertexInfo> getVertexInfo()
@@ -35,6 +36,7 @@ struct Vertex
             {VertexDataFormat::FLOAT, 3, offsetof(Vertex, position)},
             {VertexDataFormat::FLOAT, 3, offsetof(Vertex, normal)},
             {VertexDataFormat::FLOAT, 4, offsetof(Vertex, color)},
+            {VertexDataFormat::FLOAT, 2, offsetof(Vertex, texCoords)},
         };
     }
 
@@ -51,8 +53,8 @@ struct WorldData
 {
     math::Vector4 ambientColor{0.1f, 0.1f, 0.1f, 1.0f};
     math::Vector3 sunDirection{0.25f, -0.75f, -0.25f};
-    alignas(4) float sunIntensity{1.0f};
-    alignas(16) math::Vector4 sunColor{1.0f, 1.0f, 1.0f, 1.0f};
+    alignas(4) float sunIntensity{6.0f};
+    alignas(16) math::Vector4 sunColor{1.0f, 0.98f, 0.99f, 1.0f};
 };
 
 struct CameraData
@@ -100,10 +102,13 @@ struct SceneImportSettings
     bool optimizeMesh = true;
     bool preTransformVertices = false;
     bool generateBoundingBoxes = true;
+    bool generateUVs = true;
+    bool transformUVs = false;
+    bool flipUVs = false;
 };
 
 static const SceneImportSettings DEFAULT_SCENE_IMPORT_SETTINGS{
-    false, false, true, false, false, true, true, false, true};
+    false, false, true, false, false, true, true, false, true, true, true, true};
 
 } // namespace kirana::scene
 

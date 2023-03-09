@@ -25,8 +25,13 @@ static const uint64_t VULKAN_FRAME_SYNC_TIMEOUT = 1000000000; // 1 second
 static const uint64_t VULKAN_COPY_BUFFER_WAIT_TIMEOUT =
     10000000000; // 10 seconds
 static const uint16_t VULKAN_FRAME_OVERLAP_COUNT = 1;
-static const uint16_t VULKAN_DESCRIPTOR_SET_MAX_COUNT = 10;
-static const uint16_t VULKAN_DESCRIPTOR_DEFAULT_POOL_SIZE = 10;
+
+static const uint32_t VULKAN_DESCRIPTOR_DEFAULT_UNIFORM_BUFFER_POOL_SIZE = 4;
+static const uint32_t VULKAN_DESCRIPTOR_DEFAULT_STORAGE_BUFFER_POOL_SIZE = 4;
+static const uint32_t VULKAN_DESCRIPTOR_DEFAULT_ACCEL_STRUCT_POOL_SIZE = 1;
+static const uint32_t VULKAN_DESCRIPTOR_DEFAULT_STORAGE_IMAGE_POOL_SIZE = 1;
+static const uint32_t VULKAN_DESCRIPTOR_DEFAULT_SAMPLED_IMAGES_SIZE = 16384;
+
 static const uint64_t VULKAN_ACCELERATION_STRUCTURE_BATCH_SIZE_LIMIT =
     268435456; // 256 MB
 static const uint64_t VULKAN_VERTEX_BUFFER_BATCH_SIZE_LIMIT =
@@ -36,8 +41,8 @@ static const uint64_t VULKAN_INDEX_BUFFER_BATCH_SIZE_LIMIT =
 static const uint64_t VULKAN_MATERIAL_DATA_BUFFER_BATCH_SIZE_LIMIT =
     1048576; // 1 MB
 static const uint32_t VULKAN_MAX_IDLE_FRAME_COUNT = 0;
-static const uint32_t VULKAN_RAYTRACING_MAX_SAMPLES = 128;
-static const uint32_t VULKAN_RAYTRACING_AA_MULTIPLIER = 4;
+static const uint32_t VULKAN_RAYTRACING_MAX_SAMPLES = 512;
+static const uint32_t VULKAN_RAYTRACING_AA_MULTIPLIER = 8;
 static const uint32_t VULKAN_RAYTRACING_MAX_BOUNCES = 6;
 
 static const char *const VULKAN_SHADER_COMPUTE_EXTENSION = ".comp.spv";
@@ -71,12 +76,17 @@ static const char *const DEFAULT_SCENE_MATERIAL_SHADER_NAME =
 
 static const char *const DATA_DIR_PATH = DATA_DIR;
 //static const char *const DEFAULT_MODEL_NAME = "Quad_Model.fbx";
- static const char *const DEFAULT_MODEL_NAME = "Large_Model.fbx";
+// static const char *const DEFAULT_MODEL_NAME = "Large_Model.fbx";
+// static const char *const DEFAULT_MODEL_NAME = "Cornell_Box.fbx";
+ static const char *const DEFAULT_MODEL_NAME = "Prman_Swatch/Prman_Swatch.fbx";
+// static const char *const DEFAULT_MODEL_NAME = "DamagedHelmet/DamagedHelmet.gltf";
+//  static const char *const DEFAULT_MODEL_NAME = "FlightHelmet/FlightHelmet.gltf";
+
 
 static const float VIEWPORT_SELECTED_OBJECT_OUTLINE_WIDTH = 0.025f;
 static const std::array<float, 3> VIEWPORT_SELECTED_OBJECT_OUTLINE_COLOR = {
     1.0f, 1.0f, 1.0f};
-static const float VIEWPORT_CAMERA_MOUSE_SENSITIVITY = 6.0f;
+static const float VIEWPORT_CAMERA_MOUSE_SENSITIVITY = 10.0f;
 static const std::array<float, 3> VIEWPORT_CAMERA_DEFAULT_POSITION{0.0f, 4.0f,
                                                                    3.0f};
 static const float VIEWPORT_CAMERA_DEFAULT_Z_OFFSET{3.0f};

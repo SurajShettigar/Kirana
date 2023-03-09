@@ -9,17 +9,18 @@ kirana::scene::primitives::Plane::Plane(
 {
     m_name = "Plane";
     const std::vector<Vertex> vertices{
-        Vertex{math::Vector3{-0.5f, 0.0f, 0.5f},
-               math::Vector3{0.0f, 1.0f, 0.0f},
-               math::Vector4{0.0f, 0.0f, 0.0f, 1.0f}},
+        Vertex{
+            math::Vector3{-0.5f, 0.0f, 0.5f}, math::Vector3{0.0f, 1.0f, 0.0f},
+            math::Vector4{0.0f, 0.0f, 0.0f, 1.0f}, math::Vector2{0.0f, 0.0f}},
         Vertex{math::Vector3{0.5f, 0.0f, 0.5f}, math::Vector3{0.0f, 1.0f, 0.0f},
-               math::Vector4{0.0f, 0.0f, 0.0f, 1.0f}},
-        Vertex{math::Vector3{0.5f, 0.0f, -0.5f},
-               math::Vector3{0.0f, 1.0f, 0.0f},
-               math::Vector4{0.0f, 0.0f, 0.0f, 1.0f}},
-        Vertex{math::Vector3{-0.5f, 0.0f, -0.5f},
-               math::Vector3{0.0f, 1.0f, 0.0f},
-               math::Vector4{0.0f, 0.0f, 0.0f, 1.0f}}};
+               math::Vector4{0.0f, 0.0f, 0.0f, 1.0f},
+               math::Vector2{1.0f, 0.0f}},
+        Vertex{
+            math::Vector3{0.5f, 0.0f, -0.5f}, math::Vector3{0.0f, 1.0f, 0.0f},
+            math::Vector4{0.0f, 0.0f, 0.0f, 1.0f}, math::Vector2{1.0f, 1.0f}},
+        Vertex{
+            math::Vector3{-0.5f, 0.0f, -0.5f}, math::Vector3{0.0f, 1.0f, 0.0f},
+            math::Vector4{0.0f, 0.0f, 0.0f, 1.0f}, math::Vector2{0.0f, 1.0f}}};
     const std::vector<uint32_t> indices{0, 1, 3, 2, 3, 1};
     m_meshes.resize(1);
     const math::Bounds3 bounds(math::Vector3(-0.5f, -0.01f, -0.05f),

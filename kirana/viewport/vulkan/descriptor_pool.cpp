@@ -10,20 +10,39 @@ kirana::viewport::vulkan::DescriptorPool::DescriptorPool(const Device *device)
     : m_isInitialized{false}, m_device{device}
 {
     std::vector<vk::DescriptorPoolSize> poolSizes = {
-        vk::DescriptorPoolSize(vk::DescriptorType::eUniformBuffer,
-                               constants::VULKAN_DESCRIPTOR_DEFAULT_POOL_SIZE),
-        vk::DescriptorPoolSize(vk::DescriptorType::eUniformBufferDynamic,
-                               constants::VULKAN_DESCRIPTOR_DEFAULT_POOL_SIZE),
-        vk::DescriptorPoolSize(vk::DescriptorType::eStorageBuffer,
-                               constants::VULKAN_DESCRIPTOR_DEFAULT_POOL_SIZE),
-        vk::DescriptorPoolSize(vk::DescriptorType::eStorageBufferDynamic,
-                               constants::VULKAN_DESCRIPTOR_DEFAULT_POOL_SIZE),
-        vk::DescriptorPoolSize(vk::DescriptorType::eAccelerationStructureKHR,
-                               1),
-        vk::DescriptorPoolSize(vk::DescriptorType::eStorageImage, 1),
+        vk::DescriptorPoolSize(
+            vk::DescriptorType::eUniformBuffer,
+            constants::VULKAN_DESCRIPTOR_DEFAULT_UNIFORM_BUFFER_POOL_SIZE),
+        vk::DescriptorPoolSize(
+            vk::DescriptorType::eUniformBufferDynamic,
+            constants::VULKAN_DESCRIPTOR_DEFAULT_UNIFORM_BUFFER_POOL_SIZE),
+        vk::DescriptorPoolSize(
+            vk::DescriptorType::eStorageBuffer,
+            constants::VULKAN_DESCRIPTOR_DEFAULT_STORAGE_BUFFER_POOL_SIZE),
+        vk::DescriptorPoolSize(
+            vk::DescriptorType::eStorageBufferDynamic,
+            constants::VULKAN_DESCRIPTOR_DEFAULT_STORAGE_BUFFER_POOL_SIZE),
+        vk::DescriptorPoolSize(
+            vk::DescriptorType::eAccelerationStructureKHR,
+            constants::VULKAN_DESCRIPTOR_DEFAULT_ACCEL_STRUCT_POOL_SIZE),
+        vk::DescriptorPoolSize(
+            vk::DescriptorType::eStorageImage,
+            constants::VULKAN_DESCRIPTOR_DEFAULT_STORAGE_IMAGE_POOL_SIZE),
+        vk::DescriptorPoolSize(
+            vk::DescriptorType::eSampledImage,
+            constants::VULKAN_DESCRIPTOR_DEFAULT_SAMPLED_IMAGES_SIZE),
     };
+
+    const uint32_t maxSets =
+        2 * constants::VULKAN_DESCRIPTOR_DEFAULT_UNIFORM_BUFFER_POOL_SIZE +
+        2 * constants::VULKAN_DESCRIPTOR_DEFAULT_STORAGE_BUFFER_POOL_SIZE +
+        constants::VULKAN_DESCRIPTOR_DEFAULT_ACCEL_STRUCT_POOL_SIZE +
+        constants::VULKAN_DESCRIPTOR_DEFAULT_STORAGE_IMAGE_POOL_SIZE +
+        constants::VULKAN_DESCRIPTOR_DEFAULT_SAMPLED_IMAGES_SIZE;
+
     const vk::DescriptorPoolCreateInfo createInfo(
-        {}, constants::VULKAN_DESCRIPTOR_SET_MAX_COUNT, poolSizes);
+        {vk::DescriptorPoolCreateFlagBits::eUpdateAfterBindEXT}, maxSets,
+        poolSizes);
 
     try
     {
@@ -56,9 +75,14 @@ bool kirana::viewport::vulkan::DescriptorPool::allocateDescriptorSet(
 {
     try
     {
+        vk::DescriptorSetAllocateInfo allocateInfo{m_current, layout->current};
+        vk::DescriptorSetVariableDescriptorCountAllocateInfo varAllocInfo{
+            layout->getBindings().back().descriptorCount};
+        if (layout->hasDynamicDescriptorBindings)
+            allocateInfo.pNext = &varAllocInfo;
+
         const vk::DescriptorSet vkSet =
-            m_device->current.allocateDescriptorSets(
-                vk::DescriptorSetAllocateInfo(m_current, layout->current))[0];
+            m_device->current.allocateDescriptorSets(allocateInfo)[0];
         *set = DescriptorSet(vkSet, layout);
         Logger::get().log(constants::LOG_CHANNEL_VULKAN, LogSeverity::trace,
                           "Descriptor Set allocated");
@@ -76,13 +100,22 @@ bool kirana::viewport::vulkan::DescriptorPool::allocateDescriptorSets(
     std::vector<DescriptorSet> *sets) const
 {
     std::vector<vk::DescriptorSetLayout> dLayouts(layouts.size());
+    std::vector<uint32_t> variableDescCounts(layouts.size());
     for (size_t i = 0; i < dLayouts.size(); i++)
+    {
         dLayouts[i] = layouts[i]->current;
+        variableDescCounts[i] =
+            layouts[i]->getBindings().back().descriptorCount;
+    }
     try
     {
+        vk::DescriptorSetAllocateInfo allocateInfo{m_current, dLayouts};
+        vk::DescriptorSetVariableDescriptorCountAllocateInfo varAllocInfo{
+            variableDescCounts};
+        allocateInfo.pNext = &varAllocInfo;
+
         const std::vector<vk::DescriptorSet> tempSets =
-            m_device->current.allocateDescriptorSets(
-                vk::DescriptorSetAllocateInfo(m_current, dLayouts));
+            m_device->current.allocateDescriptorSets(allocateInfo);
 
         for (size_t i = 0; i < layouts.size(); i++)
         {

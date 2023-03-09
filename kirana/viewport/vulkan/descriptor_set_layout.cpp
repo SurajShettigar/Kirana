@@ -6,18 +6,39 @@
 #include <algorithm>
 
 kirana::viewport::vulkan::DescriptorSetLayout::DescriptorSetLayout(
-    const Device *device, const std::vector<DescriptorBindingInfo> &bindings)
-    : m_isInitialized{false}, m_device{device}, m_bindings{bindings}
+    const Device *device, const std::vector<DescriptorBindingInfo> &bindings,
+    bool dynamicDescriptors)
+    : m_isInitialized{false}, m_device{device}, m_bindings{bindings},
+      m_hasDynamicDescriptorBindings{dynamicDescriptors}
 {
     std::vector<vk::DescriptorSetLayoutBinding> vkBindings(m_bindings.size());
+    std::vector<vk::DescriptorBindingFlagsEXT> vkBindingFlags;
     for (size_t i = 0; i < m_bindings.size(); i++)
     {
         vkBindings[i] = vk::DescriptorSetLayoutBinding{
             m_bindings[i].binding, m_bindings[i].type,
             m_bindings[i].descriptorCount, m_bindings[i].stages};
+        if (dynamicDescriptors)
+        {
+            vkBindingFlags.emplace_back(
+                vk::DescriptorBindingFlagBitsEXT::ePartiallyBound |
+                vk::DescriptorBindingFlagBitsEXT::eUpdateAfterBind);
+            if (i == m_bindings.size() - 1)
+                vkBindingFlags.back() |=
+                    vk::DescriptorBindingFlagBitsEXT::eVariableDescriptorCount;
+        }
     }
 
-    const vk::DescriptorSetLayoutCreateInfo createInfo({}, vkBindings);
+    const vk::DescriptorSetLayoutCreateFlags layoutFlags =
+        dynamicDescriptors
+            ? vk::DescriptorSetLayoutCreateFlagBits::eUpdateAfterBindPoolEXT
+            : vk::DescriptorSetLayoutCreateFlags{};
+
+    vk::DescriptorSetLayoutCreateInfo createInfo(layoutFlags, vkBindings);
+    const vk::DescriptorSetLayoutBindingFlagsCreateInfoEXT
+        bindingFlagsCreateInfoExt{vkBindingFlags};
+    if (dynamicDescriptors)
+        createInfo.pNext = &bindingFlagsCreateInfoExt;
     try
     {
         m_current = m_device->current.createDescriptorSetLayout(createInfo);
@@ -83,12 +104,9 @@ kirana::viewport::vulkan::DescriptorBindingInfo kirana::viewport::vulkan::
                                            vk::ShaderStageFlagBits::eVertex |
                                                vk::ShaderStageFlagBits::
                                                    eFragment}
-                   : DescriptorBindingInfo{
-                         DescriptorLayoutType::GLOBAL, 1,
-                         vk::DescriptorType::eUniformBuffer,
-                         vk::ShaderStageFlagBits::eClosestHitKHR |
-                             vk::ShaderStageFlagBits::eMissKHR |
-                             vk::ShaderStageFlagBits::eAnyHitKHR};
+                   : DescriptorBindingInfo{DescriptorLayoutType::GLOBAL, 1,
+                                           vk::DescriptorType::eUniformBuffer,
+                                           vk::ShaderStageFlagBits::eRaygenKHR};
     case DescriptorBindingDataType::RAYTRACE_ACCEL_STRUCT:
         return shadingPipeline == ShadingPipeline::RASTER
                    ? DescriptorBindingInfo{}
@@ -102,17 +120,29 @@ kirana::viewport::vulkan::DescriptorBindingInfo kirana::viewport::vulkan::
                    : DescriptorBindingInfo{DescriptorLayoutType::GLOBAL, 3,
                                            vk::DescriptorType::eStorageImage,
                                            vk::ShaderStageFlagBits::eRaygenKHR};
+    case DescriptorBindingDataType::TEXTURE_DATA:
+        return shadingPipeline == ShadingPipeline::RASTER
+                   ? DescriptorBindingInfo{DescriptorLayoutType::MATERIAL, 0,
+                                           vk::DescriptorType::
+                                               eCombinedImageSampler,
+                                           vk::ShaderStageFlagBits::eFragment,
+                                           utils::constants::
+                                               VULKAN_DESCRIPTOR_DEFAULT_SAMPLED_IMAGES_SIZE}
+                   : DescriptorBindingInfo{
+                         DescriptorLayoutType::MATERIAL, 0,
+                         vk::DescriptorType::eCombinedImageSampler,
+                         vk::ShaderStageFlagBits::eRaygenKHR,
+                         utils::constants::
+                             VULKAN_DESCRIPTOR_DEFAULT_SAMPLED_IMAGES_SIZE};
     case DescriptorBindingDataType::OBJECT_DATA:
         return shadingPipeline == ShadingPipeline::RASTER
                    ? DescriptorBindingInfo{DescriptorLayoutType::OBJECT, 0,
                                            vk::DescriptorType::
                                                eStorageBufferDynamic,
                                            vk::ShaderStageFlagBits::eVertex, 0}
-                   : DescriptorBindingInfo{
-                         DescriptorLayoutType::OBJECT, 0,
-                         vk::DescriptorType::eStorageBuffer,
-                         vk::ShaderStageFlagBits::eClosestHitKHR |
-                             vk::ShaderStageFlagBits::eAnyHitKHR};
+                   : DescriptorBindingInfo{DescriptorLayoutType::OBJECT, 0,
+                                           vk::DescriptorType::eStorageBuffer,
+                                           vk::ShaderStageFlagBits::eRaygenKHR};
     default:
         return DescriptorBindingInfo{};
     }
@@ -140,6 +170,14 @@ bool kirana::viewport::vulkan::DescriptorSetLayout::getDefaultDescriptorLayout(
         }
 
         layout = new DescriptorSetLayout(device, globalDescriptors);
+        return layout->m_isInitialized;
+    }
+    case DescriptorLayoutType::MATERIAL: {
+        layout = new DescriptorSetLayout(
+            device,
+            {getBindingInfoForData(DescriptorBindingDataType::TEXTURE_DATA,
+                                   pipeline)},
+            true);
         return layout->m_isInitialized;
     }
     case DescriptorLayoutType::OBJECT: {

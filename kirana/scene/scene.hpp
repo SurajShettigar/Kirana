@@ -26,6 +26,7 @@ class Scene
     bool m_isInitialized = false;
 
     // Scene data
+    std::string m_path = "";
     std::string m_name = "Scene";
     std::vector<std::shared_ptr<Mesh>> m_meshes;
     std::vector<std::shared_ptr<Object>>
@@ -38,7 +39,7 @@ class Scene
                            math::Bounds3 *bounds);
     void initializeChildObjects(std::shared_ptr<Object> parent,
                                 uint32_t childCount, aiNode **children);
-    void initFromAiScene(const aiScene *scene);
+    void initFromAiScene(const std::string &path, const aiScene *scene);
 
   public:
     Scene() = default;
