@@ -30,7 +30,7 @@ vec2 getTexCoords(const vec2[3] vTexCoords, vec3 barycentrics)
     return vTexCoords[0] * barycentrics.x + vTexCoords[1] * barycentrics.y + vTexCoords[2] * barycentrics.z;
 }
 
-IntersectionData getIntesectionData(in PathtracePayload hitInfo)
+IntersectionData getIntesectionData(in PathtracePayload hitInfo, in vec3 viewDir)
 {
     ObjectData objData = objBuffer.o[hitInfo.geometryIndex + hitInfo.instanceCustomIndex];
 
@@ -50,9 +50,10 @@ IntersectionData getIntesectionData(in PathtracePayload hitInfo)
 
     IntersectionData intersection;
     intersection.position = getWorldPosition(vPositions, barycentrics, hitInfo.objectToWorldMat);
-    intersection.normal = getWorldNormal(vNormals, barycentrics, hitInfo.worldToObjectMat);
+    intersection.meshNormal = getWorldNormal(vNormals, barycentrics, hitInfo.worldToObjectMat);
+    intersection.shadingSpace[2] = dot(viewDir, intersection.meshNormal) < 0 ? - intersection.meshNormal : intersection.meshNormal;
 
-    getCoordinateFrame_Duff(intersection.normal, intersection.tangent, intersection.bitangent);
+    getCoordinateFrame_Duff(intersection.shadingSpace[2], intersection.shadingSpace[0], intersection.shadingSpace[1]);
 
     intersection.materialBufferAddress = objData.materialDataBufferAddress;
     intersection.materialIndex = objData.materialDataIndex;

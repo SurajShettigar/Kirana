@@ -6,18 +6,39 @@
 #include <algorithm>
 
 kirana::viewport::vulkan::DescriptorSetLayout::DescriptorSetLayout(
-    const Device *device, const std::vector<DescriptorBindingInfo> &bindings)
-    : m_isInitialized{false}, m_device{device}, m_bindings{bindings}
+    const Device *device, const std::vector<DescriptorBindingInfo> &bindings,
+    bool dynamicDescriptors)
+    : m_isInitialized{false}, m_device{device}, m_bindings{bindings},
+      m_hasDynamicDescriptorBindings{dynamicDescriptors}
 {
     std::vector<vk::DescriptorSetLayoutBinding> vkBindings(m_bindings.size());
+    std::vector<vk::DescriptorBindingFlagsEXT> vkBindingFlags;
     for (size_t i = 0; i < m_bindings.size(); i++)
     {
         vkBindings[i] = vk::DescriptorSetLayoutBinding{
             m_bindings[i].binding, m_bindings[i].type,
             m_bindings[i].descriptorCount, m_bindings[i].stages};
+        if (dynamicDescriptors)
+        {
+            vkBindingFlags.emplace_back(
+                vk::DescriptorBindingFlagBitsEXT::ePartiallyBound |
+                vk::DescriptorBindingFlagBitsEXT::eUpdateAfterBind);
+            if (i == m_bindings.size() - 1)
+                vkBindingFlags.back() |=
+                    vk::DescriptorBindingFlagBitsEXT::eVariableDescriptorCount;
+        }
     }
 
-    const vk::DescriptorSetLayoutCreateInfo createInfo({}, vkBindings);
+    const vk::DescriptorSetLayoutCreateFlags layoutFlags =
+        dynamicDescriptors
+            ? vk::DescriptorSetLayoutCreateFlagBits::eUpdateAfterBindPoolEXT
+            : vk::DescriptorSetLayoutCreateFlags{};
+
+    vk::DescriptorSetLayoutCreateInfo createInfo(layoutFlags, vkBindings);
+    const vk::DescriptorSetLayoutBindingFlagsCreateInfoEXT
+        bindingFlagsCreateInfoExt{vkBindingFlags};
+    if (dynamicDescriptors)
+        createInfo.pNext = &bindingFlagsCreateInfoExt;
     try
     {
         m_current = m_device->current.createDescriptorSetLayout(createInfo);
@@ -153,8 +174,10 @@ bool kirana::viewport::vulkan::DescriptorSetLayout::getDefaultDescriptorLayout(
     }
     case DescriptorLayoutType::MATERIAL: {
         layout = new DescriptorSetLayout(
-            device, {getBindingInfoForData(
-                        DescriptorBindingDataType::TEXTURE_DATA, pipeline)});
+            device,
+            {getBindingInfoForData(DescriptorBindingDataType::TEXTURE_DATA,
+                                   pipeline)},
+            true);
         return layout->m_isInitialized;
     }
     case DescriptorLayoutType::OBJECT: {

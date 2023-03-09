@@ -89,8 +89,6 @@ void kirana::scene::Material::setShaderData()
     }
 }
 
-static std::default_random_engine randomEngine;
-
 void kirana::scene::Material::setParametersFromAiMaterial(
     const std::string &scenePath, const aiMaterial *material)
 {
@@ -120,7 +118,7 @@ void kirana::scene::Material::setParametersFromAiMaterial(
         setParameter("_BaseMap", static_cast<int>(imgPtr->getIndex()));
         m_images.push_back(imgPtr);
     }
-    imgPtr = getImage(aiTextureType_EMISSION_COLOR);
+    imgPtr = getImage(aiTextureType_EMISSIVE);
     if (imgPtr)
     {
         setParameter("_EmissiveMap", static_cast<int>(imgPtr->getIndex()));

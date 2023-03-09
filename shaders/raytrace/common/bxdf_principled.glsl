@@ -28,7 +28,29 @@ layout (buffer_reference) readonly buffer MaterialData {
     PrincipledData p[];
 };
 
-layout(set = 1, binding = 0) uniform sampler2D matTextures[];
+layout (set = 1, binding = 0) uniform sampler2D matTextures[];
+
+vec3 getNormal(in PrincipledData matData, in IntersectionData intersection)
+{
+    vec3 normal = intersection.shadingSpace[2];
+    if (matData.normalMap > -1)
+    {
+        vec3 tsNormal = texture(matTextures[nonuniformEXT(uint(matData.normalMap))], intersection.texCoords).rgb;
+        tsNormal = normalize(2.0 * tsNormal - 1.0);
+        normal = mat3(intersection.shadingSpace[0], intersection.shadingSpace[1], intersection.shadingSpace[2]) * tsNormal;
+    }
+    return normal;
+}
+
+vec3 getEmission(in PrincipledData matData, in IntersectionData intersection)
+{
+    vec3 emissive = matData.emissiveColor.rgb;
+    if(matData.emissiveMap > -1)
+    {
+        emissive = texture(matTextures[nonuniformEXT(uint(matData.emissiveMap))], intersection.texCoords).rgb;
+    }
+    return emissive * matData.emissiveIntensity;
+}
 
 // Based on Disney BRDF.
 // Refer: https://media.disneyanimation.com/uploads/production/publication_asset/48/asset/s2012_pbs_disney_brdf_notes_v3.pdf
@@ -78,42 +100,38 @@ float F_Lambert()
     return ONE_BY_PI;
 }
 
-vec3 evaluateDiffuse(inout uint seed, in IntersectionData intersection, in PrincipledData matData, in vec3 viewDir, in vec3 lightDir, inout float pdf)
+vec3 evaluateDiffuse(inout uint seed, in IntersectionData intersection, in PrincipledData matData, in vec3 viewDir, in vec3 lightDir, in vec3 shadingNormal, inout float pdf)
 {
-    vec3 ffnormal = dot(viewDir, intersection.normal) < 0.0 ? - intersection.normal : intersection.normal;
-
-    if(dot(ffnormal, lightDir) < 0.0)
-        return vec3(0.0);
+    if (dot(shadingNormal, lightDir) < 0.0)
+    return vec3(0.0);
 
     vec3 diffuseColor = (1.0 - matData.metallic) * matData.color.rgb;
 
-    if(matData.baseMap > -1)
+    if (matData.baseMap > -1)
     {
         uint matIndex = uint(matData.baseMap);
-        diffuseColor *= texture(matTextures[matIndex], intersection.texCoords).rgb;
+        diffuseColor = texture(matTextures[matIndex], intersection.texCoords).rgb;
     }
 
     // Cos weighted diffuse pdf
-    pdf = clamp(dot(ffnormal, lightDir), 0.0, 1.0) * ONE_BY_PI;
+    pdf = clamp(dot(shadingNormal, lightDir), 0.0, 1.0) * ONE_BY_PI;
     vec3 f_diffuse = diffuseColor * F_Lambert();
     return f_diffuse;
 }
 
 
-vec3 evaluateSpecular(inout uint seed, in IntersectionData intersection, in PrincipledData matData, in vec3 viewDir, in vec3 lightDir, in vec3 halfVec, inout float pdf)
+vec3 evaluateSpecular(inout uint seed, in IntersectionData intersection, in PrincipledData matData, in vec3 viewDir, in vec3 lightDir, in vec3 shadingNormal, in vec3 halfVec, inout float pdf)
 {
-    vec3 ffnormal = dot(viewDir, intersection.normal) < 0.0 ? - intersection.normal : intersection.normal;
-
-    if(dot(ffnormal, lightDir) < 0.0)
-            return vec3(0.0);
+    if (dot(shadingNormal, lightDir) < 0.0)
+    return vec3(0.0);
 
     float roughness = max(matData.roughness * matData.roughness, 0.001);
     vec3 f0 = 0.16 * matData.specular * matData.specular * (1.0 - matData.metallic) + matData.color.rgb * matData.metallic;
     float f90 = 1.0;
 
-    float NoH = clamp(dot(ffnormal, halfVec), 0.0, 1.0);
-    float NoV = clamp(dot(ffnormal, viewDir), 0.0, 1.0);
-    float NoL = clamp(dot(ffnormal, lightDir), 0.0, 1.0);
+    float NoH = clamp(dot(shadingNormal, halfVec), 0.0, 1.0);
+    float NoV = clamp(dot(shadingNormal, viewDir), 0.0, 1.0);
+    float NoL = clamp(dot(shadingNormal, lightDir), 0.0, 1.0);
     float LoH = clamp(dot(lightDir, halfVec), 0.0, 1.0);
 
     float D = NDF_GGX(NoH, roughness);
@@ -124,56 +142,57 @@ vec3 evaluateSpecular(inout uint seed, in IntersectionData intersection, in Prin
 }
 
 
-vec3 evaluateBXDF(inout uint seed, in IntersectionData intersection, in vec3 viewDir, in vec3 lightDir, inout vec3 emission, inout float pdf)
+vec3 evaluateBXDF(inout uint seed, in IntersectionData intersection, in vec3 viewDir, in vec3 lightDir, in vec3 shadingNormal, inout vec3 emission, inout float pdf)
 {
     PrincipledData matData = MaterialData(intersection.materialBufferAddress).p[intersection.materialIndex];
     float diffuseRatio = 0.5 * (1.0 - matData.metallic);
-//    float diffuseRatio = 1.0;
 
-    emission = matData.emissiveColor.rgb * matData.emissiveIntensity;
+    emission = getEmission(matData, intersection);
     if (random(seed) < diffuseRatio)
     {
-        vec3 f = evaluateDiffuse(seed, intersection, matData, viewDir, lightDir, pdf);
+        vec3 f = evaluateDiffuse(seed, intersection, matData, viewDir, lightDir, shadingNormal, pdf);
         pdf *= diffuseRatio;
         return f;
     }
     else
     {
         vec3 halfVec = normalize(lightDir + viewDir);
-        if (dot(intersection.normal, halfVec) < 0.0)
+        if (dot(shadingNormal, halfVec) < 0.0)
         halfVec = -halfVec;
-        vec3 f = evaluateSpecular(seed, intersection, matData, viewDir, lightDir, halfVec, pdf);
+        vec3 f = evaluateSpecular(seed, intersection, matData, viewDir, lightDir, shadingNormal, halfVec, pdf);
         pdf *= (1.0 - diffuseRatio);
         return f;
     }
 }
 
-vec3 sampleBXDF(inout uint seed, in IntersectionData intersection, in vec3 viewDir, inout vec3 lightDir, inout vec3 emission, inout float pdf)
+vec3 sampleBXDF(inout uint seed, in IntersectionData intersection, in vec3 viewDir, inout vec3 lightDir, inout vec3 shadingNormal, inout vec3 emission, inout float pdf)
 {
-    pdf = 0.0;
     PrincipledData matData = MaterialData(intersection.materialBufferAddress).p[intersection.materialIndex];
 
-    vec3 ffnormal = dot(viewDir, intersection.normal) < 0.0 ? - intersection.normal : intersection.normal;
+    shadingNormal = getNormal(matData, intersection);
+    vec3[3] newShadingSpace = vec3[3](vec3(0.0), vec3(0.0), shadingNormal);
+    getCoordinateFrame_Duff(shadingNormal, newShadingSpace[0], newShadingSpace[1]);
+
+    emission = getEmission(matData, intersection);
+    pdf = 0.0;
+
     float diffuseRatio = 0.5 * (1.0 - matData.metallic);
-//    float diffuseRatio = 1.0;
-    emission = matData.emissiveColor.rgb * matData.emissiveIntensity;
     if (random(seed) < diffuseRatio)
     {
-        lightDir = cosineSampleHemisphere(randomVec2(seed), vec3[3](intersection.tangent, intersection.bitangent, ffnormal), pdf);
-        vec3 f = evaluateDiffuse(seed, intersection, matData, viewDir, lightDir, pdf);
+        lightDir = cosineSampleHemisphere(randomVec2(seed), newShadingSpace, pdf);
+        vec3 f = evaluateDiffuse(seed, intersection, matData, viewDir, lightDir, shadingNormal, pdf);
         pdf *= diffuseRatio;
         return f;
     }
     else
     {
         float roughness = max(matData.roughness * matData.roughness, 0.001);
-        vec3 halfVec = sampleNDF_GGX(roughness, randomVec2(seed), vec3[3](intersection.tangent, intersection.bitangent, ffnormal));
+        vec3 halfVec = sampleNDF_GGX(roughness, randomVec2(seed), newShadingSpace);
         lightDir = normalize(reflect(-viewDir, halfVec));
-        vec3 f = evaluateSpecular(seed, intersection, matData, viewDir, lightDir, halfVec, pdf);
+        vec3 f = evaluateSpecular(seed, intersection, matData, viewDir, lightDir,shadingNormal, halfVec, pdf);
         pdf *= (1.0 - diffuseRatio);
         return f;
     }
-    return evaluateBXDF(seed, intersection, viewDir, lightDir, emission, pdf);
 }
 
 #endif

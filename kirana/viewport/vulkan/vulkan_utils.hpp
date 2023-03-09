@@ -27,22 +27,24 @@ static const std::vector<const char *> REQUIRED_DEVICE_EXTENSIONS{
     VK_KHR_ACCELERATION_STRUCTURE_EXTENSION_NAME,
     VK_KHR_RAY_TRACING_PIPELINE_EXTENSION_NAME,
     VK_KHR_RAY_QUERY_EXTENSION_NAME,
-    VK_KHR_DEFERRED_HOST_OPERATIONS_EXTENSION_NAME};
+    VK_KHR_DEFERRED_HOST_OPERATIONS_EXTENSION_NAME,
+    VK_EXT_DESCRIPTOR_INDEXING_EXTENSION_NAME};
 /// Vector of necessary validation numLayers for debugging.
 static const std::vector<const char *> REQUIRED_VALIDATION_LAYERS{
     "VK_LAYER_KHRONOS_validation"};
 
-static vk::PhysicalDeviceRayQueryFeaturesKHR DEVICE_RAY_QUERY_FEATURES{true};
+static vk::PhysicalDeviceRayQueryFeaturesKHR DEVICE_RAY_QUERY_FEATURES{};
 static vk::PhysicalDeviceRayTracingPipelineFeaturesKHR
-    DEVICE_RAYTRACE_PIPELINE_FEATURES{true, false, false, true, true};
+    DEVICE_RAYTRACE_PIPELINE_FEATURES{};
 static vk::PhysicalDeviceAccelerationStructureFeaturesKHR
-    DEVICE_ACCEL_STRUCT_FEATURES{true, false, false, false, true};
+    DEVICE_ACCEL_STRUCT_FEATURES{};
 static vk::PhysicalDeviceShaderDrawParametersFeatures
-    DEVICE_SHADER_DRAW_PARAMS_FEATURES{true};
+    DEVICE_SHADER_DRAW_PARAMS_FEATURES{};
 static vk::PhysicalDeviceBufferDeviceAddressFeatures
-    DEVICE_BUFFER_DEVICE_ADDRESS_FEATURES{true};
-static vk::PhysicalDeviceShaderClockFeaturesKHR DEVICE_SHADER_CLOCK_FEATURES{
-    true, true};
+    DEVICE_BUFFER_DEVICE_ADDRESS_FEATURES{};
+static vk::PhysicalDeviceShaderClockFeaturesKHR DEVICE_SHADER_CLOCK_FEATURES{};
+static vk::PhysicalDeviceDescriptorIndexingFeatures
+    DEVICE_DESCRIPTOR_INDEXING_FEATURES{};
 
 #ifndef VK_HANDLE_RESULT
 #define VK_HANDLE_RESULT(f, err)                                               \
@@ -164,13 +166,35 @@ static inline vk::PhysicalDeviceFeatures2 getRequiredDeviceFeatures()
     features.features.shaderInt64 = true;
     features.features.samplerAnisotropy = true;
 
+    DEVICE_RAY_QUERY_FEATURES.rayQuery = true;
+
+    DEVICE_RAYTRACE_PIPELINE_FEATURES.rayTracingPipeline = true;
+    DEVICE_RAYTRACE_PIPELINE_FEATURES.rayTracingPipelineTraceRaysIndirect =
+        true;
+    DEVICE_RAYTRACE_PIPELINE_FEATURES.rayTraversalPrimitiveCulling = true;
+
+    DEVICE_ACCEL_STRUCT_FEATURES.accelerationStructure = true;
+    DEVICE_ACCEL_STRUCT_FEATURES
+        .descriptorBindingAccelerationStructureUpdateAfterBind = true;
+
+    DEVICE_SHADER_DRAW_PARAMS_FEATURES.shaderDrawParameters = true;
+
+    DEVICE_BUFFER_DEVICE_ADDRESS_FEATURES.bufferDeviceAddress = true;
+
+    DEVICE_SHADER_CLOCK_FEATURES.shaderSubgroupClock = true;
+    DEVICE_SHADER_CLOCK_FEATURES.shaderDeviceClock = true;
+
+    DEVICE_DESCRIPTOR_INDEXING_FEATURES.descriptorBindingPartiallyBound = true;
+    DEVICE_DESCRIPTOR_INDEXING_FEATURES.runtimeDescriptorArray = true;
+
     DEVICE_RAYTRACE_PIPELINE_FEATURES.pNext = &DEVICE_RAY_QUERY_FEATURES;
     DEVICE_ACCEL_STRUCT_FEATURES.pNext = &DEVICE_RAYTRACE_PIPELINE_FEATURES;
     DEVICE_SHADER_DRAW_PARAMS_FEATURES.pNext = &DEVICE_ACCEL_STRUCT_FEATURES;
     DEVICE_BUFFER_DEVICE_ADDRESS_FEATURES.pNext =
         &DEVICE_SHADER_DRAW_PARAMS_FEATURES;
     DEVICE_SHADER_CLOCK_FEATURES.pNext = &DEVICE_BUFFER_DEVICE_ADDRESS_FEATURES;
-    features.pNext = &DEVICE_SHADER_CLOCK_FEATURES;
+    DEVICE_DESCRIPTOR_INDEXING_FEATURES.pNext = &DEVICE_SHADER_CLOCK_FEATURES;
+    features.pNext = &DEVICE_DESCRIPTOR_INDEXING_FEATURES;
 
     return features;
 }
@@ -186,9 +210,27 @@ static bool hasRequiredDeviceFeatures(
         !reqFeatures.features.samplerAnisotropy)
         return false;
 
+    auto *descriptorIndex =
+        reinterpret_cast<vk::PhysicalDeviceDescriptorIndexingFeatures *>(
+            reqFeatures.pNext);
+
+    Logger::get().log(
+        constants::LOG_CHANNEL_VULKAN, LogSeverity::trace,
+        "Partial Descriptor Binding: " +
+            std::to_string(descriptorIndex->descriptorBindingPartiallyBound));
+
+    Logger::get().log(
+        constants::LOG_CHANNEL_VULKAN, LogSeverity::trace,
+        "Runtime Descriptor Array: " +
+            std::to_string(descriptorIndex->runtimeDescriptorArray));
+
+    if (!descriptorIndex->descriptorBindingPartiallyBound ||
+        !descriptorIndex->runtimeDescriptorArray)
+        return false;
+
     auto *shaderClock =
         reinterpret_cast<vk::PhysicalDeviceShaderClockFeaturesKHR *>(
-            reqFeatures.pNext);
+            descriptorIndex->pNext);
 
     Logger::get().log(constants::LOG_CHANNEL_VULKAN, LogSeverity::trace,
                       "Shader Clock Feature: " +

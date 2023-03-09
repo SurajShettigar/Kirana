@@ -102,36 +102,37 @@ in PathtraceParameters params)
         }
         else
         {
-            IntersectionData intersection = getIntesectionData(_globalPayload);
             vec3 viewDir = - ray.direction;
+            IntersectionData intersection = getIntesectionData(_globalPayload, viewDir);
+            vec3 shadingNormal = intersection.meshNormal;
 
             // TODO: Sample Lights
             // Indirect light contribution
             vec3 emission = vec3(0.0);
-            vec3 newRayOrigin = offsetRay(intersection.position, intersection.normal);
+            vec3 newRayOrigin = offsetRay(intersection.position, shadingNormal);
             vec3 newRayDirection = ray.direction;
             float pdf = 0.0;
 
-            vec3 bxdf = sampleBXDF(_globalPayload.seed, intersection, viewDir, newRayDirection, emission, pdf);
+            vec3 bxdf = sampleBXDF(_globalPayload.seed, intersection, viewDir, newRayDirection, shadingNormal, emission, pdf);
             radiance += emission * throughput;
 
             if (pdf < EPSILON)
             break;
 
-            float NoL = abs(dot(intersection.normal, newRayDirection));
+            float NoL = abs(dot(shadingNormal, newRayDirection));
 
             // Direct light contribution
             // Sun light contribution
             const vec3 lightDir = normalize(- worldData.sunDirection);
             Ray shadowRay = Ray(newRayOrigin, lightDir);
-            if (!isHit(shadowRay, 100.0))
+            if (!isHit(shadowRay, INFINITY))
             {
-                const float NoL = abs(dot(intersection.normal, lightDir));
-                const vec3 lightIntensity = worldData.sunIntensity * worldData.sunColor.rgb * 2.0;
+                const float NoL = abs(dot(shadingNormal, lightDir));
+                const vec3 lightIntensity = worldData.sunIntensity * worldData.sunColor.rgb;
                 const float lightPdf = 1.0;
                 vec3 f_emm = vec3(0.0);
                 float f_pdf = 0.0;
-                radiance += evaluateBXDF(_globalPayload.seed, intersection, viewDir, lightDir, f_emm, f_pdf) * lightIntensity * NoL / lightPdf * throughput;
+                radiance += evaluateBXDF(_globalPayload.seed, intersection, viewDir, lightDir, shadingNormal, f_emm, f_pdf) * lightIntensity * NoL / lightPdf * throughput;
             }
 
             throughput *= bxdf * NoL / pdf;

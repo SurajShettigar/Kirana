@@ -90,10 +90,9 @@ struct PathtracePayload {
 
 struct IntersectionData {
     vec3 position;
+    vec3 meshNormal;
 
-    vec3 tangent;
-    vec3 bitangent;
-    vec3 normal;
+    vec3[3] shadingSpace;
 
     uint64_t materialBufferAddress;
     int materialIndex;

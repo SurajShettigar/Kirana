@@ -39,6 +39,14 @@ vec3 getWorldNormal()
     m[0][0] * m[1][1] - m[0][1] * m[1][0]) * vNormal);
 }
 
+void getCoordinateFrame(in vec3 normal, out vec3 tangent, out vec3 binormal) {
+    float zSign = normal.z >= 0.0 ? 1.0 : -1.0;
+    const float a = -1.0 / (zSign + normal.z);
+    const float b = normal.x * normal.y * a;
+    tangent = vec3(b, zSign + normal.y * normal.y * a, - normal.y);
+    binormal = vec3(1.0 + zSign * normal.x * normal.x * a, zSign * b, -zSign * normal.x);
+}
+
 vec4 getVertexColor()
 {
     return vColor;

@@ -58,7 +58,7 @@ bool kirana::viewport::vulkan::DescriptorSet::bindTextures(
     for (int i = 0; i < textures.size(); i++)
         m_textureDescInfos[i] = textures[i]->getDescriptorImageInfo();
     m_writes.emplace_back(m_current, bindPoint.binding, 0,
-                          bindPoint.descriptorCount, bindPoint.type,
+                          static_cast<uint32_t>(textures.size()), bindPoint.type,
                           m_textureDescInfos.data());
     return true;
 }

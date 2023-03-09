@@ -41,6 +41,8 @@ layout (location = 0) out vec4 outFragColor;
 layout (location = 0) in _VSIn {
     vec3 worldPosition;
     vec3 worldNormal;
+    vec3 worldTangent;
+    vec3 worldBitangent;
     vec3 viewDirection;
     vec2 texCoords;
     flat uint64_t matBufferAdd;
@@ -82,6 +84,19 @@ float F_Lambert()
     return 1.0 / PI;
 }
 
+vec3 getNormal(in PrincipledData matData, in vec3 viewDir, in vec3[3] transformFrame)
+{
+    vec3 finalNormal = transformFrame[2];
+
+    if (matData.normalMap > -1)
+    {
+        vec3 tsNormal = texture(textures[nonuniformEXT(uint(matData.normalMap))], VSIn.texCoords).rgb;
+        tsNormal = normalize(2.0 * tsNormal - vec3(1.0));
+        finalNormal = mat3(transformFrame[0], transformFrame[1], transformFrame[2]) * tsNormal;
+    }
+    return finalNormal;
+}
+
 
 vec3 principledBRDF(in PrincipledData matData, vec3 lightDirection, vec3 normal, vec3 viewDirection)
 {
@@ -91,13 +106,15 @@ vec3 principledBRDF(in PrincipledData matData, vec3 lightDirection, vec3 normal,
     float NoL = clamp(dot(normal, lightDirection), 0.0, 1.0);
     float LoH = clamp(dot(lightDirection, halfVector), 0.0, 1.0);
 
-    float roughness = matData.roughness * matData.roughness;
+    float roughness = max(matData.roughness * matData.roughness, 0.001);
     vec3 f0 = 0.16 * matData.specular * matData.specular * (1.0 - matData.metallic) + matData.color.rgb * matData.metallic;
     float f90 = 1.0;
 
     vec3 diffuseColor = (1.0 - matData.metallic) * matData.color.rgb;
     if (matData.baseMap > -1)
-    diffuseColor = texture(textures[uint(matData.baseMap)], VSIn.texCoords).rgb * diffuseColor;
+    {
+        diffuseColor = texture(textures[nonuniformEXT(uint(matData.baseMap))], VSIn.texCoords).rgb;
+    }
 
     vec3 f_specular = F_Schlick(LoH, f0, f90) * V_SmithGGXCorrelated(NoV, NoL, roughness) * NDF_GGX(NoH, roughness);
     vec3 f_diffuse = diffuseColor * F_Lambert();
@@ -108,18 +125,23 @@ vec3 principledBRDF(in PrincipledData matData, vec3 lightDirection, vec3 normal,
 vec3 getEmissiveRadiance(in PrincipledData matData)
 {
     vec3 eColor = matData.emissiveMap > -1
-    ? texture(textures[uint(matData.emissiveMap)], VSIn.texCoords).rgb
+    ? texture(textures[nonuniformEXT(uint(matData.emissiveMap))], VSIn.texCoords).rgb
     : matData.emissiveColor.rgb;
     return eColor * matData.emissiveIntensity;
 }
 
 void main() {
-
     PrincipledData matData = MaterialData(VSIn.matBufferAdd).p[VSIn.matDataIndex];
-    vec3 lightDir = - normalize(worldBuffer.w.sunDirection);
+
     vec3 viewDir = normalize(VSIn.viewDirection);
-    vec3 brdf = principledBRDF(matData, lightDir, VSIn.worldNormal, viewDir);
-    vec3 light = worldBuffer.w.sunColor.rgb * worldBuffer.w.sunIntensity * max(0.0, dot(VSIn.worldNormal, lightDir));
+    vec3 normal = getNormal(matData, viewDir, vec3[3](VSIn.worldTangent, VSIn.worldBitangent, VSIn.worldNormal));
+
+    vec3 lightDir = normalize(- worldBuffer.w.sunDirection);
+    vec3 light = worldBuffer.w.sunColor.rgb * worldBuffer.w.sunIntensity * max(0.0, dot(normal, lightDir));
+
+    vec3 brdf = principledBRDF(matData, lightDir, normal, viewDir);
+
     vec3 radiance = getEmissiveRadiance(matData) + brdf * light;
+
     outFragColor = vec4(radiance, 1.0f);
 }
