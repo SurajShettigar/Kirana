@@ -12,7 +12,7 @@ layout (set = 0, binding = 1) uniform _WorldData {
 } worldBuffer;
 
 layout (set = 0, binding = 2) uniform accelerationStructureEXT _globalAccelStruct;
-layout (rgba8, set = 0, binding = 3) uniform image2D image;
+layout (rgba32f, set = 0, binding = 3) uniform image2D image;
 
 layout (push_constant) uniform _PushConstantData {
     PushConstantData p;
@@ -21,6 +21,7 @@ layout (push_constant) uniform _PushConstantData {
 layout (location = 0) rayPayloadEXT PathtracePayload _globalPayload;
 
 #include "common/pathtrace.glsl"
+#include "common/tonemapping.glsl"
 
 void main()
 {
@@ -38,6 +39,7 @@ void main()
         );
     }
     pixelColor.rgb = pixelColor.rgb / pushConstants.p.maxSamples;
+    pixelColor.rgb = linearTosRGB(pixelColor.rgb);
 
     // Accumulate color
     if (pushConstants.p.frameIndex > 0)
