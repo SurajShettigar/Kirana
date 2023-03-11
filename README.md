@@ -4,7 +4,7 @@ A hardware accelerated pathtraced PBR render engine using Vulkan Raytracing API.
 
 | Cornell Box                              | Pixar's Renderman Swatch                                  | Damaged Helmet                                  |
 |------------------------------------------|-----------------------------------------------------------|-------------------------------------------------|
-| ![Cornell Box](./images/cornell_box.png) | ![Pixar Renderman Swatch](./images/prenderman_swatch.png) | ![Damaged Helment](./images/damaged_helmet.png) 
+| ![Cornell Box](./images/cornell_box.png) | ![Pixar Renderman Swatch](./images/prenderman_swatch.png) | ![Damaged Helment](./images/damaged_helmet.png) |
 
 | Raster                              | Raytrace                                         |
 |-------------------------------------|--------------------------------------------------|
@@ -49,6 +49,7 @@ A hardware accelerated pathtraced PBR render engine using Vulkan Raytracing API.
 - <b>MSVC Compiler</b> V.16.0 or greater
 - <b>CMake</b> V.3.0 or greater
 - <b>Python</b> V.3.9 (For building UI)
+- <b>Vulkan SDK</b> V.1.3.239 or greater
 - Vulkan `VK_KHR_ray_tracing_pipeline` extension supported devices (Nvidia RTX, AMD RX)
 
 ### Project Installation
