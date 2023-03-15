@@ -4,73 +4,105 @@
 #include "texture.hpp"
 #include "vulkan_utils.hpp"
 
-bool kirana::viewport::vulkan::RenderPass::initialize(
-    const Texture *depthTexture)
+kirana::viewport::vulkan::RenderPass::RenderPass(const Device *const device,
+                                                 Properties properties)
+    : m_isInitialized{false}, m_device{device}, m_properties{
+                                                    std::move(properties)}
 {
-    m_depthTexture = depthTexture;
-    if (m_current)
-    {
-        m_device->current.destroyRenderPass(m_current);
-        Logger::get().log(constants::LOG_CHANNEL_VULKAN, LogSeverity::trace,
-                          "Renderpass destroyed");
-    }
-    if (!m_framebuffers.empty())
-    {
-        for (const auto &f : m_framebuffers)
-            m_device->current.destroyFramebuffer(f);
-        m_framebuffers.clear();
-    }
-
     std::vector<vk::AttachmentDescription> attachments;
 
     // Description of the image render pass will be writing into.
-    vk::AttachmentDescription colorAttachmentDesc(
-        vk::AttachmentDescriptionFlags(), m_swapchain->imageFormat,
-        vk::SampleCountFlagBits::e1, vk::AttachmentLoadOp::eClear,
+    const vk::AttachmentDescription colorAttachmentDesc(
+        vk::AttachmentDescriptionFlags(), m_properties.colorFormat,
+        vk::SampleCountFlagBits::e1,
+        m_properties.clearColor ? vk::AttachmentLoadOp::eClear
+                                : vk::AttachmentLoadOp::eLoad,
         vk::AttachmentStoreOp::eStore, vk::AttachmentLoadOp::eDontCare,
-        vk::AttachmentStoreOp::eDontCare, vk::ImageLayout::eUndefined,
-        vk::ImageLayout::ePresentSrcKHR);
+        vk::AttachmentStoreOp::eDontCare,
+        m_properties.type == RenderPassType::FIRST
+            ? vk::ImageLayout::eUndefined
+            : vk::ImageLayout::eColorAttachmentOptimal,
+        m_properties.type == RenderPassType::LAST
+            ? vk::ImageLayout::ePresentSrcKHR
+            : (m_properties.type == RenderPassType::OFFSCREEN
+                   ? vk::ImageLayout::eShaderReadOnlyOptimal
+                   : vk::ImageLayout::eColorAttachmentOptimal));
 
     // Description of the depth buffer image for z-testing.
-    vk::AttachmentDescription depthAttachmentDesc(
-        vk::AttachmentDescriptionFlags(),
-        m_depthTexture->getProperties().format, vk::SampleCountFlagBits::e1,
-        vk::AttachmentLoadOp::eClear, vk::AttachmentStoreOp::eStore,
-        vk::AttachmentLoadOp::eClear, vk::AttachmentStoreOp::eDontCare,
-        vk::ImageLayout::eUndefined,
-        vk::ImageLayout::eDepthStencilAttachmentOptimal);
+    const vk::AttachmentDescription depthAttachmentDesc(
+        vk::AttachmentDescriptionFlags(), m_properties.depthFormat,
+        vk::SampleCountFlagBits::e1,
+        m_properties.clearDepth ? vk::AttachmentLoadOp::eClear
+                                : vk::AttachmentLoadOp::eLoad,
+        vk::AttachmentStoreOp::eStore, vk::AttachmentLoadOp::eClear,
+        vk::AttachmentStoreOp::eDontCare,
+        m_properties.clearDepth
+            ? vk::ImageLayout::eUndefined
+            : vk::ImageLayout::eDepthStencilAttachmentOptimal,
+        m_properties.type == RenderPassType::OFFSCREEN
+            ? vk::ImageLayout::eShaderReadOnlyOptimal
+            : vk::ImageLayout::eDepthStencilAttachmentOptimal);
 
     attachments.push_back(colorAttachmentDesc);
     attachments.push_back(depthAttachmentDesc);
 
     // Create attachment references for sub-passes.
-    vk::AttachmentReference colorAttachmentRef(
+    const vk::AttachmentReference colorAttachmentRef(
         0, vk::ImageLayout::eColorAttachmentOptimal);
-    vk::AttachmentReference depthAttachmentRef(
+    const vk::AttachmentReference depthAttachmentRef(
         1, vk::ImageLayout::eDepthStencilAttachmentOptimal);
 
     // Create subpass.
-    vk::SubpassDescription subpassDesc(
+    const vk::SubpassDescription subpassDesc(
         vk::SubpassDescriptionFlags(), vk::PipelineBindPoint::eGraphics, {},
         colorAttachmentRef, {}, &depthAttachmentRef);
 
     // Create subpass dependencies.
-    vk::SubpassDependency colorDependency(
-        VK_SUBPASS_EXTERNAL, 0,
-        vk::PipelineStageFlagBits::eColorAttachmentOutput,
-        vk::PipelineStageFlagBits::eColorAttachmentOutput,
-        vk::AccessFlagBits::eNone, vk::AccessFlagBits::eColorAttachmentWrite);
-
-    vk::SubpassDependency depthDependency(
-        VK_SUBPASS_EXTERNAL, 0,
-        vk::PipelineStageFlagBits::eEarlyFragmentTests |
-            vk::PipelineStageFlagBits::eLateFragmentTests,
-        vk::PipelineStageFlagBits::eEarlyFragmentTests |
-            vk::PipelineStageFlagBits::eLateFragmentTests,
-        vk::AccessFlagBits::eNone,
-        vk::AccessFlagBits::eDepthStencilAttachmentWrite);
 
     std::vector<vk::SubpassDependency> subpassDependencies;
+    if (m_properties.type == RenderPassType::OFFSCREEN)
+    {
+        const vk::SubpassDependency d1{
+            VK_SUBPASS_EXTERNAL,
+            0,
+            vk::PipelineStageFlagBits::eFragmentShader,
+            vk::PipelineStageFlagBits::eColorAttachmentOutput,
+            vk::AccessFlagBits::eShaderRead,
+            vk::AccessFlagBits::eColorAttachmentWrite,
+            vk::DependencyFlagBits::eByRegion};
+        const vk::SubpassDependency d2{
+            0,
+            VK_SUBPASS_EXTERNAL,
+            vk::PipelineStageFlagBits::eColorAttachmentOutput,
+            vk::PipelineStageFlagBits::eFragmentShader,
+            vk::AccessFlagBits::eColorAttachmentWrite,
+            vk::AccessFlagBits::eShaderRead,
+            vk::DependencyFlagBits::eByRegion};
+        subpassDependencies.push_back(d1);
+        subpassDependencies.push_back(d2);
+    }
+    else
+    {
+        const vk::SubpassDependency colorDependency(
+            VK_SUBPASS_EXTERNAL, 0,
+            vk::PipelineStageFlagBits::eColorAttachmentOutput,
+            vk::PipelineStageFlagBits::eColorAttachmentOutput,
+            vk::AccessFlagBits::eNone,
+            vk::AccessFlagBits::eColorAttachmentRead |
+                vk::AccessFlagBits::eColorAttachmentWrite);
+
+        const vk::SubpassDependency depthDependency(
+            VK_SUBPASS_EXTERNAL, 0,
+            vk::PipelineStageFlagBits::eEarlyFragmentTests |
+                vk::PipelineStageFlagBits::eLateFragmentTests,
+            vk::PipelineStageFlagBits::eEarlyFragmentTests |
+                vk::PipelineStageFlagBits::eLateFragmentTests,
+            vk::AccessFlagBits::eNone,
+            vk::AccessFlagBits::eDepthStencilAttachmentRead |
+                vk::AccessFlagBits::eDepthStencilAttachmentWrite);
+        subpassDependencies.push_back(colorDependency);
+        subpassDependencies.push_back(depthDependency);
+    }
 
     // Create Renderpass.
     vk::RenderPassCreateInfo createInfo(vk::RenderPassCreateFlags(),
@@ -82,21 +114,6 @@ bool kirana::viewport::vulkan::RenderPass::initialize(
         m_current = m_device->current.createRenderPass(createInfo);
         Logger::get().log(constants::LOG_CHANNEL_VULKAN, LogSeverity::trace,
                           "Renderpass created");
-
-        vk::FramebufferCreateInfo frameBufferInfo(
-            vk::FramebufferCreateFlags(), m_current, {},
-            m_swapchain->imageExtent.width, m_swapchain->imageExtent.height, 1);
-
-        for (const auto &i : m_swapchain->getImages())
-        {
-            std::vector<vk::ImageView> framebufferAttachments{
-                i->getImageView(), m_depthTexture->getImageView()};
-            frameBufferInfo.setAttachments(framebufferAttachments);
-            m_framebuffers.emplace_back(
-                m_device->current.createFramebuffer(frameBufferInfo));
-        }
-        Logger::get().log(constants::LOG_CHANNEL_VULKAN, LogSeverity::trace,
-                          "Framebuffers created");
         return true;
     }
     catch (...)
@@ -104,16 +121,6 @@ bool kirana::viewport::vulkan::RenderPass::initialize(
         handleVulkanException();
     }
     return false;
-}
-
-
-kirana::viewport::vulkan::RenderPass::RenderPass(
-    const Device *const device, const Swapchain *const swapchain,
-    const Texture *const depthTexture)
-    : m_isInitialized{false}, m_device{device}, m_swapchain{swapchain},
-      m_depthTexture{depthTexture}
-{
-    m_isInitialized = initialize(m_depthTexture);
 }
 
 kirana::viewport::vulkan::RenderPass::~RenderPass()
@@ -126,19 +133,5 @@ kirana::viewport::vulkan::RenderPass::~RenderPass()
             Logger::get().log(constants::LOG_CHANNEL_VULKAN, LogSeverity::trace,
                               "Renderpass destroyed");
         }
-        if (!m_framebuffers.empty())
-        {
-            for (const auto &f : m_framebuffers)
-                m_device->current.destroyFramebuffer(f);
-            m_framebuffers.clear();
-            Logger::get().log(constants::LOG_CHANNEL_VULKAN, LogSeverity::trace,
-                              "Framebuffers destroyed");
-        }
     }
-}
-
-[[nodiscard]] std::array<uint32_t, 2> kirana::viewport::vulkan::RenderPass::
-    getSurfaceResolution() const
-{
-    return m_swapchain->getSurfaceResolution();
 }

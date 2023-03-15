@@ -7,6 +7,7 @@
 #include <limits>
 #include <memory>
 #include <transform.hpp>
+#include <vector2.hpp>
 
 namespace vma
 {

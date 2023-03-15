@@ -51,7 +51,7 @@ class CommandBuffers
 
     void beginRenderPass(const vk::RenderPass &renderPass,
                          const vk::Framebuffer &framebuffer,
-                         vk::Extent2D imageExtent,
+                         vk::Rect2D imageRect,
                          const std::vector<vk::ClearValue> &clearValues,
                          uint32_t index = 0) const;
 
