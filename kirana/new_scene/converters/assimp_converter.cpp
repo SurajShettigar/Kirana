@@ -1,8 +1,8 @@
-#include "assimp_converter.h"
-
+#include "assimp_converter.hpp"
 
 #include <assimp/scene.h>
-#include "../scene.hpp"
+#include <math_utils.hpp>
+#include <scene.hpp>
 
 bool kirana::scene::converters::AssimpConverter::convertTransform(
     const void *inputTransform, math::Transform *outputTransform)
@@ -78,12 +78,99 @@ bool kirana::scene::converters::AssimpConverter::convertMesh(
     return true;
 }
 
+bool kirana::scene::converters::AssimpConverter::convertTexture(
+    const void *inputTexture, scene::Image *outputTexture)
+{
+    const auto &texture = *reinterpret_cast<const aiTexture *>(inputTexture);
+    *outputTexture = scene::Image(texture.mFilename.C_Str(), ImageProperties{});
+    return true;
+}
+
 bool kirana::scene::converters::AssimpConverter::convertMaterial(
     const void *inputMaterial, scene::Material *outputMaterial)
 {
     const auto &material = *reinterpret_cast<const aiMaterial *>(inputMaterial);
 
-    outputMaterial->m_name = material.GetName().C_Str();
+    *outputMaterial = Material::DEFAULT_MATERIAL_SHADED;
+    if (material.GetName().length > 0)
+        outputMaterial->m_name = material.GetName().C_Str();
+
+    auto getTexture = [&](aiTextureType type) -> Image {
+        if (material.GetTextureCount(type) <= 0)
+            return Image{};
+        aiString texPath;
+        aiTextureMapping texMapping = aiTextureMapping_UV;
+        uint32_t uvIndex = 0;
+        aiTextureMapMode texMapMode = aiTextureMapMode_Wrap;
+        material.GetTexture(type, 0, &texPath, &texMapping, &uvIndex, nullptr,
+                            nullptr, &texMapMode);
+        ImageProperties props{};
+        if (texMapping != aiTextureMapping_OTHER)
+            props.textureMapping = static_cast<TextureMapping>(texMapping);
+        props.uvIndex = uvIndex;
+        switch (texMapMode)
+        {
+        case aiTextureMapMode_Wrap:
+            props.uvwWrapMode = {WrapMode::REPEAT, WrapMode::REPEAT,
+                                 WrapMode::REPEAT};
+            break;
+        case aiTextureMapMode_Clamp:
+            props.uvwWrapMode = {WrapMode::CLAMP_TO_EDGE,
+                                 WrapMode::CLAMP_TO_EDGE,
+                                 WrapMode::CLAMP_TO_EDGE};
+            break;
+        case aiTextureMapMode_Decal:
+            props.uvwWrapMode = {WrapMode::CLAMP_TO_BORDER,
+                                 WrapMode::CLAMP_TO_BORDER,
+                                 WrapMode::CLAMP_TO_BORDER};
+            break;
+        case aiTextureMapMode_Mirror:
+            props.uvwWrapMode = {WrapMode::MIRRORED_REPEAT,
+                                 WrapMode::MIRRORED_REPEAT,
+                                 WrapMode::MIRRORED_REPEAT};
+            break;
+        default:
+            break;
+        }
+        Image tex{texPath.C_Str(), props};
+        return tex;
+    };
+
+    Image texture = getTexture(aiTextureType_DIFFUSE);
+    if (!texture.m_filepath.empty())
+        outputMaterial->setTextureParameter("_BaseMap", texture);
+    texture = getTexture(aiTextureType_EMISSIVE);
+    if (!texture.m_filepath.empty())
+        outputMaterial->setTextureParameter("_EmissiveMap", texture);
+    texture = getTexture(aiTextureType_NORMALS);
+    if (!texture.m_filepath.empty())
+        outputMaterial->setTextureParameter("_NormalMap", texture);
+
+    aiColor3D diffuseColor{1.0f, 1.0f, 1.0f};
+    material.Get(AI_MATKEY_COLOR_DIFFUSE, diffuseColor);
+    outputMaterial->setParameter(
+        "_BaseColor",
+        math::Vector4(diffuseColor.r, diffuseColor.g, diffuseColor.b, 1.0f));
+
+    aiColor3D emissiveColor{0.0f, 0.0f, 0.0f};
+    material.Get(AI_MATKEY_COLOR_EMISSIVE, emissiveColor);
+    const math::Vector4 emissiveFactor =
+        math::Vector4(emissiveColor.r, emissiveColor.g, emissiveColor.b, 1.0f);
+    outputMaterial->setParameter("_EmissiveColor",
+                                 math::Vector4::normalize(emissiveFactor));
+    outputMaterial->setParameter("_EmissiveIntensity", emissiveFactor.length());
+
+    float opacity{1.0f};
+    material.Get(AI_MATKEY_OPACITY, opacity);
+    outputMaterial->setParameter("_Transmission", opacity);
+
+    float gloss{0.0f};
+    material.Get(AI_MATKEY_SHININESS_STRENGTH, gloss);
+    gloss = math::clampf(std::sqrtf(gloss), 0.0f, 1.0f);
+    outputMaterial->setParameter("_Roughness", 1.0f - gloss);
+    float ior{1.0f};
+    material.Get(AI_MATKEY_REFRACTI, ior);
+    outputMaterial->setParameter("_Ior", ior);
     return true;
 }
 
@@ -105,12 +192,10 @@ bool kirana::scene::converters::AssimpConverter::convertCamera(
     return true;
 }
 
-bool kirana::scene::converters::AssimpConverter::traverseScene(
+bool kirana::scene::converters::AssimpConverter::generateSceneGraph(
     const aiScene &scene, scene::Scene *outputScene, const aiNode &node,
     int parent)
 {
-    const uint32_t nodeIndex = outputScene->m_sceneGraph.addNode(parent);
-
     math::Transform lTrans;
     if (!convertTransform(&node.mTransformation, &lTrans))
         return false;
@@ -118,19 +203,20 @@ bool kirana::scene::converters::AssimpConverter::traverseScene(
         static_cast<uint32_t>(outputScene->m_localTransforms.size());
     outputScene->m_localTransforms.emplace_back(std::move(lTrans));
     outputScene->m_globalTransforms.emplace_back();
-    outputScene->m_nodeTransformIndexTable[nodeIndex] = transIndex;
+
+    const uint32_t nodeIndex = outputScene->addNode(
+        parent, ObjectType::EMPTY, -1, static_cast<int>(transIndex));
 
     if (node.mNumMeshes > 0)
     {
         for (uint32_t i = 0; i < node.mNumMeshes; i++)
         {
-            const uint32_t meshNodeIndex =
-                outputScene->m_sceneGraph.addNode(static_cast<int>(nodeIndex));
-
             const uint32_t meshIndex = node.mMeshes[i];
-            outputScene->m_nodeMeshIndexTable[meshNodeIndex] = meshIndex;
-            outputScene->m_meshMaterialIndexTable[meshIndex] =
-                scene.mMeshes[meshIndex]->mMaterialIndex;
+            outputScene->linkMaterialToMesh(
+                meshIndex, scene.mMeshes[meshIndex]->mMaterialIndex);
+
+            outputScene->addNode(static_cast<int>(nodeIndex), ObjectType::MESH,
+                                 static_cast<int>(meshIndex));
         }
     }
     else
@@ -142,12 +228,11 @@ bool kirana::scene::converters::AssimpConverter::traverseScene(
             });
         if (lightIter != outputScene->m_lights.end())
         {
-            const uint32_t lightNodeIndex =
-                outputScene->m_sceneGraph.addNode(static_cast<int>(nodeIndex));
-
-            const uint32_t lightIndex = static_cast<uint32_t>(
+            const auto lightIndex = static_cast<uint32_t>(
                 lightIter - outputScene->m_lights.begin());
-            outputScene->m_nodeLightIndexTable[lightNodeIndex] = lightIndex;
+
+            outputScene->addNode(static_cast<int>(nodeIndex), ObjectType::LIGHT,
+                                 static_cast<int>(lightIndex));
         }
 
         auto camIter = std::find_if(
@@ -157,16 +242,16 @@ bool kirana::scene::converters::AssimpConverter::traverseScene(
             });
         if (camIter != outputScene->m_cameras.end())
         {
-            const uint32_t camNodeIndex =
-                outputScene->m_sceneGraph.addNode(static_cast<int>(nodeIndex));
-
-            const uint32_t camIndex =
+            const auto camIndex =
                 static_cast<uint32_t>(camIter - outputScene->m_cameras.begin());
-            outputScene->m_nodeCameraIndexTable[camNodeIndex] = camIndex;
+            outputScene->addNode(static_cast<int>(nodeIndex),
+                                 ObjectType::CAMERA,
+                                 static_cast<int>(camIndex));
         }
     }
     for (uint32_t i = 0; i < node.mNumChildren; i++)
-        traverseScene(scene, outputScene, *node.mChildren[i], nodeIndex);
+        generateSceneGraph(scene, outputScene, *node.mChildren[i],
+                           static_cast<int>(nodeIndex));
 
     return true;
 }
@@ -207,5 +292,5 @@ bool kirana::scene::converters::AssimpConverter::convertScene(
             return false;
     }
 
-    return traverseScene(scene, outputScene, *scene.mRootNode, -1);
+    return generateSceneGraph(scene, outputScene, *scene.mRootNode, -1);
 }

@@ -2,6 +2,7 @@
 #define KIRANA_SCENE_CONVERTERS_ASSIMP_CONVERTER_HPP
 
 #include "converter.hpp"
+#include <string>
 
 struct aiScene;
 struct aiNode;
@@ -22,6 +23,8 @@ class AssimpConverter : public Converter
     bool convertTransform(const void *inputTransform,
                           math::Transform *outputTransform) override;
     bool convertMesh(const void *inputMesh, scene::Mesh *outputMesh) override;
+    bool convertTexture(const void *inputTexture,
+                        scene::Image *outputTexture) override;
     bool convertMaterial(const void *inputMaterial,
                          scene::Material *outputMaterial) override;
     bool convertLight(const void *inputLight,
@@ -32,10 +35,14 @@ class AssimpConverter : public Converter
                       scene::Scene *outputScene) override;
 
   private:
+    struct AssimpTexture {
+        std::string filePath;
+
+    };
     AssimpConverter() = default;
     ~AssimpConverter() override = default;
 
-    bool traverseScene(
+    bool generateSceneGraph(
         const aiScene &scene, scene::Scene *outputScene, const aiNode &node,
         int parent);
 };

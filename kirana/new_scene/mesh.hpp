@@ -27,6 +27,21 @@ class Mesh : public Object
     Mesh &operator=(const Mesh &mesh) = default;
     Mesh &operator=(Mesh &&mesh) = default;
 
+    [[nodiscard]] inline const std::vector<Vertex> &getVertices() const
+    {
+        return m_vertices;
+    }
+
+    [[nodiscard]] inline const std::vector<INDEX_TYPE> &getIndices() const
+    {
+        return m_indices;
+    }
+
+    [[nodiscard]] inline const math::Bounds3 &getBounds() const
+    {
+        return m_bounds;
+    }
+
   protected:
     std::vector<Vertex> m_vertices;
     std::vector<INDEX_TYPE> m_indices;

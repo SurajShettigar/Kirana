@@ -9,6 +9,7 @@ class Transform;
 namespace kirana::scene
 {
 class Mesh;
+class Image;
 class Material;
 class Light;
 class Camera;
@@ -27,6 +28,8 @@ class Converter
                                   math::Transform *outputTransform) = 0;
     virtual bool convertMesh(const void *inputMesh,
                              scene::Mesh *outputMesh) = 0;
+    virtual bool convertTexture(const void *inputTexture,
+                                scene::Image *outputTexture) = 0;
     virtual bool convertMaterial(const void *inputMaterial,
                                  scene::Material *outputMaterial) = 0;
     virtual bool convertLight(const void *inputLight,

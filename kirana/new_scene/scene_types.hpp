@@ -41,12 +41,22 @@ struct Vertex
     }
 };
 
+enum class ObjectType
+{
+    EMPTY = 0,
+    MESH = 1, LIGHT = 2,
+    CAMERA = 3,
+};
+
 struct Node
 {
     int parent = -1;
     int child = -1;
     int sibling = -1;
     uint32_t level = 0;
+    ObjectType objectType = ObjectType::EMPTY;
+    int objectIndex = -1;
+    int transformIndex = -1;
 };
 
 } // namespace kirana::scene
