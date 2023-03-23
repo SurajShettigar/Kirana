@@ -1,6 +1,6 @@
 #include "image_manager.hpp"
 
-#include "converters/stb_image_converter.hpp"
+#include "external/stb_image_loader.hpp"
 #include <file_system.hpp>
 
 
@@ -38,7 +38,7 @@ bool kirana::scene::ImageManager::loadImage(uint32_t imageIndex,
         return false;
 
     Image &image = m_images[imageIndex];
-    if (!converters::STBImageConverter::get().loadImage(&image, pixelData))
+    if (!external::STBImageLoader::get().loadImage(&image, pixelData))
         return false;
 
     m_loadedImageTable[imageIndex] = pixelData;
@@ -52,7 +52,7 @@ void kirana::scene::ImageManager::freeImage(uint32_t imageIndex)
         m_loadedImageTable.at(imageIndex) == nullptr)
         return;
 
-    converters::STBImageConverter::get().freeImage(
+    external::STBImageLoader::get().freeImage(
         m_loadedImageTable.at(imageIndex));
     m_loadedImageTable.erase(imageIndex);
 }

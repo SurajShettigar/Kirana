@@ -8,5 +8,5 @@ target_include_directories(scene PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
 target_link_libraries(scene PUBLIC math
         PRIVATE utils assimp stb)
 
-#add_executable(SceneTest scene_test.cpp)
-#target_link_libraries(SceneTest scene)
+add_executable(TestSceneLoad tests/test_scene_load.cpp)
+target_link_libraries(TestSceneLoad scene)

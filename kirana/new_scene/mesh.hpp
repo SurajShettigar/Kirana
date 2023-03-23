@@ -8,7 +8,7 @@ namespace kirana::scene
 {
 class Mesh : public Object
 {
-    friend class converters::AssimpConverter;
+    friend class external::AssimpSceneConverter;
 
   public:
     Mesh() = default;

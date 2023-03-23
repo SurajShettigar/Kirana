@@ -1,10 +1,10 @@
-#include "assimp_converter.hpp"
+#include "assimp_scene_converter.hpp"
 
 #include <assimp/scene.h>
 #include <math_utils.hpp>
 #include <scene.hpp>
 
-bool kirana::scene::converters::AssimpConverter::convertTransform(
+bool kirana::scene::external::AssimpSceneConverter::convertTransform(
     const void *inputTransform, math::Transform *outputTransform)
 {
     const auto &mat = *reinterpret_cast<const aiMatrix4x4 *>(inputTransform);
@@ -16,7 +16,7 @@ bool kirana::scene::converters::AssimpConverter::convertTransform(
     return true;
 }
 
-bool kirana::scene::converters::AssimpConverter::convertMesh(
+bool kirana::scene::external::AssimpSceneConverter::convertMesh(
     const void *inputMesh, scene::Mesh *outputMesh)
 {
     const auto &mesh = *reinterpret_cast<const aiMesh *>(inputMesh);
@@ -78,7 +78,7 @@ bool kirana::scene::converters::AssimpConverter::convertMesh(
     return true;
 }
 
-bool kirana::scene::converters::AssimpConverter::convertTexture(
+bool kirana::scene::external::AssimpSceneConverter::convertTexture(
     const void *inputTexture, scene::Image *outputTexture)
 {
     const auto &texture = *reinterpret_cast<const aiTexture *>(inputTexture);
@@ -86,7 +86,7 @@ bool kirana::scene::converters::AssimpConverter::convertTexture(
     return true;
 }
 
-bool kirana::scene::converters::AssimpConverter::convertMaterial(
+bool kirana::scene::external::AssimpSceneConverter::convertMaterial(
     const void *inputMaterial, scene::Material *outputMaterial)
 {
     const auto &material = *reinterpret_cast<const aiMaterial *>(inputMaterial);
@@ -174,7 +174,7 @@ bool kirana::scene::converters::AssimpConverter::convertMaterial(
     return true;
 }
 
-bool kirana::scene::converters::AssimpConverter::convertLight(
+bool kirana::scene::external::AssimpSceneConverter::convertLight(
     const void *inputLight, scene::Light *outputLight)
 {
     const auto &light = *reinterpret_cast<const aiLight *>(inputLight);
@@ -183,29 +183,46 @@ bool kirana::scene::converters::AssimpConverter::convertLight(
     return true;
 }
 
-bool kirana::scene::converters::AssimpConverter::convertCamera(
+bool kirana::scene::external::AssimpSceneConverter::convertCamera(
     const void *inputCamera, scene::Camera *outputCamera)
 {
     const auto &camera = *reinterpret_cast<const aiCamera *>(inputCamera);
 
-    outputCamera->m_name = camera.mName.C_Str();
+    float orthoSize = 0.0f;
+    scene::CameraProjection projection = scene::CameraProjection::PERSPECTIVE;
+    if (camera.mOrthographicWidth > 0.0f)
+    {
+        orthoSize = camera.mOrthographicWidth * 2.0f;
+        projection = scene::CameraProjection::ORTHOGRAPHIC;
+    }
+
+    *outputCamera = scene::Camera(camera.mName.C_Str(),
+                                  CameraProperties{
+                                      projection,
+                                      camera.mAspect,
+                                      camera.mClipPlaneFar,
+                                      camera.mClipPlaneNear,
+                                      orthoSize,
+                                      math::degrees(camera.mHorizontalFOV),
+                                  },
+                                  math::Transform{});
     return true;
 }
 
-bool kirana::scene::converters::AssimpConverter::generateSceneGraph(
+bool kirana::scene::external::AssimpSceneConverter::generateSceneGraph(
     const aiScene &scene, scene::Scene *outputScene, const aiNode &node,
     int parent)
 {
     math::Transform lTrans;
-    if (!convertTransform(&node.mTransformation, &lTrans))
-        return false;
+    convertTransform(&node.mTransformation, &lTrans);
     const auto transIndex =
         static_cast<uint32_t>(outputScene->m_localTransforms.size());
     outputScene->m_localTransforms.emplace_back(std::move(lTrans));
     outputScene->m_globalTransforms.emplace_back();
 
-    const uint32_t nodeIndex = outputScene->addNode(
-        parent, ObjectType::EMPTY, -1, static_cast<int>(transIndex));
+    const uint32_t nodeIndex =
+        outputScene->addNode(parent, ObjectType::EMPTY, -1,
+                             static_cast<int>(transIndex), node.mName.C_Str());
 
     if (node.mNumMeshes > 0)
     {
@@ -216,7 +233,8 @@ bool kirana::scene::converters::AssimpConverter::generateSceneGraph(
                 meshIndex, scene.mMeshes[meshIndex]->mMaterialIndex);
 
             outputScene->addNode(static_cast<int>(nodeIndex), ObjectType::MESH,
-                                 static_cast<int>(meshIndex));
+                                 static_cast<int>(meshIndex), -1,
+                                 scene.mMeshes[meshIndex]->mName.C_Str());
         }
     }
     else
@@ -232,7 +250,8 @@ bool kirana::scene::converters::AssimpConverter::generateSceneGraph(
                 lightIter - outputScene->m_lights.begin());
 
             outputScene->addNode(static_cast<int>(nodeIndex), ObjectType::LIGHT,
-                                 static_cast<int>(lightIndex));
+                                 static_cast<int>(lightIndex), -1,
+                                 lightIter->getName());
         }
 
         auto camIter = std::find_if(
@@ -245,8 +264,8 @@ bool kirana::scene::converters::AssimpConverter::generateSceneGraph(
             const auto camIndex =
                 static_cast<uint32_t>(camIter - outputScene->m_cameras.begin());
             outputScene->addNode(static_cast<int>(nodeIndex),
-                                 ObjectType::CAMERA,
-                                 static_cast<int>(camIndex));
+                                 ObjectType::CAMERA, static_cast<int>(camIndex),
+                                 -1, camIter->getName());
         }
     }
     for (uint32_t i = 0; i < node.mNumChildren; i++)
@@ -256,22 +275,38 @@ bool kirana::scene::converters::AssimpConverter::generateSceneGraph(
     return true;
 }
 
-bool kirana::scene::converters::AssimpConverter::convertScene(
+bool kirana::scene::external::AssimpSceneConverter::convertScene(
     const void *inputScene, scene::Scene *outputScene)
 {
     const aiScene &scene = *reinterpret_cast<const aiScene *>(inputScene);
 
-    outputScene->m_name = scene.mName.C_Str();
+    if (scene.mName.length > 0)
+        outputScene->m_name = scene.mName.C_Str();
 
     outputScene->m_meshes.resize(scene.mNumMeshes);
     outputScene->m_materials.resize(scene.mNumMaterials);
     outputScene->m_lights.resize(scene.mNumLights);
     outputScene->m_cameras.resize(scene.mNumCameras);
 
+    outputScene->m_stats.vertexSize =
+        static_cast<uint32_t>(sizeof(scene::Vertex));
+    outputScene->m_stats.indexSize =
+        static_cast<uint32_t>(sizeof(scene::INDEX_TYPE));
+    outputScene->m_stats.numMeshes = scene.mNumMeshes;
+    outputScene->m_stats.numMaterials = scene.mNumMaterials;
+    outputScene->m_stats.numLights = scene.mNumLights;
+    outputScene->m_stats.numCameras = scene.mNumCameras;
+
+    outputScene->m_stats.numVertices = 0;
+    outputScene->m_stats.numIndices = 0;
     for (uint32_t i = 0; i < scene.mNumMeshes; i++)
     {
         if (!convertMesh(scene.mMeshes[i], &outputScene->m_meshes[i]))
             return false;
+        outputScene->m_stats.numVertices +=
+            static_cast<uint32_t>(outputScene->m_meshes[i].m_vertices.size());
+        outputScene->m_stats.numIndices +=
+            static_cast<uint32_t>(outputScene->m_meshes[i].m_indices.size());
     }
 
     for (uint32_t i = 0; i < scene.mNumMaterials; i++)

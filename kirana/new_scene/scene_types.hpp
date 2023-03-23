@@ -44,7 +44,8 @@ struct Vertex
 enum class ObjectType
 {
     EMPTY = 0,
-    MESH = 1, LIGHT = 2,
+    MESH = 1,
+    LIGHT = 2,
     CAMERA = 3,
 };
 
@@ -57,6 +58,59 @@ struct Node
     ObjectType objectType = ObjectType::EMPTY;
     int objectIndex = -1;
     int transformIndex = -1;
+    std::string name;
+};
+
+struct SceneImportSettings
+{
+    bool calculateTangentSpace = false;
+    bool joinIdenticalVertices = false;
+    bool triangulate = true;
+    bool generateNormals = false;
+    bool generateSmoothNormals = false;
+    bool improveCacheLocality = true;
+    bool optimizeMesh = true;
+    bool preTransformVertices = false;
+    bool generateBoundingBoxes = true;
+    bool generateUVs = true;
+    bool transformUVs = false;
+    bool flipUVs = false;
+};
+
+struct SceneStatistics
+{
+    uint32_t vertexSize = 0;
+    uint32_t numVertices = 0;
+    uint32_t indexSize = 0;
+    uint32_t numIndices = 0;
+    uint32_t numMeshes = 0;
+    uint32_t numMaterials = 0;
+    uint32_t numLights = 0;
+    uint32_t numCameras = 0;
+
+    [[nodiscard]] inline size_t getTotalVertexSize() const
+    {
+        return static_cast<size_t>(vertexSize) * numVertices;
+    }
+
+    [[nodiscard]] inline size_t getTotalIndexSize() const
+    {
+        return static_cast<size_t>(indexSize) * numIndices;
+    }
+
+    explicit operator std::string() const
+    {
+        return "{Vertex Size: " + std::to_string(vertexSize) + ", " +
+               "Num. Vertices: " + std::to_string(numVertices) + ", " +
+               "Total Vertex Size: " + std::to_string(getTotalVertexSize()) +
+               ", " + "Index Size: " + std::to_string(indexSize) + ", " +
+               "Num. Indices: " + std::to_string(numIndices) + ", " +
+               "Total Index Size: " + std::to_string(getTotalIndexSize()) +
+               ", " + "Num. Meshes: " + std::to_string(numMeshes) + ", " +
+               "Num. Materials: " + std::to_string(numMaterials) + ", " +
+               "Num. Lights: " + std::to_string(numLights) + ", " +
+               "Num. Cameras: " + std::to_string(numCameras) + "}";
+    }
 };
 
 } // namespace kirana::scene

@@ -3,17 +3,18 @@
 
 #include <string>
 
-namespace kirana::scene::converters
+namespace kirana::scene::external
 {
-class AssimpConverter;
-} // namespace kirana::scene::converters
+class AssimpSceneConverter;
+} // namespace kirana::scene::external
 
 namespace kirana::scene
 {
 
 class Object
 {
-    friend class converters::AssimpConverter;
+    friend class external::AssimpSceneConverter;
+
   public:
     Object() = default;
     explicit Object(std::string name) : m_name{std::move(name)} {};
@@ -21,12 +22,17 @@ class Object
 
     Object(const Object &object) = default;
     Object(Object &&object) = default;
-    Object& operator=(const Object &object) = default;
-    Object& operator=(Object &&object) = default;
+    Object &operator=(const Object &object) = default;
+    Object &operator=(Object &&object) = default;
 
     [[nodiscard]] inline const std::string &getName() const
     {
         return m_name;
+    }
+
+    inline void setName(const std::string &name)
+    {
+        m_name = name;
     }
 
   protected:

@@ -8,7 +8,7 @@ namespace kirana::scene
 {
 class Material : public Object, public MaterialProperties
 {
-    friend class converters::AssimpConverter;
+    friend class external::AssimpSceneConverter;
 
   public:
     // Static Materials

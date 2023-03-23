@@ -8,7 +8,7 @@ namespace kirana::scene
 
 class Light : public Object
 {
-    friend class converters::AssimpConverter;
+    friend class external::AssimpSceneConverter;
   public:
     Light() = default;
     explicit Light(std::string name) : Object(std::move(name)){};

@@ -1,5 +1,5 @@
-#ifndef KIRANA_SCENE_CONVERTERS_CONVERTER_HPP
-#define KIRANA_SCENE_CONVERTERS_CONVERTER_HPP
+#ifndef KIRANA_SCENE_EXTERNAL_SCENE_CONVERTER_HPP
+#define KIRANA_SCENE_EXTERNAL_SCENE_CONVERTER_HPP
 
 namespace kirana::math
 {
@@ -16,12 +16,12 @@ class Camera;
 class Scene;
 } // namespace kirana::scene
 
-namespace kirana::scene::converters
+namespace kirana::scene::external
 {
-class Converter
+class SceneConverter
 {
   public:
-    Converter(const Converter &converter) = delete;
+    SceneConverter(const SceneConverter &converter) = delete;
 
 
     virtual bool convertTransform(const void *inputTransform,
@@ -40,8 +40,8 @@ class Converter
                               scene::Scene *outputScene) = 0;
 
   protected:
-    Converter() = default;
-    virtual ~Converter() = default;
+    SceneConverter() = default;
+    virtual ~SceneConverter() = default;
 };
-} // namespace kirana::scene::converters
-#endif // KIRANA_SCENE_CONVERTERS_CONVERTER_HPP
+} // namespace kirana::scene::external
+#endif

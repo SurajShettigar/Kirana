@@ -1,5 +1,5 @@
-#ifndef KIRANA_SCENE_CONVERTERS_IMAGE_CONVERTER_HPP
-#define KIRANA_SCENE_CONVERTERS_IMAGE_CONVERTER_HPP
+#ifndef KIRANA_SCENE_EXTERNAL_IMAGE_LOADER_HPP
+#define KIRANA_SCENE_EXTERNAL_IMAGE_LOADER_HPP
 
 
 namespace kirana::scene
@@ -7,19 +7,18 @@ namespace kirana::scene
 class Image;
 } // namespace kirana::scene
 
-namespace kirana::scene::converters
+namespace kirana::scene::external
 {
-class ImageConverter
+class ImageLoader
 {
   public:
-    ImageConverter(const ImageConverter &imageConverter) = delete;
+    ImageLoader(const ImageLoader &imageLoader) = delete;
 
     virtual bool loadImage(scene::Image *image, void *pixelData) = 0;
     virtual void freeImage(void *pixelData) = 0;
-
   protected:
-    ImageConverter() = default;
-    ~ImageConverter() = default;
+    ImageLoader() = default;
+    ~ImageLoader() = default;
 };
 } // namespace kirana::scene::converters
 #endif // KIRANA_SCENE_CONVERTERS_CONVERTER_HPP

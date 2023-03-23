@@ -1,22 +1,22 @@
-#ifndef KIRANA_SCENE_CONVERTERS_ASSIMP_CONVERTER_HPP
-#define KIRANA_SCENE_CONVERTERS_ASSIMP_CONVERTER_HPP
+#ifndef KIRANA_SCENE_EXTERNAL_ASSIMP_SCENE_CONVERTER_HPP
+#define KIRANA_SCENE_EXTERNAL_ASSIMP_SCENE_CONVERTER_HPP
 
-#include "converter.hpp"
+#include "scene_converter.hpp"
 #include <string>
 
 struct aiScene;
 struct aiNode;
 
-namespace kirana::scene::converters
+namespace kirana::scene::external
 {
-class AssimpConverter : public Converter
+class AssimpSceneConverter : public SceneConverter
 {
   public:
-    AssimpConverter(const AssimpConverter &converter) = delete;
+    AssimpSceneConverter(const AssimpSceneConverter &converter) = delete;
 
-    static AssimpConverter &get()
+    static AssimpSceneConverter &get()
     {
-        static AssimpConverter instance;
+        static AssimpSceneConverter instance;
         return instance;
     }
 
@@ -35,18 +35,17 @@ class AssimpConverter : public Converter
                       scene::Scene *outputScene) override;
 
   private:
-    struct AssimpTexture {
+    struct AssimpTexture
+    {
         std::string filePath;
-
     };
-    AssimpConverter() = default;
-    ~AssimpConverter() override = default;
+    AssimpSceneConverter() = default;
+    ~AssimpSceneConverter() = default;
 
-    bool generateSceneGraph(
-        const aiScene &scene, scene::Scene *outputScene, const aiNode &node,
-        int parent);
+    bool generateSceneGraph(const aiScene &scene, scene::Scene *outputScene,
+                            const aiNode &node, int parent);
 };
 
 } // namespace kirana::scene::converters
 
-#endif // KIRANA_SCENE_CONVERTERS_ASSIMP_CONVERTER_HPP
+#endif

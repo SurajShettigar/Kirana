@@ -5,17 +5,17 @@
 #include "image_types.hpp"
 #include <string>
 
-namespace kirana::scene::converters
+namespace kirana::scene::external
 {
-class STBImageConverter;
+class STBImageLoader;
 }
 
 namespace kirana::scene
 {
 class Image: public Object
 {
-    friend class converters::STBImageConverter;
-    friend class converters::AssimpConverter;
+    friend class external::STBImageLoader;
+    friend class external::AssimpSceneConverter;
   public:
     Image() = default;
     explicit Image(std::string filepath, ImageProperties properties);

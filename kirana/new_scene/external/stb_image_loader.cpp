@@ -1,12 +1,12 @@
-#include "stb_image_converter.hpp"
+#include "stb_image_loader.hpp"
 
 #define STB_IMAGE_IMPLEMENTATION
 #include <stb_image.h>
 #include <image.hpp>
 #include <file_system.hpp>
 
-bool kirana::scene::converters::STBImageConverter::loadImage(
-    scene::Image *image, void *pixelData)
+bool kirana::scene::external::STBImageLoader::loadImage(scene::Image *image,
+                                                        void *pixelData)
 {
     const std::string &file = image->getFilepath();
     const ImageProperties &props = image->getProperties();
@@ -31,7 +31,7 @@ bool kirana::scene::converters::STBImageConverter::loadImage(
     return true;
 }
 
-void kirana::scene::converters::STBImageConverter::freeImage(void *pixelData)
+void kirana::scene::external::STBImageLoader::freeImage(void *pixelData)
 {
     if (pixelData != nullptr)
         stbi_image_free(pixelData);

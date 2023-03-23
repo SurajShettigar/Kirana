@@ -9,7 +9,7 @@ namespace kirana::scene
 
 class MaterialProperties
 {
-    friend class converters::AssimpConverter;
+    friend class external::AssimpSceneConverter;
 
   public:
     MaterialProperties() = default;
