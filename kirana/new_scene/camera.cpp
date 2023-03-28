@@ -4,6 +4,9 @@
 #include <ray.hpp>
 #include <math_utils.hpp>
 
+const kirana::scene::Camera kirana::scene::Camera::DEFAULT_PERSPECTIVE_CAM{
+    "Camera", CameraProperties{}, math::Transform{}};
+
 kirana::math::Vector3 kirana::scene::Camera::screenToWorldPosition(
     const math::Vector3 &screenPos, const math::Vector2 &resolution) const
 {

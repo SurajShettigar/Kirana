@@ -215,25 +215,18 @@ bool kirana::scene::external::AssimpSceneConverter::generateSceneGraph(
 {
     math::Transform lTrans;
     convertTransform(&node.mTransformation, &lTrans);
-    const auto transIndex =
-        static_cast<uint32_t>(outputScene->m_localTransforms.size());
-    outputScene->m_localTransforms.emplace_back(std::move(lTrans));
-    outputScene->m_globalTransforms.emplace_back();
 
-    const uint32_t nodeIndex =
-        outputScene->addNode(parent, ObjectType::EMPTY, -1,
-                             static_cast<int>(transIndex), node.mName.C_Str());
+    const uint32_t nodeIndex = outputScene->addNode(
+        parent, NodeObjectType::EMPTY, -1, lTrans, node.mName.C_Str());
 
     if (node.mNumMeshes > 0)
     {
         for (uint32_t i = 0; i < node.mNumMeshes; i++)
         {
             const uint32_t meshIndex = node.mMeshes[i];
-            outputScene->linkMaterialToMesh(
-                meshIndex, scene.mMeshes[meshIndex]->mMaterialIndex);
-
-            outputScene->addNode(static_cast<int>(nodeIndex), ObjectType::MESH,
-                                 static_cast<int>(meshIndex), -1,
+            outputScene->addNode(static_cast<int>(nodeIndex),
+                                 NodeObjectType::MESH,
+                                 static_cast<int>(meshIndex), math::Transform{},
                                  scene.mMeshes[meshIndex]->mName.C_Str());
         }
     }
@@ -249,9 +242,10 @@ bool kirana::scene::external::AssimpSceneConverter::generateSceneGraph(
             const auto lightIndex = static_cast<uint32_t>(
                 lightIter - outputScene->m_lights.begin());
 
-            outputScene->addNode(static_cast<int>(nodeIndex), ObjectType::LIGHT,
-                                 static_cast<int>(lightIndex), -1,
-                                 lightIter->getName());
+            outputScene->addNode(static_cast<int>(nodeIndex),
+                                 NodeObjectType::LIGHT,
+                                 static_cast<int>(lightIndex),
+                                 math::Transform{}, lightIter->getName());
         }
 
         auto camIter = std::find_if(
@@ -264,8 +258,9 @@ bool kirana::scene::external::AssimpSceneConverter::generateSceneGraph(
             const auto camIndex =
                 static_cast<uint32_t>(camIter - outputScene->m_cameras.begin());
             outputScene->addNode(static_cast<int>(nodeIndex),
-                                 ObjectType::CAMERA, static_cast<int>(camIndex),
-                                 -1, camIter->getName());
+                                 NodeObjectType::CAMERA,
+                                 static_cast<int>(camIndex), math::Transform{},
+                                 camIter->getName());
         }
     }
     for (uint32_t i = 0; i < node.mNumChildren; i++)
@@ -283,36 +278,21 @@ bool kirana::scene::external::AssimpSceneConverter::convertScene(
     if (scene.mName.length > 0)
         outputScene->m_name = scene.mName.C_Str();
 
-    outputScene->m_meshes.resize(scene.mNumMeshes);
     outputScene->m_materials.resize(scene.mNumMaterials);
+    outputScene->m_meshes.resize(scene.mNumMeshes);
     outputScene->m_lights.resize(scene.mNumLights);
     outputScene->m_cameras.resize(scene.mNumCameras);
-
-    outputScene->m_stats.vertexSize =
-        static_cast<uint32_t>(sizeof(scene::Vertex));
-    outputScene->m_stats.indexSize =
-        static_cast<uint32_t>(sizeof(scene::INDEX_TYPE));
-    outputScene->m_stats.numMeshes = scene.mNumMeshes;
-    outputScene->m_stats.numMaterials = scene.mNumMaterials;
-    outputScene->m_stats.numLights = scene.mNumLights;
-    outputScene->m_stats.numCameras = scene.mNumCameras;
-
-    outputScene->m_stats.numVertices = 0;
-    outputScene->m_stats.numIndices = 0;
-    for (uint32_t i = 0; i < scene.mNumMeshes; i++)
-    {
-        if (!convertMesh(scene.mMeshes[i], &outputScene->m_meshes[i]))
-            return false;
-        outputScene->m_stats.numVertices +=
-            static_cast<uint32_t>(outputScene->m_meshes[i].m_vertices.size());
-        outputScene->m_stats.numIndices +=
-            static_cast<uint32_t>(outputScene->m_meshes[i].m_indices.size());
-    }
 
     for (uint32_t i = 0; i < scene.mNumMaterials; i++)
     {
         if (!convertMaterial(scene.mMaterials[i], &outputScene->m_materials[i]))
             return false;
+    }
+    for (uint32_t i = 0; i < scene.mNumMeshes; i++)
+    {
+        if (!convertMesh(scene.mMeshes[i], &outputScene->m_meshes[i]))
+            return false;
+        outputScene->setMeshMaterial(i, scene.mMeshes[i]->mMaterialIndex);
     }
 
     for (uint32_t i = 0; i < scene.mNumLights; i++)
@@ -327,5 +307,8 @@ bool kirana::scene::external::AssimpSceneConverter::convertScene(
             return false;
     }
 
-    return generateSceneGraph(scene, outputScene, *scene.mRootNode, -1);
+    if (!generateSceneGraph(scene, outputScene, *scene.mRootNode, -1))
+        return false;
+    outputScene->postProcess();
+    return true;
 }

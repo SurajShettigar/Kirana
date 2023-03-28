@@ -4,10 +4,12 @@
 #include <transform.hpp>
 #include <vector2.hpp>
 #include <array>
+#include <id_manager.hpp>
 
 namespace kirana::scene
 {
 typedef uint32_t INDEX_TYPE;
+typedef utils::ID ObjectID;
 
 enum class VertexAttributeFormat
 {
@@ -41,7 +43,7 @@ struct Vertex
     }
 };
 
-enum class ObjectType
+enum class NodeObjectType
 {
     EMPTY = 0,
     MESH = 1,
@@ -49,16 +51,30 @@ enum class ObjectType
     CAMERA = 3,
 };
 
+struct NodeObjectData
+{
+    NodeObjectType type = NodeObjectType::EMPTY;
+    int objectIndex = -1;
+    int transformIndex = -1;
+};
+
+struct NodeRenderData
+{
+    bool selectable = true;
+    bool viewportVisible = true;
+    bool renderVisible = true;
+    bool selected = false;
+};
+
 struct Node
 {
+    // Graph data
     int parent = -1;
     int child = -1;
     int sibling = -1;
     uint32_t level = 0;
-    ObjectType objectType = ObjectType::EMPTY;
-    int objectIndex = -1;
-    int transformIndex = -1;
-    std::string name;
+    NodeObjectData objectData;
+    NodeRenderData renderData;
 };
 
 struct SceneImportSettings

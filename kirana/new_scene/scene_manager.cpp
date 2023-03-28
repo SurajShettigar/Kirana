@@ -19,6 +19,36 @@ void kirana::scene::SceneManager::postProcessScene(const std::string &scenePath,
         auto fName = getFilename(scenePath);
         scene.setName(fName.first + fName.second);
     }
+    scene.postProcess();
+}
+
+void kirana::scene::SceneManager::initEditorScene()
+{
+    std::vector<Material> materials;
+    materials.push_back(Material::DEFAULT_MATERIAL_EDITOR_GRID);
+    materials.push_back(Material::DEFAULT_MATERIAL_EDITOR_OUTLINE);
+    materials.push_back(Material::DEFAULT_MATERIAL_BASIC_SHADED);
+    materials.push_back(Material::DEFAULT_MATERIAL_WIREFRAME);
+    materials.push_back(Material::DEFAULT_MATERIAL_SHADED);
+
+    std::vector<Mesh> meshes;
+    meshes.push_back(Mesh::DEFAULT_QUAD);
+
+    std::vector<Camera> cameras;
+    cameras.push_back(Camera::DEFAULT_PERSPECTIVE_CAM);
+
+    m_editorScene = Scene{"EditorScene", meshes, materials, {}, cameras};
+    // Set grid's mesh material to grid material
+    m_editorScene.setMeshMaterial(0, 0);
+    // Add root node
+    m_editorScene.addNode(-1);
+    // Add grid mesh node
+    m_editorScene.addNode(0, NodeObjectType::MESH, 0, math::Transform{},
+                          meshes[0].getName());
+    // Add camera node
+    m_editorScene.addNode(0, NodeObjectType::CAMERA, 0, math::Transform{},
+                          cameras[0].getName());
+    postProcessScene("EditorScene", m_editorScene);
 }
 
 bool kirana::scene::SceneManager::loadScene(const std::string &scenePath,

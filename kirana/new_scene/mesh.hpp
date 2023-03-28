@@ -2,7 +2,6 @@
 #define KIRANA_SCENE_MESH_HPP
 
 #include "object.hpp"
-#include "scene_types.hpp"
 
 namespace kirana::scene
 {
@@ -11,6 +10,8 @@ class Mesh : public Object
     friend class external::AssimpSceneConverter;
 
   public:
+    static const Mesh DEFAULT_QUAD;
+
     Mesh() = default;
     explicit Mesh(std::string name) : Object(std::move(name)){};
     explicit Mesh(std::string name, std::vector<Vertex> vertices,

@@ -4,17 +4,17 @@
 
 using namespace kirana::scene;
 
-std::string getType(ObjectType objectType)
+std::string getType(NodeObjectType objectType)
 {
     switch (objectType)
     {
-    case ObjectType::EMPTY:
+    case NodeObjectType::EMPTY:
         return "EMPTY";
-    case ObjectType::MESH:
+    case NodeObjectType::MESH:
         return "MESH";
-    case ObjectType::LIGHT:
+    case NodeObjectType::LIGHT:
         return "LIGHT";
-    case ObjectType::CAMERA:
+    case NodeObjectType::CAMERA:
         return "CAMERA";
     }
     return "";
@@ -30,23 +30,25 @@ int main(int argc, char **argv)
         std::cout << "Stats: " << std::string(scene.getStats()) << std::endl;
         const auto &nodes = scene.getNodes();
         std::cout << "Node Hierarchy:" << std::endl;
-        for (const auto & node : nodes)
+        for (uint32_t i = 0; i < nodes.size(); i++)
         {
+            const auto &node = nodes[i];
             std::string tabs;
             for (uint32_t l = 0; l < node.level; l++)
                 tabs += "\t";
             const std::string matName =
-                node.objectType == ObjectType::MESH &&
-                        node.objectIndex > -1
+                node.objectData.type == NodeObjectType::MESH &&
+                        node.objectData.objectIndex > -1
                     ? " (Material: " +
-                          scene.getMaterialForMesh(node.objectIndex)
+                          scene.getMaterialForMesh(node.objectData.objectIndex)
                               .getName() +
                           ") "
                     : "";
 
-            std::cout << tabs << node.name /*<< " ["
-                      << getType(node.objectType) << "] "*/ << matName
-                      << std::endl;
+            const std::string nodeName = scene.getObjectAtNode(i)->getName();
+            std::cout << tabs << nodeName /*<< " ["
+                      << getType(node.objectType) << "] "*/
+                      << matName << std::endl;
         }
     }
     else

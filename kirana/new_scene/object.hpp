@@ -2,6 +2,7 @@
 #define KIRANA_SCENE_OBJECT_HPP
 
 #include <string>
+#include "scene_types.hpp"
 
 namespace kirana::scene::external
 {
@@ -17,7 +18,10 @@ class Object
 
   public:
     Object() = default;
-    explicit Object(std::string name) : m_name{std::move(name)} {};
+    explicit Object(std::string name)
+        : m_name{std::move(name)}, m_id{
+                                       utils::IDManager::get().generateUniqueID(
+                                           m_name)} {};
     virtual ~Object() = default;
 
     Object(const Object &object) = default;
@@ -30,6 +34,11 @@ class Object
         return m_name;
     }
 
+    [[nodiscard]] inline const ObjectID &getID() const
+    {
+        return m_id;
+    }
+
     inline void setName(const std::string &name)
     {
         m_name = name;
@@ -37,6 +46,7 @@ class Object
 
   protected:
     std::string m_name;
+    ObjectID m_id;
 };
 
 } // namespace kirana::scene

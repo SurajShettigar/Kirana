@@ -14,6 +14,8 @@ class Camera : public Object
     friend class external::AssimpSceneConverter;
 
   public:
+    static const Camera DEFAULT_PERSPECTIVE_CAM;
+
     Camera() = default;
     explicit Camera(std::string name, CameraProperties properties,
                     const math::Transform &globalTransform)
@@ -61,7 +63,7 @@ class Camera : public Object
         m_inverseViewProjMatrix = math::Matrix4x4::inverse(m_viewProjMatrix);
     }
 
-    void updateTransform(const math::Transform &globalTransform)
+    void setTransform(const math::Transform &globalTransform)
     {
         m_viewMatrix = calculateViewMatrix(globalTransform);
         m_viewProjMatrix = m_projectionMatrix * m_viewMatrix;

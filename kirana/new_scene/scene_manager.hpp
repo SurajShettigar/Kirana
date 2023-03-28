@@ -32,14 +32,19 @@ class SceneManager
 
   private:
     Scene m_editorScene;
+
     std::string m_currentScenePath;
     Scene m_currentScene;
-    SceneManager() = default;
+
+    SceneManager()
+    {
+        initEditorScene();
+    }
     ~SceneManager() = default;
 
-    void initEditorScene();
-
     static void postProcessScene(const std::string &scenePath, Scene &scene);
+
+    void initEditorScene();
 };
 } // namespace kirana::scene
 #endif
