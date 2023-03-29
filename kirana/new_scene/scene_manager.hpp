@@ -21,11 +21,11 @@ class SceneManager
                    const SceneImportSettings &settings = {});
     bool loadDefaultScene();
 
-    [[nodiscard]] const Scene &getEditorScene() const
+    [[nodiscard]] inline const Scene &getEditorScene() const
     {
         return m_editorScene;
     }
-    [[nodiscard]] const Scene &getCurrentScene() const
+    [[nodiscard]] inline const Scene &getCurrentScene() const
     {
         return m_currentScene;
     }

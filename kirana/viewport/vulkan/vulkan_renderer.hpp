@@ -5,7 +5,7 @@
 
 namespace kirana::scene
 {
-class ViewportScene;
+class Scene;
 }
 
 namespace kirana::window
@@ -68,7 +68,7 @@ class VulkanRenderer
     // TODO: Add a global command pool-buffer to handle one-time commands.
 
     /// Initializes vulkan.
-    void init(const window::Window *window, const scene::ViewportScene &scene,
+    void init(const window::Window *window, const scene::Scene &editorScene,
               vulkan::ShadingPipeline pipeline, vulkan::ShadingType type);
     /// Updates the transforms.
     void update();
@@ -76,6 +76,8 @@ class VulkanRenderer
     void render();
     /// Deletes vulkan objects.
     void clean();
+
+    void loadScene(const scene::Scene &scene);
 
     void setShadingPipeline(vulkan::ShadingPipeline pipeline);
     void setShadingType(vulkan::ShadingType type);

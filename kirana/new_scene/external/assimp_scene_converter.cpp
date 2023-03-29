@@ -21,7 +21,7 @@ bool kirana::scene::external::AssimpSceneConverter::convertMesh(
 {
     const auto &mesh = *reinterpret_cast<const aiMesh *>(inputMesh);
 
-    outputMesh->m_name = mesh.mName.C_Str();
+    outputMesh->setName(mesh.mName.C_Str());
 
     // TODO: Add support for other primitive types.
     if ((mesh.mPrimitiveTypes & aiPrimitiveType::aiPrimitiveType_TRIANGLE) == 0)
@@ -93,7 +93,7 @@ bool kirana::scene::external::AssimpSceneConverter::convertMaterial(
 
     *outputMaterial = Material::DEFAULT_MATERIAL_SHADED;
     if (material.GetName().length > 0)
-        outputMaterial->m_name = material.GetName().C_Str();
+        outputMaterial->setName(material.GetName().C_Str());
 
     auto getTexture = [&](aiTextureType type) -> Image {
         if (material.GetTextureCount(type) <= 0)
@@ -179,7 +179,7 @@ bool kirana::scene::external::AssimpSceneConverter::convertLight(
 {
     const auto &light = *reinterpret_cast<const aiLight *>(inputLight);
 
-    outputLight->m_name = light.mName.C_Str();
+    *outputLight = scene::Light(light.mName.C_Str());
     return true;
 }
 
@@ -213,59 +213,53 @@ bool kirana::scene::external::AssimpSceneConverter::generateSceneGraph(
     const aiScene &scene, scene::Scene *outputScene, const aiNode &node,
     int parent)
 {
-    math::Transform lTrans;
-    convertTransform(&node.mTransformation, &lTrans);
+    uint32_t currNodeIndex = 0;
+    math::Transform localTransform;
+    convertTransform(&node.mTransformation, &localTransform);
 
-    const uint32_t nodeIndex = outputScene->addNode(
-        parent, NodeObjectType::EMPTY, -1, lTrans, node.mName.C_Str());
-
+    // If the current node has meshes, create an empty node, and put the meshes
+    // as children.
     if (node.mNumMeshes > 0)
     {
+        currNodeIndex =
+            outputScene->addNode(parent, NodeObjectType::EMPTY, -1,
+                                 localTransform, node.mName.C_Str());
         for (uint32_t i = 0; i < node.mNumMeshes; i++)
         {
             const uint32_t meshIndex = node.mMeshes[i];
-            outputScene->addNode(static_cast<int>(nodeIndex),
-                                 NodeObjectType::MESH,
-                                 static_cast<int>(meshIndex), math::Transform{},
-                                 scene.mMeshes[meshIndex]->mName.C_Str());
+            outputScene->addNode(
+                static_cast<int>(currNodeIndex), NodeObjectType::MESH,
+                static_cast<int>(meshIndex), math::Transform{});
         }
     }
     else
     {
-        auto lightIter = std::find_if(
-            outputScene->m_lights.begin(), outputScene->m_lights.end(),
-            [&node](const scene::Light &light) {
-                return node.mName.C_Str() == light.m_name;
-            });
-        if (lightIter != outputScene->m_lights.end())
+        if (m_lightNameIndexTable.find(node.mName.C_Str()) !=
+            m_lightNameIndexTable.end())
         {
-            const auto lightIndex = static_cast<uint32_t>(
-                lightIter - outputScene->m_lights.begin());
-
-            outputScene->addNode(static_cast<int>(nodeIndex),
-                                 NodeObjectType::LIGHT,
-                                 static_cast<int>(lightIndex),
-                                 math::Transform{}, lightIter->getName());
+            const int lightIndex =
+                static_cast<int>(m_lightNameIndexTable.at(node.mName.C_Str()));
+            currNodeIndex = outputScene->addNode(parent, NodeObjectType::LIGHT,
+                                                 lightIndex, localTransform);
         }
-
-        auto camIter = std::find_if(
-            outputScene->m_cameras.begin(), outputScene->m_cameras.end(),
-            [&node](const scene::Camera &camera) {
-                return node.mName.C_Str() == camera.m_name;
-            });
-        if (camIter != outputScene->m_cameras.end())
+        else if (m_cameraNameIndexTable.find(node.mName.C_Str()) !=
+                 m_cameraNameIndexTable.end())
         {
-            const auto camIndex =
-                static_cast<uint32_t>(camIter - outputScene->m_cameras.begin());
-            outputScene->addNode(static_cast<int>(nodeIndex),
-                                 NodeObjectType::CAMERA,
-                                 static_cast<int>(camIndex), math::Transform{},
-                                 camIter->getName());
+            const int camIndex =
+                static_cast<int>(m_cameraNameIndexTable.at(node.mName.C_Str()));
+            currNodeIndex = outputScene->addNode(parent, NodeObjectType::CAMERA,
+                                                 camIndex, localTransform);
+        }
+        else
+        {
+            currNodeIndex =
+                outputScene->addNode(parent, NodeObjectType::EMPTY, -1,
+                                     localTransform, node.mName.C_Str());
         }
     }
     for (uint32_t i = 0; i < node.mNumChildren; i++)
         generateSceneGraph(scene, outputScene, *node.mChildren[i],
-                           static_cast<int>(nodeIndex));
+                           static_cast<int>(currNodeIndex));
 
     return true;
 }
@@ -276,7 +270,7 @@ bool kirana::scene::external::AssimpSceneConverter::convertScene(
     const aiScene &scene = *reinterpret_cast<const aiScene *>(inputScene);
 
     if (scene.mName.length > 0)
-        outputScene->m_name = scene.mName.C_Str();
+        outputScene->setName(scene.mName.C_Str());
 
     outputScene->m_materials.resize(scene.mNumMaterials);
     outputScene->m_meshes.resize(scene.mNumMeshes);
@@ -299,12 +293,14 @@ bool kirana::scene::external::AssimpSceneConverter::convertScene(
     {
         if (!convertLight(scene.mLights[i], &outputScene->m_lights[i]))
             return false;
+        m_lightNameIndexTable[scene.mLights[i]->mName.C_Str()] = i;
     }
 
     for (uint32_t i = 0; i < scene.mNumCameras; i++)
     {
         if (!convertCamera(scene.mCameras[i], &outputScene->m_cameras[i]))
             return false;
+        m_cameraNameIndexTable[scene.mCameras[i]->mName.C_Str()] = i;
     }
 
     if (!generateSceneGraph(scene, outputScene, *scene.mRootNode, -1))

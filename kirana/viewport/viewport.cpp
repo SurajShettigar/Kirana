@@ -1,11 +1,6 @@
 #include "viewport.hpp"
-#include <iostream>
 #include <vulkan/vulkan_renderer.hpp>
 #include <window.hpp>
-
-using std::cerr;
-using std::cout;
-using std::endl;
 
 
 kirana::viewport::Viewport::Viewport()
@@ -14,14 +9,14 @@ kirana::viewport::Viewport::Viewport()
 }
 
 void kirana::viewport::Viewport::init(const window::Window *window,
-                                      const scene::ViewportScene &scene,
+                                      const scene::Scene &editorScene,
                                       ShadingPipeline pipeline,
                                       ShadingType type)
 {
     m_window = window;
     m_currentPipeline = pipeline;
     m_currentShadingType = type;
-    m_renderer.init(m_window, scene,
+    m_renderer.init(m_window, editorScene,
                     static_cast<vulkan::ShadingPipeline>(m_currentPipeline),
                     static_cast<vulkan::ShadingType>(m_currentShadingType));
 }
@@ -39,6 +34,11 @@ void kirana::viewport::Viewport::render()
 void kirana::viewport::Viewport::clean()
 {
     m_renderer.clean();
+}
+
+void kirana::viewport::Viewport::loadScene(const scene::Scene &scene)
+{
+    m_renderer.loadScene(scene);
 }
 
 void kirana::viewport::Viewport::setShading(ShadingPipeline pipeline)

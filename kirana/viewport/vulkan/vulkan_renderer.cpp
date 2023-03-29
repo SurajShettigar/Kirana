@@ -18,7 +18,7 @@
 #include <constants.h>
 
 void kirana::viewport::vulkan::VulkanRenderer::init(
-    const window::Window *const window, const scene::ViewportScene &scene,
+    const window::Window *const window, const scene::Scene &editorScene,
     vulkan::ShadingPipeline pipeline, vulkan::ShadingType type)
 {
     m_window = window;
@@ -51,7 +51,7 @@ void kirana::viewport::vulkan::VulkanRenderer::init(
                                           m_descriptorPool, m_swapchain);
         m_currentScene =
             new SceneData(m_device, m_allocator, m_descriptorPool, m_renderpass,
-                          m_raytraceData, scene, pipeline, type);
+                          m_raytraceData, editorScene, pipeline, type);
     }
     if (m_descriptorPool && m_descriptorPool->isInitialized)
     {
@@ -140,6 +140,13 @@ void kirana::viewport::vulkan::VulkanRenderer::clean()
         delete m_instance;
         m_instance = nullptr;
     }
+}
+
+void kirana::viewport::vulkan::VulkanRenderer::loadScene(
+    const scene::Scene &scene)
+{
+    if (m_currentScene)
+        m_currentScene->loadScene(scene);
 }
 
 void kirana::viewport::vulkan::VulkanRenderer::rebuildSwapchain()

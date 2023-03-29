@@ -111,19 +111,16 @@ void kirana::Application::init()
     else
         m_viewportWindow = m_windowManager.createWindow("Kirana", false, true);
 
-    m_sceneManager.init();
-
-    scene::ViewportScene &scene = m_sceneManager.getViewportScene();
-    scene.setCameraResolution(m_viewportWindow->resolution);
-
-    m_viewport.init(m_viewportWindow.get(), scene);
+    m_viewport.init(m_viewportWindow.get(), m_sceneManager.getEditorScene());
     m_isViewportRunning = true;
 
-    if (m_sceneManager.loadScene())
+    if (m_sceneManager.loadDefaultScene())
     {
-        m_logger.log(
-            constants::LOG_CHANNEL_APPLICATION, utils::LogSeverity::debug,
-            "Loaded default scene: " + scene.getCurrentScene().getName());
+        m_viewport.loadScene(m_sceneManager.getCurrentScene());
+        m_logger.log(constants::LOG_CHANNEL_APPLICATION,
+                     utils::LogSeverity::debug,
+                     "Loaded default scene: " +
+                         m_sceneManager.getCurrentScene().getName());
     }
     else
     {
@@ -145,7 +142,6 @@ void kirana::Application::update()
         m_windowManager.getCurrentWindow()->isCursorInside;
     m_inputManager.m_updateMousePosition(
         m_windowManager.getCurrentWindow()->cursorPosition);
-    m_sceneManager.update();
     if (m_isViewportRunning)
         m_viewport.update();
 }
@@ -171,8 +167,6 @@ void kirana::Application::clean()
     m_windowManager.removeOnMouseInputEventListener(m_mouseInputListener);
     m_windowManager.removeOnScrollInputEventListener(m_scrollInputListener);
     m_windowManager.clean();
-
-    m_sceneManager.clean();
 
     m_isRunning = false;
 

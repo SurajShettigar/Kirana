@@ -3,6 +3,7 @@
 
 #include "scene_converter.hpp"
 #include <string>
+#include <unordered_map>
 
 struct aiScene;
 struct aiNode;
@@ -35,10 +36,8 @@ class AssimpSceneConverter : public SceneConverter
                       scene::Scene *outputScene) override;
 
   private:
-    struct AssimpTexture
-    {
-        std::string filePath;
-    };
+    std::unordered_map<std::string, uint32_t> m_lightNameIndexTable;
+    std::unordered_map<std::string, uint32_t> m_cameraNameIndexTable;
     AssimpSceneConverter() = default;
     ~AssimpSceneConverter() = default;
 
@@ -46,6 +45,6 @@ class AssimpSceneConverter : public SceneConverter
                             const aiNode &node, int parent);
 };
 
-} // namespace kirana::scene::converters
+} // namespace kirana::scene::external
 
 #endif

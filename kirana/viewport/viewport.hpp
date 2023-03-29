@@ -1,5 +1,5 @@
-#ifndef VIEWPORT_HPP
-#define VIEWPORT_HPP
+#ifndef KIRANA_VIEWPORT_VIEWPORT_HPP
+#define KIRANA_VIEWPORT_VIEWPORT_HPP
 
 #include "viewport_types.hpp"
 
@@ -11,7 +11,7 @@ namespace kirana
 {
 namespace scene
 {
-class ViewportScene;
+class Scene;
 }
 namespace window
 {
@@ -38,7 +38,7 @@ class Viewport
     ~Viewport() = default;
 
     /// Initializes the viewport by binding the window to the renderer (Vulkan).
-    void init(const window::Window *window, const scene::ViewportScene &scene,
+    void init(const window::Window *window, const scene::Scene &editorScene,
               ShadingPipeline pipeline = ShadingPipeline::REALTIME,
               ShadingType type = ShadingType::BASIC);
     /// Calls the update function of the renderer.
@@ -47,6 +47,8 @@ class Viewport
     void render();
     /// Calls the cleanup function of the renderer.
     void clean();
+
+    void loadScene(const scene::Scene &scene);
 
     /// Changes the current viewport shading pipeline.
     void setShading(ShadingPipeline pipeline);

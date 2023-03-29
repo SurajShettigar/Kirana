@@ -41,13 +41,29 @@ void kirana::scene::SceneManager::initEditorScene()
     // Set grid's mesh material to grid material
     m_editorScene.setMeshMaterial(0, 0);
     // Add root node
-    m_editorScene.addNode(-1);
+    const uint32_t rootNode = m_editorScene.addNode(
+        -1, NodeObjectType::EMPTY, -1, math::Transform{}, "EditorScene");
     // Add grid mesh node
-    m_editorScene.addNode(0, NodeObjectType::MESH, 0, math::Transform{},
-                          meshes[0].getName());
+    const uint32_t gridNode =
+        m_editorScene.addNode(static_cast<int>(rootNode), NodeObjectType::EMPTY,
+                              -1, math::Transform{}, "Grid");
+    m_editorScene.addNode(static_cast<int>(gridNode), NodeObjectType::MESH, 0,
+                          math::Transform{}, meshes[0].getName());
     // Add camera node
-    m_editorScene.addNode(0, NodeObjectType::CAMERA, 0, math::Transform{},
-                          cameras[0].getName());
+    const uint32_t camNode = m_editorScene.addNode(
+        static_cast<int>(rootNode), NodeObjectType::CAMERA, 0,
+        math::Transform{}, cameras[0].getName());
+
+    auto &camera =
+        m_editorScene.getCamera(m_editorScene.getObjectIndexFromNode(camNode));
+
+    auto camTransform = m_editorScene.getGlobalTransform(camNode);
+
+    camTransform.setPosition(math::Vector3{0.0f, 3.0f, 5.0f});
+    camTransform.lookAt(math::Vector3::normalize(camTransform.getPosition()),
+                        math::Vector3::UP);
+
+    m_editorScene.setGlobalTransform(camNode, camTransform);
     postProcessScene("EditorScene", m_editorScene);
 }
 

@@ -19,9 +19,7 @@ class Object
   public:
     Object() = default;
     explicit Object(std::string name)
-        : m_name{std::move(name)}, m_id{
-                                       utils::IDManager::get().generateUniqueID(
-                                           m_name)} {};
+        : m_name{utils::IDManager::get().generateUniqueID(std::move(name))} {};
     virtual ~Object() = default;
 
     Object(const Object &object) = default;
@@ -31,22 +29,16 @@ class Object
 
     [[nodiscard]] inline const std::string &getName() const
     {
-        return m_name;
-    }
-
-    [[nodiscard]] inline const ObjectID &getID() const
-    {
-        return m_id;
+        return m_name.value;
     }
 
     inline void setName(const std::string &name)
     {
-        m_name = name;
+        m_name = utils::IDManager::get().generateUniqueID(std::move(name));
     }
 
   protected:
-    std::string m_name;
-    ObjectID m_id;
+    ObjectID m_name;
 };
 
 } // namespace kirana::scene

@@ -39,6 +39,26 @@ using kirana::utils::input::MouseInput;
  */
 class Application
 {
+  public:
+    Application(const Application &app) = delete;
+
+    inline static Application &get()
+    {
+        static Application instance;
+        return instance;
+    }
+
+    /// Runs the application.
+    void run();
+    void run(long windowId, int width, int height);
+
+    [[nodiscard]] inline std::shared_ptr<Window> getViewportWindow()
+    {
+        if (m_viewportWindow)
+            return m_viewportWindow;
+        else
+            return nullptr;
+    }
   private:
     bool m_isRunning = false;
     bool m_isViewportRunning = false;
@@ -65,6 +85,9 @@ class Application
 
     std::shared_ptr<Window> m_viewportWindow;
     Viewport m_viewport;
+
+    Application();
+    ~Application();
 
     /**
      * Used as a callback function for window resize event.
@@ -97,12 +120,6 @@ class Application
      */
     void onScrollInput(double xOffset, double yOffset);
 
-    /**
-     * Loads the default scene into m_currentScene object.
-     * @return true if successfully loaded.
-     */
-    bool loadDefaultScene();
-
     /// Initializes all objects of the program.
     void init();
     /// Called every frame. Calls the update functions of viewport and windows.
@@ -111,25 +128,6 @@ class Application
     void render();
     /// Calls the cleanup functions of the objects after all windows are closed.
     void clean();
-
-  public:
-    Application();
-    ~Application();
-
-    Application(const Application &app) = delete;
-    Application &operator=(const Application &app) = delete;
-
-    /// Runs the application.
-    void run();
-    void run(long windowId, int width, int height);
-
-    [[nodiscard]] inline std::shared_ptr<Window> getViewportWindow()
-    {
-        if (m_viewportWindow)
-            return m_viewportWindow;
-        else
-            return nullptr;
-    }
 };
 } // namespace kirana
 
