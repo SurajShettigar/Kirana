@@ -140,11 +140,8 @@ void kirana::Application::update()
 {
     m_time.update();
     m_windowManager.update();
-    // TODO: Update input manager keyboard and mouse clicks every frame.
-    m_inputManager.m_isMouseInside =
-        m_windowManager.getCurrentWindow()->isCursorInside;
-    m_inputManager.m_updateMousePosition(
-        m_windowManager.getCurrentWindow()->cursorPosition);
+    m_inputManager.update(m_windowManager.getCurrentWindow()->isCursorInside,
+                            m_windowManager.getCurrentWindow()->cursorPosition);
     m_sceneManager.update();
     if (m_isViewportRunning)
         m_viewport.update();
@@ -154,6 +151,11 @@ void kirana::Application::render()
 {
     if (m_isViewportRunning)
         m_viewport.render();
+}
+
+void kirana::Application::lateUpdate()
+{
+    m_inputManager.lateUpdate();
 }
 
 void kirana::Application::clean()
@@ -188,7 +190,7 @@ void kirana::Application::run()
     {
         update();
         render();
-        //        std::cout << "FPS: " << m_time.getFPS() << "\r" << std::flush;
+        lateUpdate();
     }
 
     clean();
