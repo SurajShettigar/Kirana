@@ -155,7 +155,6 @@ void kirana::Application::render()
 
 void kirana::Application::lateUpdate()
 {
-    m_inputManager.lateUpdate();
 }
 
 void kirana::Application::clean()

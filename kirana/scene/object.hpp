@@ -5,7 +5,7 @@
 #include <memory>
 #include <string>
 
-#include <transform.hpp>
+#include <transform_hierarchy.hpp>
 #include <bounds3.hpp>
 
 struct aiNode;
@@ -23,7 +23,7 @@ class Object
     std::vector<std::shared_ptr<Mesh>> m_meshes;
     math::Bounds3 m_objectBounds;
     math::Bounds3 m_hierarchyBounds;
-    std::unique_ptr<math::Transform> m_transform = nullptr;
+    std::unique_ptr<math::TransformHierarchy> m_transform = nullptr;
 
     static math::Matrix4x4 getMatrixFromNode(const aiNode *node);
 
@@ -35,20 +35,20 @@ class Object
   public:
     Object()
         : m_name{"Object"}, m_meshes{},
-          m_transform{std::make_unique<math::Transform>()}, m_objectBounds{},
+          m_transform{std::make_unique<math::TransformHierarchy>()}, m_objectBounds{},
           m_hierarchyBounds{} {};
     explicit Object(std::string name, std::shared_ptr<Mesh> mesh,
-                    const math::Transform &m_transform,
+                    const math::TransformHierarchy &m_transform,
                     const math::Bounds3 &meshBounds);
     explicit Object(const aiNode *node,
                     std::vector<std::shared_ptr<Mesh>> meshes,
                     const math::Bounds3 &objectBounds,
-                    math::Transform *parent = nullptr);
+                    math::TransformHierarchy *parent = nullptr);
     virtual ~Object() = default;
 
     Object(const Object &object) = delete;
 
-    math::Transform *const transform = m_transform.get();
+    math::TransformHierarchy *const transform = m_transform.get();
 
     [[nodiscard]] inline const std::string &getName() const
     {

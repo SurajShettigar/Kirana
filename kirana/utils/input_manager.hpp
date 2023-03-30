@@ -151,6 +151,8 @@ class InputManager
     std::unordered_map<MouseButton, KeyAction> m_mouseKeyStatus;
     std::array<Key, 8> m_axisKeys{Key::W,  Key::S,    Key::A,    Key::D,
                                   Key::UP, Key::DOWN, Key::LEFT, Key::RIGHT};
+    Key m_currentKey;
+    MouseButton m_currentMouseButton;
     math::Vector2 m_axis;
     math::Vector2 m_scrollValue;
     math::Vector2 m_prevMousePosition;
@@ -163,7 +165,7 @@ class InputManager
 
     InputManager()
     {
-        m_resetKeys();
+        m_resetKeys(true);
     }
     ~InputManager()
     {
@@ -190,6 +192,7 @@ class InputManager
     inline void m_callKeyboardEvent(KeyboardInput input)
     {
         m_keyboardKeyStatus[input.key] = input.action;
+        m_currentKey = input.key;
         m_setAxisValues(input);
         m_onKeyboardInput(input);
     }
@@ -198,6 +201,7 @@ class InputManager
     inline void m_callMouseEvent(MouseInput input)
     {
         m_mouseKeyStatus[input.button] = input.action;
+        m_currentMouseButton = input.button;
         m_onMouseInput(input);
     }
 
@@ -215,23 +219,25 @@ class InputManager
         m_mousePosition[1] = static_cast<float>(pos[1]);
     }
 
-    inline void m_resetKeys()
+    inline void m_resetKeys(bool resetAll = false)
     {
-        for (const Key k : m_keyList)
-            m_keyboardKeyStatus[k] = KeyAction::NONE;
-        for (const MouseButton k : m_mouseKeyList)
-            m_mouseKeyStatus[k] = KeyAction::NONE;
+        if(resetAll)
+        {
+            for (const Key k : m_keyList)
+                m_keyboardKeyStatus[k] = KeyAction::NONE;
+            for (const MouseButton k : m_mouseKeyList)
+                m_mouseKeyStatus[k] = KeyAction::NONE;
+        }
+        else {
+            m_keyboardKeyStatus[m_currentKey] = KeyAction::NONE;
+            m_mouseKeyStatus[m_currentMouseButton] = KeyAction::NONE;
+        }
     }
 
     inline void update(bool isMouseInside, const std::array<int, 2> &mousePos)
     {
         m_isMouseInside = isMouseInside;
         m_updateMousePosition(mousePos);
-    }
-
-    inline void lateUpdate()
-    {
-        m_resetKeys();
     }
 
   public:
