@@ -109,6 +109,8 @@ class Application
     void update();
     /// Called every frame. Calls the render functions of the viewport.
     void render();
+    /// Called every frame. Calls the late update function after rendering.
+    void lateUpdate();
     /// Calls the cleanup functions of the objects after all windows are closed.
     void clean();
 
