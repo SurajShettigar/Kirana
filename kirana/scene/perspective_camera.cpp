@@ -50,6 +50,7 @@ void kirana::scene::PerspectiveCamera::fitBoundsToView(
     camPos += m_transform.getForward() * (distance - distBetweenCamObject);
     m_transform.setPosition(camPos);
     lookAt(lookAtPosition);
+    m_onCameraChange();
 }
 
 void kirana::scene::PerspectiveCamera::setResolution(

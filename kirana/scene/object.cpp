@@ -7,7 +7,7 @@
 #include <utility>
 
 using kirana::math::Matrix4x4;
-using kirana::math::Transform;
+using kirana::math::TransformHierarchy;
 
 Matrix4x4 kirana::scene::Object::getMatrixFromNode(const aiNode *node)
 {
@@ -19,10 +19,10 @@ Matrix4x4 kirana::scene::Object::getMatrixFromNode(const aiNode *node)
 
 
 kirana::scene::Object::Object(std::string name, std::shared_ptr<Mesh> mesh,
-                              const Transform &m_transform,
+                              const TransformHierarchy &m_transform,
                               const math::Bounds3 &meshBounds)
     : m_name{std::move(name)}, m_meshes{std::move(mesh)},
-      m_transform{std::make_unique<Transform>(m_transform)},
+      m_transform{std::make_unique<TransformHierarchy>(m_transform)},
       m_objectBounds{meshBounds}, m_hierarchyBounds{m_objectBounds}
 {
 }
@@ -30,10 +30,10 @@ kirana::scene::Object::Object(std::string name, std::shared_ptr<Mesh> mesh,
 kirana::scene::Object::Object(const aiNode *node,
                               std::vector<std::shared_ptr<Mesh>> meshes,
                               const math::Bounds3 &objectBounds,
-                              math::Transform *parent)
+                              math::TransformHierarchy *parent)
     : m_name{node->mName.C_Str()}, m_meshes{std::move(meshes)},
       m_objectBounds{objectBounds}, m_hierarchyBounds{m_objectBounds},
-      m_transform{std::make_unique<Transform>(getMatrixFromNode(node), parent)}
+      m_transform{std::make_unique<TransformHierarchy>(getMatrixFromNode(node), parent)}
 {
 }
 

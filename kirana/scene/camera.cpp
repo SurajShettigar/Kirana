@@ -5,26 +5,14 @@
 #include <math_utils.hpp>
 
 
-void kirana::scene::Camera::onTransformChanged()
-{
-    m_onCameraChange();
-}
-
 kirana::scene::Camera::Camera(std::array<uint32_t, 2> windowResolution,
                               float nearPlane, float farPlane)
     : m_windowResolution{windowResolution}, m_nearPlane{nearPlane},
       m_farPlane{farPlane},
       m_aspectRatio{static_cast<float>(m_windowResolution[0]) /
                     static_cast<float>(m_windowResolution[1])},
-      m_transform{nullptr, true}
+      m_transform{nullptr}
 {
-    m_transformChangeListener =
-        m_transform.addOnChangeListener([&]() { onTransformChanged(); });
-}
-
-kirana::scene::Camera::~Camera()
-{
-    m_transform.removeOnChangeListener(m_transformChangeListener);
 }
 
 kirana::scene::Camera::Camera(const Camera &camera)
@@ -37,8 +25,6 @@ kirana::scene::Camera::Camera(const Camera &camera)
         m_aspectRatio = camera.m_aspectRatio;
         m_transform = camera.m_transform;
         m_projection = camera.m_projection;
-        m_transformChangeListener =
-            m_transform.addOnChangeListener([&]() { onTransformChanged(); });
     }
 }
 kirana::scene::Camera &kirana::scene::Camera::operator=(const Camera &camera)
@@ -51,8 +37,6 @@ kirana::scene::Camera &kirana::scene::Camera::operator=(const Camera &camera)
         m_aspectRatio = camera.m_aspectRatio;
         m_transform = camera.m_transform;
         m_projection = camera.m_projection;
-        m_transformChangeListener =
-            m_transform.addOnChangeListener([&]() { onTransformChanged(); });
     }
     return *this;
 }
@@ -60,7 +44,7 @@ kirana::scene::Camera &kirana::scene::Camera::operator=(const Camera &camera)
 void kirana::scene::Camera::lookAt(const math::Vector3 &position,
                                    const math::Vector3 &up)
 {
-    m_transform.lookAt(m_transform.getPosition() - position, up);
+    m_transform.lookAt(position, up);
     m_onCameraChange();
 }
 

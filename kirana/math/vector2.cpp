@@ -17,6 +17,11 @@ const Vector2 Vector2::DOWN{0.0f, -1.0f};
 const Vector2 Vector2::LEFT{-1.0f, 0.0f};
 const Vector2 Vector2::RIGHT{1.0f, 0.0f};
 
+Vector2::Vector2(std::array<float, 2> vector) : m_current{vector}
+{
+}
+
+
 Vector2::Vector2(float x, float y) : m_current{x, y}
 {
 }
@@ -32,20 +37,25 @@ Vector2::Vector2(const Vector4 &vec4) : m_current{vec4[0], vec4[1]}
 Vector2::Vector2(const Vector2 &vec2)
 {
     if (this != &vec2)
-    {
-        m_current[0] = vec2[0];
-        m_current[1] = vec2[1];
-    }
+        m_current = vec2.m_current;
 }
 
 Vector2 &Vector2::operator=(const Vector2 &vec2)
 {
     if (this != &vec2)
-    {
-        m_current[0] = vec2[0];
-        m_current[1] = vec2[1];
-    }
+        m_current = vec2.m_current;
     return *this;
+}
+
+bool Vector2::operator==(const Vector2 &rhs) const
+{
+    return approximatelyEqual(m_current[0], rhs.m_current[0]) &&
+           approximatelyEqual(m_current[1], rhs.m_current[1]);
+}
+
+bool Vector2::operator!=(const Vector2 &rhs) const
+{
+    return !(*this == rhs);
 }
 
 Vector2::operator Vector3() const
@@ -92,18 +102,6 @@ Vector2 &Vector2::operator*=(const float rhs)
 Vector2 &Vector2::operator/=(const float rhs)
 {
     return *this *= 1 / rhs;
-}
-
-bool Vector2::operator==(const Vector2 &rhs) const
-{
-    return approximatelyEqual(m_current[0], rhs.m_current[0]) &&
-           approximatelyEqual(m_current[1], rhs.m_current[1]);
-}
-
-bool Vector2::operator!=(const Vector2 &rhs) const
-{
-    return !approximatelyEqual(m_current[0], rhs.m_current[0]) ||
-           !approximatelyEqual(m_current[1], rhs.m_current[1]);
 }
 
 float Vector2::length() const
@@ -163,5 +161,5 @@ Vector2 kirana::math::operator/(const Vector2 &lhs, float rhs)
 
 std::ostream &kirana::math::operator<<(std::ostream &out, const Vector2 &vec2)
 {
-    return out << '{' << vec2[0] << ", " << vec2[1] << '}';
+    return out << static_cast<std::string>(vec2);
 }

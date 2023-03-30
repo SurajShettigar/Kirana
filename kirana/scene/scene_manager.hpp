@@ -14,7 +14,7 @@ class SceneManager
   private:
     struct ViewportCameraData
     {
-        math::Transform pivot;
+        math::TransformHierarchy pivot;
         math::Vector2 prevMousePos;
         math::Vector2 mousePos;
         math::Vector2 mouseDelta;

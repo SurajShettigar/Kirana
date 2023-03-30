@@ -111,16 +111,19 @@ void kirana::Application::init()
     else
         m_viewportWindow = m_windowManager.createWindow("Kirana", false, true);
 
-    m_viewport.init(m_viewportWindow.get(), m_sceneManager.getEditorScene());
+    m_sceneManager.init();
+
+    scene::ViewportScene &scene = m_sceneManager.getViewportScene();
+    scene.setCameraResolution(m_viewportWindow->resolution);
+
+    m_viewport.init(m_viewportWindow.get(), scene);
     m_isViewportRunning = true;
 
-    if (m_sceneManager.loadDefaultScene())
+    if (m_sceneManager.loadScene())
     {
-        m_viewport.loadScene(m_sceneManager.getCurrentScene());
-        m_logger.log(constants::LOG_CHANNEL_APPLICATION,
-                     utils::LogSeverity::debug,
-                     "Loaded default scene: " +
-                         m_sceneManager.getCurrentScene().getName());
+        m_logger.log(
+            constants::LOG_CHANNEL_APPLICATION, utils::LogSeverity::debug,
+            "Loaded default scene: " + scene.getCurrentScene().getName());
     }
     else
     {
@@ -137,11 +140,9 @@ void kirana::Application::update()
 {
     m_time.update();
     m_windowManager.update();
-    // TODO: Update input manager keyboard and mouse clicks every frame.
-    m_inputManager.m_isMouseInside =
-        m_windowManager.getCurrentWindow()->isCursorInside;
-    m_inputManager.m_updateMousePosition(
-        m_windowManager.getCurrentWindow()->cursorPosition);
+    m_inputManager.update(m_windowManager.getCurrentWindow()->isCursorInside,
+                            m_windowManager.getCurrentWindow()->cursorPosition);
+    m_sceneManager.update();
     if (m_isViewportRunning)
         m_viewport.update();
 }
@@ -150,6 +151,10 @@ void kirana::Application::render()
 {
     if (m_isViewportRunning)
         m_viewport.render();
+}
+
+void kirana::Application::lateUpdate()
+{
 }
 
 void kirana::Application::clean()
@@ -168,6 +173,8 @@ void kirana::Application::clean()
     m_windowManager.removeOnScrollInputEventListener(m_scrollInputListener);
     m_windowManager.clean();
 
+    m_sceneManager.clean();
+
     m_isRunning = false;
 
     m_logger.log(constants::LOG_CHANNEL_APPLICATION, utils::LogSeverity::trace,
@@ -182,7 +189,7 @@ void kirana::Application::run()
     {
         update();
         render();
-        //        std::cout << "FPS: " << m_time.getFPS() << "\r" << std::flush;
+        lateUpdate();
     }
 
     clean();
