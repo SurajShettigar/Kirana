@@ -213,7 +213,7 @@ bool kirana::scene::external::AssimpSceneConverter::generateSceneGraph(
     const aiScene &scene, scene::Scene *outputScene, const aiNode &node,
     int parent)
 {
-    uint32_t currNodeIndex = 0;
+    Node currNode;
     math::Transform localTransform;
     convertTransform(&node.mTransformation, &localTransform);
 
@@ -221,14 +221,14 @@ bool kirana::scene::external::AssimpSceneConverter::generateSceneGraph(
     // as children.
     if (node.mNumMeshes > 0)
     {
-        currNodeIndex =
+        currNode =
             outputScene->addNode(parent, NodeObjectType::EMPTY, -1,
                                  localTransform, node.mName.C_Str());
         for (uint32_t i = 0; i < node.mNumMeshes; i++)
         {
             const uint32_t meshIndex = node.mMeshes[i];
             outputScene->addNode(
-                static_cast<int>(currNodeIndex), NodeObjectType::MESH,
+                currNode.index, NodeObjectType::MESH,
                 static_cast<int>(meshIndex), math::Transform{});
         }
     }
@@ -239,7 +239,7 @@ bool kirana::scene::external::AssimpSceneConverter::generateSceneGraph(
         {
             const int lightIndex =
                 static_cast<int>(m_lightNameIndexTable.at(node.mName.C_Str()));
-            currNodeIndex = outputScene->addNode(parent, NodeObjectType::LIGHT,
+            currNode = outputScene->addNode(parent, NodeObjectType::LIGHT,
                                                  lightIndex, localTransform);
         }
         else if (m_cameraNameIndexTable.find(node.mName.C_Str()) !=
@@ -247,19 +247,19 @@ bool kirana::scene::external::AssimpSceneConverter::generateSceneGraph(
         {
             const int camIndex =
                 static_cast<int>(m_cameraNameIndexTable.at(node.mName.C_Str()));
-            currNodeIndex = outputScene->addNode(parent, NodeObjectType::CAMERA,
+            currNode = outputScene->addNode(parent, NodeObjectType::CAMERA,
                                                  camIndex, localTransform);
         }
         else
         {
-            currNodeIndex =
+            currNode =
                 outputScene->addNode(parent, NodeObjectType::EMPTY, -1,
                                      localTransform, node.mName.C_Str());
         }
     }
     for (uint32_t i = 0; i < node.mNumChildren; i++)
         generateSceneGraph(scene, outputScene, *node.mChildren[i],
-                           static_cast<int>(currNodeIndex));
+                           currNode.index);
 
     return true;
 }

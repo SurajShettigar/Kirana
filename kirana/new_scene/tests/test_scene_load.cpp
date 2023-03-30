@@ -26,9 +26,8 @@ void showSceneInfo(const Scene &scene)
     std::cout << "Stats: " << std::string(scene.getStats()) << std::endl;
     const auto &nodes = scene.getNodes();
     std::cout << "Node Hierarchy:" << std::endl;
-    for (uint32_t i = 0; i < nodes.size(); i++)
+    for (const auto &node: nodes)
     {
-        const auto &node = nodes[i];
         std::string tabs;
         for (uint32_t l = 0; l < node.level; l++)
             tabs += "\t";
@@ -36,12 +35,12 @@ void showSceneInfo(const Scene &scene)
             node.objectData.type == NodeObjectType::MESH &&
                     node.objectData.objectIndex > -1
                 ? " (Material: " +
-                      scene.getMaterialOfMesh(node.objectData.objectIndex)
+                      scene.getMaterialOfMesh(scene.getMeshAtNode(node))
                           .getName() +
                       ") "
                 : "";
 
-        const std::string nodeName = scene.getObjectAtNode(i)->getName();
+        const std::string nodeName = scene.getObjectAtNode(node).getName();
         std::cout << tabs << nodeName /*<< " ["
                   << getType(node.objectType) << "] "*/
                   << matName << std::endl;
@@ -51,6 +50,7 @@ void showSceneInfo(const Scene &scene)
 int main(int argc, char **argv)
 {
     SceneManager &sceneMgr = SceneManager::get();
+    sceneMgr.init();
     showSceneInfo(sceneMgr.getEditorScene());
     if (sceneMgr.loadDefaultScene())
         showSceneInfo(sceneMgr.getCurrentScene());

@@ -3,6 +3,7 @@
 
 #include "scene_types.hpp"
 #include "scene.hpp"
+#include "scene_editor.hpp"
 
 namespace kirana::scene
 {
@@ -15,6 +16,15 @@ class SceneManager
     {
         static SceneManager instance;
         return instance;
+    }
+
+    void init();
+    void update();
+    void clean();
+
+    inline void setWindowResolution(const math::Vector2 &windowResolution)
+    {
+        m_sceneEditor.setWindowResolution(windowResolution);
     }
 
     bool loadScene(const std::string &scenePath,
@@ -36,10 +46,11 @@ class SceneManager
     std::string m_currentScenePath;
     Scene m_currentScene;
 
+    SceneEditor m_sceneEditor;
+
     SceneManager()
-    {
-        initEditorScene();
-    }
+        : m_editorScene{}, m_currentScenePath{}, m_currentScene{},
+          m_sceneEditor{m_editorScene, m_currentScene} {};
     ~SceneManager() = default;
 
     static void postProcessScene(const std::string &scenePath, Scene &scene);

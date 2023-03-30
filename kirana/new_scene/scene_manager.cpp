@@ -41,21 +41,19 @@ void kirana::scene::SceneManager::initEditorScene()
     // Set grid's mesh material to grid material
     m_editorScene.setMeshMaterial(0, 0);
     // Add root node
-    const uint32_t rootNode = m_editorScene.addNode(
+    const auto &rootNode = m_editorScene.addNode(
         -1, NodeObjectType::EMPTY, -1, math::Transform{}, "EditorScene");
     // Add grid mesh node
-    const uint32_t gridNode =
-        m_editorScene.addNode(static_cast<int>(rootNode), NodeObjectType::EMPTY,
-                              -1, math::Transform{}, "Grid");
-    m_editorScene.addNode(static_cast<int>(gridNode), NodeObjectType::MESH, 0,
+    const auto &gridNode = m_editorScene.addNode(
+        rootNode.index, NodeObjectType::EMPTY, -1, math::Transform{}, "Grid");
+    m_editorScene.addNode(gridNode.index, NodeObjectType::MESH, 0,
                           math::Transform{}, meshes[0].getName());
     // Add camera node
-    const uint32_t camNode = m_editorScene.addNode(
-        static_cast<int>(rootNode), NodeObjectType::CAMERA, 0,
-        math::Transform{}, cameras[0].getName());
+    const auto &camNode =
+        m_editorScene.addNode(rootNode.index, NodeObjectType::CAMERA, 0,
+                              math::Transform{}, cameras[0].getName());
 
-    auto &camera =
-        m_editorScene.getCamera(m_editorScene.getObjectIndexFromNode(camNode));
+    auto &camera = m_editorScene.getCameraAtNode(camNode);
 
     auto camTransform = m_editorScene.getGlobalTransform(camNode);
 
@@ -65,6 +63,22 @@ void kirana::scene::SceneManager::initEditorScene()
 
     m_editorScene.setGlobalTransform(camNode, camTransform);
     postProcessScene("EditorScene", m_editorScene);
+}
+
+void kirana::scene::SceneManager::init()
+{
+    initEditorScene();
+    m_sceneEditor.init();
+}
+
+void kirana::scene::SceneManager::update()
+{
+    m_sceneEditor.update();
+}
+
+void kirana::scene::SceneManager::clean()
+{
+    m_sceneEditor.clean();
 }
 
 bool kirana::scene::SceneManager::loadScene(const std::string &scenePath,

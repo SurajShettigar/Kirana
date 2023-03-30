@@ -187,13 +187,9 @@ class MaterialProperties
                     sizeof(float) * 12);
                 break;
             case MaterialParameterType::MAT_4x4:
-                // TODO: Matrix 4x4 implement data pointer
-                std::array<std::array<float, 4>, 4> mat;
-                const auto *m4x4 = std::any_cast<math::Matrix4x4>(&p.value);
-                for (int i = 0; i < 4; i++)
-                    for (int j = 0; j < 4; j++)
-                        mat[i][j] = (*m4x4)[i][j];
-                memcpy(bufferPtr, mat.data(), mat.size());
+                memcpy(bufferPtr,
+                       std::any_cast<math::Matrix4x4>(&p.value)->data(),
+                       sizeof(math::Matrix4x4));
                 break;
             }
         }

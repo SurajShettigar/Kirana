@@ -3,8 +3,11 @@
 
 #include <transform.hpp>
 #include <vector2.hpp>
-#include <array>
 #include <id_manager.hpp>
+#include <event.hpp>
+
+#include <array>
+#include <string>
 
 namespace kirana::scene
 {
@@ -69,6 +72,7 @@ struct NodeRenderData
 struct Node
 {
     // Graph data
+    int index = -1;
     int parent = -1;
     int child = -1;
     int sibling = -1;

@@ -19,32 +19,31 @@ void kirana::scene::Scene::updateDirtyTransforms()
     m_dirtyTransformLevel = std::numeric_limits<uint32_t>::max();
 }
 
-void kirana::scene::Scene::setTransform(uint32_t nodeIndex,
+void kirana::scene::Scene::setTransform(const Node &node,
                                         const math::Transform &transform,
                                         bool global)
 {
     // Update the given transform
-    const int transformIndex = getTransformIndexFromNode(nodeIndex);
+    const int transformIndex = node.objectData.transformIndex;
     auto &t = global ? m_globalTransforms.at(transformIndex)
                      : m_localTransforms.at(transformIndex);
     t = transform;
 
     // Update the child transforms
-    if (getNode(nodeIndex).level < m_dirtyTransformLevel)
-        m_dirtyTransformLevel = getNode(nodeIndex).level;
+    if (node.level < m_dirtyTransformLevel)
+        m_dirtyTransformLevel = node.level;
     updateDirtyTransforms();
 
     // If camera, change global transform (to update view matrix).
-    if (getNode(nodeIndex).objectData.type == NodeObjectType::CAMERA)
-        m_cameras.at(getObjectIndexFromNode(nodeIndex))
+    if (node.objectData.type == NodeObjectType::CAMERA)
+        m_cameras.at(node.objectData.objectIndex)
             .setTransform(m_globalTransforms.at(transformIndex));
 }
 
 
-uint32_t kirana::scene::Scene::addNode(int parent, NodeObjectType objectType,
-                                       int objectIndex,
-                                       const math::Transform &transform,
-                                       const std::string &emptyObjectName)
+const kirana::scene::Node &kirana::scene::Scene::addNode(
+    int parent, NodeObjectType objectType, int objectIndex,
+    const math::Transform &transform, const std::string &emptyObjectName)
 {
     const int newNodeIndex = static_cast<int>(m_nodes.size());
 
@@ -71,7 +70,7 @@ uint32_t kirana::scene::Scene::addNode(int parent, NodeObjectType objectType,
     }
 
     m_nodes.push_back(
-        Node{parent, -1, -1, 0,
+        Node{newNodeIndex, parent, -1, -1, 0,
              NodeObjectData{objectType, objectIndex, transformIndex},
              NodeRenderData{}});
     if (parent > -1)
@@ -88,7 +87,22 @@ uint32_t kirana::scene::Scene::addNode(int parent, NodeObjectType objectType,
         }
         m_nodes[newNodeIndex].level = parentNode.level + 1;
     }
-    return newNodeIndex;
+    if (objectIndex > -1)
+        m_objectNodeIndexTable[objectIndex] = newNodeIndex;
+    return m_nodes.at(newNodeIndex);
+}
+
+void kirana::scene::Scene::setNodeRenderData(const Node &node,
+                                             NodeRenderData renderData)
+{
+    m_nodes.at(node.index).renderData = renderData;
+    if (renderData.selectable)
+    {
+        if (renderData.selected)
+            m_selectedNodes.insert(node.index);
+        else if (m_selectedNodes.find(node.index) != m_selectedNodes.end())
+            m_selectedNodes.erase(node.index);
+    }
 }
 
 

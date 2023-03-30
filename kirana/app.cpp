@@ -12,7 +12,9 @@ void kirana::Application::onWindowResized(const kirana::window::Window *window,
 {
     if (window == m_viewportWindow.get())
     {
-        m_sceneManager.getViewportScene().setCameraResolution(resolution);
+        m_sceneManager.setWindowResolution(
+            math::Vector2{static_cast<float>(resolution[0]),
+                          static_cast<float>(resolution[1])});
     }
 }
 
@@ -112,18 +114,17 @@ void kirana::Application::init()
         m_viewportWindow = m_windowManager.createWindow("Kirana", false, true);
 
     m_sceneManager.init();
+    onWindowResized(m_viewportWindow.get(), m_viewportWindow->resolution);
 
-    scene::ViewportScene &scene = m_sceneManager.getViewportScene();
-    scene.setCameraResolution(m_viewportWindow->resolution);
-
-    m_viewport.init(m_viewportWindow.get(), scene);
+    m_viewport.init(m_viewportWindow.get(), m_sceneManager.getEditorScene());
     m_isViewportRunning = true;
 
-    if (m_sceneManager.loadScene())
+    if (m_sceneManager.loadDefaultScene())
     {
-        m_logger.log(
-            constants::LOG_CHANNEL_APPLICATION, utils::LogSeverity::debug,
-            "Loaded default scene: " + scene.getCurrentScene().getName());
+        m_logger.log(constants::LOG_CHANNEL_APPLICATION,
+                     utils::LogSeverity::debug,
+                     "Loaded default scene: " +
+                         m_sceneManager.getCurrentScene().getName());
     }
     else
     {
@@ -141,7 +142,7 @@ void kirana::Application::update()
     m_time.update();
     m_windowManager.update();
     m_inputManager.update(m_windowManager.getCurrentWindow()->isCursorInside,
-                            m_windowManager.getCurrentWindow()->cursorPosition);
+                          m_windowManager.getCurrentWindow()->cursorPosition);
     m_sceneManager.update();
     if (m_isViewportRunning)
         m_viewport.update();

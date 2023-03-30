@@ -12,13 +12,16 @@ class SceneEditor
   public:
     SceneEditor(Scene &editorScene, Scene &currentScene)
         : m_input{utils::input::InputManager::get()},
-          m_editorScene{editorScene}, m_currentScene{currentScene},
-          m_viewportCamera{m_editorScene.getCamera(0)} {};
+          m_editorScene{editorScene}, m_currentScene{currentScene} {};
     ~SceneEditor() = default;
 
     void init();
     void update();
     void clean();
+    inline void setWindowResolution(const math::Vector2 &windowResolution)
+    {
+        m_windowResolution = windowResolution;
+    }
 
   private:
     struct CameraMovementData
@@ -35,10 +38,15 @@ class SceneEditor
     utils::input::InputManager &m_input;
     Scene &m_editorScene;
     Scene &m_currentScene;
-    Camera &m_viewportCamera;
 
+    math::Vector2 m_windowResolution;
     CameraMovementData m_viewportCamData;
 
+    math::Transform fitBoundsToCameraView(const math::Transform &camTransform,
+                                          float camFOV,
+                                          const math::Bounds3 &boundingBox,
+                                          const math::Vector3 &pivotPoint,
+                                          float distanceOffset);
     void resetViewportCamera();
     void handleViewportCameraMovement();
     void checkForObjectSelection(bool multiSelect = false);

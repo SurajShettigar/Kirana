@@ -6,6 +6,8 @@
 #include "light.hpp"
 #include "camera.hpp"
 
+#include <set>
+
 namespace kirana::scene
 {
 
@@ -37,24 +39,34 @@ class Scene : public Object
     {
         return m_nodes;
     }
-    [[nodiscard]] inline const Node &getNode(uint32_t index) const
+    [[nodiscard]] inline const Node &getNodeByName(
+        const std::string &objectName) const
     {
-        return m_nodes.at(index);
+        return m_nodes.at(
+            m_objectNodeIndexTable.at(m_objectNameIndexTable.at(objectName)));
     }
-    [[nodiscard]] inline int getObjectIndexFromName(
-        const std::string &name) const
+    [[nodiscard]] const Object &getObjectAtNode(const Node &node) const
     {
-        return m_objectNameIndexTable.find(name) == m_objectNameIndexTable.end()
-                   ? -1
-                   : static_cast<int>(m_objectNameIndexTable.at(name));
+        const int objectIndex = node.objectData.objectIndex;
+        switch (node.objectData.type)
+        {
+        case NodeObjectType::MESH:
+            return m_meshes.at(objectIndex);
+        case NodeObjectType::LIGHT:
+            return m_lights.at(objectIndex);
+        case NodeObjectType::CAMERA:
+            return m_cameras.at(objectIndex);
+        case NodeObjectType::EMPTY:
+        default:
+            return m_emptyObjects.at(objectIndex);
+        }
     }
-    [[nodiscard]] inline int getObjectIndexFromNode(uint32_t nodeIndex) const
+    inline std::vector<Node> getSelectedNodes() const
     {
-        return getNode(nodeIndex).objectData.objectIndex;
-    }
-    [[nodiscard]] inline int getTransformIndexFromNode(uint32_t nodeIndex) const
-    {
-        return getNode(nodeIndex).objectData.transformIndex;
+        std::vector<Node> nodes;
+        for (const auto s : m_selectedNodes)
+            nodes.push_back(m_nodes.at(s));
+        return nodes;
     }
 
     // Mesh functions
@@ -62,13 +74,24 @@ class Scene : public Object
     {
         return m_meshes;
     }
-    [[nodiscard]] inline const Mesh &getMesh(const uint32_t meshIndex) const
+    inline const Mesh &getMeshByName(const std::string &meshName) const
     {
-        return m_meshes.at(meshIndex);
+        return m_meshes.at(m_objectNameIndexTable.at(meshName));
     }
+    inline const Mesh &getMeshAtNode(const Node &node) const
+    {
+        return dynamic_cast<const Mesh &>(getObjectAtNode(node));
+    }
+    // TODO: Remove index based setting of material.
     inline void setMeshMaterial(uint32_t meshIndex, uint32_t materialIndex)
     {
         m_meshMaterialIndexTable[meshIndex] = materialIndex;
+    }
+    inline void setMeshMaterial(const std::string &meshName,
+                                const std::string &materialName)
+    {
+        setMeshMaterial(m_objectNameIndexTable.at(meshName),
+                        m_objectNameIndexTable.at(materialName));
     }
 
     // Material functions
@@ -76,24 +99,24 @@ class Scene : public Object
     {
         return m_materials;
     }
-    [[nodiscard]] inline const Material &getMaterial(uint32_t index) const
+    inline const Material &getMaterialByName(const std::string &matName) const
     {
-        return m_materials.at(index);
+        return m_materials.at(m_objectNameIndexTable.at(matName));
     }
-    inline Material &getMaterial(uint32_t index)
+    inline Material &getMaterialByName(const std::string &matName)
     {
         return const_cast<Material &>(
-            static_cast<const Scene &>(*this).getMaterial(index));
+            static_cast<const Scene &>(*this).getMaterialByName(matName));
     }
-    [[nodiscard]] inline const Material &getMaterialOfMesh(
-        uint32_t meshIndex) const
+    inline const Material &getMaterialOfMesh(const Mesh &mesh) const
     {
-        return getMaterial(m_meshMaterialIndexTable.at(meshIndex));
+        return m_materials.at(m_meshMaterialIndexTable.at(
+            m_objectNameIndexTable.at(mesh.getName())));
     }
-    inline Material &getMaterialOfMesh(uint32_t meshIndex)
+    inline Material &getMaterialOfMesh(const Mesh &mesh)
     {
         return const_cast<Material &>(
-            static_cast<const Scene &>(*this).getMaterialOfMesh(meshIndex));
+            static_cast<const Scene &>(*this).getMaterialOfMesh(mesh));
     }
 
     // Light functions
@@ -101,14 +124,13 @@ class Scene : public Object
     {
         return m_lights;
     }
-    [[nodiscard]] inline const Light &getLight(uint32_t index) const
+    inline const Light &getLightByName(const std::string &lightName) const
     {
-        return m_lights.at(index);
+        return m_lights.at(m_objectNameIndexTable.at(lightName));
     }
-    inline Light &getLight(uint32_t index)
+    inline const Light &getLightAtNode(const Node &node) const
     {
-        return const_cast<Light &>(
-            static_cast<const Scene &>(*this).getLight(index));
+        return dynamic_cast<const Light &>(getObjectAtNode(node));
     }
 
     // Camera functions
@@ -116,14 +138,13 @@ class Scene : public Object
     {
         return m_cameras;
     }
-    [[nodiscard]] inline const Camera &getCamera(uint32_t index) const
+    inline const Camera &getCameraByName(const std::string &camName) const
     {
-        return m_cameras.at(index);
+        return m_cameras.at(m_objectNameIndexTable.at(camName));
     }
-    inline Camera &getCamera(uint32_t index)
+    inline const Camera &getCameraAtNode(const Node &node) const
     {
-        return const_cast<Camera &>(
-            static_cast<const Scene &>(*this).getCamera(index));
+        return dynamic_cast<const Camera &>(getObjectAtNode(node));
     }
 
     // Transform functions
@@ -132,42 +153,48 @@ class Scene : public Object
     {
         return m_globalTransforms;
     }
-    [[nodiscard]] inline math::Transform getGlobalTransform(
-        uint32_t nodeIndex) const
+    [[nodiscard]] inline const math::Transform &getGlobalTransform(
+        const Node &node) const
     {
-        return m_globalTransforms.at(getTransformIndexFromNode(nodeIndex));
+        return m_globalTransforms.at(node.objectData.transformIndex);
     }
-    [[nodiscard]] inline math::Transform getLocalTransform(
-        uint32_t nodeIndex) const
+    [[nodiscard]] inline const math::Transform &getGlobalTransform(
+        const std::string &objectName) const
     {
-        return m_localTransforms.at(getTransformIndexFromNode(nodeIndex));
+        return m_globalTransforms.at(
+            getNodeByName(objectName).objectData.transformIndex);
     }
-    inline void setGlobalTransform(uint32_t nodeIndex,
-                                   const math::Transform &transform)
+    [[nodiscard]] inline const math::Transform &getLocalTransform(
+        const Node &node) const
     {
-        setTransform(nodeIndex, transform, true);
+        return m_localTransforms.at(node.objectData.transformIndex);
     }
-    inline void setLocalTransform(uint32_t nodeIndex,
-                                  const math::Transform &transform)
+    [[nodiscard]] inline const math::Transform &getLocalTransform(
+        const std::string &objectName) const
     {
-        setTransform(nodeIndex, transform, false);
+        return m_localTransforms.at(
+            getNodeByName(objectName).objectData.transformIndex);
     }
 
-    [[nodiscard]] const Object *getObjectAtNode(uint32_t nodeIndex) const
+    inline void setGlobalTransform(const Node &node,
+                                   const math::Transform &transform)
     {
-        const int objectIndex = getObjectIndexFromNode(nodeIndex);
-        switch (m_nodes.at(nodeIndex).objectData.type)
-        {
-        case NodeObjectType::EMPTY:
-            return &m_emptyObjects.at(objectIndex);
-        case NodeObjectType::MESH:
-            return &m_meshes.at(objectIndex);
-        case NodeObjectType::LIGHT:
-            return &m_lights.at(objectIndex);
-        case NodeObjectType::CAMERA:
-            return &m_cameras.at(objectIndex);
-        }
-        return nullptr;
+        setTransform(node, transform, true);
+    }
+    inline void setGlobalTransform(const std::string &objectName,
+                                   const math::Transform &transform)
+    {
+        setTransform(getNodeByName(objectName), transform, true);
+    }
+    inline void setLocalTransform(const Node &node,
+                                  const math::Transform &transform)
+    {
+        setTransform(node, transform, false);
+    }
+    inline void setLocalTransform(const std::string &objectName,
+                                  const math::Transform &transform)
+    {
+        setTransform(getNodeByName(objectName), transform, false);
     }
 
     [[nodiscard]] inline const SceneStatistics &getStats() const
@@ -175,18 +202,15 @@ class Scene : public Object
         return m_stats;
     }
 
-    uint32_t addNode(int parent,
-                     NodeObjectType objectType = NodeObjectType::EMPTY,
-                     int objectIndex = -1,
-                     const math::Transform &transform = math::Transform{},
-                     const std::string &emptyObjectName = "");
-    inline void setNodeRenderData(uint32_t nodeIndex, NodeRenderData renderData)
+    const Node &addNode(int parent,
+                        NodeObjectType objectType = NodeObjectType::EMPTY,
+                        int objectIndex = -1,
+                        const math::Transform &transform = math::Transform{},
+                        const std::string &emptyObjectName = "");
+    void setNodeRenderData(const Node &node, NodeRenderData renderData);
+    inline void setNodeObjectData(const Node &node, NodeObjectData objectData)
     {
-        m_nodes.at(nodeIndex).renderData = renderData;
-    }
-    inline void setNodeObjectData(uint32_t nodeIndex, NodeObjectData objectData)
-    {
-        m_nodes.at(nodeIndex).objectData = objectData;
+        m_nodes.at(node.index).objectData = objectData;
     }
 
     void postProcess();
@@ -203,14 +227,16 @@ class Scene : public Object
     std::vector<Node> m_nodes;
 
     // Search objects
+    std::unordered_map<uint32_t, uint32_t> m_objectNodeIndexTable;
     std::unordered_map<std::string, uint32_t> m_objectNameIndexTable;
     std::unordered_map<uint32_t, uint32_t> m_meshMaterialIndexTable;
     uint32_t m_dirtyTransformLevel = std::numeric_limits<uint32_t>::max();
-    SceneStatistics m_stats;
+    std::set<uint32_t> m_selectedNodes;
 
+    SceneStatistics m_stats;
     void updateDirtyTransforms();
-    void setTransform(uint32_t nodeIndex,
-                      const math::Transform &transform, bool global=true);
+    void setTransform(const Node &node, const math::Transform &transform,
+                      bool global = true);
 };
 } // namespace kirana::scene
 #endif
