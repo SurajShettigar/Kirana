@@ -7,9 +7,11 @@ namespace kirana::math
 {
 class Ray;
 class Transform;
+class TransformHierarchy;
 class Bounds3
 {
     friend class Transform;
+    friend class TransformHierarchy;
 
   private:
     Vector3 m_min;
@@ -26,6 +28,8 @@ class Bounds3
 
     Bounds3(const Bounds3 &bounds);
     Bounds3 &operator=(const Bounds3 &bounds);
+    bool operator==(const Bounds3 &rhs) const;
+    bool operator!=(const Bounds3 &rhs) const;
 
     Vector3 operator[](int i) const
     {

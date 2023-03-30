@@ -31,7 +31,7 @@ bool kirana::math::Quaternion::operator==(const Quaternion &rhs) const
 
 bool kirana::math::Quaternion::operator!=(const Quaternion &rhs) const
 {
-    return !approximatelyEqual(m_w, rhs.m_w) || m_v != rhs.m_v;
+    return !(*this == rhs);
 }
 
 kirana::math::Quaternion::operator std::string() const
@@ -336,5 +336,5 @@ kirana::math::Quaternion kirana::math::Quaternion::rotationFromVectors(
 
 std::ostream &kirana::math::operator<<(std::ostream &out, const Quaternion &q)
 {
-    return out << q.getEulerAngles();
+    return out << static_cast<std::string>(q);
 }

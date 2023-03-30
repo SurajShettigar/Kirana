@@ -29,62 +29,16 @@ float Matrix4x4::m_determinant3x3(float m00, float m01, float m02, float m10,
            m02 * m_determinant2x2(m10, m11, m20, m21);
 }
 
-
-Matrix4x4::Matrix4x4(float matrix[4][4])
-{
-    std::copy(&matrix[0][0], &matrix[0][0] + 16, &m_current[0][0]);
-}
-
-Matrix4x4::Matrix4x4(float m00, float m01, float m02, float m03, float m10,
-                     float m11, float m12, float m13, float m20, float m21,
-                     float m22, float m23, float m30, float m31, float m32,
-                     float m33)
-    : m_current{
-          Vector4{m00, m01, m02, m03},
-          Vector4{m10, m11, m12, m13},
-          Vector4{m20, m21, m22, m23},
-          Vector4{m30, m31, m32, m33},
-      }
-{
-}
-
-
-Matrix4x4::Matrix4x4(Vector4 rows[4])
-    : m_current{rows[0], rows[1], rows[2], rows[3]}
-{
-}
-
-Matrix4x4::Matrix4x4(const Vector4 &row0, const Vector4 &row1,
-                     const Vector4 &row2, const Vector4 &row3)
-    : m_current{
-          row0,
-          row1,
-          row2,
-          row3,
-      }
-{
-}
-
 Matrix4x4::Matrix4x4(const Matrix4x4 &mat)
 {
     if (&mat != this)
-    {
-        m_current[0] = mat[0];
-        m_current[1] = mat[1];
-        m_current[2] = mat[2];
-        m_current[3] = mat[3];
-    }
+        m_current = mat.m_current;
 }
 
 Matrix4x4 &Matrix4x4::operator=(const Matrix4x4 &mat)
 {
     if (&mat != this)
-    {
-        m_current[0] = mat[0];
-        m_current[1] = mat[1];
-        m_current[2] = mat[2];
-        m_current[3] = mat[3];
-    }
+        m_current = mat.m_current;
     return *this;
 }
 
@@ -108,9 +62,7 @@ bool Matrix4x4::operator==(const Matrix4x4 &mat) const
 
 bool Matrix4x4::operator!=(const Matrix4x4 &mat) const
 {
-    return m_current[0] != mat.m_current[0] ||
-           m_current[1] != mat.m_current[1] ||
-           m_current[2] != mat.m_current[2] || m_current[3] != mat.m_current[3];
+    return !(*this == mat);
 }
 
 kirana::math::Matrix4x4::operator std::string() const
@@ -229,14 +181,7 @@ Vector3 kirana::math::operator*(const Matrix4x4 &mat, const Vector3 &vec3)
 
 std::ostream &kirana::math::operator<<(std::ostream &out, const Matrix4x4 &mat)
 {
-    return out << "\n[" << mat[0][0] << ", " << mat[0][1] << ", " << mat[0][2]
-               << ", " << mat[0][3] << ", \n"
-               << mat[1][0] << ", " << mat[1][1] << ", " << mat[1][2] << ", "
-               << mat[1][3] << ", \n"
-               << mat[2][0] << ", " << mat[2][1] << ", " << mat[2][2] << ", "
-               << mat[2][3] << ", \n"
-               << mat[3][0] << ", " << mat[3][1] << ", " << mat[3][2] << ", "
-               << mat[3][3] << "]";
+    return out << static_cast<std::string>(mat);
 }
 
 float Matrix4x4::determinant() const
@@ -279,11 +224,7 @@ Matrix4x4 Matrix4x4::inverse(const Matrix4x4 &mat)
 
     int indxc[4], indxr[4];
     int ipiv[4] = {0, 0, 0, 0};
-    Vector4 minv[4];
-    minv[0] = mat[0];
-    minv[1] = mat[1];
-    minv[2] = mat[2];
-    minv[3] = mat[3];
+    std::array<Vector4, 4> minv {mat[0], mat[1], mat[2], mat[3]};
     for (int i = 0; i < 4; i++)
     {
         int irow = 0, icol = 0;

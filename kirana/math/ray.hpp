@@ -7,9 +7,11 @@
 namespace kirana::math
 {
 class Transform;
+class TransformHierarchy;
 class Ray
 {
     friend class Transform;
+    friend class TransformHierarchy;
   private:
     Vector3 m_origin;
     Vector3 m_direction;
@@ -48,7 +50,7 @@ class Ray
     }
     bool operator!=(const Ray &rhs)
     {
-        return m_origin != rhs.m_origin || m_direction != rhs.m_direction;
+        return !(*this == rhs);
     }
 
     explicit operator std::string() const
@@ -90,8 +92,7 @@ class Ray
 
     friend std::ostream &operator<<(std::ostream &out, const Ray &ray)
     {
-        return out << "<Origin: " << ray.m_origin
-                   << ", Direction: " << ray.m_direction << ">";
+        return out << static_cast<std::string>(ray);
     }
 };
 } // namespace kirana::math

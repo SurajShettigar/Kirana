@@ -1,20 +1,18 @@
-#include "transform.hpp"
+#include "transform_hierarchy.hpp"
 
 #include "vector3.hpp"
 #include "vector4.hpp"
 
 
-void kirana::math::Transform::calculateLocalMatrix()
+void kirana::math::TransformHierarchy::calculateLocalMatrix()
 {
     m_localMatrix = Matrix4x4::translation(m_localPosition) *
                     m_localRotation.getMatrix() *
                     Matrix4x4::scale(m_localScale);
-    if (m_enableEvents)
-        m_onChangeEvent();
 }
 
 
-kirana::math::Matrix4x4 kirana::math::Transform::getParentMatrix(
+kirana::math::Matrix4x4 kirana::math::TransformHierarchy::getParentMatrix(
     bool includeScale) const
 {
     if (m_parent != nullptr && m_parent != this)
@@ -22,7 +20,7 @@ kirana::math::Matrix4x4 kirana::math::Transform::getParentMatrix(
     return Matrix4x4::IDENTITY;
 }
 
-kirana::math::Matrix4x4 kirana::math::Transform::getWorldMatrix(
+kirana::math::Matrix4x4 kirana::math::TransformHierarchy::getWorldMatrix(
     bool includeScale) const
 {
     if (includeScale)
@@ -42,16 +40,15 @@ kirana::math::Matrix4x4 kirana::math::Transform::getWorldMatrix(
     }
 }
 
-kirana::math::Transform::Transform(Transform *parent, bool enableEvents)
+kirana::math::TransformHierarchy::TransformHierarchy(TransformHierarchy *parent)
     : m_parent{parent}, m_localMatrix{Matrix4x4::IDENTITY}, m_localPosition{},
-      m_localRotation{}, m_localScale{Vector3::ONE}, m_enableEvents{
-                                                         enableEvents}
+      m_localRotation{}, m_localScale{Vector3::ONE}
 {
 }
 
-kirana::math::Transform::Transform(const Matrix4x4 &mat, Transform *parent,
-                                   bool enableEvents)
-    : m_parent{parent}, m_localMatrix{mat}, m_enableEvents{enableEvents}
+kirana::math::TransformHierarchy::TransformHierarchy(const Matrix4x4 &mat,
+                                                     TransformHierarchy *parent)
+    : m_parent{parent}, m_localMatrix{mat}
 {
     Vector3 eulerAngles;
     Matrix4x4::decompose(m_localMatrix, &m_localPosition, &m_localScale,
@@ -60,75 +57,74 @@ kirana::math::Transform::Transform(const Matrix4x4 &mat, Transform *parent,
 }
 
 
-kirana::math::Transform::Transform(const Transform &transform)
+kirana::math::TransformHierarchy::TransformHierarchy(
+    const TransformHierarchy &TransformHierarchy)
 {
-    if (this != &transform)
+    if (this != &TransformHierarchy)
     {
-        m_parent = transform.m_parent;
-        m_localMatrix = transform.m_localMatrix;
-        m_localPosition = transform.m_localPosition;
-        m_localRotation = transform.m_localRotation;
-        m_localScale = transform.m_localScale;
-
-        m_enableEvents = transform.m_enableEvents;
-        m_onChangeEvent = transform.m_onChangeEvent;
+        m_parent = TransformHierarchy.m_parent;
+        m_localMatrix = TransformHierarchy.m_localMatrix;
+        m_localPosition = TransformHierarchy.m_localPosition;
+        m_localRotation = TransformHierarchy.m_localRotation;
+        m_localScale = TransformHierarchy.m_localScale;
     }
 }
 
-kirana::math::Transform &kirana::math::Transform::operator=(
-    const Transform &transform)
+kirana::math::TransformHierarchy &kirana::math::TransformHierarchy::operator=(
+    const TransformHierarchy &TransformHierarchy)
 {
-    if (this != &transform)
+    if (this != &TransformHierarchy)
     {
-        m_parent = transform.m_parent;
-        m_localMatrix = transform.m_localMatrix;
-        m_localPosition = transform.m_localPosition;
-        m_localRotation = transform.m_localRotation;
-        m_localScale = transform.m_localScale;
-
-        m_enableEvents = transform.m_enableEvents;
-        m_onChangeEvent = transform.m_onChangeEvent;
+        m_parent = TransformHierarchy.m_parent;
+        m_localMatrix = TransformHierarchy.m_localMatrix;
+        m_localPosition = TransformHierarchy.m_localPosition;
+        m_localRotation = TransformHierarchy.m_localRotation;
+        m_localScale = TransformHierarchy.m_localScale;
     }
     return *this;
 }
 
-bool kirana::math::Transform::operator==(const Transform &rhs) const
+bool kirana::math::TransformHierarchy::operator==(
+    const TransformHierarchy &rhs) const
 {
-    return (*this).m_localMatrix == rhs.m_localMatrix &&
-           m_parent == rhs.m_parent;
+    return m_localMatrix == rhs.m_localMatrix && m_parent == rhs.m_parent;
 }
 
-bool kirana::math::Transform::operator!=(const Transform &rhs) const
+bool kirana::math::TransformHierarchy::operator!=(
+    const TransformHierarchy &rhs) const
 {
-    return (*this).m_localMatrix != rhs.m_localMatrix &&
-           m_parent != rhs.m_parent;
+    return !(*this == rhs);
 }
 
-kirana::math::Matrix4x4 kirana::math::Transform::getMatrix(Space space) const
+kirana::math::Matrix4x4 kirana::math::TransformHierarchy::getMatrix(
+    Space space) const
 {
     if (space == Space::World)
         return getWorldMatrix();
     return m_localMatrix;
 }
 
-kirana::math::Vector3 kirana::math::Transform::getRight(Space space) const
+kirana::math::Vector3 kirana::math::TransformHierarchy::getRight(
+    Space space) const
 {
     return Vector3::normalize(getRotation(space).rotateVector(Vector3::RIGHT));
 }
 
-kirana::math::Vector3 kirana::math::Transform::getUp(Space space) const
+kirana::math::Vector3 kirana::math::TransformHierarchy::getUp(Space space) const
 {
     return Vector3::normalize(getRotation(space).rotateVector(Vector3::UP));
 }
 
-kirana::math::Vector3 kirana::math::Transform::getForward(Space space) const
+kirana::math::Vector3 kirana::math::TransformHierarchy::getForward(
+    Space space) const
 {
     return Vector3::normalize(
         getRotation(space).rotateVector(Vector3::FORWARD));
 }
 
 
-void kirana::math::Transform::setForward(const Vector3 &forward, Space space)
+void kirana::math::TransformHierarchy::setForward(const Vector3 &forward,
+                                                  Space space)
 {
     Vector3 right;
     Vector3 up;
@@ -158,7 +154,8 @@ void kirana::math::Transform::setForward(const Vector3 &forward, Space space)
     calculateLocalMatrix();
 }
 
-kirana::math::Vector3 kirana::math::Transform::getPosition(Space space) const
+kirana::math::Vector3 kirana::math::TransformHierarchy::getPosition(
+    Space space) const
 {
     if (space == Space::World)
     {
@@ -168,7 +165,8 @@ kirana::math::Vector3 kirana::math::Transform::getPosition(Space space) const
     return m_localPosition;
 }
 
-kirana::math::Quaternion kirana::math::Transform::getRotation(Space space) const
+kirana::math::Quaternion kirana::math::TransformHierarchy::getRotation(
+    Space space) const
 {
     if (space == Space::World)
     {
@@ -182,7 +180,8 @@ kirana::math::Quaternion kirana::math::Transform::getRotation(Space space) const
     return m_localRotation;
 }
 
-kirana::math::Vector3 kirana::math::Transform::getScale(Space space) const
+kirana::math::Vector3 kirana::math::TransformHierarchy::getScale(
+    Space space) const
 {
     if (space == Space::World)
     {
@@ -197,7 +196,8 @@ kirana::math::Vector3 kirana::math::Transform::getScale(Space space) const
     return m_localScale;
 }
 
-void kirana::math::Transform::setPosition(const Vector3 &position, Space space)
+void kirana::math::TransformHierarchy::setPosition(const Vector3 &position,
+                                                   Space space)
 {
     if (space == Space::World)
     {
@@ -215,7 +215,8 @@ void kirana::math::Transform::setPosition(const Vector3 &position, Space space)
     calculateLocalMatrix();
 }
 
-void kirana::math::Transform::setPositionInLocalAxis(const Vector3 &position)
+void kirana::math::TransformHierarchy::setPositionInLocalAxis(
+    const Vector3 &position)
 {
     m_localPosition = getForward() * position[2];
     m_localPosition = getUp() * position[1];
@@ -223,13 +224,14 @@ void kirana::math::Transform::setPositionInLocalAxis(const Vector3 &position)
     calculateLocalMatrix();
 }
 
-void kirana::math::Transform::setRotation(const Vector3 &rotation, Space space)
+void kirana::math::TransformHierarchy::setRotation(const Vector3 &rotation,
+                                                   Space space)
 {
     setRotation(Quaternion::euler(rotation), space);
 }
 
-void kirana::math::Transform::setRotation(const Quaternion &rotation,
-                                          Space space)
+void kirana::math::TransformHierarchy::setRotation(const Quaternion &rotation,
+                                                   Space space)
 {
     if (space == Space::World)
     {
@@ -248,13 +250,13 @@ void kirana::math::Transform::setRotation(const Quaternion &rotation,
     calculateLocalMatrix();
 }
 
-void kirana::math::Transform::setLocalScale(const Vector3 &scale)
+void kirana::math::TransformHierarchy::setLocalScale(const Vector3 &scale)
 {
     m_localScale = scale;
     calculateLocalMatrix();
 }
 
-kirana::math::Vector3 kirana::math::Transform::transformVector(
+kirana::math::Vector3 kirana::math::TransformHierarchy::transformVector(
     const Vector3 &vector, Space space) const
 {
     if (space == Space::World)
@@ -265,7 +267,7 @@ kirana::math::Vector3 kirana::math::Transform::transformVector(
 }
 
 
-kirana::math::Vector3 kirana::math::Transform::transformPosition(
+kirana::math::Vector3 kirana::math::TransformHierarchy::transformPosition(
     const Vector3 &position, Space space) const
 {
     if (space == Space::World)
@@ -276,7 +278,7 @@ kirana::math::Vector3 kirana::math::Transform::transformPosition(
 }
 
 
-kirana::math::Vector3 kirana::math::Transform::transformDirection(
+kirana::math::Vector3 kirana::math::TransformHierarchy::transformDirection(
     const Vector3 &direction, Space space) const
 {
     if (space == Space::World)
@@ -287,7 +289,7 @@ kirana::math::Vector3 kirana::math::Transform::transformDirection(
                                     Vector4(direction, 0.0f));
 }
 
-kirana::math::Bounds3 kirana::math::Transform::transformBounds(
+kirana::math::Bounds3 kirana::math::TransformHierarchy::transformBounds(
     const Bounds3 &bounds, Space space) const
 {
     // Algorithm taken from Graphic Gems: "Transforming Axis-Aligned Bounding
@@ -327,7 +329,7 @@ kirana::math::Bounds3 kirana::math::Transform::transformBounds(
 }
 
 
-void kirana::math::Transform::translate(
+void kirana::math::TransformHierarchy::translate(
     const kirana::math::Vector3 &translation, Space space)
 {
     if (space == Space::World)
@@ -351,7 +353,8 @@ void kirana::math::Transform::translate(
     calculateLocalMatrix();
 }
 
-void kirana::math::Transform::translateInLocalAxis(const Vector3 &translation)
+void kirana::math::TransformHierarchy::translateInLocalAxis(
+    const Vector3 &translation)
 {
     m_localPosition += getForward() * translation[2];
     m_localPosition += getUp() * translation[1];
@@ -359,7 +362,7 @@ void kirana::math::Transform::translateInLocalAxis(const Vector3 &translation)
     calculateLocalMatrix();
 }
 
-void kirana::math::Transform::rotateX(float angle, Space space)
+void kirana::math::TransformHierarchy::rotateX(float angle, Space space)
 {
     if (space == Space::World)
     {
@@ -380,7 +383,7 @@ void kirana::math::Transform::rotateX(float angle, Space space)
     calculateLocalMatrix();
 }
 
-void kirana::math::Transform::rotateY(float angle, Space space)
+void kirana::math::TransformHierarchy::rotateY(float angle, Space space)
 {
     if (space == Space::World)
     {
@@ -401,7 +404,7 @@ void kirana::math::Transform::rotateY(float angle, Space space)
     calculateLocalMatrix();
 }
 
-void kirana::math::Transform::rotateZ(float angle, Space space)
+void kirana::math::TransformHierarchy::rotateZ(float angle, Space space)
 {
     if (space == Space::World)
     {
@@ -422,7 +425,8 @@ void kirana::math::Transform::rotateZ(float angle, Space space)
     calculateLocalMatrix();
 }
 
-void kirana::math::Transform::rotate(const Vector3 &rotation, Space space)
+void kirana::math::TransformHierarchy::rotate(const Vector3 &rotation,
+                                              Space space)
 {
     if (space == Space::World)
     {
@@ -443,7 +447,8 @@ void kirana::math::Transform::rotate(const Vector3 &rotation, Space space)
 }
 
 
-void kirana::math::Transform::rotate(const Quaternion &rotation, Space space)
+void kirana::math::TransformHierarchy::rotate(const Quaternion &rotation,
+                                              Space space)
 {
     if (space == Space::World)
     {
@@ -463,8 +468,9 @@ void kirana::math::Transform::rotate(const Quaternion &rotation, Space space)
     calculateLocalMatrix();
 }
 
-void kirana::math::Transform::rotateAround(float angle, const Vector3 &axis,
-                                           Space space)
+void kirana::math::TransformHierarchy::rotateAround(float angle,
+                                                    const Vector3 &axis,
+                                                    Space space)
 {
     if (space == Space::World)
     {
@@ -485,14 +491,14 @@ void kirana::math::Transform::rotateAround(float angle, const Vector3 &axis,
     calculateLocalMatrix();
 }
 
-void kirana::math::Transform::lookAt(const Vector3 &direction,
-                                     const Vector3 &up)
+void kirana::math::TransformHierarchy::lookAt(const Vector3 &position,
+                                              const Vector3 &up)
 {
-    Vector3 z = Vector3::normalize(direction);
-    Vector3 x = Vector3::normalize(Vector3::cross(Vector3::normalize(up), z));
-    Vector3 y = Vector3::normalize(Vector3::cross(z, x));
+    const Vector3 eyePos = getPosition();
+    const Vector3 z = -Vector3::normalize(position - eyePos);
+    const Vector3 x = Vector3::normalize(Vector3::cross(Vector3::normalize(up), z));
+    const Vector3 y = Vector3::normalize(Vector3::cross(z, x));
 
-    Vector3 eyePos = getPosition();
     const Matrix4x4 &worldMat =
         Matrix4x4(x[0], y[0], z[0], eyePos[0], x[1], y[1], z[1], eyePos[1],
                   x[2], y[2], z[2], eyePos[2], 0.0f, 0.0f, 0.0f, 1.0f);

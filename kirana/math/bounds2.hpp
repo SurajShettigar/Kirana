@@ -27,6 +27,8 @@ class Bounds2
 
     Bounds2(const Bounds2 &bounds);
     Bounds2 &operator=(const Bounds2 &bounds);
+    bool operator==(const Bounds2 &rhs) const;
+    bool operator!=(const Bounds2 &rhs) const;
 
     Vector2 operator[](int i) const
     {
