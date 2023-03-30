@@ -37,6 +37,17 @@ kirana::math::Bounds2 &kirana::math::Bounds2::operator=(const Bounds2 &bounds)
     return *this;
 }
 
+bool kirana::math::Bounds2::operator==(const Bounds2 &rhs) const
+{
+    return m_min == rhs.m_min && m_max == rhs.m_max;
+}
+
+bool kirana::math::Bounds2::operator!=(const Bounds2 &rhs) const
+{
+    return !(*this == rhs);
+}
+
+
 kirana::math::Bounds2::operator std::string() const
 {
     return std::string("<Min: ") + std::string(m_min) +
@@ -98,5 +109,5 @@ kirana::math::Bounds2 kirana::math::Bounds2::intersect(const Bounds2 &lhs,
 
 std::ostream &kirana::math::operator<<(std::ostream &out, const Bounds2 &bounds)
 {
-    return out << "<Min: " << bounds.m_min << ", Max: " << bounds.m_max << ">";
+    return out << static_cast<std::string>(bounds);
 }

@@ -3,6 +3,7 @@
 
 
 #include <iostream>
+#include <array>
 
 
 namespace kirana::math
@@ -15,7 +16,7 @@ class Vector4;
 class Vector3
 {
   private:
-    float m_current[3]{0, 0, 0};
+    std::array<float, 3> m_current{0, 0, 0};
 
   public:
     // static values
@@ -30,12 +31,15 @@ class Vector3
 
     Vector3() = default;
     ~Vector3() = default;
+    explicit Vector3(std::array<float, 3> vector);
     explicit Vector3(float x, float y, float z);
     explicit Vector3(const Vector2 &vec2);
     explicit Vector3(const Vector4 &vec4);
 
     Vector3(const Vector3 &vec3);
     Vector3 &operator=(const Vector3 &vec3);
+    bool operator==(const Vector3 &rhs) const;
+    bool operator!=(const Vector3 &rhs) const;
 
     /// Cast to Vector2
     explicit operator Vector2() const;
@@ -46,15 +50,11 @@ class Vector3
 
     inline float operator[](int i) const
     {
-        if(i < 0 || i > 2)
-            return m_current[2];
-        return m_current[i];
+        return i < 0 ? m_current[0] : (i > 2 ? m_current[2] : m_current.at(i));
     }
     inline float &operator[](int i)
     {
-        if(i < 0 || i > 2)
-            return m_current[2];
-        return m_current[i];
+        return i < 0 ? m_current[0] : (i > 2 ? m_current[2] : m_current.at(i));
     }
 
     // Current Vector operations
@@ -63,8 +63,6 @@ class Vector3
     Vector3 &operator-=(const Vector3 &rhs);
     Vector3 &operator*=(float rhs);
     Vector3 &operator/=(float rhs);
-    bool operator==(const Vector3 &rhs) const;
-    bool operator!=(const Vector3 &rhs) const;
 
     // Vector Specific operations
     [[nodiscard]] float length() const;
@@ -76,14 +74,9 @@ class Vector3
         return sizeof(m_current);
     }
 
-    [[nodiscard]] inline size_t count() const
-    {
-        return sizeof(m_current) / sizeof(float);
-    }
-
     [[nodiscard]] inline const float *data() const
     {
-        return &m_current[0];
+        return m_current.data();
     }
 
     static float dot(const Vector3 &v, const Vector3 &w);

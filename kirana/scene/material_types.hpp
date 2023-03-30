@@ -6,6 +6,7 @@
 #include <any>
 #include <string>
 #include <utility>
+#include <unordered_map>
 #include "scene_types.hpp"
 
 namespace kirana::scene

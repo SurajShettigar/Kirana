@@ -18,7 +18,7 @@ class Quaternion;
 class Matrix4x4
 {
   private:
-    Vector4 m_current[4]{
+    std::array<Vector4, 4> m_current{
         Vector4{1.0f, 0.0f, 0.0f, 0.0f},
         Vector4{0.0f, 1.0f, 0.0f, 0.0f},
         Vector4{0.0f, 0.0f, 1.0f, 0.0f},
@@ -36,14 +36,28 @@ class Matrix4x4
     static const Matrix4x4 IDENTITY;
 
     Matrix4x4() = default;
-    explicit Matrix4x4(float matrix[4][4]);
+    explicit Matrix4x4(const std::array<std::array<float, 4>, 4> &matrix)
+        : m_current{Vector4{matrix[0]}, Vector4{matrix[1]}, Vector4{matrix[2]},
+                    Vector4{matrix[3]}} {};
     explicit Matrix4x4(float m00, float m01, float m02, float m03, float m10,
                        float m11, float m12, float m13, float m20, float m21,
                        float m22, float m23, float m30, float m31, float m32,
-                       float m33);
-    explicit Matrix4x4(Vector4 rows[4]);
+                       float m33)
+        : m_current{
+              Vector4{m00, m01, m02, m03},
+              Vector4{m10, m11, m12, m13},
+              Vector4{m20, m21, m22, m23},
+              Vector4{m30, m31, m32, m33},
+          } {};
+    explicit Matrix4x4(const std::array<Vector4, 4> &rows) : m_current{rows} {};
     explicit Matrix4x4(const Vector4 &row0, const Vector4 &row1,
-                       const Vector4 &row2, const Vector4 &row3);
+                       const Vector4 &row2, const Vector4 &row3)
+        : m_current{
+              row0,
+              row1,
+              row2,
+              row3,
+          } {};
     ~Matrix4x4() = default;
 
     Matrix4x4(const Matrix4x4 &mat);
@@ -63,6 +77,16 @@ class Matrix4x4
     friend Vector4 operator*(const Matrix4x4 &mat, const Vector4 &vec4);
     friend Vector3 operator*(const Matrix4x4 &mat, const Vector3 &vec3);
     friend std::ostream &operator<<(std::ostream &out, const Matrix4x4 &mat);
+
+    [[nodiscard]] inline size_t size() const
+    {
+        return sizeof(m_current);
+    }
+
+    [[nodiscard]] inline const Vector4 *data() const
+    {
+        return m_current.data();
+    }
 
     [[nodiscard]] float determinant() const;
 

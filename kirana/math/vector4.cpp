@@ -3,15 +3,18 @@
 #include "vector3.hpp"
 #include "math_utils.hpp"
 
-#include <iostream>
 #include <string>
 
+using kirana::math::Vector4;
 using kirana::math::Vector2;
 using kirana::math::Vector3;
-using kirana::math::Vector4;
 
 const Vector4 ZERO{0.0f, 0.0f, 0.0f, 0.0f};
 const Vector4 ONE{1.0f, 1.0f, 1.0f, 1.0f};
+
+Vector4::Vector4(std::array<float, 4> vector) : m_current{vector}
+{
+}
 
 Vector4::Vector4(float x, float y, float z, float w) : m_current{x, y, z, w}
 {
@@ -30,24 +33,27 @@ Vector4::Vector4(const Vector3 &vec3, float w)
 Vector4::Vector4(const Vector4 &vec4)
 {
     if (this != &vec4)
-    {
-        m_current[0] = vec4[0];
-        m_current[1] = vec4[1];
-        m_current[2] = vec4[2];
-        m_current[3] = vec4[3];
-    }
+        m_current = vec4.m_current;
 }
 
 Vector4 &Vector4::operator=(const Vector4 &vec4)
 {
     if (this != &vec4)
-    {
-        m_current[0] = vec4[0];
-        m_current[1] = vec4[1];
-        m_current[2] = vec4[2];
-        m_current[3] = vec4[3];
-    }
+        m_current = vec4.m_current;
     return *this;
+}
+
+bool Vector4::operator==(const Vector4 &rhs) const
+{
+    return approximatelyEqual(m_current[0], rhs.m_current[0]) &&
+           approximatelyEqual(m_current[1], rhs.m_current[1]) &&
+           approximatelyEqual(m_current[2], rhs.m_current[2]) &&
+           approximatelyEqual(m_current[3], rhs.m_current[3]);
+}
+
+bool Vector4::operator!=(const Vector4 &rhs) const
+{
+    return !(*this == rhs);
 }
 
 Vector4::operator Vector2() const
@@ -63,8 +69,8 @@ Vector4::operator Vector3() const
 Vector4::operator std::string() const
 {
     return std::string("{") + std::to_string(m_current[0]) + ", " +
-           std::to_string(m_current[1]) + ", " + std::to_string(m_current[2])
-           + ", " + std::to_string(m_current[3]) +"}";
+           std::to_string(m_current[1]) + ", " + std::to_string(m_current[2]) +
+           ", " + std::to_string(m_current[3]) + "}";
 }
 
 Vector4 Vector4::operator-() const
@@ -102,22 +108,6 @@ Vector4 &Vector4::operator*=(const float rhs)
 Vector4 &Vector4::operator/=(const float rhs)
 {
     return *this *= 1 / rhs;
-}
-
-bool Vector4::operator==(const Vector4 &rhs) const
-{
-    return approximatelyEqual(m_current[0], rhs.m_current[0]) &&
-           approximatelyEqual(m_current[1], rhs.m_current[1]) &&
-           approximatelyEqual(m_current[2], rhs.m_current[2]) &&
-           approximatelyEqual(m_current[3], rhs.m_current[3]);
-}
-
-bool Vector4::operator!=(const Vector4 &rhs) const
-{
-    return !approximatelyEqual(m_current[0], rhs.m_current[0]) ||
-           !approximatelyEqual(m_current[1], rhs.m_current[1]) ||
-           !approximatelyEqual(m_current[2], rhs.m_current[2]) ||
-           !approximatelyEqual(m_current[3], rhs.m_current[3]);
 }
 
 
@@ -177,6 +167,5 @@ Vector4 kirana::math::operator/(const Vector4 &lhs, float rhs)
 
 std::ostream &kirana::math::operator<<(std::ostream &out, const Vector4 &vec4)
 {
-    return out << '{' << vec4[0] << ", " << vec4[1] << ", " << vec4[2] << ", "
-               << vec4[3] << '}';
+    return out << static_cast<std::string>(vec4);
 }

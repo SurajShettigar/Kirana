@@ -82,7 +82,7 @@ class Scene
     }
 
     // Helper-Functions
-    [[nodiscard]] std::vector<math::Transform *> getTransformsForMesh(
+    [[nodiscard]] std::vector<math::TransformHierarchy *> getTransformsForMesh(
         const Mesh *mesh) const;
 };
 } // namespace kirana::scene

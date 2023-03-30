@@ -19,6 +19,10 @@ const Vector3 Vector3::RIGHT{1.0f, 0.0f, 0.0f};
 const Vector3 Vector3::FORWARD{0.0f, 0.0f, 1.0f};
 const Vector3 Vector3::BACK{0.0f, 0.0f, -1.0f};
 
+Vector3::Vector3(std::array<float, 3> vector) : m_current{vector}
+{
+}
+
 Vector3::Vector3(float x, float y, float z) : m_current{x, y, z}
 {
 }
@@ -34,23 +38,28 @@ Vector3::Vector3(const Vector4 &vec4) : m_current{vec4[0], vec4[1], vec4[2]}
 Vector3::Vector3(const Vector3 &vec3)
 {
     if (this != &vec3)
-    {
-        m_current[0] = vec3[0];
-        m_current[1] = vec3[1];
-        m_current[2] = vec3[2];
-    }
+        m_current = vec3.m_current;
 }
 
 Vector3 &Vector3::operator=(const Vector3 &vec3)
 {
     if (this != &vec3)
-    {
-        m_current[0] = vec3[0];
-        m_current[1] = vec3[1];
-        m_current[2] = vec3[2];
-    }
+        m_current = vec3.m_current;
     return *this;
 }
+
+bool Vector3::operator==(const Vector3 &rhs) const
+{
+    return approximatelyEqual(m_current[0], rhs.m_current[0]) &&
+           approximatelyEqual(m_current[1], rhs.m_current[1]) &&
+           approximatelyEqual(m_current[2], rhs.m_current[2]);
+}
+
+bool Vector3::operator!=(const Vector3 &rhs) const
+{
+    return !(*this == rhs);
+}
+
 
 Vector3::operator Vector2() const
 {
@@ -101,20 +110,6 @@ Vector3 &Vector3::operator*=(const float rhs)
 Vector3 &Vector3::operator/=(const float rhs)
 {
     return *this *= 1 / rhs;
-}
-
-bool Vector3::operator==(const Vector3 &rhs) const
-{
-    return approximatelyEqual(m_current[0], rhs.m_current[0]) &&
-           approximatelyEqual(m_current[1], rhs.m_current[1]) &&
-           approximatelyEqual(m_current[2], rhs.m_current[2]);
-}
-
-bool Vector3::operator!=(const Vector3 &rhs) const
-{
-    return !approximatelyEqual(m_current[0], rhs.m_current[0]) ||
-           !approximatelyEqual(m_current[1], rhs.m_current[1]) ||
-           !approximatelyEqual(m_current[2], rhs.m_current[2]);
 }
 
 float Vector3::length() const
@@ -241,5 +236,5 @@ Vector3 kirana::math::operator/(float lhs, const Vector3 &rhs)
 
 std::ostream &kirana::math::operator<<(std::ostream &out, const Vector3 &vec3)
 {
-    return out << '{' << vec3[0] << ", " << vec3[1] << ", " << vec3[2] << '}';
+    return out << static_cast<std::string>(vec3);
 }

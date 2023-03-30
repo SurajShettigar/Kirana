@@ -104,10 +104,10 @@ void kirana::scene::Scene::initFromAiScene(const std::string &path,
 }
 
 
-std::vector<kirana::math::Transform *> kirana::scene::Scene::
+std::vector<kirana::math::TransformHierarchy *> kirana::scene::Scene::
     getTransformsForMesh(const Mesh *const mesh) const
 {
-    std::vector<kirana::math::Transform *> transforms;
+    std::vector<kirana::math::TransformHierarchy *> transforms;
     for (const auto &o : m_objects)
     {
         if (o->hasMesh(mesh))

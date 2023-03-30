@@ -6,7 +6,8 @@
 #include <set>
 #include <limits>
 #include <memory>
-#include <transform.hpp>
+#include <transform_hierarchy.hpp>
+#include <event.hpp>
 
 namespace vma
 {
@@ -172,7 +173,7 @@ struct DescriptorBindingInfo
 struct InstanceData
 {
     uint32_t index;
-    const math::Transform *transform;
+    const math::TransformHierarchy *transform;
     const bool *viewportVisible;
     const bool *renderVisible;
     const bool *selected;

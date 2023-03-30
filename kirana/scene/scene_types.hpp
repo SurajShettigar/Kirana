@@ -1,8 +1,9 @@
 #ifndef SCENE_UTILS_HPP
 #define SCENE_UTILS_HPP
 
+#include <vector>
 #include <vector2.hpp>
-#include <transform.hpp>
+#include <transform_hierarchy.hpp>
 
 namespace kirana::scene
 {

@@ -97,8 +97,8 @@ class ViewportScene
             m_camera->getProjectionMatrix(),
             m_camera->getViewProjectionMatrix(),
             math::Matrix4x4::inverse(m_camera->getViewProjectionMatrix()),
-            m_camera->transform.getPosition(),
-            m_camera->transform.getForward(),
+            m_camera->getTransform().getPosition(),
+            m_camera->getTransform().getForward(),
             m_camera->nearPlane,
             m_camera->farPlane};
     }

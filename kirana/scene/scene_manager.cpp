@@ -57,9 +57,11 @@ void kirana::scene::SceneManager::resetViewportCamera()
             constants::VIEWPORT_CAMERA_DEFAULT_POSITION[0],
             constants::VIEWPORT_CAMERA_DEFAULT_POSITION[1],
             constants::VIEWPORT_CAMERA_DEFAULT_POSITION[2]};
-        m_viewportCamera.transform.setPosition(camPos);
+        auto transform = m_viewportCamera.getTransform();
+        transform.setPosition(camPos);
+        transform.lookAt(math::Vector3::ZERO, math::Vector3::UP);
+        m_viewportCamera.setTransform(transform);
         m_viewportCamData.pivot.setPosition(math::Vector3::ZERO);
-        m_viewportCamera.lookAt(math::Vector3::ZERO);
     }
     Logger::get().log(constants::LOG_CHANNEL_VIEWPORT, LogSeverity::trace,
                       "Viewport Camera Reset");
@@ -69,7 +71,6 @@ void kirana::scene::SceneManager::handleViewportCameraMovement()
 {
     if (!m_inputManager.getKey(Key::LEFT_ALT))
         return;
-
     MouseButton button;
     if (m_inputManager.isAnyMouseButtonDown(&button))
     {
@@ -87,28 +88,27 @@ void kirana::scene::SceneManager::handleViewportCameraMovement()
             m_viewportCamData.mousePos = m_inputManager.getMousePosition();
             m_viewportCamData.mouseDelta =
                 m_viewportCamData.mousePos - m_viewportCamData.prevMousePos;
-            m_viewportCamData.mouseDelta[0] /= static_cast<float>(m_viewportCamera.windowResolution[0]);
-            m_viewportCamData.mouseDelta[1] /= static_cast<float>(m_viewportCamera.windowResolution[1]);
+            m_viewportCamData.mouseDelta[0] /=
+                static_cast<float>(m_viewportCamera.windowResolution[0]);
+            m_viewportCamData.mouseDelta[1] /=
+                static_cast<float>(m_viewportCamera.windowResolution[1]);
         }
+
+        auto camTransform = m_viewportCamera.getTransform();
 
         switch (button)
         {
         case MouseButton::LEFT: {
             // Camera Orbit
-            float xAngle =
-                180.0f *
-                m_viewportCamData.mouseDelta[1];
-            float yAngle =
-                -360.0f *
-                m_viewportCamData.mouseDelta[0];
+            float xAngle = 180.0f * m_viewportCamData.mouseDelta[1];
+            float yAngle = -360.0f * m_viewportCamData.mouseDelta[0];
 
-            xAngle *= constants::VIEWPORT_CAMERA_MOUSE_SENSITIVITY  * 0.1f;
-            yAngle *= constants::VIEWPORT_CAMERA_MOUSE_SENSITIVITY  * 0.1f;
+            xAngle *= constants::VIEWPORT_CAMERA_MOUSE_SENSITIVITY * 0.1f;
+            yAngle *= constants::VIEWPORT_CAMERA_MOUSE_SENSITIVITY * 0.1f;
 
             const math::Vector3 pivotPos =
                 m_viewportCamData.pivot.getPosition();
-            const math::Vector3 camPos =
-                m_viewportCamera.transform.getPosition();
+            const math::Vector3 camPos = camTransform.getPosition();
 
             math::Vector3 lookPos =
                 (math::Quaternion::angleAxis(yAngle, math::Vector3::UP) *
@@ -119,8 +119,8 @@ void kirana::scene::SceneManager::handleViewportCameraMovement()
                  (lookPos - pivotPos)) +
                 pivotPos;
 
-            m_viewportCamera.transform.setPosition(lookPos);
-            m_viewportCamera.lookAt(pivotPos, math::Vector3::UP);
+            camTransform.setPosition(lookPos);
+            camTransform.lookAt(pivotPos, math::Vector3::UP);
 
             const math::Quaternion lookDir = math::Quaternion::lookAtDirection(
                 math::Vector3::normalize(camPos - pivotPos), math::Vector3::UP);
@@ -132,7 +132,7 @@ void kirana::scene::SceneManager::handleViewportCameraMovement()
             math::Vector3 translation(-m_viewportCamData.mouseDelta[0],
                                       m_viewportCamData.mouseDelta[1], 0.0f);
             translation *= constants::VIEWPORT_CAMERA_MOUSE_SENSITIVITY;
-            m_viewportCamera.transform.translateInLocalAxis(translation);
+            camTransform.translateInLocalAxis(translation);
             m_viewportCamData.pivot.translateInLocalAxis(translation);
         }
         break;
@@ -145,14 +145,15 @@ void kirana::scene::SceneManager::handleViewportCameraMovement()
                            : maxDelta;
 
             const math::Vector3 translation =
-                -m_viewportCamera.transform.getForward() * maxDelta *
+                -camTransform.getForward() * maxDelta *
                 constants::VIEWPORT_CAMERA_MOUSE_SENSITIVITY;
-            m_viewportCamera.transform.translate(translation);
+            camTransform.translate(translation);
         }
         break;
         default:
             break;
         }
+        m_viewportCamera.setTransform(camTransform);
     }
     if (m_inputManager.getMouseUp(m_viewportCamData.currentButton))
     {

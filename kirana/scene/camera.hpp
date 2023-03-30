@@ -1,7 +1,7 @@
 #ifndef CAMERA_HPP
 #define CAMERA_HPP
 
-#include <transform.hpp>
+#include <transform_hierarchy.hpp>
 #include <ray.hpp>
 #include <array>
 #include <event.hpp>
@@ -12,7 +12,7 @@ class SceneImporter;
 class SceneManager;
 
 using math::Matrix4x4;
-using math::Transform;
+using math::TransformHierarchy;
 
 class Camera
 {
@@ -26,22 +26,28 @@ class Camera
     float m_farPlane = 1000.0f;
     float m_aspectRatio = 1.77778f;
 
-    Transform m_transform{nullptr, true};
+    TransformHierarchy m_transform{nullptr};
     Matrix4x4 m_projection;
-
-    uint32_t m_transformChangeListener;
-    void onTransformChanged();
 
   public:
     Camera() = default;
     explicit Camera(std::array<uint32_t, 2> windowResolution,
                     float nearPlane = 0.1f, float farPlane = 1000.0f);
-    virtual ~Camera();
+    virtual ~Camera() = default;
 
     Camera(const Camera &camera);
     Camera &operator=(const Camera &camera);
 
-    Transform &transform = m_transform;
+    inline const TransformHierarchy &getTransform() const
+    {
+        return m_transform;
+    }
+
+    inline void setTransform(const TransformHierarchy &transform)
+    {
+        m_transform = transform;
+        m_onCameraChange();
+    }
 
     const std::array<uint32_t, 2> &windowResolution = m_windowResolution;
     const float &nearPlane = m_nearPlane;
