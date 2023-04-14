@@ -1,40 +1,34 @@
-#ifndef KIRANA_SCENE_TEXTURE_HPP
-#define KIRANA_SCENE_TEXTURE_HPP
+#ifndef KIRANA_SCENE_IMAGE_HPP
+#define KIRANA_SCENE_IMAGE_HPP
 
+#include "object.hpp"
 #include "image_types.hpp"
+#include <string>
 
-struct aiTexture;
+namespace kirana::scene::external
+{
+class STBImageLoader;
+}
 
 namespace kirana::scene
 {
-
-class Image
+class Image: public Object
 {
+    friend class external::STBImageLoader;
+    friend class external::AssimpSceneConverter;
   public:
-    Image(std::string filepath, std::string name, uint32_t index,
-          ImageProperties properties);
-    Image(const aiTexture *texture, uint32_t index, ImageProperties properties);
-    ~Image();
+    Image() = default;
+    explicit Image(std::string filepath, ImageProperties properties);
+    ~Image() override = default;
 
-    Image(const Image &image) = delete;
-    Image &operator=(const Image &image) = delete;
-
-    void *load();
-    void free();
+    Image(const Image &image) = default;
+    Image(Image &&image) = default;
+    Image &operator=(const Image &image) = default;
+    Image &operator=(Image &&image) = default;
 
     [[nodiscard]] inline const std::string &getFilepath() const
     {
         return m_filepath;
-    }
-
-    [[nodiscard]] inline const std::string &getName() const
-    {
-        return m_name;
-    }
-
-    [[nodiscard]] inline const uint32_t getIndex() const
-    {
-        return m_index;
     }
 
     [[nodiscard]] inline const std::array<int, 2> &getSize() const
@@ -47,25 +41,16 @@ class Image
         return m_properties;
     }
 
-    [[nodiscard]] inline const void *getPixelData() const
-    {
-        return m_pixelData;
-    }
-
     [[nodiscard]] inline size_t getPixelDataSize() const
     {
         return static_cast<size_t>(m_size[0] * m_size[1]) *
                static_cast<size_t>(m_properties.channels);
     }
 
-  private:
+  protected:
     std::string m_filepath;
-    std::string m_name;
-    uint32_t m_index;
     std::array<int, 2> m_size = {0, 0};
     ImageProperties m_properties;
-
-    void *m_pixelData = nullptr;
 };
 }; // namespace kirana::scene
 

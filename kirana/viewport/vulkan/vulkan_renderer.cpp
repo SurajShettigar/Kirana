@@ -174,7 +174,7 @@ void kirana::viewport::vulkan::VulkanRenderer::rebuildSwapchain()
         m_raytraceData->rebuildRenderTarget();
     }
     if (m_depthTexture && m_depthTexture->isInitialized)
-        m_renderpass->initialize(m_depthTexture);
+        m_renderpass->resize(m_depthTexture);
 
     utils::Logger::get().log(utils::constants::LOG_CHANNEL_VULKAN,
                              utils::LogSeverity::trace, "Swapchain rebuilt");

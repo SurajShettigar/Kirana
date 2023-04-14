@@ -1,12 +1,8 @@
-#ifndef MATERIAL_TYPES_HPP
-#define MATERIAL_TYPES_HPP
+#ifndef KIRANA_SCENE_MATERIAL_TYPES_HPP
+#define KIRANA_SCENE_MATERIAL_TYPES_HPP
 
-#include <array>
-#include <vector>
 #include <any>
-#include <string>
 #include <utility>
-#include <unordered_map>
 #include "scene_types.hpp"
 
 namespace kirana::scene
@@ -159,27 +155,7 @@ struct StencilProperties
     uint32_t reference = 1;
 };
 
-struct MaterialDataBase
-{
-    MaterialDataBase() = default;
-    virtual ~MaterialDataBase() = default;
-
-    [[nodiscard]] inline virtual size_t size() const
-    {
-        return sizeof(*this);
-    };
-    inline virtual void *data()
-    {
-        return this;
-    };
-
-    inline virtual const void *data() const
-    {
-        return this;
-    };
-};
-
-struct RasterPipelineData : MaterialDataBase
+struct RasterPipelineData
 {
     CullMode cull = CullMode::BACK;
     SurfaceType surfaceType = SurfaceType::OPAQUE;
@@ -187,7 +163,8 @@ struct RasterPipelineData : MaterialDataBase
     bool writeDepth = true;
     CompareOperation depthCompareOp = CompareOperation::LESS_OR_EQUAL;
     StencilProperties stencil;
-    std::vector<VertexInfo> vertexAttributeInfo = Vertex::getVertexInfo();
+    std::vector<VertexAttributeInfo> vertexAttributeInfo =
+        Vertex::getVertexInfo();
 
     explicit RasterPipelineData(
         CullMode cull = CullMode::BACK,
@@ -195,58 +172,29 @@ struct RasterPipelineData : MaterialDataBase
         bool writeDepth = true,
         CompareOperation depthCompareOp = CompareOperation::LESS_OR_EQUAL,
         StencilProperties stencil = {},
-        const std::vector<VertexInfo> &vertexAttributeInfo =
+        const std::vector<VertexAttributeInfo> &vertexAttributeInfo =
             Vertex::getVertexInfo())
-        : MaterialDataBase(), cull{cull}, surfaceType{surfaceType},
-          enableDepth{enableDepth}, writeDepth{writeDepth},
-          depthCompareOp{depthCompareOp}, stencil{stencil},
-          vertexAttributeInfo{vertexAttributeInfo}
+        : cull{cull}, surfaceType{surfaceType}, enableDepth{enableDepth},
+          writeDepth{writeDepth}, depthCompareOp{depthCompareOp},
+          stencil{stencil}, vertexAttributeInfo{vertexAttributeInfo}
     {
     }
-
-    [[nodiscard]] inline size_t size() const override
-    {
-        return sizeof(*this);
-    }
-    inline void *data() override
-    {
-        return this;
-    }
-
-    inline const void *data() const override
-    {
-        return this;
-    };
 };
 
-struct RaytracePipelineData : MaterialDataBase
+struct RaytracePipelineData
 {
     CullMode cull = CullMode::NONE;
-    VertexInfo vertexInfo = Vertex::getLargestVertexInfo();
+    std::vector<VertexAttributeInfo> vertexInfo = Vertex::getVertexInfo();
     uint32_t maxRecursionDepth = 2;
 
-    explicit RaytracePipelineData(
-        CullMode cull = CullMode::NONE,
-        VertexInfo vertexInfo = Vertex::getLargestVertexInfo(),
-        uint32_t maxRecursionDepth = 2)
-        : MaterialDataBase(), cull{cull}, vertexInfo{vertexInfo},
-          maxRecursionDepth{maxRecursionDepth}
+    explicit RaytracePipelineData(CullMode cull = CullMode::NONE,
+                                  const std::vector<VertexAttributeInfo>
+                                      &vertexInfo = Vertex::getVertexInfo(),
+                                  uint32_t maxRecursionDepth = 2)
+        : cull{cull}, vertexInfo{vertexInfo}, maxRecursionDepth{
+                                                  maxRecursionDepth}
     {
     }
-
-    [[nodiscard]] inline size_t size() const override
-    {
-        return sizeof(*this);
-    }
-    inline void *data() override
-    {
-        return this;
-    }
-
-    inline const void *data() const override
-    {
-        return this;
-    };
 };
 
 enum class MaterialParameterType
@@ -326,8 +274,7 @@ static const std::vector<MaterialParameter>
                            1.0f}},
         {MaterialParameter{"_BaseMap", MaterialParameterType::TEX_2D, -1}},
         {MaterialParameter{"_EmissiveMap", MaterialParameterType::TEX_2D, -1}},
-        {MaterialParameter{"_NormalMap", MaterialParameterType::TEX_2D,
-                           -1}}};
+        {MaterialParameter{"_NormalMap", MaterialParameterType::TEX_2D, -1}}};
 
 } // namespace kirana::scene
 

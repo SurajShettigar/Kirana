@@ -1,117 +1,140 @@
 #include "scene.hpp"
 
-#include "material.hpp"
 
-
-#include <assimp/scene.h>
-#include <constants.h>
-#include <logger.hpp>
-
-typedef kirana::utils::Logger Logger;
-typedef kirana::utils::LogSeverity LogSeverity;
-namespace constants = kirana::utils::constants;
-
-void kirana::scene::Scene::getMeshesFromNode(
-    const aiNode *node, std::vector<std::shared_ptr<Mesh>> *nodeMeshes,
-    math::Bounds3 *bounds)
+void kirana::scene::Scene::updateDirtyTransforms()
 {
-    nodeMeshes->clear();
-    if (node->mNumMeshes > 0)
+    // TODO: Ensure nodes are topologically sorted.
+    if (m_dirtyTransformLevel == std::numeric_limits<uint32_t>::max())
+        return;
+    for (const auto &n : m_nodes)
     {
-        nodeMeshes->resize(node->mNumMeshes);
-        for (size_t i = 0; i < node->mNumMeshes; i++)
-        {
-            (*nodeMeshes)[i] = m_meshes[node->mMeshes[i]];
-            bounds->encapsulate((*nodeMeshes)[i]->getBounds());
-        }
+        if (n.level <= m_dirtyTransformLevel)
+            continue;
+        m_globalTransforms.at(n.objectData.transformIndex) = math::Transform(
+            m_globalTransforms
+                .at(m_nodes.at(n.parent).objectData.transformIndex)
+                .getMatrix() *
+            m_localTransforms.at(n.objectData.transformIndex).getMatrix());
     }
+    m_dirtyTransformLevel = std::numeric_limits<uint32_t>::max();
+}
+
+void kirana::scene::Scene::setTransform(const Node &node,
+                                        const math::Transform &transform,
+                                        bool global)
+{
+    // Update the given transform
+    const int transformIndex = node.objectData.transformIndex;
+    auto &t = global ? m_globalTransforms.at(transformIndex)
+                     : m_localTransforms.at(transformIndex);
+    t = transform;
+
+    // Update the child transforms
+    if (node.level < m_dirtyTransformLevel)
+        m_dirtyTransformLevel = node.level;
+    updateDirtyTransforms();
+
+    // If camera, change global transform (to update view matrix).
+    if (node.objectData.type == NodeObjectType::CAMERA)
+        m_cameras.at(node.objectData.objectIndex)
+            .setTransform(m_globalTransforms.at(transformIndex));
+}
+
+
+const kirana::scene::Node &kirana::scene::Scene::addNode(
+    int parent, NodeObjectType objectType, int objectIndex,
+    const math::Transform &transform, const std::string &emptyObjectName)
+{
+    const int newNodeIndex = static_cast<int>(m_nodes.size());
+
+    // Add transform
+    const int transformIndex = static_cast<int>(m_localTransforms.size());
+    m_localTransforms.push_back(transform);
+    // TODO: Add transform multiplication operator
+    if (parent > -1)
+        m_globalTransforms.emplace_back(
+            m_globalTransforms.at(m_nodes.at(parent).objectData.transformIndex)
+                .getMatrix() *
+            m_localTransforms.at(transformIndex).getMatrix());
     else
+        m_globalTransforms.push_back(transform);
+
+    // Create an empty object.
+    if (objectType == NodeObjectType::EMPTY)
     {
-        // When node has no meshes, it's an empty node with just a position.
-        const auto &t = node->mTransformation;
-        bounds->encapsulate(math::Vector3(t.a4, t.b4, t.c4));
+        objectIndex = static_cast<int>(m_emptyObjects.size());
+        std::string emptyName = emptyObjectName;
+        if (emptyName.empty())
+            emptyName = "Empty_" + std::to_string(objectIndex);
+        m_emptyObjects.emplace_back(std::move(Object(emptyName)));
+    }
+
+    m_nodes.push_back(
+        Node{newNodeIndex, parent, -1, -1, 0,
+             NodeObjectData{objectType, objectIndex, transformIndex},
+             NodeRenderData{}});
+    if (parent > -1)
+    {
+        Node &parentNode = m_nodes.at(parent);
+        if (parentNode.child < 0)
+            parentNode.child = newNodeIndex;
+        else
+        {
+            Node &lastSiblingNode = m_nodes.at(parentNode.child);
+            while (lastSiblingNode.sibling > -1)
+                lastSiblingNode = m_nodes.at(lastSiblingNode.sibling);
+            lastSiblingNode.sibling = newNodeIndex;
+        }
+        m_nodes[newNodeIndex].level = parentNode.level + 1;
+    }
+    if (objectIndex > -1)
+        m_objectNodeIndexTable[objectIndex] = newNodeIndex;
+    return m_nodes.at(newNodeIndex);
+}
+
+void kirana::scene::Scene::setNodeRenderData(const Node &node,
+                                             NodeRenderData renderData)
+{
+    m_nodes.at(node.index).renderData = renderData;
+    if (renderData.selectable)
+    {
+        if (renderData.selected)
+            m_selectedNodes.insert(node.index);
+        else if (m_selectedNodes.find(node.index) != m_selectedNodes.end())
+            m_selectedNodes.erase(node.index);
     }
 }
 
-void kirana::scene::Scene::initializeChildObjects(
-    std::shared_ptr<Object> parent, uint32_t childCount, aiNode **children)
+
+void kirana::scene::Scene::postProcess()
 {
+    m_stats.numMeshes = static_cast<uint32_t>(m_meshes.size());
+    m_stats.numMaterials = static_cast<uint32_t>(m_materials.size());
+    m_stats.numLights = static_cast<uint32_t>(m_lights.size());
+    m_stats.numCameras = static_cast<uint32_t>(m_cameras.size());
 
-    for (size_t i = 0; i < childCount; i++)
+    m_stats.vertexSize = static_cast<uint32_t>(sizeof(scene::Vertex));
+    m_stats.indexSize = static_cast<uint32_t>(sizeof(scene::INDEX_TYPE));
+    m_stats.numVertices = 0;
+    m_stats.numIndices = 0;
+    // Create an object-index hash table
+    for (uint32_t i = 0; i < m_meshes.size(); i++)
     {
-        std::vector<std::shared_ptr<Mesh>> meshes;
-        math::Bounds3 objectBounds;
-        getMeshesFromNode(children[i], &meshes, &objectBounds);
-
-        m_objects.emplace_back(std::make_shared<Object>(
-            children[i], meshes, objectBounds,
-            parent != nullptr ? parent->m_transform.get() : nullptr));
-
-        if (parent != nullptr)
-            parent->m_addHierarchyBounds(objectBounds);
-
-        if (children[i]->mNumChildren > 0)
-            initializeChildObjects(m_objects.back(), children[i]->mNumChildren,
-                                   children[i]->mChildren);
+        m_objectNameIndexTable[m_meshes[i].getName()] = i;
+        m_stats.numVertices +=
+            static_cast<uint32_t>(m_meshes[i].getVertices().size());
+        m_stats.numIndices +=
+            static_cast<uint32_t>(m_meshes[i].getIndices().size());
     }
-}
+    for (uint32_t i = 0; i < m_materials.size(); i++)
+        m_objectNameIndexTable[m_materials[i].getName()] = i;
+    for (uint32_t i = 0; i < m_lights.size(); i++)
+        m_objectNameIndexTable[m_lights[i].getName()] = i;
+    for (uint32_t i = 0; i < m_cameras.size(); i++)
+        m_objectNameIndexTable[m_cameras[i].getName()] = i;
 
-void kirana::scene::Scene::initFromAiScene(const std::string &path,
-                                           const aiScene *scene)
-{
-    m_path = path;
-    // Initialize scene name
-    if (scene->mName.length > 0)
-        m_name = scene->mName.C_Str();
+    if (m_nodes.empty())
+        return;
 
-    Logger::get().log(constants::LOG_CHANNEL_SCENE, LogSeverity::debug,
-                      "Loading Scene: " + std::string(scene->mName.C_Str()));
-
-    // TODO: Populate scene cameras
-
-    // Create Material objects for all the materials in the scene.
-    m_materials.clear();
-    m_materials.resize(scene->mNumMaterials);
-    for (size_t i = 0; i < scene->mNumMaterials; i++)
-    {
-        m_materials[i] =
-            std::move(std::make_shared<Material>(m_path, scene->mMaterials[i]));
-    }
-
-    Logger::get().log(constants::LOG_CHANNEL_SCENE, LogSeverity::debug,
-                      "Material count: " + std::to_string(m_materials.size()));
-
-    // Create Mesh objects for all the meshes in the scene.
-    m_meshes.clear();
-    m_meshes.resize(scene->mNumMeshes);
-    for (size_t i = 0; i < scene->mNumMeshes; i++)
-        m_meshes[i] = std::move(std::make_shared<Mesh>(
-            scene->mMeshes[i], m_materials[scene->mMeshes[i]->mMaterialIndex]));
-
-    Logger::get().log(constants::LOG_CHANNEL_SCENE, LogSeverity::debug,
-                      "Scene Mesh count: " + std::to_string(scene->mNumMeshes));
-
-    // Recursively initialize child objects of the scene, starting with the root
-    // node.
-    m_objects.clear();
-    aiNode *nodes[1] = {scene->mRootNode};
-    initializeChildObjects(nullptr, 1, nodes);
-
-    Logger::get().log(constants::LOG_CHANNEL_SCENE, LogSeverity::debug,
-                      "Object count: " + std::to_string(m_objects.size()));
-
-    m_isInitialized = true;
-}
-
-
-std::vector<kirana::math::TransformHierarchy *> kirana::scene::Scene::
-    getTransformsForMesh(const Mesh *const mesh) const
-{
-    std::vector<kirana::math::TransformHierarchy *> transforms;
-    for (const auto &o : m_objects)
-    {
-        if (o->hasMesh(mesh))
-            transforms.push_back(o->transform);
-    }
-    return transforms;
+    // TODO: Do a topological-sort of nodes.
 }

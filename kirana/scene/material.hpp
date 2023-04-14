@@ -1,20 +1,15 @@
-#ifndef MATERIAL_HPP
-#define MATERIAL_HPP
+#ifndef KIRANA_SCENE_MATERIAL_HPP
+#define KIRANA_SCENE_MATERIAL_HPP
 
-#include <string>
-#include <vector>
-#include <array>
-#include <event.hpp>
-
+#include "object.hpp"
 #include "material_properties.hpp"
-
-struct aiMaterial;
 
 namespace kirana::scene
 {
-class Image;
-class Material : public MaterialProperties
+class Material : public Object, public MaterialProperties
 {
+    friend class external::AssimpSceneConverter;
+
   public:
     // Static Materials
     static const Material DEFAULT_MATERIAL_EDITOR_OUTLINE;
@@ -24,76 +19,37 @@ class Material : public MaterialProperties
     static const Material DEFAULT_MATERIAL_WIREFRAME;
     static const Material DEFAULT_MATERIAL_SHADED;
 
-    // Static functions
-    inline static std::vector<Material> getEditorMaterials()
+    Material() = default;
+    explicit Material(std::string name, std::string shaderName, bool isInternal,
+                      RasterPipelineData rasterData,
+                      RaytracePipelineData raytraceData,
+                      const std::vector<MaterialParameter> &parameters)
+        : Object(std::move(name)),
+          MaterialProperties(std::move(rasterData), std::move(raytraceData),
+                             parameters),
+          m_shaderName{std::move(shaderName)}, m_isInternal{isInternal}
     {
-        return {DEFAULT_MATERIAL_EDITOR_OUTLINE, DEFAULT_MATERIAL_EDITOR_GRID};
-    }
-    inline static std::vector<Material> getDefaultMaterials()
-    {
-        return {DEFAULT_MATERIAL_BASIC_SHADED, DEFAULT_MATERIAL_WIREFRAME,
-                DEFAULT_MATERIAL_SHADED};
-    }
+        initShaderData();
+    };
+    ~Material() override = default;
 
-    Material();
-    explicit Material(const std::string &scenePath, const aiMaterial *material);
-    explicit Material(std::string shaderName, std::string materialName,
-                      const RasterPipelineData &rasterData,
-                      const RaytracePipelineData &raytraceData,
-                      const std::vector<MaterialParameter> &parameters,
-                      bool isEditorMaterial = false);
-    ~Material() = default;
-    Material(const Material &material) = default;
-    Material &operator=(const Material &material) = default;
-    Material(Material &&material) = default;
-    Material &operator=(Material &&material) = default;
+    Material(const Material &mesh) = default;
+    Material(Material &&mesh) = default;
+    Material &operator=(const Material &mesh) = default;
+    Material &operator=(Material &&mesh) = default;
 
-    // Getters-Setters
-    [[nodiscard]] inline const std::string &getName() const
-    {
-        return m_name;
-    }
-    [[nodiscard]] inline const std::string &getShaderName() const
-    {
-        return m_shaderName;
-    }
-    [[nodiscard]] inline const ShaderData &getShaderData(
-        ShadingPipeline currentPipeline) const
-    {
-        return m_isEditorMaterial
-                   ? m_shaderData[0]
-                   : m_shaderData.at(static_cast<int>(currentPipeline));
-    }
-
-    [[nodiscard]] inline const std::vector<Image *> &getImages() const
-    {
-        return m_images;
-    }
-
-    inline void setName(const std::string &name)
-    {
-        m_name = name;
-    }
-
-  private:
+  protected:
     std::string m_shaderName;
-    std::string m_name;
-    bool m_isEditorMaterial = false;
+    bool m_isInternal;
     std::array<ShaderData,
                static_cast<int>(ShadingPipeline::SHADING_PIPELINE_MAX)>
         m_shaderData;
-    std::vector<Image *> m_images;
 
     [[nodiscard]] ShadingStage getShadingStage(
         const std::string &filePath) const;
-    void setShaderData();
-
-    static std::string getMaterialNameFromShaderName(
-        const std::string &shaderName);
-
-    void setParametersFromAiMaterial(const std::string &scenePath,
-                                     const aiMaterial *material);
+    void initShaderData();
 };
+
 } // namespace kirana::scene
 
 #endif

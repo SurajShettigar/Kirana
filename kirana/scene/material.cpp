@@ -1,23 +1,12 @@
 #include "material.hpp"
 
-#include <constants.h>
 #include <file_system.hpp>
-#include <math_utils.hpp>
+#include <logger.hpp>
+#include <constants.h>
 
-#include <random>
-#include <utility>
-#include <assimp/material.h>
-#include <assimp/texture.h>
-
-#include "image_manager.hpp"
-
+using kirana::utils::filesystem::getFilename;
+using kirana::utils::filesystem::listFilesInPath;
 namespace constants = kirana::utils::constants;
-
-std::string kirana::scene::Material::getMaterialNameFromShaderName(
-    const std::string &shaderName)
-{
-    return shaderName + constants::DEFAULT_MATERIAL_NAME_SUFFIX;
-}
 
 kirana::scene::ShadingStage kirana::scene::Material::getShadingStage(
     const std::string &filePath) const
@@ -32,9 +21,8 @@ kirana::scene::ShadingStage kirana::scene::Material::getShadingStage(
     return ShadingStage::NONE;
 }
 
-void kirana::scene::Material::setShaderData()
+void kirana::scene::Material::initShaderData()
 {
-    using utils::filesystem::listFilesInPath;
 
     for (int i = 0; i < static_cast<int>(ShadingPipeline::SHADING_PIPELINE_MAX);
          i++)
@@ -43,7 +31,7 @@ void kirana::scene::Material::setShaderData()
         std::string pipelineFolder = constants::VULKAN_SHADER_DIR_EDITOR_PATH;
         int validPiplineStageStart = static_cast<int>(ShadingStage::VERTEX);
         int validPiplineStageEnd = static_cast<int>(ShadingStage::COMPUTE);
-        if (!m_isEditorMaterial)
+        if (!m_isInternal)
         {
             switch (currPipeline)
             {
@@ -84,131 +72,21 @@ void kirana::scene::Material::setShaderData()
             }
         }
         m_shaderData.at(i) = shaderData;
-        if (m_isEditorMaterial)
+        if (m_isInternal)
             break;
     }
 }
 
-void kirana::scene::Material::setParametersFromAiMaterial(
-    const std::string &scenePath, const aiMaterial *material)
+std::string getMaterialNameFromShader(const std::string &shaderName)
 {
-    // TODO: Use constant parameter names.
-    auto getImage = [&](aiTextureType type) -> Image * {
-        if (material->GetTextureCount(type) <= 0)
-            return nullptr;
-        aiString aiPath;
-        material->GetTexture(type, 0, &aiPath);
-        if (aiPath.length > 0)
-        {
-            const std::string path = utils::filesystem::combinePath(
-                utils::filesystem::getFolder(scenePath), {aiPath.C_Str()});
-            const int index = ImageManager::get().addImage(path);
-            if (index < 0)
-                return nullptr;
-            else
-                return ImageManager::get().getImage(index);
-        }
-        return nullptr;
-    };
-
-    // TODO: Find a better way to handle textures.
-    Image *imgPtr = getImage(aiTextureType_DIFFUSE);
-    if (imgPtr)
-    {
-        setParameter("_BaseMap", static_cast<int>(imgPtr->getIndex()));
-        m_images.push_back(imgPtr);
-    }
-    imgPtr = getImage(aiTextureType_EMISSIVE);
-    if (imgPtr)
-    {
-        setParameter("_EmissiveMap", static_cast<int>(imgPtr->getIndex()));
-        m_images.push_back(imgPtr);
-    }
-    imgPtr = getImage(aiTextureType_NORMALS);
-    if (imgPtr)
-    {
-        setParameter("_NormalMap", static_cast<int>(imgPtr->getIndex()));
-        m_images.push_back(imgPtr);
-    }
-
-    aiColor3D diffuseColor{1.0f, 1.0f, 1.0f};
-    material->Get(AI_MATKEY_COLOR_DIFFUSE, diffuseColor);
-    setParameter("_BaseColor", math::Vector4(diffuseColor.r, diffuseColor.g,
-                                             diffuseColor.b, 1.0f));
-
-    aiColor3D emissiveColor{0.0f, 0.0f, 0.0f};
-    material->Get(AI_MATKEY_COLOR_EMISSIVE, emissiveColor);
-    const math::Vector4 emissiveFactor =
-        math::Vector4(emissiveColor.r, emissiveColor.g, emissiveColor.b, 1.0f);
-    setParameter("_EmissiveColor", math::Vector4::normalize(emissiveFactor));
-    setParameter("_EmissiveIntensity", emissiveFactor.length());
-
-    float opacity{1.0f};
-    material->Get(AI_MATKEY_OPACITY, opacity);
-    setParameter("_Transmission", opacity);
-
-    float gloss{0.0f};
-    material->Get(AI_MATKEY_SHININESS_STRENGTH, gloss);
-    gloss = math::clampf(std::sqrtf(gloss), 0.0f, 1.0f);
-    setParameter("_Roughness", 1.0f - gloss);
-    float ior{1.0f};
-    material->Get(AI_MATKEY_REFRACTI, ior);
-    setParameter("_Ior", ior);
-}
-
-kirana::scene::Material::Material()
-    : MaterialProperties{RasterPipelineData{CullMode::BACK,
-                                            SurfaceType::OPAQUE,
-                                            true,
-                                            true,
-                                            CompareOperation::LESS_OR_EQUAL,
-                                            {true}},
-                         RaytracePipelineData{},
-                         DEFAULT_PRINCIPLED_MATERIAL_PARAMETERS},
-      m_shaderName{constants::DEFAULT_SCENE_MATERIAL_SHADER_NAME},
-      m_name{getMaterialNameFromShaderName(m_shaderName)}, m_isEditorMaterial{
-                                                               false}
-{
-    setShaderData();
-}
-
-kirana::scene::Material::Material(const std::string &scenePath,
-                                  const aiMaterial *material)
-    : MaterialProperties{RasterPipelineData{CullMode::BACK,
-                                            SurfaceType::OPAQUE,
-                                            true,
-                                            true,
-                                            CompareOperation::LESS_OR_EQUAL,
-                                            {true}},
-                         RaytracePipelineData{},
-                         DEFAULT_PRINCIPLED_MATERIAL_PARAMETERS},
-      m_shaderName{constants::DEFAULT_SCENE_MATERIAL_SHADER_NAME},
-      m_name{material->GetName().C_Str()}, m_isEditorMaterial{false}
-{
-    setShaderData();
-    setParametersFromAiMaterial(scenePath, material);
-}
-
-kirana::scene::Material::Material(
-    std::string shaderName, std::string materialName,
-    const RasterPipelineData &rasterData,
-    const RaytracePipelineData &raytraceData,
-    const std::vector<MaterialParameter> &parameters, bool isEditorMaterial)
-    : MaterialProperties{rasterData, raytraceData, parameters},
-      m_shaderName{shaderName.empty()
-                       ? constants::DEFAULT_SCENE_MATERIAL_SHADER_NAME
-                       : std::move(shaderName)},
-      m_name{materialName.empty() ? getMaterialNameFromShaderName(m_shaderName)
-                                  : std::move(materialName)},
-      m_isEditorMaterial{isEditorMaterial}
-{
-    setShaderData();
+    return shaderName + constants::DEFAULT_MATERIAL_NAME_SUFFIX;
 }
 
 const kirana::scene::Material
     kirana::scene::Material::DEFAULT_MATERIAL_EDITOR_OUTLINE{
+        getMaterialNameFromShader(constants::VULKAN_SHADER_EDITOR_OUTLINE_NAME),
         constants::VULKAN_SHADER_EDITOR_OUTLINE_NAME,
-        "",
+        true,
         RasterPipelineData{CullMode::FRONT,
                            SurfaceType::OPAQUE,
                            true,
@@ -218,48 +96,55 @@ const kirana::scene::Material
                             StencilOperation::KEEP, StencilOperation::KEEP,
                             StencilOperation::REPLACE, 1}},
         RaytracePipelineData{},
-        DEFAULT_OUTLINE_MATERIAL_PARAMETERS,
-        true};
+        DEFAULT_OUTLINE_MATERIAL_PARAMETERS};
 
 const kirana::scene::Material
     kirana::scene::Material::DEFAULT_MATERIAL_EDITOR_GRID{
+        getMaterialNameFromShader(constants::VULKAN_SHADER_EDITOR_GRID_NAME),
         constants::VULKAN_SHADER_EDITOR_GRID_NAME,
-        "",
+        true,
         RasterPipelineData{CullMode::BACK, SurfaceType::TRANSPARENT, true,
                            false},
         RaytracePipelineData{},
-        {},
-        true};
+        {}};
 
 const kirana::scene::Material
     kirana::scene::Material::DEFAULT_MATERIAL_BASIC_SHADED{
-        constants::VULKAN_SHADER_BASIC_SHADED_NAME, "",
+        getMaterialNameFromShader(constants::VULKAN_SHADER_BASIC_SHADED_NAME),
+        constants::VULKAN_SHADER_BASIC_SHADED_NAME,
+        false,
         RasterPipelineData{CullMode::BACK,
                            SurfaceType::OPAQUE,
                            true,
                            true,
                            CompareOperation::LESS_OR_EQUAL,
                            {true}},
-        RaytracePipelineData{}, DEFAULT_BASIC_SHADED_MATERIAL_PARAMETERS};
+        RaytracePipelineData{},
+        DEFAULT_BASIC_SHADED_MATERIAL_PARAMETERS};
 
 const kirana::scene::Material
     kirana::scene::Material::DEFAULT_MATERIAL_WIREFRAME{
-        getMaterialNameFromShaderName(constants::VULKAN_SHADER_WIREFRAME_NAME),
+        getMaterialNameFromShader(constants::VULKAN_SHADER_WIREFRAME_NAME),
         constants::VULKAN_SHADER_WIREFRAME_NAME,
+        false,
         RasterPipelineData{CullMode::BACK,
                            SurfaceType::WIREFRAME,
                            true,
                            true,
                            CompareOperation::LESS_OR_EQUAL,
                            {true}},
-        RaytracePipelineData{}, DEFAULT_WIREFRAME_MATERIAL_PARAMETERS};
+        RaytracePipelineData{},
+        DEFAULT_WIREFRAME_MATERIAL_PARAMETERS};
 
 const kirana::scene::Material kirana::scene::Material::DEFAULT_MATERIAL_SHADED{
-    constants::VULKAN_SHADER_PRINCIPLED_NAME, "",
+    getMaterialNameFromShader(constants::VULKAN_SHADER_PRINCIPLED_NAME),
+    constants::VULKAN_SHADER_PRINCIPLED_NAME,
+    false,
     RasterPipelineData{CullMode::BACK,
                        SurfaceType::OPAQUE,
                        true,
                        true,
                        CompareOperation::LESS_OR_EQUAL,
                        {true}},
-    RaytracePipelineData{}, DEFAULT_PRINCIPLED_MATERIAL_PARAMETERS};
+    RaytracePipelineData{},
+    DEFAULT_PRINCIPLED_MATERIAL_PARAMETERS};

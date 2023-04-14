@@ -1,59 +1,54 @@
-#ifndef MESH_HPP
-#define MESH_HPP
+#ifndef KIRANA_SCENE_MESH_HPP
+#define KIRANA_SCENE_MESH_HPP
 
-#include <bounds3.hpp>
-#include <vector>
-#include <string>
-#include <memory>
-#include "scene_types.hpp"
-
-struct aiMesh;
+#include "object.hpp"
 
 namespace kirana::scene
 {
-struct Vertex;
-class Material;
-class Mesh
+class Mesh : public Object
 {
-  protected:
-    std::string m_name;
-    math::Bounds3 m_bounds;
-    std::vector<Vertex> m_vertices;
-    std::vector<scene::INDEX_TYPE> m_indices;
-    std::shared_ptr<Material> m_material;
+    friend class external::AssimpSceneConverter;
 
   public:
+    static const Mesh DEFAULT_QUAD;
+
     Mesh() = default;
-    Mesh(std::string name, const math::Bounds3 &bounds,
-         const std::vector<Vertex> &vertices,
-         const std::vector<scene::INDEX_TYPE> &indices,
-         const std::shared_ptr<Material> &material);
-    Mesh(const aiMesh *mesh, std::shared_ptr<Material> material);
-    virtual ~Mesh() = default;
-
-    Mesh(const Mesh &mesh) = delete;
-
-    [[nodiscard]] inline const std::string &getName() const
+    explicit Mesh(std::string name) : Object(std::move(name)){};
+    explicit Mesh(std::string name, std::vector<Vertex> vertices,
+                  std::vector<INDEX_TYPE> indices,
+                  const math::Bounds3 &boundingBox)
+        : Object(std::move(name)), m_vertices{std::move(vertices)},
+          m_indices{std::move(indices)}, m_bounds{boundingBox}
     {
-        return m_name;
     }
+    ~Mesh() override = default;
+
+    Mesh(const Mesh &mesh) = default;
+    Mesh(Mesh &&mesh) = default;
+    Mesh &operator=(const Mesh &mesh) = default;
+    Mesh &operator=(Mesh &&mesh) = default;
+
     [[nodiscard]] inline const std::vector<Vertex> &getVertices() const
     {
         return m_vertices;
     }
-    [[nodiscard]] inline const std::vector<scene::INDEX_TYPE> &getIndices() const
+
+    [[nodiscard]] inline const std::vector<INDEX_TYPE> &getIndices() const
     {
         return m_indices;
     }
-    /// Returns local bounding-box of the mesh
+
     [[nodiscard]] inline const math::Bounds3 &getBounds() const
     {
         return m_bounds;
     }
-    [[nodiscard]] inline const std::shared_ptr<Material> &getMaterial() const
-    {
-        return m_material;
-    }
+
+  protected:
+    std::vector<Vertex> m_vertices;
+    std::vector<INDEX_TYPE> m_indices;
+    math::Bounds3 m_bounds;
 };
+
 } // namespace kirana::scene
+
 #endif

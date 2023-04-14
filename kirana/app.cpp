@@ -89,7 +89,7 @@ void kirana::Application::init()
     {
         m_logger.log(
             constants::LOG_CHANNEL_APPLICATION, utils::LogSeverity::error,
-            "Application failed to initialize. Window Manager not initialized");
+            "Application failed to resize. Window Manager not initialized");
         return;
     }
 

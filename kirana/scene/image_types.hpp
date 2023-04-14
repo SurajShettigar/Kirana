@@ -1,11 +1,7 @@
 #ifndef KIRANA_SCENE_IMAGE_TYPES_HPP
 #define KIRANA_SCENE_IMAGE_TYPES_HPP
 
-#include <string>
 #include <array>
-#include <vector>
-#include <unordered_map>
-#include <memory>
 
 namespace kirana::scene
 {
@@ -43,6 +39,15 @@ enum class WrapMode
     MIRROR_CLAMP_TO_EDGE = 4,
 };
 
+enum class TextureMapping
+{
+    UV = 0,
+    SPHERICAL = 1,
+    CYLINDRICAL = 2,
+    BOX = 3,
+    PLANE = 4
+};
+
 struct ImageProperties
 {
     Channels channels = Channels::RGBA;
@@ -56,6 +61,8 @@ struct ImageProperties
     uint32_t mipLODBias = 0;
     bool enableAnisotropicFiltering = true;
     uint32_t anisotropicLevel = 16;
+    uint32_t uvIndex = 0;
+    TextureMapping textureMapping = TextureMapping::UV;
 };
 } // namespace kirana::scene
 

@@ -1,106 +1,114 @@
-#ifndef CAMERA_HPP
-#define CAMERA_HPP
+#ifndef KIRANA_SCENE_CAMERA_HPP
+#define KIRANA_SCENE_CAMERA_HPP
 
-#include <transform_hierarchy.hpp>
-#include <ray.hpp>
-#include <array>
-#include <event.hpp>
+#include "object.hpp"
+#include "camera_types.hpp"
+
+#include <transform.hpp>
 
 namespace kirana::scene
 {
-class SceneImporter;
-class SceneManager;
 
-using math::Matrix4x4;
-using math::TransformHierarchy;
-
-class Camera
+class Camera : public Object
 {
-    friend class SceneImporter;
-
-  protected:
-    mutable utils::Event<> m_onCameraChange;
-
-    std::array<uint32_t, 2> m_windowResolution{1280, 720};
-    float m_nearPlane = 0.1f;
-    float m_farPlane = 1000.0f;
-    float m_aspectRatio = 1.77778f;
-
-    TransformHierarchy m_transform{nullptr};
-    Matrix4x4 m_projection;
+    friend class external::AssimpSceneConverter;
 
   public:
+    static const Camera DEFAULT_PERSPECTIVE_CAM;
+
     Camera() = default;
-    explicit Camera(std::array<uint32_t, 2> windowResolution,
-                    float nearPlane = 0.1f, float farPlane = 1000.0f);
-    virtual ~Camera() = default;
+    explicit Camera(std::string name, CameraProperties properties,
+                    const math::Transform &globalTransform)
+        : Object(std::move(name)), m_properties{properties},
+          m_projectionMatrix{calculateProjectionMatrix(m_properties)},
+          m_viewMatrix{calculateViewMatrix(globalTransform)},
+          m_viewProjMatrix{m_projectionMatrix * m_viewMatrix},
+          m_inverseViewProjMatrix{math::Matrix4x4::inverse(m_viewProjMatrix)},
+          m_position{globalTransform.getPosition()},
+          m_forward{globalTransform.getForward()} {};
+    ~Camera() override = default;
 
-    Camera(const Camera &camera);
-    Camera &operator=(const Camera &camera);
+    Camera(const Camera &camera) = default;
+    Camera(Camera &&camera) = default;
+    Camera &operator=(const Camera &camera) = default;
+    Camera &operator=(Camera &&camera) = default;
 
-    inline const TransformHierarchy &getTransform() const
+    [[nodiscard]] inline const CameraProperties &getProperties() const
     {
-        return m_transform;
+        return m_properties;
+    }
+    [[nodiscard]] inline const math::Matrix4x4 &getProjectionMatrix() const
+    {
+        return m_projectionMatrix;
+    }
+    [[nodiscard]] inline const math::Matrix4x4 &getViewMatrix() const
+    {
+        return m_viewMatrix;
+    }
+    [[nodiscard]] inline const math::Matrix4x4 &getViewProjectionMatrix() const
+    {
+        return m_viewProjMatrix;
+    }
+    [[nodiscard]] inline const math::Matrix4x4 &getInverseViewProjectionMatrix()
+        const
+    {
+        return m_inverseViewProjMatrix;
     }
 
-    inline void setTransform(const TransformHierarchy &transform)
+    void setProperties(const CameraProperties &properties)
     {
-        m_transform = transform;
-        m_onCameraChange();
+        m_properties = properties;
+        m_projectionMatrix = calculateProjectionMatrix(m_properties);
+        m_viewProjMatrix = m_projectionMatrix * m_viewMatrix;
+        m_inverseViewProjMatrix = math::Matrix4x4::inverse(m_viewProjMatrix);
     }
 
-    const std::array<uint32_t, 2> &windowResolution = m_windowResolution;
-    const float &nearPlane = m_nearPlane;
-    const float &farPlane = m_farPlane;
-    const float &aspectRatio = m_aspectRatio;
-
-    inline uint32_t addOnCameraChangeEventListener(
-        const std::function<void()> &callback) const
+    void setTransform(const math::Transform &globalTransform)
     {
-        return m_onCameraChange.addListener(callback);
+        m_viewMatrix = calculateViewMatrix(globalTransform);
+        m_viewProjMatrix = m_projectionMatrix * m_viewMatrix;
+        m_inverseViewProjMatrix = math::Matrix4x4::inverse(m_viewProjMatrix);
+        m_position = globalTransform.getPosition();
+        m_forward = globalTransform.getForward();
     }
-    inline void removeOnCameraChangeEventListener(uint32_t callbackID) const
-    {
-        m_onCameraChange.removeListener(callbackID);
-    }
-
-    [[nodiscard]] inline Matrix4x4 getViewMatrix() const
-    {
-        return Matrix4x4::view(m_transform.getPosition(),
-                               m_transform.getForward(), m_transform.getRight(),
-                               m_transform.getUp());
-    }
-
-    // TODO: Get Inverse View Matrix
-
-    [[nodiscard]] inline Matrix4x4 getProjectionMatrix() const
-    {
-        return m_projection;
-    }
-    // TODO: Get Inverse Projection Matrix
-
-    [[nodiscard]] inline Matrix4x4 getViewProjectionMatrix() const
-    {
-        return getProjectionMatrix() * getViewMatrix();
-    }
-
-    // TODO: Get Inverse View-Projection Matrix
-
-    void lookAt(const math::Vector3 &position,
-                const math::Vector3 &up = math::Vector3::UP);
 
     [[nodiscard]] math::Vector3 screenToWorldPosition(
-        const math::Vector3 &screenPos) const;
+        const math::Vector3 &screenPos, const math::Vector2 &resolution) const;
     [[nodiscard]] math::Vector3 worldToScreenPosition(
-        const math::Vector3 &worldPos) const;
+        const math::Vector3 &worldPos, const math::Vector2 &resolution) const;
     [[nodiscard]] math::Ray screenPositionToRay(
-        const math::Vector2 &screenPos) const;
+        const math::Vector2 &screenPos, const math::Vector2 &resolution) const;
 
-    virtual void fitBoundsToView(const math::Vector3 &lookAtPosition,
-                                 const math::Bounds3 &bounds,
-                                 float distanceOffset = 0.0f) = 0;
-    virtual void setResolution(std::array<uint32_t, 2> resolution);
+  protected:
+    CameraProperties m_properties;
+    math::Matrix4x4 m_projectionMatrix;
+    math::Matrix4x4 m_viewMatrix;
+    math::Matrix4x4 m_viewProjMatrix;
+    math::Matrix4x4 m_inverseViewProjMatrix;
+    math::Vector3 m_position;
+    math::Vector3 m_forward;
+
+    inline static math::Matrix4x4 calculateProjectionMatrix(
+        const CameraProperties &properties)
+    {
+        return properties.projection == CameraProjection::ORTHOGRAPHIC
+            ? math::Matrix4x4::orthographicProjection(
+                  properties.orthoSize, properties.aspectRatio,
+                  properties.nearPlane, properties.farPlane, true, true)
+            : math::Matrix4x4::perspectiveProjection(
+                  properties.fieldOfView, properties.aspectRatio,
+                  properties.nearPlane, properties.farPlane, true, true);
+    }
+
+    inline static math::Matrix4x4 calculateViewMatrix(
+        const math::Transform &globalTransform)
+    {
+        return math::Matrix4x4::view(
+            globalTransform.getPosition(), globalTransform.getForward(),
+            globalTransform.getRight(), globalTransform.getUp());
+    }
 };
+
 } // namespace kirana::scene
 
 #endif

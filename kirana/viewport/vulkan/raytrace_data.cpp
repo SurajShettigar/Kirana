@@ -146,7 +146,7 @@ bool kirana::viewport::vulkan::RaytraceData::initialize(
                           "Raytrace data initialized");
     else
         Logger::get().log(constants::LOG_CHANNEL_VULKAN, LogSeverity::error,
-                          "Failed to initialize Raytrace data");
+                          "Failed to resize Raytrace data");
 
 
     return m_isInitialized;

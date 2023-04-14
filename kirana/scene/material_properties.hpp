@@ -1,14 +1,16 @@
-#ifndef MATERIAL_PROPERTIES_HPP
-#define MATERIAL_PROPERTIES_HPP
+#ifndef KIRANA_SCENE_MATERIAL_PROPERTIES_HPP
+#define KIRANA_SCENE_MATERIAL_PROPERTIES_HPP
 
-#include <functional>
-#include <event.hpp>
+#include "image.hpp"
 #include "material_types.hpp"
 
 namespace kirana::scene
 {
+
 class MaterialProperties
 {
+    friend class external::AssimpSceneConverter;
+
   public:
     MaterialProperties() = default;
 
@@ -51,6 +53,14 @@ class MaterialProperties
     inline const RaytracePipelineData &getRaytracePipelineData() const
     {
         return m_raytraceData;
+    }
+
+    bool setTextureParameter(const std::string &paramName, const Image &image)
+    {
+        if (m_parameterIndices.find(paramName) == m_parameterIndices.end())
+            return false;
+        m_textureInfos[paramName] = image;
+        return true;
     }
 
     bool setParameter(const std::string &paramName, const std::any &value)
@@ -192,6 +202,7 @@ class MaterialProperties
     RaytracePipelineData m_raytraceData{};
     std::vector<MaterialParameter> m_parameters;
     std::unordered_map<std::string, uint32_t> m_parameterIndices;
+    std::unordered_map<std::string, Image> m_textureInfos;
 
     mutable utils::Event<MaterialProperties, std::string, std::any>
         m_onParameterChange;

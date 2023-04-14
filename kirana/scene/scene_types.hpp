@@ -1,24 +1,28 @@
-#ifndef SCENE_UTILS_HPP
-#define SCENE_UTILS_HPP
+#ifndef KIRANA_SCENE_SCENE_TYPES_HPP
+#define KIRANA_SCENE_SCENE_TYPES_HPP
 
-#include <vector>
+#include <transform.hpp>
 #include <vector2.hpp>
-#include <transform_hierarchy.hpp>
+#include <id_manager.hpp>
+#include <event.hpp>
+
+#include <array>
+#include <string>
 
 namespace kirana::scene
 {
-class Object;
-class Material;
+typedef uint32_t INDEX_TYPE;
+typedef utils::ID ObjectID;
 
-enum class VertexDataFormat
+enum class VertexAttributeFormat
 {
     INT = 0,
     FLOAT = 1,
 };
 
-struct VertexInfo
+struct VertexAttributeInfo
 {
-    VertexDataFormat format;
+    VertexAttributeFormat format;
     uint8_t componentCount;
     size_t structOffset;
 };
@@ -31,65 +35,50 @@ struct Vertex
     math::Vector2 texCoords;
 
     /// Vertex attribute information to create vertex bindings.
-    static std::vector<VertexInfo> getVertexInfo()
+    static std::vector<VertexAttributeInfo> getVertexInfo()
     {
         return {
-            {VertexDataFormat::FLOAT, 3, offsetof(Vertex, position)},
-            {VertexDataFormat::FLOAT, 3, offsetof(Vertex, normal)},
-            {VertexDataFormat::FLOAT, 4, offsetof(Vertex, color)},
-            {VertexDataFormat::FLOAT, 2, offsetof(Vertex, texCoords)},
+            {VertexAttributeFormat::FLOAT, 3, offsetof(Vertex, position)},
+            {VertexAttributeFormat::FLOAT, 3, offsetof(Vertex, normal)},
+            {VertexAttributeFormat::FLOAT, 4, offsetof(Vertex, color)},
+            {VertexAttributeFormat::FLOAT, 2, offsetof(Vertex, texCoords)},
         };
     }
-
-    /// Vertex information of the biggest attribute
-    static VertexInfo getLargestVertexInfo()
-    {
-        return {VertexDataFormat::FLOAT, 4, offsetof(Vertex, color)};
-    }
 };
 
-typedef uint32_t INDEX_TYPE;
-
-struct WorldData
+enum class NodeObjectType
 {
-    math::Vector4 ambientColor{0.1f, 0.1f, 0.1f, 1.0f};
-    math::Vector3 sunDirection{0.25f, -0.75f, -0.25f};
-    alignas(4) float sunIntensity{6.0f};
-    alignas(16) math::Vector4 sunColor{1.0f, 0.98f, 0.99f, 1.0f};
+    EMPTY = 0,
+    MESH = 1,
+    LIGHT = 2,
+    CAMERA = 3,
 };
 
-struct CameraData
+struct NodeObjectData
 {
-    math::Matrix4x4 viewMatrix;
-    math::Matrix4x4 projectionMatrix;
-    math::Matrix4x4 viewProjectionMatrix;
-    math::Matrix4x4 invViewProjMatrix;
-    math::Vector3 position;
-    alignas(16) math::Vector3 direction;
-    alignas(4) float nearPlane;
-    alignas(4) float farPlane;
+    NodeObjectType type = NodeObjectType::EMPTY;
+    int objectIndex = -1;
+    int transformIndex = -1;
 };
 
-struct SceneInfo
+struct NodeRenderData
 {
-    uint32_t vertexSize = 0;
-    uint32_t numVertices = 0;
-    size_t totalVertexSize = 0;
-    uint32_t indexSize = 0;
-    uint32_t numIndices = 0;
-    size_t totalIndexSize = 0;
-    uint32_t numMeshes = 0;
-    uint32_t numObjects = 0;
-    uint32_t numMaterials = 0;
-};
-
-struct Renderable
-{
-    const Object *object = nullptr;
     bool selectable = true;
     bool viewportVisible = true;
     bool renderVisible = true;
     bool selected = false;
+};
+
+struct Node
+{
+    // Graph data
+    int index = -1;
+    int parent = -1;
+    int child = -1;
+    int sibling = -1;
+    uint32_t level = 0;
+    NodeObjectData objectData;
+    NodeRenderData renderData;
 };
 
 struct SceneImportSettings
@@ -108,8 +97,41 @@ struct SceneImportSettings
     bool flipUVs = false;
 };
 
-static const SceneImportSettings DEFAULT_SCENE_IMPORT_SETTINGS{
-    false, false, true, false, false, true, true, false, true, true, true, true};
+struct SceneStatistics
+{
+    uint32_t vertexSize = 0;
+    uint32_t numVertices = 0;
+    uint32_t indexSize = 0;
+    uint32_t numIndices = 0;
+    uint32_t numMeshes = 0;
+    uint32_t numMaterials = 0;
+    uint32_t numLights = 0;
+    uint32_t numCameras = 0;
+
+    [[nodiscard]] inline size_t getTotalVertexSize() const
+    {
+        return static_cast<size_t>(vertexSize) * numVertices;
+    }
+
+    [[nodiscard]] inline size_t getTotalIndexSize() const
+    {
+        return static_cast<size_t>(indexSize) * numIndices;
+    }
+
+    explicit operator std::string() const
+    {
+        return "{Vertex Size: " + std::to_string(vertexSize) + ", " +
+               "Num. Vertices: " + std::to_string(numVertices) + ", " +
+               "Total Vertex Size: " + std::to_string(getTotalVertexSize()) +
+               ", " + "Index Size: " + std::to_string(indexSize) + ", " +
+               "Num. Indices: " + std::to_string(numIndices) + ", " +
+               "Total Index Size: " + std::to_string(getTotalIndexSize()) +
+               ", " + "Num. Meshes: " + std::to_string(numMeshes) + ", " +
+               "Num. Materials: " + std::to_string(numMaterials) + ", " +
+               "Num. Lights: " + std::to_string(numLights) + ", " +
+               "Num. Cameras: " + std::to_string(numCameras) + "}";
+    }
+};
 
 } // namespace kirana::scene
 

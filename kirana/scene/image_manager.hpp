@@ -2,15 +2,14 @@
 #define KIRANA_SCENE_IMAGE_MANAGER_HPP
 
 #include "image.hpp"
-
-struct aiTexture;
+#include <unordered_map>
 
 namespace kirana::scene
 {
 class ImageManager
 {
   public:
-    ImageManager(const ImageManager &textureManager) = delete;
+    ImageManager(const ImageManager &imageManager) = delete;
 
     static ImageManager &get()
     {
@@ -18,43 +17,55 @@ class ImageManager
         return instance;
     }
 
-    [[nodiscard]] inline Image *getImage(uint32_t index)
+    [[nodiscard]] inline const Image &getImage(uint32_t index) const
     {
-        return index < m_images.size() ? m_images[index].get() : nullptr;
+        return m_images.at(index);
     }
 
-    [[nodiscard]] inline Image *getImage(const std::string &path)
+    [[nodiscard]] inline const Image &getImage(const std::string &name) const
     {
-        return m_imageIndexTable.find(path) != m_imageIndexTable.end()
-                   ? getImage(m_imageIndexTable.at(path))
-                   : nullptr;
+        return getImage(m_imageIndexTable.at(name));
     }
 
-    int addImage(const std::string &filepath, const std::string &name = "", const ImageProperties &properties = {});
+    int addImage(const std::string &basePath, const std::string &imagePath,
+                 const ImageProperties &properties = {});
+
+    bool loadImage(uint32_t imageIndex, void *pixelData, size_t *pixelDataSize);
+    inline bool loadImage(const std::string &name, void *pixelData,
+                          size_t *pixelDataSize)
+    {
+        return loadImage(m_imageIndexTable.at(name), pixelData, pixelDataSize);
+    }
+    void freeImage(uint32_t imageIndex);
+    inline void freeImage(const std::string &name)
+    {
+        freeImage(m_imageIndexTable.at(name));
+    }
 
     void removeImage(uint32_t index)
     {
         if (index < m_images.size())
         {
-            const std::string &name = m_images[index]->getName();
+            freeImage(index);
+            const std::string &name = m_images[index].getName();
             m_imageIndexTable.erase(name);
             m_images.erase(m_images.begin() + index);
         }
     }
 
-    inline void removeImage(const std::string &path)
+    inline void removeImage(const std::string &name)
     {
-        if (m_imageIndexTable.find(path) != m_imageIndexTable.end())
-            removeImage(m_imageIndexTable.at(path));
+        if (m_imageIndexTable.find(name) != m_imageIndexTable.end())
+            removeImage(m_imageIndexTable.at(name));
     }
 
   private:
     ImageManager() = default;
-    ~ImageManager() = default;
+    ~ImageManager();
 
     std::unordered_map<std::string, uint32_t> m_imageIndexTable;
-    std::vector<std::unique_ptr<Image>> m_images;
+    std::vector<Image> m_images;
+    std::unordered_map<uint32_t, void *> m_loadedImageTable;
 };
 } // namespace kirana::scene
-
-#endif // KIRANA_SCENE_IMAGE_MANAGER_HPP
+#endif
